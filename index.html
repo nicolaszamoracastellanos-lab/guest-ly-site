@@ -8,6 +8,13 @@
 <meta property="og:title" content="Guest-ly — AI Concierge for Weddings &amp; Events">
 <meta property="og:description" content="Stop answering the same questions 200 times. An AI concierge trained on your wedding, answering every guest on every channel, 24/7.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://guest-ly.com/">
+<meta property="og:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Guest-ly — AI Concierge for Weddings &amp; Events">
+<meta name="twitter:description" content="An AI concierge trained on your wedding — answering every guest on WhatsApp, SMS, Telegram and the web, in 30+ languages, 24/7.">
+<meta name="twitter:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png">
+<link rel="canonical" href="https://guest-ly.com/">
 <meta name="theme-color" content="#0d1117">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Crect x='9.5' y='9.5' width='13' height='13' rx='2' fill='%23c9a96e' transform='rotate(45 16 16)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,7 +51,8 @@ a,button{-webkit-tap-highlight-color:transparent;}
 @keyframes grainShift{0%,100%{transform:translate(0,0);}20%{transform:translate(-2%,1.5%);}40%{transform:translate(1.5%,-2%);}60%{transform:translate(-1%,-1%);}80%{transform:translate(2%,1%);}}
 
 /* scroll progress */
-.scroll-progress{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--gold-dim),var(--gold),var(--gold-lt));z-index:1001;transition:width 0.1s linear;}
+.scroll-progress{position:fixed;top:0;left:0;height:2px;width:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold),var(--gold-lt));z-index:1001;transform:scaleX(0);transform-origin:left;will-change:transform;}
+section[id],footer{scroll-margin-top:84px;}
 
 /* ════════ LOGO ════════ */
 .logo{display:inline-flex;align-items:center;font-family:'Playfair Display',serif;font-weight:500;font-size:1.5rem;letter-spacing:-0.01em;text-decoration:none;color:inherit;line-height:1;}
@@ -95,7 +103,7 @@ a,button{-webkit-tap-highlight-color:transparent;}
 .hero-left{position:relative;z-index:3;display:flex;flex-direction:column;justify-content:center;padding:140px 4vw 90px 6vw;}
 .hero-eyebrow{display:flex;align-items:center;gap:12px;font-size:0.68rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:30px;font-weight:400;font-family:'EB Garamond',serif;opacity:0;animation:fadeUp 0.9s var(--ease) 0.15s forwards;}
 .hero-eyebrow::before{content:'';width:32px;height:1px;background:var(--gold-dim);}
-.hero-h1{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,5vw,4.6rem);font-weight:400;line-height:1.04;color:var(--ivory);margin-bottom:26px;opacity:0;animation:fadeUp 0.9s var(--ease) 0.25s forwards;}
+.hero-h1{font-family:'Playfair Display',serif;font-size:clamp(3rem,5.6vw,5.3rem);font-weight:400;line-height:1.03;color:var(--ivory);margin-bottom:26px;opacity:0;animation:fadeUp 0.9s var(--ease) 0.25s forwards;letter-spacing:-0.015em;}
 .hero-h1 em{font-style:italic;background:linear-gradient(110deg,var(--gold-dim) 0%,var(--gold) 30%,var(--gold-lt) 50%,var(--gold) 70%,var(--gold-dim) 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 5.5s ease-in-out infinite;}
 @keyframes shimmer{0%,100%{background-position:110% 0;}50%{background-position:-10% 0;}}
 .hero-sub{font-size:1rem;font-weight:300;color:rgba(247,243,236,0.55);line-height:1.85;max-width:440px;margin-bottom:42px;opacity:0;animation:fadeUp 0.9s var(--ease) 0.35s forwards;}
@@ -125,6 +133,28 @@ a,button{-webkit-tap-highlight-color:transparent;}
 .hero-scroll{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;color:rgba(247,243,236,0.3);font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;z-index:4;opacity:0;animation:fadeUp 1s var(--ease) 1.4s forwards;}
 .hero-scroll::after{content:'';width:1px;height:42px;background:linear-gradient(180deg,var(--gold),transparent);animation:scrollHint 2.2s var(--ease) infinite;}
 @keyframes scrollHint{0%{transform:scaleY(0);transform-origin:top;}45%{transform:scaleY(1);transform-origin:top;}55%{transform:scaleY(1);transform-origin:bottom;}100%{transform:scaleY(0);transform-origin:bottom;}}
+
+/* aurora backdrop */
+.hero-aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;}
+.hero-aurora::before{content:'';position:absolute;width:58vw;height:58vw;min-width:520px;min-height:520px;left:-14%;top:-28%;background:radial-gradient(circle,rgba(201,169,110,0.11),transparent 62%);filter:blur(70px);animation:auroraDrift 19s ease-in-out infinite alternate;}
+.hero-aurora::after{content:'';position:absolute;width:52vw;height:52vw;min-width:460px;min-height:460px;right:-18%;bottom:-30%;background:radial-gradient(circle,rgba(64,88,128,0.17),transparent 60%);filter:blur(80px);animation:auroraDrift 23s ease-in-out 2s infinite alternate-reverse;}
+@keyframes auroraDrift{from{transform:translate(0,0) scale(1);}to{transform:translate(6%,9%) scale(1.12);}}
+
+/* hero pill */
+.hero-pill{display:inline-flex;align-items:center;gap:10px;padding:9px 20px 9px 12px;border:1px solid var(--border-gold);border-radius:40px;background:linear-gradient(110deg,rgba(201,169,110,0.10),rgba(201,169,110,0.03));font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-lt);margin-bottom:34px;opacity:0;animation:fadeUp 0.9s var(--ease) 0.05s forwards;position:relative;overflow:hidden;font-weight:500;}
+.hero-pill::after{content:'';position:absolute;top:0;left:-80%;width:60%;height:100%;background:linear-gradient(105deg,transparent,rgba(226,200,146,0.16),transparent);transform:skewX(-20deg);animation:pillSheen 5s var(--ease) 2s infinite;}
+@keyframes pillSheen{0%{left:-80%;}45%,100%{left:130%;}}
+.hero-pill .pill-gem{width:7px;height:7px;background:var(--gold);transform:rotate(45deg);border-radius:1px;flex-shrink:0;box-shadow:0 0 10px rgba(201,169,110,0.7);}
+
+/* premium heading reveal */
+.sec-h2.reveal{filter:blur(7px);}
+.sec-h2.reveal.visible{filter:blur(0);transition:opacity 0.85s var(--ease),transform 0.85s var(--ease),filter 0.9s var(--ease);transition-delay:var(--d,0s);}
+
+/* 3D tilt (JS sets --rx/--ry) */
+.channel-card,.feat,.testi,.p-card{transform-style:preserve-3d;}
+.channel-card:hover{transform:perspective(900px) translateY(-6px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));}
+.feat:hover{transform:perspective(900px) translateY(-5px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));}
+.testi:hover{transform:perspective(900px) translateY(-5px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));}
 
 /* ════════ CHAT MOCKUP ════════ */
 .chat-shell{position:relative;z-index:3;opacity:0;animation:fadeUp 1.1s var(--ease) 0.5s forwards;}
@@ -278,7 +308,7 @@ a,button{-webkit-tap-highlight-color:transparent;}
 .testi-meta{font-size:0.7rem;color:var(--muted);margin-top:3px;}
 
 /* ════════ FAQ ════════ */
-.faq{max-width:760px;}
+.faq{width:100%;}
 .faq-item{border-bottom:1px solid var(--border-d);transition:border-color 0.3s;}
 .faq-item:first-child{border-top:1px solid var(--border-d);}
 .faq-item.open{border-bottom-color:var(--border-gold);}
@@ -328,12 +358,8 @@ footer{background:var(--night-deep);border-top:1px solid var(--border-d);}
 .reveal.visible{opacity:1;transform:translateY(0);}
 
 /* ════════ LANGUAGE ════════ */
-.es{display:none;}
-body.lang-es .es{display:block;}
-body.lang-es .en{display:none;}
-.es-i{display:none;}
-body.lang-es .es-i{display:inline;}
-body.lang-es .en-i{display:none;}
+body:not(.lang-es) .es,body:not(.lang-es) .es-i{display:none !important;}
+body.lang-es .en,body.lang-es .en-i{display:none !important;}
 
 /* ════════ INNER PAGES ════════ */
 .inner-wrap{min-height:100vh;background:var(--night);padding:0 0 90px;}
@@ -419,6 +445,55 @@ select.finput option{background:var(--night2);color:var(--ivory);}
 .tone-btn.on{border-color:var(--gold);background:rgba(201,169,110,0.12);color:var(--ivory);}
 .mini-lbl{font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(247,243,236,0.4);margin-bottom:18px;}
 
+/* ════════ COMPARISON ════════ */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch;}
+.cmp-panel{position:relative;padding:46px 42px;overflow:hidden;}
+.cmp-before{background:rgba(247,243,236,0.025);border:1px solid var(--border-d);}
+.cmp-after{background:linear-gradient(160deg,#151b25 0%,var(--night) 90%);border:1px solid var(--border-gold);box-shadow:0 34px 80px -38px rgba(201,169,110,0.28);}
+.cmp-after::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.cmp-after::after{content:'';position:absolute;right:-70px;bottom:-70px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(201,169,110,0.12),transparent 65%);pointer-events:none;}
+.cmp-tag{display:inline-block;font-size:0.62rem;letter-spacing:0.22em;text-transform:uppercase;margin-bottom:24px;padding:5px 14px;border-radius:20px;font-weight:600;}
+.cmp-before .cmp-tag{background:rgba(247,243,236,0.05);color:rgba(247,243,236,0.4);border:1px solid var(--border-d);}
+.cmp-after .cmp-tag{background:linear-gradient(110deg,var(--gold),var(--gold-lt));color:var(--night);box-shadow:0 6px 18px -6px rgba(201,169,110,0.5);}
+.cmp-title{font-family:'Playfair Display',serif;font-size:1.5rem;line-height:1.25;margin-bottom:26px;}
+.cmp-before .cmp-title{color:rgba(247,243,236,0.55);}
+.cmp-after .cmp-title{color:var(--ivory);}
+.cmp-title em{font-style:italic;color:var(--gold);}
+.cmp-list{list-style:none;display:flex;flex-direction:column;gap:15px;}
+.cmp-list li{display:flex;gap:13px;align-items:flex-start;font-size:0.86rem;line-height:1.7;font-weight:300;}
+.cmp-before .cmp-list li{color:rgba(247,243,236,0.42);}
+.cmp-after .cmp-list li{color:rgba(247,243,236,0.72);}
+.cmp-x,.cmp-star{flex-shrink:0;margin-top:3px;font-size:0.8rem;line-height:1.4;}
+.cmp-x{color:rgba(247,243,236,0.25);}
+.cmp-star{color:var(--gold);font-size:0.65rem;margin-top:6px;}
+
+/* ════════ TESTIMONIALS FEATURED ════════ */
+.testi-feat{background:var(--night);border-color:var(--night);grid-row:span 1;}
+.testi-feat:hover{border-color:var(--border-gold);}
+.testi-feat .testi-q{color:rgba(247,243,236,0.88);font-size:1.22rem;line-height:1.75;}
+.testi-feat .testi-author{border-top-color:rgba(247,243,236,0.1);}
+.testi-feat .testi-name{color:var(--ivory);}
+.testi-feat .testi-meta{color:rgba(247,243,236,0.4);}
+.testi-feat .testi-mark{color:rgba(201,169,110,0.3);}
+.testi-feat .testi-av{background:linear-gradient(135deg,var(--gold-dim),var(--gold));border-color:transparent;}
+.trust-strip{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:44px;font-family:'EB Garamond',serif;font-style:italic;font-size:0.95rem;color:var(--muted);}
+.trust-strip .ts-gem{width:5px;height:5px;background:var(--gold);transform:rotate(45deg);border-radius:1px;}
+.trust-strip b{color:var(--ink);font-weight:500;}
+
+/* ════════ FAQ TWO-COL ════════ */
+.faq-wrap{display:grid;grid-template-columns:0.85fr 1.15fr;gap:30px 7vw;align-items:start;}
+.faq-side{position:sticky;top:110px;}
+.faq-side .sec-h2{margin-bottom:26px;}
+.faq-card{margin-top:36px;background:rgba(247,243,236,0.025);border:1px solid var(--border-d);padding:28px 30px;max-width:400px;}
+.faq-card-t{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--ivory);margin-bottom:8px;}
+.faq-card-d{font-size:0.8rem;color:rgba(247,243,236,0.45);line-height:1.75;font-weight:300;margin-bottom:18px;}
+.faq-card a{color:var(--gold);text-decoration:none;font-size:0.8rem;letter-spacing:0.06em;border-bottom:1px solid var(--border-gold);padding-bottom:2px;transition:color 0.25s;}
+.faq-card a:hover{color:var(--gold-lt);}
+
+/* ════════ PRICING VALUE ════════ */
+.p-value{margin-top:18px;text-align:center;font-size:0.8rem;color:rgba(247,243,236,0.45);font-weight:300;}
+.p-value b{color:var(--gold-lt);font-weight:500;}
+
 /* ════════ RESPONSIVE ════════ */
 @media(max-width:1080px){
   .channels-grid{grid-template-columns:1fr 1fr;}
@@ -427,6 +502,10 @@ select.finput option{background:var(--night2);color:var(--ivory);}
   .steps{grid-template-columns:1fr 1fr;gap:48px 32px;}
   .steps::before{display:none;}
   .footer-main{grid-template-columns:1fr 1fr;}
+  .compare{grid-template-columns:1fr;}
+  .faq-wrap{grid-template-columns:1fr;}
+  .faq-side{position:static;}
+  .faq-card{max-width:none;}
 }
 @media(max-width:880px){
   .hero{grid-template-columns:1fr;min-height:auto;}
@@ -471,6 +550,23 @@ select.finput option{background:var(--night2);color:var(--ivory);}
   .to-top{bottom:18px;right:18px;}
 }
 </style>
+<noscript><style>.reveal{opacity:1;transform:none;}.sec-h2.reveal{filter:none;}</style></noscript>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","name":"Guest-ly","url":"https://guest-ly.com/","logo":"https://guest-ly.com/logos/png/guest-ly-on-navy.png","email":"nicolas@guest-ly.com","description":"AI concierge for weddings and events — answering every guest on WhatsApp, SMS, Telegram and the web, in 30+ languages, 24/7."},
+{"@type":"Service","name":"Guest-ly AI Wedding Concierge","provider":{"@type":"Organization","name":"Guest-ly"},"serviceType":"AI guest concierge for weddings and events","areaServed":"Worldwide","offers":[
+{"@type":"Offer","name":"Basic","price":"97","priceCurrency":"USD","description":"AI web chat bot on a custom URL, 30+ languages, one-time creation fee."},
+{"@type":"Offer","name":"Standard","price":"247","priceCurrency":"USD","description":"Web, WhatsApp, SMS and Telegram bots, broadcasts and admin panel, one-time creation fee."},
+{"@type":"Offer","name":"Premium","price":"447","priceCurrency":"USD","description":"All channels plus guest dashboard, RSVP tracking and unlimited revisions, one-time creation fee."}]},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Do I need any technical knowledge?","acceptedAnswer":{"@type":"Answer","text":"None. You fill out a form with your wedding details and we handle everything — AI training, WhatsApp setup, server hosting, Meta Business. You never touch code."}},
+{"@type":"Question","name":"Why does the price depend on guest count?","acceptedAnswer":{"@type":"Answer","text":"The bot uses AI to answer every guest individually — a 500-guest wedding involves far more conversations than a 50-guest one. Pricing by guest count keeps it fair."}},
+{"@type":"Question","name":"How long does setup take?","acceptedAnswer":{"@type":"Answer","text":"About a week from your completed intake form. The Rush add-on prioritizes your build for delivery in under 7 days."}},
+{"@type":"Question","name":"What languages does the bot speak?","acceptedAnswer":{"@type":"Answer","text":"30+ languages, automatically detected from each guest's message — Spanish, English, Portuguese, French, German, Italian, Mandarin and more, included in every plan."}},
+{"@type":"Question","name":"How long is the bot active, and what's the monthly fee?","acceptedAnswer":{"@type":"Answer","text":"The creation fee includes the first 3 months of hosting. After that, a small monthly fee keeps the bot live: $5/mo Basic, $12/mo Standard, $19/mo Premium. Cancel anytime."}},
+{"@type":"Question","name":"Is it only for weddings?","acceptedAnswer":{"@type":"Answer","text":"Weddings are the specialty, but Guest-ly works for any event with guests and logistics — quinceañeras, corporate retreats, destination birthdays, conferences."}}]}
+]}
+</script>
 </head>
 <body class="lang-en">
 <div class="grain" aria-hidden="true"></div>
@@ -518,13 +614,10 @@ select.finput option{background:var(--night2);color:var(--ivory);}
 </div>
 
 <header class="hero">
+  <div class="hero-aurora" aria-hidden="true"></div>
   <div class="hero-left">
-    <div style="margin-bottom:42px;opacity:0;animation:fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.05s forwards;">
-      <div style="display:inline-flex;align-items:center;font-family:'Playfair Display',serif;letter-spacing:-0.01em;color:#f7f3ec;font-size:clamp(3rem,5.5vw,5rem);line-height:1;">
-        <span style="font-weight:500;">Guest</span>
-        <span style="display:inline-block;width:0.28em;height:0.28em;background:#c9a96e;transform:rotate(45deg);margin:0 0.22em;border-radius:1.5px;flex-shrink:0;"></span>
-        <span style="font-style:italic;font-weight:400;">ly</span>
-      </div>
+    <div>
+      <span class="hero-pill"><span class="pill-gem"></span><span class="en-i">Born at a real 150-guest wedding</span><span class="es-i">Nacido en una boda real de 150 invitados</span></span>
     </div>
     <div class="hero-eyebrow en">AI Concierge · Weddings &amp; Events</div>
     <div class="hero-eyebrow es">Asistente IA · Bodas y Eventos</div>
@@ -698,9 +791,56 @@ select.finput option{background:var(--night2);color:var(--ivory);}
   </div>
 </section>
 
-<section class="sec sec-dark" id="pricing">
+<section class="sec sec-night2">
   <div class="sec-head">
     <div class="sec-no">№ 04</div>
+    <div>
+      <span class="sec-label en reveal">The difference</span><span class="sec-label es reveal">La diferencia</span>
+      <h2 class="sec-h2 en reveal">The week before your wedding,<br><em>two ways.</em></h2>
+      <h2 class="sec-h2 es reveal">La semana antes de tu boda,<br><em>dos versiones.</em></h2>
+    </div>
+  </div>
+  <div class="compare">
+    <div class="cmp-panel cmp-before reveal">
+      <span class="cmp-tag en">Without Guest-ly</span><span class="cmp-tag es">Sin Guest-ly</span>
+      <div class="cmp-title en">Your phone never stops.</div>
+      <div class="cmp-title es">Tu teléfono no para.</div>
+      <ul class="cmp-list">
+        <li class="en"><span class="cmp-x">✕</span>200 guests asking the same 8 questions, one by one</li>
+        <li class="es"><span class="cmp-x">✕</span>200 invitados haciendo las mismas 8 preguntas, uno por uno</li>
+        <li class="en"><span class="cmp-x">✕</span>A 2am "what's the dress code?" text from another time zone</li>
+        <li class="es"><span class="cmp-x">✕</span>Un "¿cuál es el dress code?" a las 2am desde otro huso horario</li>
+        <li class="en"><span class="cmp-x">✕</span>Group chats that bury the answers you already gave</li>
+        <li class="es"><span class="cmp-x">✕</span>Grupos de chat que entierran las respuestas que ya diste</li>
+        <li class="en"><span class="cmp-x">✕</span>Translating hotel directions for guests flying in</li>
+        <li class="es"><span class="cmp-x">✕</span>Traducir indicaciones del hotel para invitados del exterior</li>
+        <li class="en"><span class="cmp-x">✕</span>Your final week spent as a call center, not a couple</li>
+        <li class="es"><span class="cmp-x">✕</span>Tu última semana convertida en un call center, no en pareja</li>
+      </ul>
+    </div>
+    <div class="cmp-panel cmp-after reveal" style="--d:0.12s;">
+      <span class="cmp-tag en">With Guest-ly</span><span class="cmp-tag es">Con Guest-ly</span>
+      <div class="cmp-title en">Silence. <em>The good kind.</em></div>
+      <div class="cmp-title es">Silencio. <em>Del bueno.</em></div>
+      <ul class="cmp-list">
+        <li class="en"><span class="cmp-star">✦</span>Every question answered in seconds, on every channel, 24/7</li>
+        <li class="es"><span class="cmp-star">✦</span>Cada pregunta respondida en segundos, en cada canal, 24/7</li>
+        <li class="en"><span class="cmp-star">✦</span>The 2am guest gets a perfect answer — you stay asleep</li>
+        <li class="es"><span class="cmp-star">✦</span>El invitado de las 2am recibe una respuesta perfecta — tú sigues durmiendo</li>
+        <li class="en"><span class="cmp-star">✦</span>One source of truth, trained on your wedding alone</li>
+        <li class="es"><span class="cmp-star">✦</span>Una sola fuente de verdad, entrenada solo con tu boda</li>
+        <li class="en"><span class="cmp-star">✦</span>Guests answered in their own language, automatically</li>
+        <li class="es"><span class="cmp-star">✦</span>Invitados atendidos en su propio idioma, automáticamente</li>
+        <li class="en"><span class="cmp-star">✦</span>Your final week spent being celebrated, not consulted</li>
+        <li class="es"><span class="cmp-star">✦</span>Tu última semana celebrando, no respondiendo</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec-dark" id="pricing">
+  <div class="sec-head">
+    <div class="sec-no">№ 05</div>
     <div>
       <span class="sec-label en reveal">Pricing</span><span class="sec-label es reveal">Precios</span>
       <h2 class="sec-h2 en reveal">Build it once.<br><em>Keep it for pennies.</em></h2>
@@ -784,11 +924,13 @@ select.finput option{background:var(--night2);color:var(--ivory);}
   </div>
   <div class="p-guarantee reveal en">No contracts. Cancel hosting anytime — <b>your bot simply goes offline.</b></div>
   <div class="p-guarantee reveal es">Sin contratos. Cancela el hosting cuando quieras — <b>tu bot simplemente se desactiva.</b></div>
+  <div class="p-value reveal en">For a 150-guest wedding, Standard works out to about <b>$2.30 per guest</b> — less than a single printed menu.</div>
+  <div class="p-value reveal es">Para una boda de 150 invitados, el plan Estándar sale a unos <b>$2.30 por invitado</b> — menos que un solo menú impreso.</div>
 </section>
 
 <section class="sec">
   <div class="sec-head">
-    <div class="sec-no">№ 05</div>
+    <div class="sec-no">№ 06</div>
     <div>
       <span class="sec-label en reveal">Real weddings</span><span class="sec-label es reveal">Bodas reales</span>
       <h2 class="sec-h2 en reveal">Couples who stopped<br><em>answering messages.</em></h2>
@@ -798,19 +940,31 @@ select.finput option{background:var(--night2);color:var(--ivory);}
     </div>
   </div>
   <div class="testimonials">
-    <div class="testi reveal"><span class="testi-mark">"</span><div class="testi-stars">★★★★★</div><div class="testi-q en">"Our guests from the US couldn't believe how fast they got answers. Someone texted at 2am asking about dress code and got an instant reply. I was asleep."</div><div class="testi-q es">"Nuestros invitados del exterior no podían creer la rapidez con la que obtenían respuestas. Alguien escribió a las 2am preguntando por el dress code y recibió respuesta al instante. Yo estaba durmiendo."</div><div class="testi-author"><div class="testi-av">👰</div><div><div class="testi-name">Alexandra &amp; Nicolás</div><div class="testi-meta en">Tarija, Bolivia · November 2026</div><div class="testi-meta es">Tarija, Bolivia · Noviembre 2026</div></div></div></div>
+    <div class="testi testi-feat reveal"><span class="testi-mark">"</span><div class="testi-stars">★★★★★</div><div class="testi-q en">"Our guests from the US couldn't believe how fast they got answers. Someone texted at 2am asking about dress code and got an instant reply. I was asleep."</div><div class="testi-q es">"Nuestros invitados del exterior no podían creer la rapidez con la que obtenían respuestas. Alguien escribió a las 2am preguntando por el dress code y recibió respuesta al instante. Yo estaba durmiendo."</div><div class="testi-author"><div class="testi-av">👰</div><div><div class="testi-name">Alexandra &amp; Nicolás</div><div class="testi-meta en">Tarija, Bolivia · November 2026</div><div class="testi-meta es">Tarija, Bolivia · Noviembre 2026</div></div></div></div>
     <div class="testi reveal" style="--d:0.1s;"><span class="testi-mark">"</span><div class="testi-stars">★★★★★</div><div class="testi-q en">"We had guests from 6 countries. The bot answered in Spanish, English, and Portuguese without us doing anything. Like having a personal concierge for each guest."</div><div class="testi-q es">"Teníamos invitados de 6 países. El bot respondió en español, inglés y portugués sin que hiciéramos nada. Como tener un conserje personal para cada invitado."</div><div class="testi-author"><div class="testi-av">💑</div><div><div class="testi-name">Valentina &amp; Diego</div><div class="testi-meta">Buenos Aires, Argentina</div></div></div></div>
     <div class="testi reveal" style="--d:0.2s;"><span class="testi-mark">"</span><div class="testi-stars">★★★★★</div><div class="testi-q en">"The week before our wedding I didn't answer a single WhatsApp about logistics. The bot handled everything. Worth every penny."</div><div class="testi-q es">"La semana antes de mi boda no respondí un solo WhatsApp de logística. El bot manejó todo. Valió cada centavo."</div><div class="testi-author"><div class="testi-av">💍</div><div><div class="testi-name">Camila &amp; Rodrigo</div><div class="testi-meta">Miami, FL</div></div></div></div>
+  </div>
+  <div class="trust-strip reveal">
+    <span class="en-i">Born at a real <b>150+ guest</b> wedding</span><span class="es-i">Nacido en una boda real de <b>más de 150 invitados</b></span>
+    <span class="ts-gem"></span>
+    <span class="en-i">Guests from <b>6 countries</b></span><span class="es-i">Invitados de <b>6 países</b></span>
+    <span class="ts-gem"></span>
+    <span class="en-i">Answers in <b>3 languages</b>, automatically</span><span class="es-i">Respuestas en <b>3 idiomas</b>, automáticas</span>
   </div>
 </section>
 
 <section class="sec sec-dark" id="faq">
-  <div class="sec-head">
-    <div class="sec-no">№ 06</div>
-    <div>
-      <span class="sec-label en reveal">Questions</span><span class="sec-label es reveal">Preguntas</span>
-      <h2 class="sec-h2 en reveal">You probably have<br><em>a few questions.</em></h2>
-      <h2 class="sec-h2 es reveal">Probablemente tienes<br><em>algunas preguntas.</em></h2>
+  <div class="faq-wrap">
+  <div class="faq-side">
+    <div class="sec-no" style="margin-bottom:18px;">№ 07</div>
+    <span class="sec-label en reveal">Questions</span><span class="sec-label es reveal">Preguntas</span>
+    <h2 class="sec-h2 en reveal">You probably have<br><em>a few questions.</em></h2>
+    <h2 class="sec-h2 es reveal">Probablemente tienes<br><em>algunas preguntas.</em></h2>
+    <div class="faq-card reveal">
+      <div class="faq-card-t en">Prefer a human?</div><div class="faq-card-t es">¿Prefieres un humano?</div>
+      <div class="faq-card-d en">Write to us directly — we answer every message ourselves, usually within a few hours.</div>
+      <div class="faq-card-d es">Escríbenos directamente — respondemos cada mensaje nosotros mismos, normalmente en pocas horas.</div>
+      <a href="mailto:nicolas@guest-ly.com">nicolas@guest-ly.com</a>
     </div>
   </div>
   <div class="faq reveal">
@@ -822,8 +976,7 @@ select.finput option{background:var(--night2);color:var(--ivory);}
     <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q en">How long is the bot active, and what's the monthly fee?</div><div class="faq-q es">¿Cuánto tiempo está activo el bot y cuál es la cuota mensual?</div><div class="faq-a en">Your creation fee includes the first 3 months of hosting — which covers most weddings right up to the big day. After that, a small monthly hosting fee keeps your bot live: $5/mo (Basic), $12/mo (Standard), or $19/mo (Premium). It covers the real costs of running your bot — the phone numbers, messaging, and servers. Cancel anytime; the bot simply goes offline.</div><div class="faq-a es">Tu tarifa de creación incluye los primeros 3 meses de hosting — que cubren la mayoría de las bodas hasta el gran día. Después, una pequeña cuota mensual mantiene tu bot activo: $5/mes (Básico), $12/mes (Estándar) o $19/mes (Premium). Cubre los costos reales de operar tu bot. Cancela cuando quieras.</div></div>
     <div class="faq-item" onclick="toggleFaq(this)"><div class="faq-q en">Is it only for weddings?</div><div class="faq-q es">¿Es solo para bodas?</div><div class="faq-a en">Weddings are our specialty, but Guest-ly works beautifully for any event with guests and logistics — quinceañeras, corporate retreats, destination birthdays, conferences. If guests ask questions, Guest-ly answers them.</div><div class="faq-a es">Las bodas son nuestra especialidad, pero Guest-ly funciona perfecto para cualquier evento con invitados y logística — quinceañeras, retiros corporativos, cumpleaños de destino, conferencias. Si los invitados preguntan, Guest-ly responde.</div></div>
   </div>
-  <div class="faq-foot reveal en">Still curious? Write us at <a href="mailto:nicolas@guest-ly.com">nicolas@guest-ly.com</a> — a human answers that one.</div>
-  <div class="faq-foot reveal es">¿Más preguntas? Escríbenos a <a href="mailto:nicolas@guest-ly.com">nicolas@guest-ly.com</a> — esa la responde un humano.</div>
+  </div>
 </section>
 
 <section class="cta-banner" id="contact">
@@ -1195,7 +1348,7 @@ function onScroll() {
   if (toTop) toTop.classList.toggle('show', y > 700);
   if (progress) {
     var h = document.documentElement.scrollHeight - window.innerHeight;
-    progress.style.width = (h > 0 ? (y / h) * 100 : 0) + '%';
+    progress.style.transform = 'scaleX(' + (h > 0 ? y / h : 0) + ')';
   }
 }
 window.addEventListener('scroll', onScroll, { passive: true });
@@ -1237,6 +1390,46 @@ var revealObs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
 }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.reveal').forEach(function(el) { revealObs.observe(el); });
+
+/* ══════════ 3D TILT + HERO PARALLAX ══════════ */
+(function() {
+  var fine = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  var calm = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (!fine || calm) return;
+  document.querySelectorAll('.channel-card,.feat,.testi').forEach(function(card) {
+    card.addEventListener('pointermove', function(e) {
+      var r = card.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width - 0.5;
+      var py = (e.clientY - r.top) / r.height - 0.5;
+      card.style.setProperty('--ry', (px * 5).toFixed(2) + 'deg');
+      card.style.setProperty('--rx', (py * -5).toFixed(2) + 'deg');
+    });
+    card.addEventListener('pointerleave', function() {
+      card.style.setProperty('--ry', '0deg');
+      card.style.setProperty('--rx', '0deg');
+    });
+  });
+  var heroRight = document.querySelector('.hero-right');
+  var shell = document.querySelector('.chat');
+  if (heroRight && shell) {
+    var raf = null;
+    heroRight.addEventListener('pointermove', function(e) {
+      if (raf) return;
+      raf = requestAnimationFrame(function() {
+        var r = heroRight.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        shell.style.transform = 'perspective(1100px) rotateY(' + (px * 7).toFixed(2) + 'deg) rotateX(' + (py * -7).toFixed(2) + 'deg)';
+        raf = null;
+      });
+    });
+    heroRight.addEventListener('pointerleave', function() {
+      shell.style.transition = 'transform 0.7s cubic-bezier(0.22,1,0.36,1)';
+      shell.style.transform = 'perspective(1100px) rotateY(0deg) rotateX(0deg)';
+      setTimeout(function() { shell.style.transition = ''; }, 700);
+    });
+  }
+})();
 
 /* ══════════ MARQUEE (duplicate for seamless loop) ══════════ */
 (function() {
