@@ -32,8 +32,8 @@
   --ease:cubic-bezier(0.22,1,0.36,1);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{font-family:'Inter',sans-serif;background:var(--night);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+html{scroll-behavior:smooth;background:var(--night);overflow-x:hidden;overflow-x:clip;}
+body{font-family:'Inter',sans-serif;background:var(--night);color:var(--ink);overflow-x:hidden;overflow-x:clip;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
 ::selection{background:var(--gold);color:var(--night);}
 a,button{-webkit-tap-highlight-color:transparent;}
 :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:2px;}
@@ -590,6 +590,8 @@ select.finput option{background:var(--night2);color:var(--ivory);}
     <a href="#pricing" class="nav-link es">Precios</a>
     <a href="#faq" class="nav-link en">FAQ</a>
     <a href="#faq" class="nav-link es">Preguntas</a>
+    <a href="https://app.guest-ly.com" class="nav-link en">Client Login</a>
+    <a href="https://app.guest-ly.com" class="nav-link es">Acceso clientes</a>
   </div>
   <div class="nav-right">
     <div class="lang-toggle" role="group" aria-label="Language">
@@ -607,6 +609,7 @@ select.finput option{background:var(--night2);color:var(--ivory);}
   <a href="#how" class="mobile-link" onclick="toggleMenu()"><span class="en-i">How it works</span><span class="es-i">Cómo funciona</span></a>
   <a href="#pricing" class="mobile-link" onclick="toggleMenu()"><span class="en-i">Pricing</span><span class="es-i">Precios</span></a>
   <a href="#faq" class="mobile-link" onclick="toggleMenu()"><span class="en-i">FAQ</span><span class="es-i">Preguntas</span></a>
+  <a href="https://app.guest-ly.com" class="mobile-link"><span class="en-i">Client Login</span><span class="es-i">Acceso clientes</span></a>
   <div style="margin-top:26px;">
     <button class="btn-gold en" onclick="toggleMenu();navigate('get-started')">Get started</button>
     <button class="btn-gold es" onclick="toggleMenu();navigate('get-started')">Empezar</button>
@@ -831,6 +834,8 @@ select.finput option{background:var(--night2);color:var(--ivory);}
         <li class="es"><span class="cmp-star">✦</span>Una sola fuente de verdad, entrenada solo con tu boda</li>
         <li class="en"><span class="cmp-star">✦</span>Guests answered in their own language, automatically</li>
         <li class="es"><span class="cmp-star">✦</span>Invitados atendidos en su propio idioma, automáticamente</li>
+        <li class="en"><span class="cmp-star">✦</span>A live dashboard in your couple portal: every question, RSVP signal, and gap, visible at a glance</li>
+        <li class="es"><span class="cmp-star">✦</span>Un panel en vivo en tu portal de pareja: cada pregunta, señal de RSVP y pendiente, visible de un vistazo</li>
         <li class="en"><span class="cmp-star">✦</span>Your final week spent being celebrated, not consulted</li>
         <li class="es"><span class="cmp-star">✦</span>Tu última semana celebrando, no respondiendo</li>
       </ul>
