@@ -30,6 +30,32 @@ real money you must **activate the account**:
    dashboard). You can do a dry run in test mode first with card
    `4242 4242 4242 4242`, any future date, any CVC.
 
+## The fast path — one command instead of steps 1–4
+
+Once the account is activated, you don't need to click through the dashboard.
+On any machine with Node 18+ (your laptop is fine):
+
+```bash
+git clone https://github.com/nicolaszamoracastellanos-lab/guest-ly-site
+cd guest-ly-site
+STRIPE_SECRET_KEY=rk_live_... node scripts/create-stripe-links.mjs
+```
+
+The script creates all 3 products, 12 prices, 12 payment links, and the
+`FOUNDING30` code, then **patches `PAY_LINKS` in index.html automatically**.
+It's idempotent — re-running never duplicates anything. Use a **restricted
+key** (Dashboard → Developers → API keys → Create restricted key) with write
+access to Products, Payment Links, and Coupons/Promotion codes.
+
+Alternatively, authorize the **Stripe connector** in your claude.ai connector
+settings and tell Claude "run the Stripe bootstrap from STRIPE-SETUP.md" — no
+key handling at all. (Note: the Claude Code cloud environment's network policy
+currently blocks direct calls to api.stripe.com, so the connector or your
+laptop are the two working routes.)
+
+Steps 1–4 below are the manual dashboard equivalent — skip them if you used
+the script.
+
 ## 1 · Create the products and prices (~15 min)
 
 Dashboard → **Product catalog → Add product**. Create **3 products**, each
@@ -112,18 +138,6 @@ at this volume.
 
 ---
 
-## The faster path: let Claude do steps 1–4
-
-If you connect Stripe to Claude, all products, prices, payment links, and the
-coupon can be created via API in one session, and the URLs pasted into
-`PAY_LINKS` automatically. Two options:
-
-- **Claude.ai Stripe connector** — authorize it in your claude.ai connector
-  settings, then start a new session on this repo and say "create the Stripe
-  payment links from STRIPE-SETUP.md".
-- **Stripe plugin for Claude Code** (the screen you screenshotted) — run
-  `/plugin install stripe@claude-plugins-official` in an interactive Claude
-  Code session and authenticate.
-
-Either way, never paste your secret key (`sk_live_…`) into chat — the
-plugin/connector handles auth properly.
+**Security note:** never paste your secret key (`sk_live_…`) into a chat.
+Use a restricted key as an environment variable (the script above), or the
+claude.ai Stripe connector, which handles auth via OAuth.
