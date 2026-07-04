@@ -1162,10 +1162,17 @@ select.finput option{background:var(--night2);color:var(--ivory);}
       <div class="crow"><span class="clabel">Creation fee</span><span class="ctotal" id="gs-sum-price">$247</span></div>
       <div class="crow"><span class="clabel">Hosting</span><span class="cval" id="gs-sum-host" style="color:#c9a96e;">$12/mo after 3 months</span></div>
     </div>
+    <div style="margin-bottom:42px;">
+      <button class="ibtn-gold" id="gs-pay-btn" style="display:none;">Pay creation fee →</button>
+      <p id="gs-pay-note" style="font-size:0.78rem;color:rgba(247,243,236,0.4);line-height:1.7;margin:14px auto 0;max-width:420px;"></p>
+      <div style="margin-top:14px;">
+        <a id="gs-wa-link" class="ilink" style="display:none;" target="_blank" rel="noopener">Prefer WhatsApp? Chat with us →</a>
+      </div>
+    </div>
     <div style="text-align:left;margin-bottom:42px;">
       <div style="font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(247,243,236,0.25);margin-bottom:18px;text-align:center;">What happens next</div>
       <div class="nsteps">
-        <div class="nstep"><div class="nnum done">1</div><div><div class="ntitle">We review your order</div><div class="ndesc">Within 2 hours during business hours.</div></div></div>
+        <div class="nstep"><div class="nnum done">1</div><div><div class="ntitle">Pay the creation fee to lock your slot</div><div class="ndesc">Secure Stripe checkout — we confirm within 2 hours during business hours.</div></div></div>
         <div class="nstep"><div class="nnum todo">2</div><div><div class="ntitle">We send you the intake form</div><div class="ndesc">A 15-minute form with everything your bot needs.</div></div></div>
         <div class="nstep"><div class="nnum todo">3</div><div><div class="ntitle">We build your bot (~7 days)</div><div class="ndesc">AI training, channel setup, design — all handled.</div></div></div>
         <div class="nstep"><div class="nnum todo">4</div><div><div class="ntitle">You test, approve &amp; share</div><div class="ndesc">Your guests get a 24/7 luxury concierge experience.</div></div></div>
@@ -1175,6 +1182,7 @@ select.finput option{background:var(--night2);color:var(--ivory);}
       <button class="ibtn-sm" onclick="navigate('intake')">Fill intake form now →</button>
       <span class="ilink" onclick="navigate('home')">← Back to home</span>
     </div>
+    <p style="font-size:0.68rem;color:rgba(247,243,236,0.25);margin-top:30px;">Didn't hear from us within 24 hours? <a id="gs-mail-fallback" href="mailto:nicolas@guest-ly.com" style="color:rgba(247,243,236,0.4);">Email us your order</a>.</p>
   </div>
 
 </div>
@@ -1310,10 +1318,10 @@ select.finput option{background:var(--night2);color:var(--ivory);}
   <div id="if-submitted" class="isec" style="display:none;text-align:center;">
     <div class="success-icon">✦</div>
     <h1 class="ih1" style="margin-bottom:16px;">Thank you<span id="if-thankyou-name"></span>.</h1>
-    <p style="font-size:0.9rem;color:rgba(247,243,236,0.5);line-height:1.8;margin-bottom:36px;">We've got everything we need. Your draft email is ready — just hit send, and we'll start building your bot. You'll have a preview to test within about a week.</p>
+    <p style="font-size:0.9rem;color:rgba(247,243,236,0.5);line-height:1.8;margin-bottom:36px;">We've got everything we need — your details are on their way to us, and we'll start building your bot. You'll have a preview to test within about a week.</p>
     <div class="ibtn-row-c">
-      <button class="ibtn-sm" id="if-resend-btn">Re-open email draft</button>
-      <span class="ilink" onclick="navigate('home')">← Back to home</span>
+      <button class="ibtn-sm" onclick="navigate('home')">← Back to home</button>
+      <span class="ilink" id="if-resend-btn">Email us a copy (backup)</span>
     </div>
   </div>
 
@@ -1334,6 +1342,8 @@ window.addEventListener('hashchange', function() {
   else if (h === '#intake') navigate('intake');
   else if (h === '#home') navigate('home');
 });
+if (location.hash === '#get-started') navigate('get-started');
+else if (location.hash === '#intake') navigate('intake');
 
 /* ══════════ LANGUAGE ══════════ */
 function setLang(l) {
@@ -1495,6 +1505,29 @@ var GS = {
   labels: {basic:'Basic', standard:'Standard', premium:'Premium'},
   ranges: ['0–100 guests','100–300 guests','300–500 guests','500+ guests']
 };
+
+/* ── PAYMENTS & NOTIFICATIONS ──
+   Paste your Stripe Payment Link URLs below — see STRIPE-SETUP.md for the
+   click-by-click guide. One URL per plan × guest range, in this order:
+   [0–100, 100–300, 300–500, 500+]. Leave '' until a link exists; the page
+   falls back to "we'll send you a payment link" so nothing breaks. */
+var PAY_LINKS = {
+  basic:    ['', '', '', ''],
+  standard: ['', '', '', ''],
+  premium:  ['', '', '', '']
+};
+var ORDER_INBOX = 'nicolas@guest-ly.com';  /* receives order + intake notifications via FormSubmit */
+var WHATSAPP = '';  /* WhatsApp number, digits only with country code (e.g. '59171234567'); '' hides WhatsApp buttons */
+
+function sendNotification(subject, data) {
+  var payload = {_subject: subject, _captcha: 'false', _template: 'box'};
+  for (var k in data) payload[k] = data[k];
+  return fetch('https://formsubmit.co/ajax/' + ORDER_INBOX, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+}
 function gsSetRange(i) {
   GS.range = i;
   for (var n = 0; n < 4; n++) document.getElementById('gs-r' + n).classList.toggle('on', n === i);
@@ -1540,6 +1573,49 @@ function gsNext() {
     document.getElementById('gs-confirm-msg').textContent =
       'The ' + GS.labels[GS.plan] + ' plan for ' + GS.ranges[GS.range] +
       ' — $' + price + ' creation fee, then $' + host + '/mo hosting after your first 3 months. We\'ll be in touch within 24 hours at ' + (email || 'your inbox') + '.';
+
+    /* notify Guest-ly of the order (fire-and-forget; mailto fallback link below) */
+    var order = {
+      couple: [name,partner].filter(Boolean).join(' & ') || '—',
+      email: email || '—',
+      phone: document.getElementById('gs-phone').value || '—',
+      wedding_date: document.getElementById('gs-date').value || '—',
+      location: document.getElementById('gs-location').value || '—',
+      plan: GS.labels[GS.plan] + ' · ' + GS.ranges[GS.range],
+      creation_fee: '$' + price,
+      hosting: '$' + host + '/mo after 3 months',
+      notes: document.getElementById('gs-notes').value || '—'
+    };
+    var subj = 'New order — ' + order.couple + ' · ' + order.plan + ' · $' + price;
+    sendNotification(subj, order).catch(function() {});
+    var mailBody = Object.keys(order).map(function(k) { return k.replace(/_/g,' ').toUpperCase() + ': ' + order[k]; }).join('\n');
+    var mailFb = document.getElementById('gs-mail-fallback');
+    if (mailFb) mailFb.href = 'mailto:' + ORDER_INBOX + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(mailBody);
+
+    /* Stripe payment link for this plan × guest range */
+    var link = (PAY_LINKS[GS.plan] || [])[GS.range] || '';
+    var payBtn = document.getElementById('gs-pay-btn');
+    var payNote = document.getElementById('gs-pay-note');
+    if (payBtn && payNote) {
+      if (link) {
+        var url = link + (email ? (link.indexOf('?') > -1 ? '&' : '?') + 'prefilled_email=' + encodeURIComponent(email) : '');
+        payBtn.style.display = 'inline-block';
+        payBtn.textContent = 'Pay creation fee · $' + price + ' →';
+        payBtn.onclick = function() { window.open(url, '_blank', 'noopener'); };
+        payNote.textContent = 'Secure checkout by Stripe. Your build slot is reserved the moment payment comes through.';
+      } else {
+        payBtn.style.display = 'none';
+        payNote.textContent = 'We\'ll send a secure Stripe payment link to ' + (email || 'your email') + ' within 2 hours to reserve your build slot.';
+      }
+    }
+    var wa = document.getElementById('gs-wa-link');
+    if (wa) {
+      if (WHATSAPP) {
+        wa.style.display = 'inline-block';
+        wa.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent('Hi! We just ordered the ' + order.plan + ' plan on guest-ly.com — ' + order.couple);
+      } else { wa.style.display = 'none'; }
+    }
+
     document.getElementById('gs-s2').style.display = 'none';
     document.getElementById('gs-s3').style.display = 'block';
     gsUpdateDots(3); window.scrollTo(0,0);
@@ -1586,7 +1662,7 @@ function ifSetTone(t) {
   ['warm','formal','fun'].forEach(function(n) { document.getElementById('if-tone-' + n).classList.toggle('on', n === t); });
 }
 function gv(id) { var el = document.getElementById(id); return el ? (el.value || '') : ''; }
-function ifBuildMailto() {
+function ifBuildMessage() {
   var p1 = gv('if-p1'), p2 = gv('if-p2');
   var lines = ['GUEST-LY — WEDDING INTAKE FORM','',
     'COUPLE: ' + ([p1,p2].filter(Boolean).join(' & ') || '—'),
@@ -1614,11 +1690,13 @@ function ifBuildMailto() {
   if (gv('if-faq2q')) lines.push('FAQ 2: ' + gv('if-faq2q') + ' → ' + (gv('if-faq2a') || '—'));
   lines.push('Extra: ' + (gv('if-extra') || '—'));
   var subj = 'Intake Form — ' + ([p1,p2].filter(Boolean).join(' & ') || 'New couple') + (gv('if-date') ? ' · ' + gv('if-date') : '');
-  return 'mailto:nicolas@guest-ly.com?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(lines.join('\n'));
+  return { subject: subj, body: lines.join('\n') };
 }
 function ifSubmit() {
-  IF.lastMailto = ifBuildMailto();
-  window.location.href = IF.lastMailto;
+  var msg = ifBuildMessage();
+  IF.lastMailto = 'mailto:' + ORDER_INBOX + '?subject=' + encodeURIComponent(msg.subject) + '&body=' + encodeURIComponent(msg.body);
+  /* submit directly to Guest-ly; fall back to the guest's mail app only if the network call fails */
+  sendNotification(msg.subject, {intake_form: msg.body}).catch(function() { window.location.href = IF.lastMailto; });
   document.getElementById('if-s4').style.display = 'none';
   document.getElementById('if-submitted').style.display = 'block';
   document.getElementById('if-thankyou-name').textContent = gv('if-p1') ? ', ' + gv('if-p1') : '';
