@@ -1,0 +1,51 @@
+/* Guest-ly design tokens — single source of truth for the cinematic experience.
+   Inherits the brand system from the existing landing page. */
+:root {
+  /* Color */
+  --ink: #0d1117;
+  --ink-soft: #161b22;
+  --ivory: #f7f3ec;
+  --ivory-warm: #fffdf9;
+  --gold: #c9a96e;
+  --gold-bright: #e2c892;
+  --gold-deep: #8a6d3e;
+  --blush: #e8c9c4;
+  --sage: #79705f;
+  --online: #4ade80;
+
+  /* Glass */
+  --glass-bg: rgba(247, 243, 236, 0.06);
+  --glass-border: rgba(201, 169, 110, 0.28);
+  --glass-highlight: rgba(255, 253, 249, 0.12);
+  --glass-blur: 18px;
+
+  /* Type */
+  --font-display: 'Playfair Display', serif;
+  --font-serif: 'EB Garamond', serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --text-hero: clamp(3rem, 9vw, 8.5rem);
+  --text-h2: clamp(2rem, 5vw, 4.25rem);
+  --text-h3: clamp(1.25rem, 2.2vw, 1.75rem);
+  --text-body: clamp(1rem, 1.15vw, 1.125rem);
+  --text-label: 0.72rem;
+
+  /* Spacing & rhythm */
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 2rem;
+  --space-4: 4rem;
+  --space-5: 8rem;
+  --section-h: 100vh;
+
+  /* Motion */
+  --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-slow: 1.2s;
+  --dur-med: 0.7s;
+  --dur-fast: 0.35s;
+
+  /* Elevation */
+  --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.55);
+  --radius-card: 20px;
+  --radius-pill: 999px;
+}

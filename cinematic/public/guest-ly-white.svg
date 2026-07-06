@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 108" width="920" height="216" role="img" aria-label="Guest-ly wordmark">
+  <title>Guest-ly</title>
+  <defs>
+    
+  </defs>
+  
+  <text x="12" y="84" font-family="&#39;Playfair Display&#39;, Georgia, &#39;Times New Roman&#39;, serif" font-size="90" font-weight="500" fill="#f7f3ec" letter-spacing="-0.5">Guest</text>
+  <rect x="280" y="40" width="16" height="16" rx="2" fill="#c9a96e" transform="rotate(45 288 48)"></rect>
+  <text x="310" y="84" font-family="&#39;Playfair Display&#39;, Georgia, &#39;Times New Roman&#39;, serif" font-size="90" font-weight="400" font-style="italic" fill="#f7f3ec">ly</text>
+</svg>
