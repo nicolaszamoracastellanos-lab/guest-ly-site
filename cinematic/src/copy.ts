@@ -14,6 +14,7 @@ export interface SiteCopy {
   nav: {
     links: { label: string; href: string }[];
     login: { label: string; href: string };
+    ops: { label: string; href: string };
     cta: string;
   };
   hero: {
@@ -182,7 +183,8 @@ const en: SiteCopy = {
       { label: 'Pricing', href: '#pricing' },
       { label: 'FAQ', href: '#faq' },
     ],
-    login: { label: 'Client Login', href: '#' },
+    login: { label: 'Client Login', href: 'https://app.guest-ly.com' },
+    ops: { label: 'Operator', href: 'https://guestly-ops.netlify.app/admin' },
     cta: 'Get started',
   },
 
@@ -585,7 +587,8 @@ const es: SiteCopy = {
       { label: 'Precios', href: '#pricing' },
       { label: 'Preguntas', href: '#faq' },
     ],
-    login: { label: 'Acceso clientes', href: '#' },
+    login: { label: 'Acceso clientes', href: 'https://app.guest-ly.com' },
+    ops: { label: 'Operador', href: 'https://guestly-ops.netlify.app/admin' },
     cta: 'Empezar',
   },
 

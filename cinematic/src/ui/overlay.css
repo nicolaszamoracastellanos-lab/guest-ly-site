@@ -516,6 +516,17 @@ body.js-ready .reveal.is-visible {
     color: var(--gold-bright);
   }
 
+  /* Operator link: for the internal operator, styled as a subtle secondary. */
+  .nav__login--ops {
+    border: 1px solid rgba(201, 169, 110, 0.4);
+    border-radius: 999px;
+    padding-inline: 0.85rem;
+    padding-block: 0.42rem;
+  }
+  .nav__login--ops:hover {
+    border-color: var(--gold-bright);
+  }
+
   .nav__burger,
   .nav__menu {
     display: none;
