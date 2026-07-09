@@ -61,9 +61,6 @@ export function Nav() {
         </nav>
 
         <div className="nav__actions">
-          <a className="nav__login nav__login--ops" href={t.nav.ops.href}>
-            {t.nav.ops.label}
-          </a>
           <a className="nav__login" href={t.nav.login.href}>
             {t.nav.login.label}
           </a>
@@ -93,9 +90,6 @@ export function Nav() {
               {l.label}
             </a>
           ))}
-          <a href={t.nav.ops.href} className="nav__menu-login nav__menu-login--ops" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>
-            {t.nav.ops.label}
-          </a>
           <a href={t.nav.login.href} className="nav__menu-login" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>
             {t.nav.login.label}
           </a>
