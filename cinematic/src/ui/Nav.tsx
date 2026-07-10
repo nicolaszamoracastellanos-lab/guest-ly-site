@@ -70,6 +70,10 @@ export function Nav() {
           </button>
         </div>
 
+        {/* Always-visible language switch on phones; desktop shows the one
+            in nav__actions instead. */}
+        <LangToggle className="lang-toggle--bar" />
+
         <button
           type="button"
           className={menuOpen ? 'nav__burger is-open' : 'nav__burger'}

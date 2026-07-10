@@ -363,7 +363,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .nav__burger {
-  margin-left: auto;
+  margin-left: 0;
   width: 44px;
   height: 44px;
   display: flex;
@@ -477,6 +477,20 @@ body.js-ready .reveal.is-visible {
   min-width: 56px;
 }
 
+/* The always-visible phone switch: sits between the logo and the burger. */
+.lang-toggle--bar {
+  margin-left: auto;
+  margin-right: 0.4rem;
+  background: rgba(13, 17, 23, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+.lang-toggle--bar button {
+  min-width: 40px;
+  min-height: 36px;
+  padding: 0.25rem 0.6rem;
+}
+
 @media (min-width: 881px) {
   .nav__inner {
     padding-block: 0.75rem;
@@ -528,7 +542,8 @@ body.js-ready .reveal.is-visible {
   }
 
   .nav__burger,
-  .nav__menu {
+  .nav__menu,
+  .lang-toggle--bar {
     display: none;
   }
 }
