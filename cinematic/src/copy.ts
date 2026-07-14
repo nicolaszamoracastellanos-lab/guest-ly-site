@@ -204,7 +204,7 @@ const en: SiteCopy = {
   },
 
   hero: {
-    badge: 'Born at a real 150-guest wedding',
+    badge: 'Born at a real 400-guest wedding',
     kicker: 'AI Concierge · Weddings & Events',
     titleLines: ['Your guests,', 'answered.', 'Always.'],
     accentIndex: 1,
@@ -479,14 +479,14 @@ const en: SiteCopy = {
     ],
     note: 'No contracts. Cancel hosting anytime — your bot simply goes offline.',
     valueLine:
-      'For a 150-guest wedding, Standard works out to about $2.30 per guest — less than a single printed menu.',
+      'For a 400-guest wedding, Standard works out to about $1.12 per guest — less than a single printed menu.',
   },
 
   testimonials: {
     no: '№ 07',
     kicker: 'Real weddings',
     title: 'Couples who stopped\nanswering messages.',
-    intro: 'Guest-ly was born from a real wedding with 150+ guests, many international. These are their words.',
+    intro: 'Guest-ly was born from a real wedding with 400 guests, many international. These are their words.',
     items: [
       {
         quote:
@@ -511,7 +511,7 @@ const en: SiteCopy = {
       },
     ],
     badges: [
-      'Born at a real 150+ guest wedding',
+      'Born at a real 400-guest wedding',
       'Guests from 6 countries',
       'Answers in 3 languages, automatically',
     ],
@@ -661,7 +661,7 @@ const es: SiteCopy = {
   },
 
   hero: {
-    badge: 'Nacido en una boda real de 150 invitados',
+    badge: 'Nacido en una boda real de 400 invitados',
     kicker: 'Asistente IA · Bodas y Eventos',
     titleLines: ['Tus invitados,', 'respondidos.', 'Siempre.'],
     accentIndex: 1,
@@ -936,14 +936,14 @@ const es: SiteCopy = {
     ],
     note: 'Sin contratos. Cancela el hosting cuando quieras — tu bot simplemente se desactiva.',
     valueLine:
-      'Para una boda de 150 invitados, el plan Estándar sale a unos $2.30 por invitado — menos que un solo menú impreso.',
+      'Para una boda de 400 invitados, el plan Estándar sale a unos $1.12 por invitado — menos que un solo menú impreso.',
   },
 
   testimonials: {
     no: '№ 07',
     kicker: 'Bodas reales',
     title: 'Parejas que dejaron de\nresponder mensajes.',
-    intro: 'Guest-ly nació de una boda real con más de 150 invitados, muchos del exterior. Estas son sus palabras.',
+    intro: 'Guest-ly nació de una boda real con 400 invitados, muchos del exterior. Estas son sus palabras.',
     items: [
       {
         quote:
@@ -968,7 +968,7 @@ const es: SiteCopy = {
       },
     ],
     badges: [
-      'Nacido en una boda real de más de 150 invitados',
+      'Nacido en una boda real de 400 invitados',
       'Invitados de 6 países',
       'Respuestas en 3 idiomas, automáticas',
     ],
