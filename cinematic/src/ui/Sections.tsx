@@ -116,6 +116,40 @@ export function Included() {
   );
 }
 
+/* ------------------------------------------------- The couple portal */
+export function Platform() {
+  const { t } = useLang();
+  const pl = t.platform;
+  return (
+    <section id="platform" className="section">
+      <div className="container">
+        <SectionHeader no={pl.no} kicker={pl.kicker} title={pl.title} intro={pl.intro} />
+        <div className="feature-grid">
+          {pl.items.map((item) => (
+            <GlassCard key={item.title} className="feature-card reveal">
+              <h3 className="card-title card-title--sm">{item.title}</h3>
+              <p className="card-body">{item.body}</p>
+            </GlassCard>
+          ))}
+        </div>
+        <div className="glass coord reveal">
+          <span className="badge coord__badge">{pl.coordinator.badge}</span>
+          <h3 className="coord__title">{pl.coordinator.title}</h3>
+          <p className="coord__body">{pl.coordinator.body}</p>
+          <div className="coord__examples">
+            {pl.coordinator.examples.map((ex) => (
+              <span key={ex} className="badge-chip coord__chip">
+                {ex}
+              </span>
+            ))}
+          </div>
+          <p className="coord__note">{pl.coordinator.note}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ------------------------------------------------------- The difference */
 export function Difference() {
   const { t } = useLang();

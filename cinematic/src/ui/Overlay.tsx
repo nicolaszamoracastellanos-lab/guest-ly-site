@@ -4,7 +4,7 @@ import { WizardContext } from './WizardContext';
 import type { PlanId, WizardApi } from './WizardContext';
 import { Nav } from './Nav';
 import { Hero } from './Hero';
-import { Channels, How, Included, Difference, Testimonials, FinalCta } from './Sections';
+import { Channels, How, Included, Platform, Difference, Testimonials, FinalCta } from './Sections';
 import { Pricing } from './Pricing';
 import { Faq } from './Faq';
 import { Footer } from './Footer';
@@ -61,6 +61,7 @@ export function Overlay() {
             <Channels />
             <How />
             <Included />
+            <Platform />
             <Difference />
             <Pricing />
             <Testimonials />

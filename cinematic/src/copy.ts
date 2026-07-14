@@ -1,6 +1,8 @@
-/* Complete site copy for the Guest-ly cinematic experience.
-   Transcribed verbatim from the production landing page (index.html) — EN and ES.
-   Brand is always written "Guest-ly". Multi-line headings use '\n'. */
+/* Complete site copy for the Guest-ly cinematic experience — EN and ES.
+   Originally transcribed from the production landing page; updated Jul 2026
+   for the full platform (couple portal, wedding website, per-person RSVPs,
+   AI Coordinator add-on). Brand is always written "Guest-ly". Multi-line
+   headings use '\n'. */
 
 export type Locale = 'en' | 'es';
 
@@ -58,6 +60,20 @@ export interface SiteCopy {
     title: string;
     intro: string;
     items: { title: string; body: string }[];
+  };
+  platform: {
+    no: string;
+    kicker: string;
+    title: string;
+    intro: string;
+    items: { title: string; body: string }[];
+    coordinator: {
+      badge: string;
+      title: string;
+      body: string;
+      examples: string[];
+      note: string;
+    };
   };
   compare: {
     no: string;
@@ -173,11 +189,12 @@ const marquee: string[] = [
 ];
 
 const en: SiteCopy = {
-  meta: { title: 'Guest-ly — AI Concierge for Weddings & Events' },
+  meta: { title: 'Guest-ly — AI Concierge & Wedding Platform' },
 
   nav: {
     links: [
       { label: 'Channels', href: '#channels' },
+      { label: 'Your portal', href: '#platform' },
       { label: 'How it works', href: '#how' },
       { label: 'Pricing', href: '#pricing' },
       { label: 'FAQ', href: '#faq' },
@@ -191,13 +208,13 @@ const en: SiteCopy = {
     kicker: 'AI Concierge · Weddings & Events',
     titleLines: ['Your guests,', 'answered.', 'Always.'],
     accentIndex: 1,
-    sub: 'Stop answering the same questions 200 times. Guest-ly is an AI concierge trained on your wedding — answering every guest, on every channel, in their own language, 24/7.',
+    sub: 'Stop answering the same questions 200 times. Guest-ly pairs a 24/7 AI concierge for your guests with a wedding website, per-person RSVPs, and a private portal where you run it all — even by chatting with your own AI Coordinator.',
     primary: 'Get my concierge',
     secondary: 'See how it works',
     stats: [
       { value: '24/7', label: 'Always on' },
       { value: '30+', label: 'Languages' },
-      { value: '4', label: 'Channels' },
+      { value: '2', label: 'AI assistants' },
       { value: '~7d', label: 'To launch' },
     ],
     chat: {
@@ -269,12 +286,12 @@ const en: SiteCopy = {
       {
         n: '03',
         title: 'You review & approve',
-        body: "We send a private preview. Ask it questions as a guest would. Request changes until it's perfect.",
+        body: 'We send a private preview and your portal login. Test it as a guest would, tweak the Wedding Brain yourself, publish instantly.',
       },
       {
         n: '04',
         title: 'Share with guests',
-        body: 'Share a link, a WhatsApp number, or a Telegram handle — guests connect on whatever app they already use.',
+        body: 'Share your wedding website, a chat link, or a WhatsApp number — guests RSVP and ask away on whatever they already use.',
       },
     ],
     cta: 'Start step one',
@@ -296,16 +313,16 @@ const en: SiteCopy = {
         body: 'Visa info, currency, weather, transport, local tips — built in for guests flying from abroad.',
       },
       {
-        title: 'Guest Broadcasts',
-        body: 'Send updates to all guests across all channels in one click. Schedule changes, reminders, countdowns.',
+        title: 'Wedding Website & Registry',
+        body: 'A beautiful bilingual wedding site with your story, itinerary, dress code and registry — with an elegant RSVP flow built in.',
       },
       {
-        title: 'RSVP Tracking',
-        body: 'Guests confirm attendance through the bot on any channel. All responses collected in one place.',
+        title: 'Per-Person, Per-Event RSVPs',
+        body: 'Guests confirm each person for each event — welcome cocktail, ceremony, brunch — through the bot or the website. You see exactly who comes to what.',
       },
       {
-        title: '~7-Day Delivery',
-        body: 'From completed form to live bot in about a week. Need it faster? Rush delivery available.',
+        title: 'QR Guest Passes',
+        body: 'Every guest gets a personal QR pass for a smooth, elegant check-in at the door.',
       },
       {
         title: 'Zero Setup for You',
@@ -314,8 +331,54 @@ const en: SiteCopy = {
     ],
   },
 
-  compare: {
+  platform: {
     no: '№ 04',
+    kicker: 'Your portal',
+    title: 'You are in control.\nAll of it, in one place.',
+    intro:
+      'Every Guest-ly wedding includes a private couple portal at app.guest-ly.com — live, self-serve, and made for the couch. No calls, no tickets, no waiting.',
+    items: [
+      {
+        title: 'Wedding Brain',
+        body: 'Everything your concierge knows, editable by you. Change a hotel tip, preview the answer, publish instantly — with version history and one-click rollback.',
+      },
+      {
+        title: 'Live Dashboard',
+        body: 'Every question your guests ask, the topics they care about, RSVP momentum, and the gaps your Brain has not covered yet — all at a glance.',
+      },
+      {
+        title: 'Guest List',
+        body: 'Import from Excel in one click. Tags, languages, party members, plus-ones — one clean list that feeds everything else.',
+      },
+      {
+        title: 'RSVP Board',
+        body: 'Every response with per-event detail, automatic reminders to non-responders on the days you choose, and a Monday digest in your inbox.',
+      },
+      {
+        title: 'Broadcasts',
+        body: "Message all guests, only non-responders, or one group — on WhatsApp, in each guest's own language, from one screen.",
+      },
+      {
+        title: 'Website Studio',
+        body: 'Edit your wedding site and registry live: sections, themes, photos, custom RSVP questions. Publish when it is perfect.',
+      },
+    ],
+    coordinator: {
+      badge: 'New · AI Coordinator add-on',
+      title: 'Meet your Personal Coordinator.',
+      body: 'The newest member of your wedding team: a private AI coordinator inside your portal. Tell it what changed, in plain English or Spanish, and it handles the guest list, the RSVPs, the knowledge base, and the reminders — with the full picture of your wedding always in mind.',
+      examples: [
+        '"I forgot to add Lucía — friend of the bride, plus one."',
+        '"Marco just told me he can\'t make it."',
+        '"Add the new hotel to the travel tips."',
+        '"Remind everyone who hasn\'t responded yet."',
+      ],
+      note: 'Every change shows you a confirmation card first — nothing moves without your approval. Available on Standard & Premium.',
+    },
+  },
+
+  compare: {
+    no: '№ 05',
     kicker: 'The difference',
     title: 'The week before your wedding,\ntwo ways.',
     without: {
@@ -337,18 +400,19 @@ const en: SiteCopy = {
         'The 2am guest gets a perfect answer — you stay asleep',
         'One source of truth, trained on your wedding alone',
         'Guests answered in their own language, automatically',
-        'A live dashboard in your couple portal: every question, RSVP signal, and gap, visible at a glance',
+        'A live portal: every question, RSVP and gap visible at a glance',
+        '"Marco can\'t make it" — you tell your AI Coordinator, and it is handled',
         'Your final week spent being celebrated, not consulted',
       ],
     },
   },
 
   pricing: {
-    no: '№ 05',
+    no: '№ 06',
     kicker: 'Pricing',
     title: 'Build it once.\nKeep it for pennies.',
     intro:
-      "A one-time creation fee builds your bot — setup, design, and your first 3 months of hosting included. After that, a small monthly hosting fee keeps it live. Priced by guest count, because that's what's fair.",
+      "A one-time creation fee builds everything — concierge, website, portal, design, and your first 3 months of hosting. After that, a small monthly fee keeps it live. Priced by guest count, because that's what's fair.",
     ranges: ['0–100 guests', '100–300', '300–500', '500+'],
     rangeSub: 'Select your approximate guest count',
     popularTag: '✦ Most popular',
@@ -361,9 +425,10 @@ const en: SiteCopy = {
         feeNote: 'Creation fee · one-time',
         hosting: 'then $5/mo hosting after 3 months',
         features: [
-          'AI web chat bot, custom URL',
+          'AI web concierge, custom URL',
           '30+ languages, auto-detected',
-          'Venue, schedule, hotels & more',
+          'Couple portal with live analytics',
+          'Wedding Brain — edit & publish yourself',
           '1 round of revisions',
           '7-day post-delivery support',
         ],
@@ -378,11 +443,11 @@ const en: SiteCopy = {
         hosting: 'then $12/mo hosting after 3 months',
         features: [
           'Everything in Basic',
-          'WhatsApp, SMS & Telegram bots',
+          'WhatsApp, SMS & Telegram concierge',
+          'Bilingual wedding website with RSVP',
+          "Broadcasts in each guest's language",
           'International guest travel guide',
-          'Mass broadcast to all guests',
-          'Admin panel — view all conversations',
-          '2 rounds of revisions',
+          'AI Coordinator add-on available',
           '30-day post-wedding support',
         ],
         cta: 'Get started →',
@@ -397,19 +462,19 @@ const en: SiteCopy = {
         hosting: 'then $19/mo hosting after 3 months',
         features: [
           'Everything in Standard',
-          'Your own guest dashboard',
-          'RSVP tracking across all channels',
+          'Per-person, per-event RSVP tracking',
+          'Automatic RSVP reminders & digest',
+          'QR guest passes & registry page',
           'Priority build queue',
           'Unlimited revisions until wedding',
           '60-day post-wedding support',
-          '1 data update included',
         ],
         cta: 'Get started →',
       },
     ],
     addons: [
+      { price: 'New', label: 'AI Coordinator — run your wedding by chat · Standard & Premium · contact us' },
       { price: '+$100', label: 'Rush delivery — live in under 7 days' },
-      { price: '+$25', label: 'Extra data update, any time' },
       { price: '$0', label: 'First 3 months of hosting — always included' },
     ],
     note: 'No contracts. Cancel hosting anytime — your bot simply goes offline.',
@@ -418,7 +483,7 @@ const en: SiteCopy = {
   },
 
   testimonials: {
-    no: '№ 06',
+    no: '№ 07',
     kicker: 'Real weddings',
     title: 'Couples who stopped\nanswering messages.',
     intro: 'Guest-ly was born from a real wedding with 150+ guests, many international. These are their words.',
@@ -453,7 +518,7 @@ const en: SiteCopy = {
   },
 
   faq: {
-    no: '№ 07',
+    no: '№ 08',
     kicker: 'Questions',
     title: 'You probably have\na few questions.',
     human: {
@@ -476,7 +541,11 @@ const en: SiteCopy = {
       },
       {
         q: 'What if my wedding details change?',
-        a: 'All plans include at least one round of revisions. Premium includes 1 data update and unlimited revisions until your wedding. Additional updates are $25 each.',
+        a: "Change them yourself, instantly. Your portal includes the Wedding Brain — everything your concierge knows. Edit a tip, preview the bot's answer, publish in one click, roll back anytime. Prefer us to do it? Revision rounds are still included in every plan.",
+      },
+      {
+        q: 'What is the AI Coordinator?',
+        a: 'A private AI assistant inside your portal that manages your wedding by chat: "Add Lucía, friend of the bride, plus one." "Marco can\'t make it." "Remind non-responders." It knows your live numbers, proposes each change on a confirmation card, and nothing happens until you approve — broadcasts even require typing SEND. Available as an add-on on Standard and Premium.',
       },
       {
         q: 'What languages does the bot speak?',
@@ -503,11 +572,12 @@ const en: SiteCopy = {
 
   footer: {
     blurb:
-      'An AI concierge for weddings & events — every guest answered, every channel covered, every language spoken.',
+      'The AI-powered wedding platform — a concierge for your guests, a website with per-person RSVPs, and a portal with its own AI Coordinator for you.',
     explore: {
       title: 'Explore',
       links: [
         { label: 'Channels', href: '#channels' },
+        { label: 'Your portal', href: '#platform' },
         { label: 'How it works', href: '#how' },
         { label: 'Pricing', href: '#pricing' },
         { label: 'FAQ', href: '#faq' },
@@ -519,7 +589,7 @@ const en: SiteCopy = {
       startOrder: 'Start your order',
       intakeForm: 'Intake form',
     },
-    copyright: '© 2026 Guest-ly · AI Concierge for Weddings & Events',
+    copyright: '© 2026 Guest-ly · AI Concierge & Wedding Platform',
     crafted: 'Crafted with ✦ for unforgettable celebrations',
   },
 
@@ -576,11 +646,12 @@ const en: SiteCopy = {
 };
 
 const es: SiteCopy = {
-  meta: { title: 'Guest-ly — Asistente IA para Bodas y Eventos' },
+  meta: { title: 'Guest-ly — Asistente IA y Plataforma para Bodas' },
 
   nav: {
     links: [
       { label: 'Canales', href: '#channels' },
+      { label: 'Tu portal', href: '#platform' },
       { label: 'Cómo funciona', href: '#how' },
       { label: 'Precios', href: '#pricing' },
       { label: 'Preguntas', href: '#faq' },
@@ -594,13 +665,13 @@ const es: SiteCopy = {
     kicker: 'Asistente IA · Bodas y Eventos',
     titleLines: ['Tus invitados,', 'respondidos.', 'Siempre.'],
     accentIndex: 1,
-    sub: 'Deja de responder las mismas preguntas 200 veces. Guest-ly es un asistente IA entrenado en tu boda — respondiendo a cada invitado, en cada canal, en su idioma, 24/7.',
+    sub: 'Deja de responder las mismas preguntas 200 veces. Guest-ly combina un asistente IA 24/7 para tus invitados con una página de boda, RSVPs por persona y un portal privado donde manejas todo — incluso conversando con tu propio Coordinador IA.',
     primary: 'Obtener mi asistente',
     secondary: 'Cómo funciona',
     stats: [
       { value: '24/7', label: 'Siempre activo' },
       { value: '30+', label: 'Idiomas' },
-      { value: '4', label: 'Canales' },
+      { value: '2', label: 'Asistentes IA' },
       { value: '~7d', label: 'Para lanzar' },
     ],
     chat: {
@@ -672,12 +743,12 @@ const es: SiteCopy = {
       {
         n: '03',
         title: 'Revisas y apruebas',
-        body: 'Te enviamos una vista previa privada. Pruébalo como lo haría un invitado. Pide cambios hasta que sea perfecto.',
+        body: 'Te enviamos una vista previa privada y tu acceso al portal. Pruébalo como invitado, ajusta el Wedding Brain tú mismo, publica al instante.',
       },
       {
         n: '04',
         title: 'Compártelo',
-        body: 'Comparte un link, un número de WhatsApp o un bot de Telegram — tus invitados eligen el canal que ya usan.',
+        body: 'Comparte tu página de boda, un link de chat o un número de WhatsApp — tus invitados confirman y preguntan por donde ya usan.',
       },
     ],
     cta: 'Empezar paso uno',
@@ -699,16 +770,16 @@ const es: SiteCopy = {
         body: 'Visas, moneda, clima, transporte, consejos locales — incluido para invitados que vienen del exterior.',
       },
       {
-        title: 'Mensajes Masivos',
-        body: 'Envía actualizaciones a todos los invitados por todos los canales con un click. Cambios, recordatorios, cuentas regresivas.',
+        title: 'Página de Boda y Lista de Regalos',
+        body: 'Una hermosa página bilingüe con su historia, itinerario, dress code y lista de regalos — con un RSVP elegante integrado.',
       },
       {
-        title: 'Seguimiento de RSVP',
-        body: 'Los invitados confirman asistencia en el bot, en cualquier canal. Todas las respuestas en un solo lugar.',
+        title: 'RSVP por Persona y por Evento',
+        body: 'Los invitados confirman cada persona para cada evento — cóctel, ceremonia, brunch — por el bot o la página. Sabes exactamente quién va a qué.',
       },
       {
-        title: 'Entrega en ~7 Días',
-        body: 'Del formulario completo al bot activo en una semana. ¿Con prisa? Entrega urgente disponible.',
+        title: 'Pases QR de Invitado',
+        body: 'Cada invitado recibe un pase QR personal para un check-in fluido y elegante en la puerta.',
       },
       {
         title: 'Cero Configuración',
@@ -717,8 +788,54 @@ const es: SiteCopy = {
     ],
   },
 
-  compare: {
+  platform: {
     no: '№ 04',
+    kicker: 'Tu portal',
+    title: 'Tú tienes el control.\nTodo, en un solo lugar.',
+    intro:
+      'Cada boda Guest-ly incluye un portal privado de pareja en app.guest-ly.com — en vivo, autogestionado y hecho para el sofá. Sin llamadas, sin tickets, sin esperas.',
+    items: [
+      {
+        title: 'Wedding Brain',
+        body: 'Todo lo que sabe tu asistente, editable por ti. Cambia un consejo de hotel, prueba la respuesta, publica al instante — con historial de versiones y rollback.',
+      },
+      {
+        title: 'Panel en Vivo',
+        body: 'Cada pregunta de tus invitados, los temas que más importan, el ritmo de RSVPs y los vacíos que tu Brain aún no cubre — de un vistazo.',
+      },
+      {
+        title: 'Lista de Invitados',
+        body: 'Importa desde Excel en un click. Etiquetas, idiomas, acompañantes, plus-ones — una sola lista que alimenta todo lo demás.',
+      },
+      {
+        title: 'Tablero de RSVPs',
+        body: 'Cada respuesta con detalle por evento, recordatorios automáticos a quienes no responden en los días que elijas, y un resumen cada lunes en tu correo.',
+      },
+      {
+        title: 'Difusiones',
+        body: 'Escribe a todos, solo a quienes no respondieron, o a un grupo — por WhatsApp, en el idioma de cada invitado, desde una sola pantalla.',
+      },
+      {
+        title: 'Estudio de Página Web',
+        body: 'Edita tu página y tu lista de regalos en vivo: secciones, temas, fotos, preguntas de RSVP personalizadas. Publica cuando esté perfecta.',
+      },
+    ],
+    coordinator: {
+      badge: 'Nuevo · Add-on Coordinador IA',
+      title: 'Conoce a tu Coordinador Personal.',
+      body: 'El nuevo integrante de tu equipo de boda: un coordinador IA privado dentro de tu portal. Cuéntale qué cambió, en español o inglés, y él se encarga de la lista, los RSVPs, la base de conocimiento y los recordatorios — siempre con el panorama completo de tu boda.',
+      examples: [
+        '"Me olvidé de agregar a Lucía — amiga de la novia, con acompañante."',
+        '"Marco me avisó que no puede venir."',
+        '"Agrega el hotel nuevo a los consejos de viaje."',
+        '"Recuérdales a los que aún no responden."',
+      ],
+      note: 'Cada cambio te muestra primero una tarjeta de confirmación — nada se mueve sin tu aprobación. Disponible en Estándar y Premium.',
+    },
+  },
+
+  compare: {
+    no: '№ 05',
     kicker: 'La diferencia',
     title: 'La semana antes de tu boda,\ndos versiones.',
     without: {
@@ -740,18 +857,19 @@ const es: SiteCopy = {
         'El invitado de las 2am recibe una respuesta perfecta — tú sigues durmiendo',
         'Una sola fuente de verdad, entrenada solo con tu boda',
         'Invitados atendidos en su propio idioma, automáticamente',
-        'Un panel en vivo en tu portal de pareja: cada pregunta, señal de RSVP y pendiente, visible de un vistazo',
+        'Un portal en vivo: cada pregunta, RSVP y pendiente visible de un vistazo',
+        '"Marco no puede venir" — se lo dices a tu Coordinador IA y queda resuelto',
         'Tu última semana celebrando, no respondiendo',
       ],
     },
   },
 
   pricing: {
-    no: '№ 05',
+    no: '№ 06',
     kicker: 'Precios',
     title: 'Créalo una vez.\nMantenlo por centavos.',
     intro:
-      'Una tarifa única de creación construye tu bot — configuración, diseño y tus primeros 3 meses de hosting incluidos. Después, una pequeña cuota mensual lo mantiene activo. El precio varía por número de invitados, porque así es justo.',
+      'Una tarifa única de creación lo construye todo — asistente, página de boda, portal, diseño y tus primeros 3 meses de hosting. Después, una pequeña cuota mensual lo mantiene activo. El precio varía por número de invitados, porque así es justo.',
     ranges: ['0–100 invitados', '100–300', '300–500', '500+'],
     rangeSub: 'Selecciona tu número aproximado de invitados',
     popularTag: '✦ Más popular',
@@ -764,9 +882,10 @@ const es: SiteCopy = {
         feeNote: 'Tarifa de creación · pago único',
         hosting: 'luego $5/mes de hosting tras 3 meses',
         features: [
-          'Bot web con IA, URL personalizada',
+          'Asistente web con IA, URL personalizada',
           'Más de 30 idiomas, detección automática',
-          'Lugar, horarios, hoteles y más',
+          'Portal de pareja con analíticas en vivo',
+          'Wedding Brain — edita y publica tú mismo',
           '1 ronda de revisiones',
           'Soporte 7 días post-entrega',
         ],
@@ -781,11 +900,11 @@ const es: SiteCopy = {
         hosting: 'luego $12/mes de hosting tras 3 meses',
         features: [
           'Todo lo del Básico',
-          'Bots de WhatsApp, SMS y Telegram',
+          'Asistente en WhatsApp, SMS y Telegram',
+          'Página de boda bilingüe con RSVP',
+          'Difusiones en el idioma de cada invitado',
           'Guía para invitados del exterior',
-          'Mensajes masivos a todos los invitados',
-          'Panel admin para ver conversaciones',
-          '2 rondas de revisiones',
+          'Add-on Coordinador IA disponible',
           'Soporte 30 días post-boda',
         ],
         cta: 'Empezar →',
@@ -800,19 +919,19 @@ const es: SiteCopy = {
         hosting: 'luego $19/mes de hosting tras 3 meses',
         features: [
           'Todo lo del Estándar',
-          'Panel propio para tus invitados',
-          'RSVP registrados en todos los canales',
+          'RSVP por persona y por evento',
+          'Recordatorios automáticos y resumen semanal',
+          'Pases QR y página de regalos',
           'Prioridad en la cola de creación',
           'Revisiones ilimitadas hasta la boda',
           'Soporte 60 días post-boda',
-          '1 actualización de datos incluida',
         ],
         cta: 'Empezar →',
       },
     ],
     addons: [
+      { price: 'Nuevo', label: 'Coordinador IA — maneja tu boda por chat · Estándar y Premium · contáctanos' },
       { price: '+$100', label: 'Entrega urgente — activo en menos de 7 días' },
-      { price: '+$25', label: 'Actualización de datos extra, cuando sea' },
       { price: '$0', label: 'Primeros 3 meses de hosting — siempre incluidos' },
     ],
     note: 'Sin contratos. Cancela el hosting cuando quieras — tu bot simplemente se desactiva.',
@@ -821,7 +940,7 @@ const es: SiteCopy = {
   },
 
   testimonials: {
-    no: '№ 06',
+    no: '№ 07',
     kicker: 'Bodas reales',
     title: 'Parejas que dejaron de\nresponder mensajes.',
     intro: 'Guest-ly nació de una boda real con más de 150 invitados, muchos del exterior. Estas son sus palabras.',
@@ -856,7 +975,7 @@ const es: SiteCopy = {
   },
 
   faq: {
-    no: '№ 07',
+    no: '№ 08',
     kicker: 'Preguntas',
     title: 'Probablemente tienes\nalgunas preguntas.',
     human: {
@@ -879,7 +998,11 @@ const es: SiteCopy = {
       },
       {
         q: '¿Qué pasa si cambian los datos de mi boda?',
-        a: 'Todos los planes incluyen al menos una ronda de revisiones. Premium incluye 1 actualización de datos y revisiones ilimitadas hasta la boda. Actualizaciones adicionales cuestan $25 cada una.',
+        a: 'Los cambias tú mismo, al instante. Tu portal incluye el Wedding Brain — todo lo que sabe tu asistente. Edita un consejo, prueba la respuesta del bot, publica en un click y vuelve atrás cuando quieras. ¿Prefieres que lo hagamos nosotros? Las rondas de revisión siguen incluidas en todos los planes.',
+      },
+      {
+        q: '¿Qué es el Coordinador IA?',
+        a: 'Un asistente IA privado dentro de tu portal que maneja tu boda por chat: "Agrega a Lucía, amiga de la novia, con acompañante." "Marco no puede venir." "Recuérdales a los pendientes." Conoce tus números en vivo, propone cada cambio en una tarjeta de confirmación y nada ocurre hasta que apruebas — las difusiones incluso requieren escribir ENVIAR. Disponible como add-on en Estándar y Premium.',
       },
       {
         q: '¿En qué idiomas responde el bot?',
@@ -906,11 +1029,12 @@ const es: SiteCopy = {
 
   footer: {
     blurb:
-      'Un asistente IA para bodas y eventos — cada invitado respondido, cada canal cubierto, cada idioma hablado.',
+      'La plataforma de bodas con IA — un asistente para tus invitados, una página con RSVP por persona, y un portal con su propio Coordinador IA para ti.',
     explore: {
       title: 'Explorar',
       links: [
         { label: 'Canales', href: '#channels' },
+        { label: 'Tu portal', href: '#platform' },
         { label: 'Cómo funciona', href: '#how' },
         { label: 'Precios', href: '#pricing' },
         { label: 'Preguntas', href: '#faq' },
@@ -922,7 +1046,7 @@ const es: SiteCopy = {
       startOrder: 'Empieza tu pedido',
       intakeForm: 'Formulario de boda',
     },
-    copyright: '© 2026 Guest-ly · Asistente IA para Bodas y Eventos',
+    copyright: '© 2026 Guest-ly · Asistente IA y Plataforma para Bodas',
     crafted: 'Hecho con ✦ para celebraciones inolvidables',
   },
 
