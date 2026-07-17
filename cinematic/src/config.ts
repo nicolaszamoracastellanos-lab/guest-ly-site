@@ -1,14 +1,14 @@
 /* ── PAYMENTS & NOTIFICATIONS ──
    Mirrors the production index.html config block.
    Paste Stripe Payment Link URLs below — see STRIPE-SETUP.md in the repo root
-   for the click-by-click guide. One URL per plan × guest range, in this order:
-   [0–100, 100–300, 300–500, 500+]. Leave '' until a link exists; the wizard
-   falls back to "we'll send you a payment link" so nothing breaks. */
+   for the click-by-click guide. One URL per plan (each plan is a single
+   one-time price). Leave '' until a link exists; the wizard falls back to
+   "we'll send you a payment link" so nothing breaks. */
 
-export const PAY_LINKS: Record<'basic' | 'standard' | 'premium', [string, string, string, string]> = {
-  basic: ['', '', '', ''],
-  standard: ['', '', '', ''],
-  premium: ['', '', '', ''],
+export const PAY_LINKS: Record<'essentials' | 'signature' | 'grande', string> = {
+  essentials: '',
+  signature: '',
+  grande: '',
 };
 
 /* Receives order notifications via FormSubmit (same inbox as production). */

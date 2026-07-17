@@ -14,14 +14,13 @@ import './overlay.css';
 interface WizardRequest {
   id: number;
   plan: PlanId;
-  range: number;
 }
 
 export function Overlay() {
   const [wizard, setWizard] = useState<WizardRequest | null>(null);
 
-  const openWizard = useCallback((plan: PlanId = 'standard', range = 0) => {
-    setWizard((prev) => ({ id: (prev?.id ?? 0) + 1, plan, range }));
+  const openWizard = useCallback((plan: PlanId = 'signature') => {
+    setWizard((prev) => ({ id: (prev?.id ?? 0) + 1, plan }));
   }, []);
   const closeWizard = useCallback(() => setWizard(null), []);
   const wizardApi = useMemo<WizardApi>(() => ({ open: openWizard }), [openWizard]);
@@ -69,9 +68,7 @@ export function Overlay() {
             <FinalCta />
           </main>
           <Footer />
-          {wizard && (
-            <Wizard key={wizard.id} initialPlan={wizard.plan} initialRange={wizard.range} onClose={closeWizard} />
-          )}
+          {wizard && <Wizard key={wizard.id} initialPlan={wizard.plan} onClose={closeWizard} />}
         </div>
       </WizardContext.Provider>
     </LanguageProvider>

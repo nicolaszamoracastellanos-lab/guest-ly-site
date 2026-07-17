@@ -6,7 +6,6 @@ import { ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
 
 interface WizardProps {
   initialPlan: PlanId;
-  initialRange: number;
   onClose: () => void;
 }
 
@@ -23,21 +22,20 @@ interface Fields {
 const EMPTY_FIELDS: Fields = { name: '', partner: '', email: '', phone: '', date: '', location: '', notes: '' };
 
 /* 3-step order wizard, mirroring the production gs-* modal:
-   1 Plan (shared price matrix) → 2 Details (form, no network) → 3 Confirm
+   1 Plan (shared one-time price list) → 2 Details (form, no network) → 3 Confirm
    (summary + prefilled mailto draft — matches production's email-order flow). */
-export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
+export function Wizard({ initialPlan, onClose }: WizardProps) {
   const { t } = useLang();
   const w = t.wizard;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [plan, setPlan] = useState<PlanId>(initialPlan);
-  const [range, setRange] = useState(() => Math.min(Math.max(initialRange, 0), 3));
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const plans = t.pricing.plans;
   const selected = plans.find((p) => p.id === plan) ?? plans[1];
-  const price = selected.prices[range];
+  const price = selected.price;
 
   /* Scroll lock + ESC while the modal is mounted. */
   useEffect(() => {
@@ -60,7 +58,6 @@ export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
   const setField = (key: keyof Fields) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFields((v) => ({ ...v, [key]: e.target.value }));
 
-  const rangeLabel = w.step1.ranges[range];
   const couple = [fields.name, fields.partner].filter(Boolean).join(' & ') || '—';
   const continueLabel = w.continueLabel.replace('{plan}', selected.name).replace('{price}', `$${price}`);
 
@@ -72,12 +69,11 @@ export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
       phone: fields.phone || '—',
       wedding_date: fields.date || '—',
       location: fields.location || '—',
-      plan: `${selected.name} · ${rangeLabel}`,
-      creation_fee: `$${price}`,
-      hosting: selected.hosting,
+      plan: `${selected.name} · ${selected.guests}`,
+      price: `$${price} · one-time`,
       notes: fields.notes || '—',
     }),
-    [couple, fields, selected, rangeLabel, price],
+    [couple, fields, selected, price],
   );
   const orderSubject = `New order — ${couple} · ${selected.name} · $${price}`;
 
@@ -94,8 +90,8 @@ export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
     return `mailto:${ORDER_INBOX}?subject=${encodeURIComponent(orderSubject)}&body=${encodeURIComponent(body)}`;
   }, [order, orderSubject]);
 
-  /* Stripe payment link for this plan × guest range ('' → fallback note). */
-  const payLink = (PAY_LINKS[plan] ?? [])[range] || '';
+  /* Stripe payment link for this plan ('' → fallback note). */
+  const payLink = PAY_LINKS[plan] || '';
   const payUrl = payLink
     ? payLink + (fields.email ? (payLink.includes('?') ? '&' : '?') + 'prefilled_email=' + encodeURIComponent(fields.email) : '')
     : '';
@@ -129,20 +125,6 @@ export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
             <h2 className="wiz__title">{w.step1.title}</h2>
             <p className="wiz__sub">{w.step1.sub}</p>
 
-            <div className="range-pills range-pills--wiz" role="group" aria-label={t.pricing.rangeSub}>
-              {w.step1.ranges.map((r, i) => (
-                <button
-                  key={r}
-                  type="button"
-                  className={i === range ? 'pill on' : 'pill'}
-                  aria-pressed={i === range}
-                  onClick={() => setRange(i)}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-
             <div className="wiz__plans" role="radiogroup" aria-label={w.stepLabels[0]}>
               {plans.map((pl) => (
                 <button
@@ -161,9 +143,9 @@ export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
                       </em>
                     ) : null}
                   </span>
-                  <span className="wiz-plan__channels">{pl.channels}</span>
-                  <span className="wiz-plan__price">${pl.prices[range]}</span>
-                  <span className="wiz-plan__fee">{pl.feeNote}</span>
+                  <span className="wiz-plan__channels">{pl.guests}</span>
+                  <span className="wiz-plan__price">${pl.price}</span>
+                  <span className="wiz-plan__fee">{pl.priceNote}</span>
                 </button>
               ))}
             </div>
@@ -244,19 +226,15 @@ export function Wizard({ initialPlan, initialRange, onClose }: WizardProps) {
                 </div>
                 <div>
                   <dt>{w.step3.rows.guests}</dt>
-                  <dd>{rangeLabel}</dd>
+                  <dd>{selected.guests}</dd>
                 </div>
                 <div>
                   <dt>{w.step3.rows.couple}</dt>
                   <dd>{couple}</dd>
                 </div>
                 <div>
-                  <dt>{w.step3.rows.fee}</dt>
+                  <dt>{w.step3.rows.price}</dt>
                   <dd>${price}</dd>
-                </div>
-                <div>
-                  <dt>{w.step3.rows.hosting}</dt>
-                  <dd>{selected.hosting}</dd>
                 </div>
               </dl>
             </div>

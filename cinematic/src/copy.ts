@@ -87,23 +87,28 @@ export interface SiteCopy {
     kicker: string;
     title: string;
     intro: string;
-    ranges: string[];
-    rangeSub: string;
     popularTag: string;
     plans: {
-      id: 'basic' | 'standard' | 'premium';
+      id: 'essentials' | 'signature' | 'grande';
       name: string;
-      channels: string;
-      prices: [number, number, number, number];
-      feeNote: string;
-      hosting: string;
+      guests: string;
+      price: number;
+      priceNote: string;
       features: string[];
       cta: string;
       popular?: boolean;
     }[];
-    addons: { price: string; label: string }[];
-    note: string;
-    valueLine: string;
+    coordinator: { badge: string; name: string; body: string };
+    founding: { badge: string; body: string; ends: string };
+    guarantee: string;
+    comparison: {
+      title: string;
+      sub: string;
+      rows: string[];
+      priceRow: string;
+      columns: { name: string; sub: string; cells: boolean[]; price: string; highlight?: boolean }[];
+      note: string;
+    };
   };
   testimonials: {
     no: string;
@@ -136,7 +141,7 @@ export interface SiteCopy {
   };
   wizard: {
     stepLabels: string[];
-    step1: { title: string; sub: string; ranges: string[] };
+    step1: { title: string; sub: string };
     step2: {
       title: string;
       sub: string;
@@ -156,7 +161,7 @@ export interface SiteCopy {
       badge: string;
       title: string;
       summaryTitle: string;
-      rows: { plan: string; guests: string; couple: string; fee: string; hosting: string };
+      rows: { plan: string; guests: string; couple: string; price: string };
       nextTitle: string;
       next: { title: string; body: string }[];
       payCta: string;
@@ -248,17 +253,17 @@ const en: SiteCopy = {
       {
         name: 'WhatsApp',
         desc: 'A dedicated WhatsApp number for your wedding. Guests text it like any contact. The dominant channel in Latin America, Europe & Asia.',
-        plans: 'Standard & Premium',
+        plans: 'All plans',
       },
       {
         name: 'SMS',
         desc: 'A dedicated number guests can text. No internet, no app, no account. The universal fallback — works on every phone on earth.',
-        plans: 'Standard & Premium',
+        plans: 'Signature & Grande',
       },
       {
         name: 'Telegram',
         desc: 'A dedicated Telegram bot for your wedding. Popular with guests from Europe, Brazil, and tech-savvy crowds. Zero extra cost.',
-        plans: 'Standard & Premium',
+        plans: 'Signature & Grande',
       },
     ],
     unify: {
@@ -373,7 +378,7 @@ const en: SiteCopy = {
         '"Add the new hotel to the travel tips."',
         '"Remind everyone who hasn\'t responded yet."',
       ],
-      note: 'Every change shows you a confirmation card first — nothing moves without your approval. Available on Standard & Premium.',
+      note: 'Every change shows you a confirmation card first — nothing moves without your approval. Included with Grande — or $79 one-time / $19/mo on Essentials & Signature.',
     },
   },
 
@@ -410,76 +415,117 @@ const en: SiteCopy = {
   pricing: {
     no: '№ 06',
     kicker: 'Pricing',
-    title: 'Build it once.\nKeep it for pennies.',
-    intro:
-      "A one-time creation fee builds everything — concierge, website, portal, design, and your first 3 months of hosting. After that, a small monthly fee keeps it live. Priced by guest count, because that's what's fair.",
-    ranges: ['0–100 guests', '100–300', '300–500', '500+'],
-    rangeSub: 'Select your approximate guest count',
+    title: 'One price.\nEvery guest question answered.',
+    intro: 'From $199, once — no subscriptions.',
     popularTag: '✦ Most popular',
     plans: [
       {
-        id: 'basic',
-        name: 'Basic',
-        channels: 'Web Bot · custom URL',
-        prices: [97, 147, 197, 267],
-        feeNote: 'Creation fee · one-time',
-        hosting: 'then $5/mo hosting after 3 months',
+        id: 'essentials',
+        name: 'Essentials',
+        guests: 'Up to 60 guests',
+        price: 199,
+        priceNote: 'One payment · yours until the wedding',
         features: [
-          'AI web concierge, custom URL',
-          '30+ languages, auto-detected',
-          'Couple portal with live analytics',
-          'Wedding Brain — edit & publish yourself',
-          '1 round of revisions',
-          '7-day post-delivery support',
+          'AI concierge — WhatsApp + web, EN/ES',
+          'RSVP wizard',
+          'Wedding website + registry',
+          'Guest import — CSV, Excel, Zola',
+          '4 broadcasts',
+          'Dashboard + full transcripts',
         ],
         cta: 'Get started →',
       },
       {
-        id: 'standard',
-        name: 'Standard',
-        channels: 'Web · WhatsApp · SMS · Telegram',
-        prices: [247, 347, 447, 547],
-        feeNote: 'Creation fee · one-time',
-        hosting: 'then $12/mo hosting after 3 months',
+        id: 'signature',
+        name: 'Signature',
+        guests: 'Up to 160 guests',
+        price: 399,
+        priceNote: 'One payment · yours until the wedding',
         features: [
-          'Everything in Basic',
-          'WhatsApp, SMS & Telegram concierge',
-          'Bilingual wedding website with RSVP',
-          "Broadcasts in each guest's language",
-          'International guest travel guide',
-          'AI Coordinator add-on available',
-          '30-day post-wedding support',
+          'Everything in Essentials',
+          'Unlimited broadcasts',
+          'Per-person, per-event RSVP',
+          'QR day-of check-in',
+          'Zola RSVP sync',
+          'Priority support',
         ],
         cta: 'Get started →',
         popular: true,
       },
       {
-        id: 'premium',
-        name: 'Premium',
-        channels: 'All channels + Guest dashboard',
-        prices: [447, 597, 747, 897],
-        feeNote: 'Creation fee · one-time',
-        hosting: 'then $19/mo hosting after 3 months',
+        id: 'grande',
+        name: 'Grande',
+        guests: 'Up to 300 guests',
+        price: 699,
+        priceNote: 'One payment · yours until the wedding',
         features: [
-          'Everything in Standard',
-          'Per-person, per-event RSVP tracking',
-          'Automatic RSVP reminders & digest',
-          'QR guest passes & registry page',
-          'Priority build queue',
-          'Unlimited revisions until wedding',
-          '60-day post-wedding support',
+          'Everything in Signature',
+          'AI Coordinator included',
+          'Done-for-you import & setup call',
+          'Planner seat',
         ],
         cta: 'Get started →',
       },
     ],
-    addons: [
-      { price: 'New', label: 'AI Coordinator — run your wedding by chat · Standard & Premium · contact us' },
-      { price: '+$100', label: 'Rush delivery — live in under 7 days' },
-      { price: '$0', label: 'First 3 months of hosting — always included' },
-    ],
-    note: 'No contracts. Cancel hosting anytime — your bot simply goes offline.',
-    valueLine:
-      'For a 400-guest wedding, Standard works out to about $1.12 per guest — less than a single printed menu.',
+    coordinator: {
+      badge: 'Add-on',
+      name: 'AI Coordinator',
+      body: '— run your wedding by chat. $79 one-time, yours until the wedding — or $19/mo. For Essentials & Signature; already included with Grande.',
+    },
+    founding: {
+      badge: 'Founding Couples',
+      body: 'The first 10 weddings get 30% off + the AI Coordinator free — in exchange for a testimonial.',
+      ends: 'Ends Aug 31, 2026',
+    },
+    guarantee:
+      'Full refund before your first guest messages the concierge, or within 30 days — whichever comes first.',
+    comparison: {
+      title: 'How Guest-ly compares',
+      sub: 'For a wedding of about 150 guests',
+      rows: [
+        'WhatsApp concierge',
+        'EN/ES bilingual',
+        'Per-person RSVP',
+        'Wedding website',
+        'Broadcasts',
+        'QR check-in',
+      ],
+      priceRow: 'Price',
+      columns: [
+        {
+          name: 'Guest-ly',
+          sub: 'Signature plan',
+          cells: [true, true, true, true, true, true],
+          price: '$399 once',
+          highlight: true,
+        },
+        {
+          name: 'Vino',
+          sub: 'No web chat',
+          cells: [true, true, false, false, true, false],
+          price: '$2,499',
+        },
+        {
+          name: 'Daisy Chat',
+          sub: 'SMS only · no RSVP',
+          cells: [false, false, false, false, true, false],
+          price: '$125–175',
+        },
+        {
+          name: 'GuestBook',
+          sub: 'Web chat only',
+          cells: [false, false, false, false, false, false],
+          price: '$10–99/mo',
+        },
+        {
+          name: 'Zola / The Knot',
+          sub: 'No AI · no WhatsApp',
+          cells: [false, false, true, true, true, false],
+          price: 'Free',
+        },
+      ],
+      note: 'Keep Zola — we sync with it.',
+    },
   },
 
   testimonials: {
@@ -528,36 +574,32 @@ const en: SiteCopy = {
     },
     items: [
       {
-        q: 'Do I need any technical knowledge?',
-        a: 'None. You fill out a form with your wedding details and we handle everything — AI training, WhatsApp setup, server hosting, Meta Business. You never touch code.',
+        q: 'Why not just use Zola for free?',
+        a: "Zola gives you a website and an RSVP form; it doesn't answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola — we sync with it.",
       },
       {
-        q: 'Why does the price depend on guest count?',
-        a: 'The bot uses AI to answer every guest individually — a 500-guest wedding involves far more conversations than a 50-guest one. Pricing by guest count keeps it fair: small weddings pay less, large ones pay for the scale they use.',
+        q: 'Is it really one payment?',
+        a: 'Yes. Every plan is a single one-time price, yours until the wedding. Only the optional AI Coordinator has a monthly option — $79 one-time or $19/mo.',
       },
       {
-        q: 'How long does setup take?',
-        a: 'About a week from your completed intake form. Need it faster? The Rush add-on prioritizes your build for delivery in under 7 days.',
+        q: 'Does it work for guests in Bolivia and Latin America?',
+        a: "That's our home turf. Guest-ly is WhatsApp-first and fully bilingual, with proper +591 — and any international — phone handling built in.",
       },
       {
-        q: 'What if my wedding details change?',
-        a: "Change them yourself, instantly. Your portal includes the Wedding Brain — everything your concierge knows. Edit a tip, preview the bot's answer, publish in one click, roll back anytime. Prefer us to do it? Revision rounds are still included in every plan.",
+        q: "What if the AI doesn't know an answer?",
+        a: "It only answers from your wedding's information. When it isn't sure, it tells the guest it's checking with you and flags the question on your dashboard — and you see every transcript.",
       },
       {
-        q: 'What is the AI Coordinator?',
-        a: 'A private AI assistant inside your portal that manages your wedding by chat: "Add Lucía, friend of the bride, plus one." "Marco can\'t make it." "Remind non-responders." It knows your live numbers, proposes each change on a confirmation card, and nothing happens until you approve — broadcasts even require typing SEND. Available as an add-on on Standard and Premium.',
+        q: 'How do guests use it?',
+        a: 'They tap a link or scan a QR code and start chatting — on WhatsApp or the web. Nothing to install, no accounts to create.',
       },
       {
-        q: 'What languages does the bot speak?',
-        a: "30+ languages, automatically detected from each guest's message. Spanish, English, Portuguese, French, German, Italian, Mandarin and many more — all included at no extra cost in every plan.",
+        q: 'What counts toward the guest limit?',
+        a: 'Invited people, not messages. Messages are effectively unlimited under fair use.',
       },
       {
-        q: "How long is the bot active, and what's the monthly fee?",
-        a: 'Your creation fee includes the first 3 months of hosting — which covers most weddings right up to the big day. After that, a small monthly hosting fee keeps your bot live: $5/mo (Basic), $12/mo (Standard), or $19/mo (Premium). It covers the real costs of running your bot — the phone numbers, messaging, and servers. Cancel anytime; the bot simply goes offline.',
-      },
-      {
-        q: 'Is it only for weddings?',
-        a: 'Weddings are our specialty, but Guest-ly works beautifully for any event with guests and logistics — quinceañeras, corporate retreats, destination birthdays, conferences. If guests ask questions, Guest-ly answers them.',
+        q: 'What about refunds?',
+        a: 'Full refund before your first guest messages the concierge, or within 30 days — whichever comes first.',
       },
     ],
   },
@@ -597,8 +639,7 @@ const en: SiteCopy = {
     stepLabels: ['Plan', 'Details', 'Confirm'],
     step1: {
       title: 'Choose your plan',
-      sub: 'One-time creation fee + 3 months hosting included. Priced by guest count — fair for everyone.',
-      ranges: ['0–100 guests', '100–300', '300–500', '500+'],
+      sub: 'One payment, yours until the wedding — no subscriptions. Sized by guest count.',
     },
     step2: {
       title: 'Tell us about your wedding',
@@ -623,17 +664,16 @@ const en: SiteCopy = {
         plan: 'Plan',
         guests: 'Guest count',
         couple: 'Couple',
-        fee: 'Creation fee',
-        hosting: 'Hosting',
+        price: 'Price · one-time',
       },
       nextTitle: 'What happens next',
       next: [
-        { title: 'Pay the creation fee to lock your slot', body: 'Secure Stripe checkout — we confirm within 2 hours during business hours.' },
+        { title: 'Pay once to lock your build slot', body: 'Secure Stripe checkout — we confirm within 2 hours during business hours.' },
         { title: 'We send you the intake form', body: 'A 15-minute form with everything your bot needs.' },
         { title: 'We build your bot (~7 days)', body: 'AI training, channel setup, design — all handled.' },
         { title: 'You test, approve & share', body: 'Your guests get a 24/7 luxury concierge experience.' },
       ],
-      payCta: 'Pay creation fee · {price} →',
+      payCta: 'Pay {price} · one-time →',
       payNoteLinked: 'Secure checkout by Stripe. Your build slot is reserved the moment payment comes through.',
       payNoteFallback: "We'll send a secure Stripe payment link to {email} within 2 hours to reserve your build slot.",
       whatsapp: 'Prefer WhatsApp? Chat with us →',
@@ -705,17 +745,17 @@ const es: SiteCopy = {
       {
         name: 'WhatsApp',
         desc: 'Un número de WhatsApp dedicado a tu boda. Los invitados lo escriben como cualquier contacto. Dominante en LatAm, Europa y Asia.',
-        plans: 'Estándar y Premium',
+        plans: 'Todos los planes',
       },
       {
         name: 'SMS',
         desc: 'Un número dedicado para mensajes de texto. Sin internet, sin apps. El canal universal — funciona en cualquier teléfono del mundo.',
-        plans: 'Estándar y Premium',
+        plans: 'Signature y Grande',
       },
       {
         name: 'Telegram',
         desc: 'Un bot de Telegram dedicado. Popular entre invitados de Europa, Brasil y el mundo tech. Sin costo extra.',
-        plans: 'Estándar y Premium',
+        plans: 'Signature y Grande',
       },
     ],
     unify: {
@@ -830,7 +870,7 @@ const es: SiteCopy = {
         '"Agrega el hotel nuevo a los consejos de viaje."',
         '"Recuérdales a los que aún no responden."',
       ],
-      note: 'Cada cambio te muestra primero una tarjeta de confirmación — nada se mueve sin tu aprobación. Disponible en Estándar y Premium.',
+      note: 'Cada cambio te muestra primero una tarjeta de confirmación — nada se mueve sin tu aprobación. Incluido en Grande — o $79 pago único / $19/mes en Essentials y Signature.',
     },
   },
 
@@ -867,76 +907,117 @@ const es: SiteCopy = {
   pricing: {
     no: '№ 06',
     kicker: 'Precios',
-    title: 'Créalo una vez.\nMantenlo por centavos.',
-    intro:
-      'Una tarifa única de creación lo construye todo — asistente, página de boda, portal, diseño y tus primeros 3 meses de hosting. Después, una pequeña cuota mensual lo mantiene activo. El precio varía por número de invitados, porque así es justo.',
-    ranges: ['0–100 invitados', '100–300', '300–500', '500+'],
-    rangeSub: 'Selecciona tu número aproximado de invitados',
+    title: 'Un solo pago.\nTodas las preguntas de tus invitados, respondidas.',
+    intro: 'Desde $199, una sola vez — sin suscripciones.',
     popularTag: '✦ Más popular',
     plans: [
       {
-        id: 'basic',
-        name: 'Básico',
-        channels: 'Bot Web · URL personalizada',
-        prices: [97, 147, 197, 267],
-        feeNote: 'Tarifa de creación · pago único',
-        hosting: 'luego $5/mes de hosting tras 3 meses',
+        id: 'essentials',
+        name: 'Essentials',
+        guests: 'Hasta 60 invitados',
+        price: 199,
+        priceNote: 'Pago único · tuyo hasta la boda',
         features: [
-          'Asistente web con IA, URL personalizada',
-          'Más de 30 idiomas, detección automática',
-          'Portal de pareja con analíticas en vivo',
-          'Wedding Brain — edita y publica tú mismo',
-          '1 ronda de revisiones',
-          'Soporte 7 días post-entrega',
+          'Asistente IA — WhatsApp + web, ES/EN',
+          'RSVP guiado paso a paso',
+          'Página de boda + lista de regalos',
+          'Importa invitados — CSV, Excel, Zola',
+          '4 difusiones',
+          'Panel + todas las conversaciones',
         ],
         cta: 'Empezar →',
       },
       {
-        id: 'standard',
-        name: 'Estándar',
-        channels: 'Web · WhatsApp · SMS · Telegram',
-        prices: [247, 347, 447, 547],
-        feeNote: 'Tarifa de creación · pago único',
-        hosting: 'luego $12/mes de hosting tras 3 meses',
+        id: 'signature',
+        name: 'Signature',
+        guests: 'Hasta 160 invitados',
+        price: 399,
+        priceNote: 'Pago único · tuyo hasta la boda',
         features: [
-          'Todo lo del Básico',
-          'Asistente en WhatsApp, SMS y Telegram',
-          'Página de boda bilingüe con RSVP',
-          'Difusiones en el idioma de cada invitado',
-          'Guía para invitados del exterior',
-          'Add-on Coordinador IA disponible',
-          'Soporte 30 días post-boda',
+          'Todo lo de Essentials',
+          'Difusiones ilimitadas',
+          'RSVP por persona y por evento',
+          'Check-in con QR el gran día',
+          'Sincronización de RSVPs con Zola',
+          'Soporte prioritario',
         ],
         cta: 'Empezar →',
         popular: true,
       },
       {
-        id: 'premium',
-        name: 'Premium',
-        channels: 'Todos los canales + Panel de invitados',
-        prices: [447, 597, 747, 897],
-        feeNote: 'Tarifa de creación · pago único',
-        hosting: 'luego $19/mes de hosting tras 3 meses',
+        id: 'grande',
+        name: 'Grande',
+        guests: 'Hasta 300 invitados',
+        price: 699,
+        priceNote: 'Pago único · tuyo hasta la boda',
         features: [
-          'Todo lo del Estándar',
-          'RSVP por persona y por evento',
-          'Recordatorios automáticos y resumen semanal',
-          'Pases QR y página de regalos',
-          'Prioridad en la cola de creación',
-          'Revisiones ilimitadas hasta la boda',
-          'Soporte 60 días post-boda',
+          'Todo lo de Signature',
+          'Coordinador IA incluido',
+          'Importación y configuración hechas por nosotros',
+          'Acceso para tu wedding planner',
         ],
         cta: 'Empezar →',
       },
     ],
-    addons: [
-      { price: 'Nuevo', label: 'Coordinador IA — maneja tu boda por chat · Estándar y Premium · contáctanos' },
-      { price: '+$100', label: 'Entrega urgente — activo en menos de 7 días' },
-      { price: '$0', label: 'Primeros 3 meses de hosting — siempre incluidos' },
-    ],
-    note: 'Sin contratos. Cancela el hosting cuando quieras — tu bot simplemente se desactiva.',
-    valueLine:
-      'Para una boda de 400 invitados, el plan Estándar sale a unos $1.12 por invitado — menos que un solo menú impreso.',
+    coordinator: {
+      badge: 'Add-on',
+      name: 'Coordinador IA',
+      body: '— maneja tu boda por chat. $79 pago único, tuyo hasta la boda — o $19/mes. Para Essentials y Signature; ya incluido en Grande.',
+    },
+    founding: {
+      badge: 'Parejas Fundadoras',
+      body: 'Las primeras 10 bodas reciben 30% de descuento + el Coordinador IA gratis — a cambio de un testimonio.',
+      ends: 'Termina el 31 de agosto de 2026',
+    },
+    guarantee:
+      'Reembolso total antes de que tu primer invitado le escriba al asistente, o dentro de 30 días — lo que ocurra primero.',
+    comparison: {
+      title: 'Cómo se compara Guest-ly',
+      sub: 'Para una boda de unos 150 invitados',
+      rows: [
+        'Asistente en WhatsApp',
+        'Bilingüe ES/EN',
+        'RSVP por persona',
+        'Página de boda',
+        'Difusiones',
+        'Check-in con QR',
+      ],
+      priceRow: 'Precio',
+      columns: [
+        {
+          name: 'Guest-ly',
+          sub: 'Plan Signature',
+          cells: [true, true, true, true, true, true],
+          price: '$399 una vez',
+          highlight: true,
+        },
+        {
+          name: 'Vino',
+          sub: 'Sin chat web',
+          cells: [true, true, false, false, true, false],
+          price: '$2,499',
+        },
+        {
+          name: 'Daisy Chat',
+          sub: 'Solo SMS · sin RSVP',
+          cells: [false, false, false, false, true, false],
+          price: '$125–175',
+        },
+        {
+          name: 'GuestBook',
+          sub: 'Solo chat web',
+          cells: [false, false, false, false, false, false],
+          price: '$10–99/mes',
+        },
+        {
+          name: 'Zola / The Knot',
+          sub: 'Sin IA · sin WhatsApp',
+          cells: [false, false, true, true, true, false],
+          price: 'Gratis',
+        },
+      ],
+      note: 'Quédate con Zola — nosotros nos sincronizamos con ella.',
+    },
   },
 
   testimonials: {
@@ -985,36 +1066,32 @@ const es: SiteCopy = {
     },
     items: [
       {
-        q: '¿Necesito conocimientos técnicos?',
-        a: 'Ninguno. Tú llenas un formulario con los datos de tu boda y nosotros manejamos todo — entrenamiento de IA, configuración de WhatsApp, servidor, Meta Business. Nunca tocas código.',
+        q: '¿Por qué no usar Zola gratis y ya?',
+        a: 'Zola te da una página y un formulario de RSVP; no responde 600 preguntas de invitados a las 2am, en español, por WhatsApp. Quédate con Zola — nosotros nos sincronizamos con ella.',
       },
       {
-        q: '¿Por qué el precio depende del número de invitados?',
-        a: 'El bot usa IA para responder a cada invitado de forma individual — una boda de 500 personas implica muchas más conversaciones que una de 50. Cobrar por rango de invitados lo hace justo: las bodas pequeñas pagan menos.',
+        q: '¿De verdad es un solo pago?',
+        a: 'Sí. Cada plan es un único pago, tuyo hasta la boda. Solo el Coordinador IA, que es opcional, tiene opción mensual — $79 pago único o $19/mes.',
       },
       {
-        q: '¿Cuánto tiempo tarda la configuración?',
-        a: 'Aproximadamente una semana después de recibir tu formulario completo. ¿Con prisa? El add-on Rush lo entrega en menos de 7 días.',
+        q: '¿Funciona para invitados en Bolivia y Latinoamérica?',
+        a: 'Es nuestra casa. Guest-ly es WhatsApp-first y totalmente bilingüe, con manejo correcto de números +591 — y de cualquier país — incluido.',
       },
       {
-        q: '¿Qué pasa si cambian los datos de mi boda?',
-        a: 'Los cambias tú mismo, al instante. Tu portal incluye el Wedding Brain — todo lo que sabe tu asistente. Edita un consejo, prueba la respuesta del bot, publica en un click y vuelve atrás cuando quieras. ¿Prefieres que lo hagamos nosotros? Las rondas de revisión siguen incluidas en todos los planes.',
+        q: '¿Y si la IA no sabe una respuesta?',
+        a: 'Solo responde con la información de tu boda. Cuando no está segura, le dice al invitado que lo está consultando contigo y marca la pregunta en tu panel — y tú ves cada conversación.',
       },
       {
-        q: '¿Qué es el Coordinador IA?',
-        a: 'Un asistente IA privado dentro de tu portal que maneja tu boda por chat: "Agrega a Lucía, amiga de la novia, con acompañante." "Marco no puede venir." "Recuérdales a los pendientes." Conoce tus números en vivo, propone cada cambio en una tarjeta de confirmación y nada ocurre hasta que apruebas — las difusiones incluso requieren escribir ENVIAR. Disponible como add-on en Estándar y Premium.',
+        q: '¿Cómo lo usan los invitados?',
+        a: 'Tocan un link o escanean un código QR y empiezan a chatear — por WhatsApp o en la web. Nada que instalar, sin crear cuentas.',
       },
       {
-        q: '¿En qué idiomas responde el bot?',
-        a: 'Más de 30 idiomas, detectados automáticamente del mensaje de cada invitado. Español, inglés, portugués, francés, alemán, italiano, mandarín y más — incluidos en todos los planes.',
+        q: '¿Qué cuenta para el límite de invitados?',
+        a: 'Personas invitadas, no mensajes. Los mensajes son en la práctica ilimitados, bajo uso razonable.',
       },
       {
-        q: '¿Cuánto tiempo está activo el bot y cuál es la cuota mensual?',
-        a: 'Tu tarifa de creación incluye los primeros 3 meses de hosting — que cubren la mayoría de las bodas hasta el gran día. Después, una pequeña cuota mensual mantiene tu bot activo: $5/mes (Básico), $12/mes (Estándar) o $19/mes (Premium). Cubre los costos reales de operar tu bot. Cancela cuando quieras.',
-      },
-      {
-        q: '¿Es solo para bodas?',
-        a: 'Las bodas son nuestra especialidad, pero Guest-ly funciona perfecto para cualquier evento con invitados y logística — quinceañeras, retiros corporativos, cumpleaños de destino, conferencias. Si los invitados preguntan, Guest-ly responde.',
+        q: '¿Y los reembolsos?',
+        a: 'Reembolso total antes de que tu primer invitado le escriba al asistente, o dentro de 30 días — lo que ocurra primero.',
       },
     ],
   },
@@ -1056,8 +1133,7 @@ const es: SiteCopy = {
     stepLabels: ['Plan', 'Detalles', 'Confirmar'],
     step1: {
       title: 'Elige tu plan',
-      sub: 'Tarifa única de creación + 3 meses de hosting incluidos. El precio varía por número de invitados — justo para todos.',
-      ranges: ['0–100 invitados', '100–300', '300–500', '500+'],
+      sub: 'Un solo pago, tuyo hasta la boda — sin suscripciones. El tamaño depende del número de invitados.',
     },
     step2: {
       title: 'Cuéntanos sobre tu boda',
@@ -1082,17 +1158,16 @@ const es: SiteCopy = {
         plan: 'Plan',
         guests: 'Número de invitados',
         couple: 'Pareja',
-        fee: 'Tarifa de creación',
-        hosting: 'Hosting',
+        price: 'Precio · pago único',
       },
       nextTitle: 'Qué pasa después',
       next: [
-        { title: 'Paga la tarifa de creación para reservar tu lugar', body: 'Checkout seguro con Stripe — confirmamos en menos de 2 horas en horario laboral.' },
+        { title: 'Paga una sola vez para reservar tu lugar', body: 'Checkout seguro con Stripe — confirmamos en menos de 2 horas en horario laboral.' },
         { title: 'Te enviamos el formulario', body: 'Un formulario de 15 minutos con todo lo que tu bot necesita.' },
         { title: 'Construimos tu bot (~7 días)', body: 'Entrenamiento de IA, configuración de canales, diseño — nosotros nos encargamos.' },
         { title: 'Pruebas, apruebas y compartes', body: 'Tus invitados reciben una experiencia de asistente de lujo 24/7.' },
       ],
-      payCta: 'Pagar tarifa de creación · {price} →',
+      payCta: 'Pagar {price} · pago único →',
       payNoteLinked: 'Checkout seguro con Stripe. Tu lugar queda reservado en cuanto se procesa el pago.',
       payNoteFallback: 'Te enviaremos un link de pago seguro de Stripe a {email} en menos de 2 horas para reservar tu lugar.',
       whatsapp: '¿Prefieres WhatsApp? Escríbenos →',

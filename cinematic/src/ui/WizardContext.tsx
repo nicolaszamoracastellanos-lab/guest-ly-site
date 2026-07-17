@@ -1,10 +1,10 @@
 import { createContext, useContext } from 'react';
 
-export type PlanId = 'basic' | 'standard' | 'premium';
+export type PlanId = 'essentials' | 'signature' | 'grande';
 
 export interface WizardApi {
-  /** Open the get-started wizard, optionally preselecting a plan and guest range. */
-  open: (plan?: PlanId, range?: number) => void;
+  /** Open the get-started wizard, optionally preselecting a plan. */
+  open: (plan?: PlanId) => void;
 }
 
 export const WizardContext = createContext<WizardApi>({ open: () => {} });

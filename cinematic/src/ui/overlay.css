@@ -119,11 +119,22 @@ html.wizard-locked {
 }
 
 .btn:focus-visible,
-.pill:focus-visible,
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .badge {
@@ -1185,51 +1196,6 @@ body.js-ready .reveal.is-visible {
 
 /* ---------------------------------------------------------------- pricing */
 
-.range-picker {
-  margin-bottom: 2.5rem;
-}
-
-.range-pills {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding: 0.25rem 0.15rem;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.range-pills::-webkit-scrollbar {
-  display: none;
-}
-
-.pill {
-  flex: none;
-  min-height: 44px;
-  padding: 0.5rem 1.15rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--glass-border);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 500;
-  white-space: nowrap;
-  transition:
-    background var(--dur-fast) ease,
-    border-color var(--dur-fast) ease,
-    color var(--dur-fast) ease;
-}
-
-.pill.on {
-  background: var(--gold-20);
-  border-color: var(--gold);
-  color: var(--gold-bright);
-}
-
-.range-sub {
-  margin-top: 0.7rem;
-  font-size: 0.78rem;
-  color: var(--text-faint);
-}
-
 .plan-grid {
   display: grid;
   gap: 1.6rem;
@@ -1312,12 +1278,6 @@ body.js-ready .reveal.is-visible {
   color: var(--text-faint);
 }
 
-.plan__hosting {
-  margin-top: 0.3rem;
-  font-size: 0.85rem;
-  color: var(--gold-bright);
-}
-
 .plan__features {
   list-style: none;
   margin-top: 1.4rem;
@@ -1346,45 +1306,181 @@ body.js-ready .reveal.is-visible {
   width: 100%;
 }
 
-.addons {
+/* Coordinator add-on strip */
+
+.coord-strip {
+  margin-top: 2.8rem;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: 2.8rem;
+  align-items: center;
+  gap: 0.9rem 1.3rem;
+  padding: 1.15rem 1.5rem;
 }
 
-.addon-chip {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  border-radius: var(--radius-pill);
-  padding: 0.55rem 1.1rem;
-  font-size: 0.82rem;
+.coord-strip__body {
+  flex: 1;
+  min-width: 16rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
   color: var(--text-muted);
 }
 
-.addon-chip strong {
-  color: var(--gold-bright);
+.coord-strip__body strong {
+  color: var(--ivory);
   font-weight: 600;
-  margin-right: 0.25rem;
 }
 
-.pricing-note {
+/* Founding Couples banner */
+
+.founding {
+  margin-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: clamp(1.5rem, 3.5vw, 2.2rem);
   text-align: center;
-  margin-top: 1.4rem;
-  font-size: 0.85rem;
+  border-color: var(--gold);
+  background: var(--gold-08);
+  box-shadow: 0 0 50px var(--gold-12), var(--shadow-card);
+}
+
+.founding__body {
+  font-family: var(--font-serif);
+  font-size: clamp(1.08rem, 1.6vw, 1.25rem);
+  line-height: 1.55;
+  max-width: 46rem;
+}
+
+.founding__ends {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   color: var(--text-faint);
 }
 
-.value-line {
+/* Guarantee line */
+
+.guarantee {
+  margin-top: 1.6rem;
+  margin-inline: auto;
+  max-width: 42rem;
   text-align: center;
-  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.guarantee__mark {
+  color: var(--gold);
+  margin-right: 0.45rem;
+}
+
+/* Comparison table */
+
+.cmp-table-block {
+  margin-top: clamp(3.2rem, 7vw, 5rem);
+}
+
+.cmp-table__title {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+
+.cmp-table__sub {
+  text-align: center;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+
+.cmp-table-wrap {
+  margin-top: 1.6rem;
+  padding: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cmp-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.cmp-table th,
+.cmp-table td {
+  padding: 0.75rem 0.9rem;
+  text-align: center;
+  border-top: 1px solid var(--glass-border);
+}
+
+.cmp-table thead th {
+  border-top: 0;
+  vertical-align: bottom;
+}
+
+.cmp-table thead th:first-child,
+.cmp-table tbody th[scope='row'] {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cmp-table__name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  color: var(--ivory);
+}
+
+.cmp-table th.is-us .cmp-table__name {
+  color: var(--gold-bright);
+}
+
+.cmp-table__colsub {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.cmp-table td.is-us,
+.cmp-table th.is-us {
+  background: var(--gold-08);
+}
+
+.cmp-yes {
+  color: var(--gold);
+}
+
+.cmp-no {
+  color: var(--text-faint);
+}
+
+.cmp-table__price-row th,
+.cmp-table__price-row td {
+  font-weight: 600;
+  color: var(--ivory);
+  white-space: nowrap;
+}
+
+.cmp-table__price-row td.is-us {
+  color: var(--gold-bright);
+}
+
+.cmp-table__note {
+  margin-top: 1rem;
+  text-align: center;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.12rem;
+  font-size: 1.05rem;
   color: var(--gold-bright);
-  max-width: 44rem;
-  margin-inline: auto;
 }
 
 @media (min-width: 980px) {
@@ -1846,10 +1942,6 @@ body.js-ready .reveal.is-visible {
   color: var(--text-muted);
   font-size: 0.94rem;
   max-width: 34rem;
-}
-
-.range-pills--wiz {
-  margin-top: 1.4rem;
 }
 
 .wiz__plans {
