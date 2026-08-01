@@ -1,31 +1,136 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Guest-ly is the AI-powered wedding platform: a 24/7 concierge for your guests on WhatsApp and the web, a wedding website with per-person RSVPs, and a couple portal with its own AI Coordinator." />
-    <meta property="og:title" content="Guest-ly — AI Concierge &amp; Wedding Platform" />
-    <meta property="og:description" content="Stop answering the same questions 200 times. A 24/7 AI concierge for your guests, a wedding website with per-person RSVPs, and a portal where you run it all — even by chat." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://guest-ly.com/" />
-    <meta property="og:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Guest-ly — AI Concierge &amp; Wedding Platform" />
-    <meta name="twitter:description" content="The AI-powered wedding platform — concierge, website, RSVPs, and an AI Coordinator for the couple." />
-    <meta name="twitter:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png" />
-    <link rel="canonical" href="https://guest-ly.com/" />
-    <link rel="icon" type="image/svg+xml" href="/favicon-diamond.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=EB+Garamond:ital@0;1&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <title>Guest-ly — AI Concierge &amp; Wedding Platform</title>
-    <script type="module" crossorigin src="/assets/index-el2dUG3H.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-V8ah-CFF.css">
+<html lang="en" data-theme="night"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+      /* Theme bootstrap: resolve the ladder (stored choice, then OS
+         preference, then night) and stamp <html> before first paint. */
+      (function () {
+        var theme = null;
+        try {
+          theme = localStorage.getItem('gl-theme');
+        } catch (e) {}
+        if (theme !== 'day' && theme !== 'night') {
+          theme =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'day'
+              : 'night';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'day' ? '#faf6f0' : '#0d1117');
+      })();
+    </script>
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="description" content="Guest-ly is the AI-powered wedding platform: a 24/7 concierge for your guests on WhatsApp and the web, a wedding website with per-person RSVPs, and a couple portal with its own AI Coordinator.">
+    <meta property="og:title" content="Guest-ly: AI Concierge &amp; Wedding Platform">
+    <meta property="og:description" content="Stop answering the same questions 200 times. A 24/7 AI concierge for your guests, a wedding website with per-person RSVPs, and a portal where you run it all, even by chat.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://guest-ly.com/">
+    <meta property="og:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Guest-ly: AI Concierge &amp; Wedding Platform">
+    <meta name="twitter:description" content="The AI-powered wedding platform: concierge, website, RSVPs, and an AI Coordinator for the couple.">
+    <meta name="twitter:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png">
+    <link rel="canonical" href="https://guest-ly.com/">
+    <link rel="icon" type="image/svg+xml" href="/favicon-diamond.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <!-- The two critical faces (display serif 500 + body sans 400, latin) preloaded. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin="" href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKd3vXDXbtPK-F2qC0s.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin="" href="https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&amp;family=EB+Garamond:ital@0;1&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Guest-ly",
+        "description": "AI wedding concierge for guests on WhatsApp and the web, a wedding website with per-person RSVPs, and a private couple portal.",
+        "brand": { "@type": "Brand", "name": "Guest-ly" },
+        "url": "https://guest-ly.com/",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Essentials",
+            "description": "Up to 60 guests. One-time payment, yours until the wedding.",
+            "price": "199",
+            "priceCurrency": "USD",
+            "url": "https://guest-ly.com/#pricing"
+          },
+          {
+            "@type": "Offer",
+            "name": "Signature",
+            "description": "Up to 160 guests. One-time payment, yours until the wedding.",
+            "price": "399",
+            "priceCurrency": "USD",
+            "url": "https://guest-ly.com/#pricing"
+          },
+          {
+            "@type": "Offer",
+            "name": "Grande",
+            "description": "Up to 300 guests. One-time payment, yours until the wedding. AI Coordinator included.",
+            "price": "699",
+            "priceCurrency": "USD",
+            "url": "https://guest-ly.com/#pricing"
+          }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Why not just use Zola for free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Zola gives you a website and an RSVP form; it does not answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola. We sync with it."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is it really one payment?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Every plan is a single one-time price, yours until the wedding. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it work in Bolivia and Latin America?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "That is our home turf. Guest-ly is WhatsApp-first and fully bilingual, with proper +591 (and any international) phone handling built in."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if the AI is not sure?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It only answers from your wedding's information. When it is not sure, it tells the guest it is checking with you and flags the question on your dashboard. You see every transcript."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What about refunds?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Full refund before your first guest messages the concierge, or within 30 days, whichever comes first."
+            }
+          }
+        ]
+      }
+    </script>
+    <title>Guest-ly: AI Concierge &amp; Wedding Platform</title>
+    <script type="module" crossorigin="" src="/assets/index-BK4_Lj5z.js"></script>
+    <link rel="stylesheet" crossorigin="" href="/assets/index-BuFO_dqF.css">
   </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
+  <body class="">
+    <div id="root"><div class="static-stage" aria-hidden="true"></div><div class="overlay-root"><a class="skip-link" href="#main">Skip to content</a><div class="overlay-page"><header class="nav"><div class="nav__inner"><a href="#hero" class="nav__logo" aria-label="Guest-ly: home"><span class="logo"><span>Guest</span><span class="logo__gem" aria-hidden="true"></span><span class="logo__ly">ly</span></span></a><nav class="nav__links" aria-label="Primary"><a href="#hero">See it work</a><a href="#pillars">What you get</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav><div class="nav__actions"><a class="nav__login" href="https://app.guest-ly.com">Client Login</a><div class="lang-toggle theme-toggle" role="group" aria-label="Theme"><button type="button" class="" aria-pressed="false">Day</button><button type="button" class="on" aria-pressed="true">Night</button></div><div class="lang-toggle" role="group" aria-label="Language"><button type="button" class="on" aria-pressed="true">EN</button><button type="button" class="" aria-pressed="false">ES</button></div><button type="button" class="btn btn--gold">Get started</button></div><div class="lang-toggle theme-toggle lang-toggle--bar theme-toggle--bar" role="group" aria-label="Theme"><button type="button" class="" aria-pressed="false">Day</button><button type="button" class="on" aria-pressed="true">Night</button></div><div class="lang-toggle lang-toggle--bar" role="group" aria-label="Language"><button type="button" class="on" aria-pressed="true">EN</button><button type="button" class="" aria-pressed="false">ES</button></div><button type="button" class="nav__burger" aria-expanded="false" aria-label="Menu"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span></button></div><div class="nav__menu" aria-hidden="true"><nav class="nav__menu-links" aria-label="Menu"><a href="#hero" tabindex="-1">See it work</a><a href="#pillars" tabindex="-1">What you get</a><a href="#how" tabindex="-1">How it works</a><a href="#pricing" tabindex="-1">Pricing</a><a href="#faq" tabindex="-1">FAQ</a><a href="https://app.guest-ly.com" class="nav__menu-login" tabindex="-1">Client Login</a></nav><div class="nav__menu-foot"><div class="nav__menu-toggles"><div class="lang-toggle theme-toggle lang-toggle--menu" role="group" aria-label="Theme"><button type="button" class="" aria-pressed="false">Day</button><button type="button" class="on" aria-pressed="true">Night</button></div><div class="lang-toggle lang-toggle--menu" role="group" aria-label="Language"><button type="button" class="on" aria-pressed="true">EN</button><button type="button" class="" aria-pressed="false">ES</button></div></div><button type="button" class="btn btn--gold btn--lg" tabindex="-1">Get started</button></div></div></header><main id="main"><section id="hero" class="hero"><div class="container hero__grid"><div class="hero__copy"><span class="badge reveal"><span class="badge__dot" aria-hidden="true"></span>Built for our own 400-guest wedding</span><p class="hero__kicker reveal">AI Concierge · Weddings &amp; Events</p><h1 class="hero__title reveal"><span class="hero__line">Your guests,</span><span class="hero__line accent">answered.</span><span class="hero__line">Always.</span></h1><p class="hero__sub reveal">Stop answering the same questions 200 times. A 24/7 concierge, per-person RSVPs, and one portal to run it all.</p><div class="hero__actions reveal"><button type="button" class="btn btn--gold btn--lg">Get my concierge</button><a class="btn btn--ghost btn--lg" href="#demo">Try the demo</a></div><div class="hero__stats reveal"><div class="stat"><span class="stat__value">24/7</span><span class="stat__label">Always on</span></div><div class="stat"><span class="stat__value">0</span><span class="stat__label">Questions you answer at 2am</span></div><div class="stat"><span class="stat__value">EN/ES</span><span class="stat__label">Fully bilingual</span></div><div class="stat"><span class="stat__value">~7d</span><span class="stat__label">To launch</span></div></div></div><div id="demo" class="hero__visual reveal"><div class="chat-card glass"><div class="chat-card__head"><span class="chat-card__mono" aria-hidden="true">G</span><div class="chat-card__id"><span class="chat-card__name">Emma &amp; James · Guest-ly</span><span class="chat-card__status"><span class="chat-card__dot" aria-hidden="true"></span>Powered by AI</span></div></div><div class="chat-card__chips"><span class="chat-chip">Dress code</span><span class="chat-chip">Hotels</span><span class="chat-chip">Shuttle</span><span class="chat-chip">RSVP</span></div><div class="chat-card__body"><p class="bubble bubble--guest">What's the dress code?</p><p class="bubble bubble--ai">Black tie optional. Formal attire encouraged, no jeans please.</p><p class="bubble bubble--guest">Is there a shuttle from the hotel?</p><p class="bubble bubble--ai">Yes, from Hotel Grand at 3:15 PM. Free for all guests.</p></div><div class="chat-card__input" aria-hidden="true"><span class="chat-card__placeholder">Ask about the wedding</span><span class="chat-card__send">→</span></div></div></div></div><div class="hero__hint" aria-hidden="true">Scroll</div></section><div class="marquee" aria-hidden="true"><div class="marquee__track"><ul class="marquee__list"><li>What's the dress code?</li><li>¿Hay shuttle desde el hotel?</li><li>Can I bring a plus-one?</li><li>¿Dónde hago el RSVP?</li><li>Which hotel has the group rate?</li><li>Quel est le programme du jour ?</li><li>Is there parking at the venue?</li><li>¿A qué hora es la ceremonia?</li><li>Are kids welcome?</li><li>Wie komme ich vom Flughafen dorthin?</li><li>What's on the menu?</li><li>¿Cuál es la lista de regalos?</li></ul><ul class="marquee__list"><li>What's the dress code?</li><li>¿Hay shuttle desde el hotel?</li><li>Can I bring a plus-one?</li><li>¿Dónde hago el RSVP?</li><li>Which hotel has the group rate?</li><li>Quel est le programme du jour ?</li><li>Is there parking at the venue?</li><li>¿A qué hora es la ceremonia?</li><li>Are kids welcome?</li><li>Wie komme ich vom Flughafen dorthin?</li><li>What's on the menu?</li><li>¿Cuál es la lista de regalos?</li></ul></div></div><section id="pillars" class="section"><div class="container"><header class="sec-head reveal"><p class="sec-eyebrow"><span class="sec-no">№ 01</span><span class="sec-rule" aria-hidden="true"></span><span class="sec-kicker">What you get</span></p><h2 class="sec-title"><span>Three promises.</span></h2></header><div class="pillar-grid"><div class="reveal"><div class="glass pillar"><button type="button" class="pillar__toggle" aria-expanded="false" aria-controls="pillar-guests"><span class="pillar__head"><span class="pillar__title">Your guests</span><span class="pillar__line">Ask anything, any hour, in their language.</span></span><span class="pillar__meta"><span class="pillar__hint">See what that means</span><span class="pillar__plus" aria-hidden="true">+</span></span></button><div class="pillar__body" id="pillar-guests" inert=""><div class="pillar__inner"><ul class="pillar__list"><li><strong>Web chat and WhatsApp.</strong> An elegant chat page on a link, plus a dedicated WhatsApp number guests text like any contact. Nothing to install, no accounts to create: they tap a link or scan a QR code and ask away.</li><li><strong>Wedding website with per-person RSVPs.</strong> A bilingual site with your story, itinerary, dress code and registry. Each guest confirms each person for each event, from the site or straight in the chat.</li><li><strong>Travel answers built in.</strong> Visas, currency, weather, transport and local tips for guests flying in from abroad.</li><li><strong>QR guest passes.</strong> Every guest gets a personal QR pass for a smooth check-in at the door.</li><li><strong>Their language.</strong> Fully bilingual in English and Spanish, with best-effort answers in other languages. SMS and Telegram are coming soon.</li></ul></div></div></div></div><div class="reveal"><div class="glass pillar"><button type="button" class="pillar__toggle" aria-expanded="false" aria-controls="pillar-you"><span class="pillar__head"><span class="pillar__title">You</span><span class="pillar__line">One screen, everything visible, nothing to install.</span></span><span class="pillar__meta"><span class="pillar__hint">See what that means</span><span class="pillar__plus" aria-hidden="true">+</span></span></button><div class="pillar__body" id="pillar-you" inert=""><div class="pillar__inner"><ul class="pillar__list"><li><strong>Wedding Brain.</strong> Everything your concierge knows, editable by you. Change a hotel tip, preview the answer, publish instantly.</li><li><strong>Live dashboard.</strong> Every question guests ask, the topics they care about, RSVP momentum, and the gaps your Brain has not covered yet.</li><li><strong>Guest list and RSVP board.</strong> Import from Excel, CSV or Zola in one click. Every response with per-event detail, automatic reminders to non-responders, and a Monday digest in your inbox.</li><li><strong>Broadcasts.</strong> Message all guests, only non-responders, or one group, on WhatsApp, in each guest’s own language.</li><li><strong>Website studio.</strong> Edit your wedding site live: sections, themes, photos, custom RSVP questions. Publish when it is perfect.</li><li><strong>AI Coordinator.</strong> The optional add-on: tell it what changed, in plain English or Spanish, and it updates the list, the RSVPs and the reminders. Every change asks for your approval first.</li></ul></div></div></div></div><div class="reveal"><div class="glass pillar"><button type="button" class="pillar__toggle" aria-expanded="false" aria-controls="pillar-under"><span class="pillar__head"><span class="pillar__title">Under it</span><span class="pillar__line">Built, hosted and monitored by us.</span></span><span class="pillar__meta"><span class="pillar__hint">See what that means</span><span class="pillar__plus" aria-hidden="true">+</span></span></button><div class="pillar__body" id="pillar-under" inert=""><div class="pillar__inner"><ul class="pillar__list"><li><strong>Trained only on your wedding.</strong> The concierge answers from your wedding’s information alone. When it is not sure, it tells the guest it is checking with you and flags the question on your dashboard.</li><li><strong>Full transcripts.</strong> You can read every conversation your guests have with the concierge, any time.</li><li><strong>Zero setup for you.</strong> We handle the WhatsApp business approval, the hosting, the servers and the monitoring. You never touch code or create a business account.</li><li><strong>Version history.</strong> Every change to your Wedding Brain is versioned, with one-click rollback.</li><li><strong>Live in about a week.</strong> From intake form to live concierge in about seven days. Signature and Grande include priority support. Guest limits count invited people, not messages.</li></ul></div></div></div></div></div></div></section><section id="how" class="section"><div class="container"><header class="sec-head reveal"><p class="sec-eyebrow"><span class="sec-no">№ 02</span><span class="sec-rule" aria-hidden="true"></span><span class="sec-kicker">How it works</span></p><h2 class="sec-title"><span>From order to live concierge</span><span>in about a week.</span></h2></header><ol class="steps"><li class="step reveal"><span class="step__n" aria-hidden="true">01</span><h3 class="step__title">Fill the intake form</h3><p class="step__body">Venue, schedule, hotels, dress code, travel tips. 15 minutes.</p></li><li class="step reveal"><span class="step__n" aria-hidden="true">02</span><h3 class="step__title">We build your bot</h3><p class="step__body">We train the AI on your wedding and match your aesthetic.</p></li><li class="step reveal"><span class="step__n" aria-hidden="true">03</span><h3 class="step__title">You review and approve</h3><p class="step__body">Test a private preview, tweak anything, publish instantly.</p></li><li class="step reveal"><span class="step__n" aria-hidden="true">04</span><h3 class="step__title">Share with guests</h3><p class="step__body">A website, a chat link, a WhatsApp number.</p></li></ol><div class="how__cta reveal"><button type="button" class="btn btn--gold btn--lg">Start step one</button><p class="how__note">Most couples finish it over a coffee.</p></div></div></section><section id="pricing" class="section"><div class="container"><header class="sec-head reveal"><p class="sec-eyebrow"><span class="sec-no">№ 03</span><span class="sec-rule" aria-hidden="true"></span><span class="sec-kicker">Pricing</span></p><h2 class="sec-title"><span>One price.</span><span>Every question answered.</span></h2><p class="sec-intro">From $199, once. Yours until the wedding.</p></header><div class="plan-grid"><div class="glass plan reveal"><h3 class="plan__name">Essentials</h3><p class="plan__channels">Up to 60 guests</p><p class="plan__price"><span class="plan__cur" aria-hidden="true">$</span><span class="plan__num">199</span></p><p class="plan__fee">One payment</p><ul class="plan__features"><li><span class="tick" aria-hidden="true">✓</span>Concierge: WhatsApp + web, EN/ES</li><li><span class="tick" aria-hidden="true">✓</span>Website + registry + RSVP</li><li><span class="tick" aria-hidden="true">✓</span>Import: CSV, Excel, Zola</li><li><span class="tick" aria-hidden="true">✓</span>Dashboard + transcripts</li></ul><button type="button" class="btn btn--gold-line btn--lg plan__cta">Get started →</button></div><div class="glass plan plan--popular reveal"><span class="plan__ribbon">✦ Most popular</span><h3 class="plan__name">Signature</h3><p class="plan__channels">Up to 160 guests</p><p class="plan__price"><span class="plan__cur" aria-hidden="true">$</span><span class="plan__num">399</span></p><p class="plan__fee">One payment</p><ul class="plan__features"><li><span class="tick" aria-hidden="true">✓</span>Everything in Essentials</li><li><span class="tick" aria-hidden="true">✓</span>Per-person, per-event RSVP</li><li><span class="tick" aria-hidden="true">✓</span>Unlimited broadcasts</li><li><span class="tick" aria-hidden="true">✓</span>QR check-in + Zola sync</li></ul><button type="button" class="btn btn--gold btn--lg plan__cta">Get started →</button></div><div class="glass plan reveal"><h3 class="plan__name">Grande</h3><p class="plan__channels">Up to 300 guests</p><p class="plan__price"><span class="plan__cur" aria-hidden="true">$</span><span class="plan__num">699</span></p><p class="plan__fee">One payment</p><ul class="plan__features"><li><span class="tick" aria-hidden="true">✓</span>Everything in Signature</li><li><span class="tick" aria-hidden="true">✓</span>AI Coordinator included</li><li><span class="tick" aria-hidden="true">✓</span>Done-for-you setup</li><li><span class="tick" aria-hidden="true">✓</span>Planner seat</li></ul><button type="button" class="btn btn--gold-line btn--lg plan__cta">Get started →</button></div></div><p class="zola-line reveal"><span class="zola-line__mark" aria-hidden="true">✦</span>Keep Zola. We sync with it.</p><div class="glass coord-strip reveal"><span class="badge">Add-on</span><p class="coord-strip__body"><strong>AI Coordinator</strong> runs your wedding by chat. $79 once or $19/mo. Included with Grande.</p></div><p class="guarantee reveal"><span class="guarantee__mark" aria-hidden="true">✦</span>Full refund before your first guest messages the concierge, or within 30 days.</p></div></section><section id="founding" class="section"><div class="container"><header class="sec-head reveal"><p class="sec-eyebrow"><span class="sec-no">№ 04</span><span class="sec-rule" aria-hidden="true"></span><span class="sec-kicker">The origin</span></p><h2 class="sec-title"><span>Built for our own</span><span>wedding first.</span></h2></header><div class="founding-grid"><div class="founding-story reveal"><p class="founding-story__p">Being built and tested for our own wedding: 400 guests in Tarija, Bolivia, this November.</p><p class="founding-story__p">Every feature exists because a real guest needed it.</p></div><div class="glass founding reveal"><span class="badge"><span class="badge__dot" aria-hidden="true"></span>Founding Couples</span><p class="founding__body">First 10 weddings: 30% off and the AI Coordinator included, for an honest testimonial.</p><p class="founding__ends">Ends Aug 31, 2026</p><button type="button" class="btn btn--gold founding__cta">Claim a founding spot</button></div></div></div></section><section id="faq" class="section"><div class="container"><header class="sec-head reveal"><p class="sec-eyebrow"><span class="sec-no">№ 05</span><span class="sec-rule" aria-hidden="true"></span><span class="sec-kicker">Questions</span></p><h2 class="sec-title"><span>You probably have</span><span>a few questions.</span></h2></header><div class="faq-layout"><div class="glass faq-human reveal"><h3 class="card-title card-title--sm">Prefer a human?</h3><p class="card-body">We answer every message ourselves, usually within hours.</p><a class="faq-human__mail" href="mailto:nicolas@guest-ly.com">nicolas@guest-ly.com</a></div><div class="faq-list reveal"><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-0"><span>Why not just use Zola for free?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-a" id="faq-a-0" inert=""><div class="faq-a__inner"><p>Zola gives you a website and an RSVP form; it does not answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola. We sync with it.</p></div></div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-1"><span>Is it really one payment?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-a" id="faq-a-1" inert=""><div class="faq-a__inner"><p>Yes. Every plan is a single one-time price, yours until the wedding. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo.</p></div></div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-2"><span>Does it work in Bolivia and Latin America?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-a" id="faq-a-2" inert=""><div class="faq-a__inner"><p>That is our home turf. Guest-ly is WhatsApp-first and fully bilingual, with proper +591 (and any international) phone handling built in.</p></div></div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-3"><span>What if the AI is not sure?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-a" id="faq-a-3" inert=""><div class="faq-a__inner"><p>It only answers from your wedding’s information. When it is not sure, it tells the guest it is checking with you and flags the question on your dashboard. You see every transcript.</p></div></div></div><div class="faq-item"><button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-4"><span>What about refunds?</span><span class="faq-plus" aria-hidden="true">+</span></button><div class="faq-a" id="faq-a-4" inert=""><div class="faq-a__inner"><p>Full refund before your first guest messages the concierge, or within 30 days, whichever comes first. The refunds page has the details.</p></div></div></div></div></div></div></section><section class="section section--final"><div class="container final-cta reveal"><p class="sec-kicker">Ready to stop answering questions?</p><h2 class="sec-title"><span>Your guests deserve a</span><span>beautiful experience.</span></h2><div class="final-cta__actions"><button type="button" class="btn btn--gold btn--lg">Get my concierge</button><a class="btn btn--ghost btn--lg" href="#pricing">See pricing</a></div></div></section></main><footer class="footer"><div class="container footer__grid"><div class="footer__brand"><span class="logo footer__logo"><span>Guest</span><span class="logo__gem" aria-hidden="true"></span><span class="logo__ly">ly</span></span><p class="footer__blurb">The AI concierge and platform for weddings.</p></div><nav class="footer__col" aria-label="Explore"><h3 class="footer__head">Explore</h3><ul><li><a href="#pillars">What you get</a></li><li><a href="#how">How it works</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul></nav><div class="footer__col"><h3 class="footer__head">Contact</h3><ul><li><a href="mailto:nicolas@guest-ly.com">nicolas@guest-ly.com</a></li><li><button type="button" class="footer__link-btn">Start your order</button></li><li><a href="mailto:nicolas@guest-ly.com?subject=Intake%20form">Intake form</a></li></ul></div><nav class="footer__col" aria-label="Legal"><h3 class="footer__head">Legal</h3><ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="/refunds">Refunds</a></li></ul></nav></div><div class="container footer__base"><p>© 2026 Guest-ly</p><p class="footer__crafted">Crafted with ✦ for unforgettable celebrations</p></div></footer></div></div></div>
+  
+
+</body></html>

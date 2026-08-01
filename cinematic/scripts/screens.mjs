@@ -23,6 +23,7 @@ const VIEWPORTS = [
 /* Each shot scrolls its anchor into view, waits for reveals, screenshots the viewport. */
 const SHOTS = [
   { name: 'hero', sel: '#hero' },
+  { name: 'hero-chat', sel: '#hero', action: 'wait-chat' },
   { name: 'marquee', sel: '.marquee' },
   { name: 'pillars', sel: '#pillars', optional: true },
   { name: 'pillars-open', sel: '#pillars', optional: true, action: 'expand-pillars' },
@@ -44,7 +45,7 @@ for (const vp of VIEWPORTS) {
       const ctx = await browser.newContext({
         viewport: { width: vp.width, height: vp.height },
         colorScheme: theme === 'day' ? 'light' : 'dark',
-        reducedMotion: 'reduce',
+        reducedMotion: flags.motion ? 'no-preference' : 'reduce',
       });
       const page = await ctx.newPage();
       await page.addInitScript(
@@ -68,6 +69,9 @@ for (const vp of VIEWPORTS) {
         }
         await el.scrollIntoViewIfNeeded();
         await page.waitForTimeout(600);
+        if (shot.action === 'wait-chat') {
+          await page.waitForTimeout(4500); /* mid-conversation state */
+        }
         if (shot.action === 'open-faq') {
           const q = page.locator('.faq-q').first();
           if ((await q.count()) > 0) await q.click();

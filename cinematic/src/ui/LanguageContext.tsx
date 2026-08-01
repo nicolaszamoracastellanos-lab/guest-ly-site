@@ -24,7 +24,20 @@ function readStoredLang(): Locale {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Locale>(readStoredLang);
+  /* When hydrating over prerendered EN markup, start in EN to match the
+     server DOM; the stored choice applies right after mount. */
+  const [lang, setLang] = useState<Locale>(() =>
+    (window as unknown as { __glHydrating?: boolean }).__glHydrating ? 'en' : readStoredLang(),
+  );
+
+  useEffect(() => {
+    const flagged = window as unknown as { __glHydrating?: boolean };
+    if (flagged.__glHydrating) {
+      flagged.__glHydrating = false;
+      const stored = readStoredLang();
+      if (stored !== 'en') setLang(stored);
+    }
+  }, []);
 
   useEffect(() => {
     try {

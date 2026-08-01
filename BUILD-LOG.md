@@ -114,3 +114,18 @@ VERIFY: routes return 200 as real files on a static server simulating Pages, cor
 BUILD: copy.ts was born clean in the B rewrite (zero em dashes, zero emojis); the remaining 8 em dashes across src (comments + one aria-label) rewritten with periods/colons/semicolons, not hyphen swaps. scripts/lint-copy.mjs fails the build on em dash anywhere in src or emoji codepoints in copy.ts (the permitted diamond/check/cross glyphs stay permitted); wired into npm run build and as a blocking lint-copy job in .github/workflows/deploy.yml.
 VERIFY: lint-copy exits clean. grep em dash in cinematic/src: zero. ES screenshots at every section (56-shot b-final set + i-es re-shots): no EN strings leaking into ES mode; chat mock and marquee emoji-free.
 REVISE: ES desktop nav labels wrapped mid-word at 1440; labels now wrap as whole units and the link gap tightened: ES fits a single row (measured 41.7px row height).
+
+Committed: 43c3572.
+
+---
+
+## Part 11: self-review protocol
+
+1. HOSTILE PASS FINDINGS (both fixed and re-verified):
+   - Stored-ES users hydrated over prerendered EN markup and hit React hydration mismatches. Fix: hydrate in EN, apply the stored language right after mount (one-frame EN flash for stored-ES users, standard SSG trade). Verified on built output: zero console errors, ES applied.
+   - REAL BUG the motion-enabled screenshot loop caught: expanding a pillar made all three cards vanish. React rewrites the pillar's className on toggle, wiping the IntersectionObserver-added is-visible, leaving reveal opacity 0 forever. Fix: reveal class moved to a static wrapper. Audited the same pattern site-wide: plan cards (static conditional) and FAQ (reveal on static list wrapper) are safe. Re-verified with motion on: expanded pillars stay at opacity 1.
+2. GREP GATES (cinematic/src): em dash ZERO; emoji in copy.ts ZERO (permitted diamond/check/cross only); Valentina|Camila|Rodrigo ZERO; #0d1117 only in the THEME_SCENE map, tokens.css raw constants and the theme-color meta map; var(--ink|--ivory) referenced only inside tokens.css theme scopes, zero in component styles; price strays ZERO; alexnico2026 ZERO (one protective NEVER-point-here comment says "alexnico"); secret patterns ZERO.
+3. VISUAL LOOP: 88-shot matrix on the BUILT output with real motion (hero idle + mid-conversation, pillars collapsed/expanded, how, pricing, founding, faq open+closed, marquee, footer; 390x844 + 1440x900; night + day; EN + ES) in docs/wave5-screens/final, wizard steps 1-4 EN/ES both themes in final-wizard, legal pages in h-legal. Inspected sample across the riskiest combinations after the pillar fix: no overflow, no unthemed elements, no clipping.
+4. FUNCTIONAL SMOKE (built output): theme ladder (stored beats OS, OS followed live, no flash at commit) PASS; pillar keyboard operation PASS; wizard full pass EN+ES with FormSubmit payload intercepted dry PASS (real inbox untouched); demo guardrails PASS (verified against mocked endpoint); prerendered HTML carries real copy PASS; JSON-LD parses PASS; legal routes resolve as real files PASS.
+5. PERFORMANCE: initial JS 255.57KB uncompressed / 79.52KB gzip (< 300KB target); deferred driver 113KB + Experience 889KB; Lighthouse mobile 37 -> 60 (FCP 4.7->3.5s, LCP 5.3->3.6s, TBT 2880->1070ms).
+6. ROOT DEPLOY OUTPUT regenerated from the build at the very end (index.html, assets/, textures/silk.jpg, privacy/, terms/, refunds/), verified serving on a static server. Committed on wave5-landing-rebuild. NOT pushed: push = deploy and needs Nico's explicit approval.

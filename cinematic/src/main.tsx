@@ -11,8 +11,12 @@ const app = (
 )
 
 /* The build prerenders the full EN DOM into index.html (Part 7.2); React
-   hydrates over it. Dev serves an empty root and renders normally. */
+   hydrates over it. Dev serves an empty root and renders normally.
+   The flag lets LanguageProvider hydrate in EN (matching the prerendered
+   markup) and switch to a stored 'es' right after mount, instead of
+   tripping hydration mismatches. */
 if (rootEl.childElementCount > 0) {
+  ;(window as unknown as { __glHydrating?: boolean }).__glHydrating = true
   hydrateRoot(rootEl, app)
 } else {
   createRoot(rootEl).render(app)

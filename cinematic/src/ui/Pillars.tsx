@@ -18,35 +18,40 @@ export function Pillars() {
         <div className="pillar-grid">
           {p.items.map((item) => {
             const isOpen = !!open[item.id];
+            /* The reveal class lives on a static wrapper: React rewrites the
+               inner card's className on toggle, which would wipe the
+               observer-added is-visible and fade the card out for good. */
             return (
-              <div key={item.id} className={isOpen ? 'glass pillar is-open reveal' : 'glass pillar reveal'}>
-                <button
-                  type="button"
-                  className="pillar__toggle"
-                  aria-expanded={isOpen}
-                  aria-controls={`pillar-${item.id}`}
-                  onClick={() => setOpen((v) => ({ ...v, [item.id]: !v[item.id] }))}
-                >
-                  <span className="pillar__head">
-                    <span className="pillar__title">{item.title}</span>
-                    <span className="pillar__line">{item.line}</span>
-                  </span>
-                  <span className="pillar__meta">
-                    <span className="pillar__hint">{p.expand}</span>
-                    <span className="pillar__plus" aria-hidden="true">
-                      +
+              <div key={item.id} className="reveal">
+                <div className={isOpen ? 'glass pillar is-open' : 'glass pillar'}>
+                  <button
+                    type="button"
+                    className="pillar__toggle"
+                    aria-expanded={isOpen}
+                    aria-controls={`pillar-${item.id}`}
+                    onClick={() => setOpen((v) => ({ ...v, [item.id]: !v[item.id] }))}
+                  >
+                    <span className="pillar__head">
+                      <span className="pillar__title">{item.title}</span>
+                      <span className="pillar__line">{item.line}</span>
                     </span>
-                  </span>
-                </button>
-                <div className="pillar__body" id={`pillar-${item.id}`} inert={!isOpen}>
-                  <div className="pillar__inner">
-                    <ul className="pillar__list">
-                      {item.details.map((d) => (
-                        <li key={d.h}>
-                          <strong>{d.h}.</strong> {d.b}
-                        </li>
-                      ))}
-                    </ul>
+                    <span className="pillar__meta">
+                      <span className="pillar__hint">{p.expand}</span>
+                      <span className="pillar__plus" aria-hidden="true">
+                        +
+                      </span>
+                    </span>
+                  </button>
+                  <div className="pillar__body" id={`pillar-${item.id}`} inert={!isOpen}>
+                    <div className="pillar__inner">
+                      <ul className="pillar__list">
+                        {item.details.map((d) => (
+                          <li key={d.h}>
+                            <strong>{d.h}.</strong> {d.b}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
