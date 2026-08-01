@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getProgress } from '../scroll/progress';
@@ -82,6 +82,40 @@ export function useSceneTheme(): SceneTheme {
   return THEME_SCENE[theme];
 }
 
+/* Pause the render loop while the tab is hidden or the stage is scrolled
+   fully offscreen (the stage is fixed, so the observer is a safety net for
+   future layouts). */
+function FrameloopGovernor({ stage }: { stage: HTMLElement | null }) {
+  const setFrameloop = useThree((state) => state.setFrameloop);
+  const hidden = useRef(false);
+  const offscreen = useRef(false);
+
+  useEffect(() => {
+    const apply = () => setFrameloop(hidden.current || offscreen.current ? 'never' : 'always');
+    const onVisibility = () => {
+      hidden.current = document.hidden;
+      apply();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    let io: IntersectionObserver | undefined;
+    if (stage && typeof IntersectionObserver !== 'undefined') {
+      io = new IntersectionObserver((entries) => {
+        offscreen.current = entries.some((e) => !e.isIntersecting);
+        apply();
+      });
+      io.observe(stage);
+    }
+    onVisibility();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      io?.disconnect();
+    };
+  }, [setFrameloop, stage]);
+
+  return null;
+}
+
 function CameraRig() {
   const { camera, pointer } = useThree();
   const drift = useRef({ x: 0, y: 0 });
@@ -154,8 +188,12 @@ function Atmosphere() {
 }
 
 export function Experience() {
+  const [stage, setStage] = useState<HTMLElement | null>(null);
+  /* Phones keep the tighter pixel-ratio cap (Part 7.1). */
+  const maxDpr = typeof window !== 'undefined' && window.innerWidth < 720 ? 1.5 : 1.75;
+
   return (
-    <div className="webgl-stage">
+    <div className="webgl-stage" ref={setStage}>
       <Canvas
         camera={{ fov: 42, near: 0.1, far: 60, position: [0, 0, 6] }}
         gl={{ antialias: true, alpha: false }}
@@ -165,8 +203,9 @@ export function Experience() {
           scene.background = new THREE.Color(THEME_SCENE[getTheme()].bg);
           if (import.meta.env.DEV) (window as unknown as { __scene?: THREE.Scene }).__scene = scene;
         }}
-        dpr={[1, 1.75]}
+        dpr={[1, maxDpr]}
       >
+        <FrameloopGovernor stage={stage} />
         <CameraRig />
         <Atmosphere />
         <group position={[0, 0, -2]}>

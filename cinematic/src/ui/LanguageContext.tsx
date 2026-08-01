@@ -18,7 +18,7 @@ function readStoredLang(): Locale {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === 'en' || stored === 'es') return stored;
   } catch {
-    /* storage unavailable (private mode etc.) — fall through */
+    /* storage unavailable (private mode etc.): fall through */
   }
   return 'en';
 }

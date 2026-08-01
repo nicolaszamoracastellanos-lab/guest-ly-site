@@ -39,7 +39,7 @@ export function Overlay() {
   const wizardApi = useMemo<WizardApi>(() => ({ open: openWizard }), [openWizard]);
 
   /* Scroll reveals: one IntersectionObserver toggling `is-visible`.
-     Content is visible by default — `.reveal` only hides once `body.js-ready`
+     Content is visible by default; `.reveal` only hides once `body.js-ready`
      exists, so a missing observer/JS failure never blanks the page. */
   useEffect(() => {
     document.body.classList.add('js-ready');

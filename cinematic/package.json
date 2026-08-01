@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prerender.mjs && node scripts/lint-copy.mjs",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint:copy": "node scripts/lint-copy.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

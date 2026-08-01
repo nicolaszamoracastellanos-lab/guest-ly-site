@@ -1,4 +1,4 @@
-/* Ambient petals drifting at the frame edges — the only "florals" in the
+/* Ambient petals drifting at the frame edges, the only "florals" in the
    scene. No photo billboards: content stays king, petals stay peripheral.
    The center is kept clear so text is never crossed at any viewport width. */
 

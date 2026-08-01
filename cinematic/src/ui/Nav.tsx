@@ -79,7 +79,7 @@ export function Nav() {
         .join(' ')}
     >
       <div className="nav__inner">
-        <a href="#hero" className="nav__logo" onClick={closeMenu} aria-label="Guest-ly — home">
+        <a href="#hero" className="nav__logo" onClick={closeMenu} aria-label="Guest-ly: home">
           <Logo />
         </a>
 

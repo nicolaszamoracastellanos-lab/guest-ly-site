@@ -1,4 +1,4 @@
-/* Guest-ly — DOM overlay for the cinematic experience.
+/* Guest-ly: DOM overlay for the cinematic experience.
    Mobile-first: base rules target phones; min-width queries scale up.
    All color/font/spacing/radius/shadow values come from src/styles/tokens.css;
    translucency variants are derived from tokens via color-mix so the WebGL
@@ -314,7 +314,7 @@ body.js-ready .reveal.is-visible {
   text-decoration: none;
 }
 
-/* Wordmark — matches the production .logo recipe exactly. */
+/* Wordmark: matches the production .logo recipe exactly. */
 .logo {
   display: inline-flex;
   align-items: center;

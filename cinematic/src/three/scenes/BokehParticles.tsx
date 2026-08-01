@@ -1,4 +1,4 @@
-/* Chapter 4 (reception night): warm golden bokeh — THREE.Points with a soft
+/* Chapter 4 (reception night): warm golden bokeh: THREE.Points with a soft
    radial-gradient sprite drawn on a canvas (no external texture), additive
    blending, attenuated sizes, slow firefly drift upward. Opacity follows the
    reception scroll window but never drops below a 0.15 ambient floor. */

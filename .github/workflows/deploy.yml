@@ -15,7 +15,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Copy conformance gate (no em dashes, no emojis)
+        run: node cinematic/scripts/lint-copy.mjs
+
   deploy:
+    needs: lint-copy
     runs-on: ubuntu-latest
     environment:
       name: github-pages
