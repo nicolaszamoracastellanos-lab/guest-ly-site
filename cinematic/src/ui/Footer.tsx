@@ -1,5 +1,6 @@
 import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
+import { LEGAL_ENTITY } from '../config';
 import { Logo } from './Logo';
 
 export function Footer() {
@@ -43,10 +44,24 @@ export function Footer() {
             </li>
           </ul>
         </div>
+
+        <nav className="footer__col" aria-label={f.legal.title}>
+          <h3 className="footer__head">{f.legal.title}</h3>
+          <ul>
+            {f.legal.links.map((l) => (
+              <li key={l.href}>
+                <a href={l.href}>{l.label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
       <div className="container footer__base">
-        <p>{f.copyright}</p>
+        <p>
+          {f.copyright}
+          {LEGAL_ENTITY ? ` · ${LEGAL_ENTITY}` : ''}
+        </p>
         <p className="footer__crafted">{f.crafted}</p>
       </div>
     </footer>

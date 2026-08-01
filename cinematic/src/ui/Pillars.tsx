@@ -1,0 +1,59 @@
+import { useState } from 'react';
+import { useLang } from './LanguageContext';
+import { SectionHeader } from './Sections';
+
+/* The Three Pillars: the signature progressive-disclosure interaction.
+   Three glass cards, one line each; the expander carries every factual
+   claim migrated from the old Channels / Included / Portal / Difference
+   sections. Only these three expanders and the FAQ use disclosure. */
+export function Pillars() {
+  const { t } = useLang();
+  const p = t.pillars;
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  return (
+    <section id="pillars" className="section">
+      <div className="container">
+        <SectionHeader no={p.no} kicker={p.kicker} title={p.title} />
+        <div className="pillar-grid">
+          {p.items.map((item) => {
+            const isOpen = !!open[item.id];
+            return (
+              <div key={item.id} className={isOpen ? 'glass pillar is-open reveal' : 'glass pillar reveal'}>
+                <button
+                  type="button"
+                  className="pillar__toggle"
+                  aria-expanded={isOpen}
+                  aria-controls={`pillar-${item.id}`}
+                  onClick={() => setOpen((v) => ({ ...v, [item.id]: !v[item.id] }))}
+                >
+                  <span className="pillar__head">
+                    <span className="pillar__title">{item.title}</span>
+                    <span className="pillar__line">{item.line}</span>
+                  </span>
+                  <span className="pillar__meta">
+                    <span className="pillar__hint">{p.expand}</span>
+                    <span className="pillar__plus" aria-hidden="true">
+                      +
+                    </span>
+                  </span>
+                </button>
+                <div className="pillar__body" id={`pillar-${item.id}`} inert={!isOpen}>
+                  <div className="pillar__inner">
+                    <ul className="pillar__list">
+                      {item.details.map((d) => (
+                        <li key={d.h}>
+                          <strong>{d.h}.</strong> {d.b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

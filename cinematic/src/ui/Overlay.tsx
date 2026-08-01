@@ -5,8 +5,10 @@ import { WizardContext } from './WizardContext';
 import type { PlanId, WizardApi } from './WizardContext';
 import { Nav } from './Nav';
 import { Hero } from './Hero';
-import { Channels, How, Included, Platform, Difference, Testimonials, FinalCta } from './Sections';
+import { How, FinalCta } from './Sections';
+import { Pillars } from './Pillars';
 import { Pricing } from './Pricing';
+import { Founding } from './Founding';
 import { Faq } from './Faq';
 import { Footer } from './Footer';
 import { Wizard } from './Wizard';
@@ -68,15 +70,14 @@ export function Overlay() {
         <SkipLink />
         <div className="overlay-page">
           <Nav />
+          {/* Nine sections: hero, marquee (inside Hero), pillars, how,
+              pricing, founding, faq, final CTA, footer. */}
           <main id="main">
             <Hero />
-            <Channels />
+            <Pillars />
             <How />
-            <Included />
-            <Platform />
-            <Difference />
             <Pricing />
-            <Testimonials />
+            <Founding />
             <Faq />
             <FinalCta />
           </main>

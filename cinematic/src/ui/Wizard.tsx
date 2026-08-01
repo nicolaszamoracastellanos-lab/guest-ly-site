@@ -14,28 +14,43 @@ interface Fields {
   partner: string;
   email: string;
   phone: string;
-  date: string;
-  location: string;
   notes: string;
 }
 
-const EMPTY_FIELDS: Fields = { name: '', partner: '', email: '', phone: '', date: '', location: '', notes: '' };
+type GuestRange = 'essentials' | 'signature' | 'grande' | 'grande-plus';
 
-/* 3-step order wizard, mirroring the production gs-* modal:
-   1 Plan (shared one-time price list) → 2 Details (form, no network) → 3 Confirm
-   (summary + prefilled mailto draft — matches production's email-order flow). */
+const EMPTY_FIELDS: Fields = { name: '', partner: '', email: '', phone: '', notes: '' };
+
+const RANGE_TO_PLAN: Record<GuestRange, PlanId> = {
+  essentials: 'essentials',
+  signature: 'signature',
+  grande: 'grande',
+  'grande-plus': 'grande',
+};
+
+/* 4-step order wizard, inverted per wave 5: the couple starts with what
+   they know by heart (guest count, date, city), gets a recommendation
+   second, leaves contact details third (the lead is captured here, before
+   any payment talk), and sees the honest payment step last. */
 export function Wizard({ initialPlan, onClose }: WizardProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const w = t.wizard;
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  /* The inversion: everyone answers guest count first, even from a plan
+     card. The clicked plan stays preselected until the range recommends. */
+  const [range, setRange] = useState<GuestRange | null>(null);
   const [plan, setPlan] = useState<PlanId>(initialPlan);
+  const [addon, setAddon] = useState(false);
+  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const plans = t.pricing.plans;
   const selected = plans.find((p) => p.id === plan) ?? plans[1];
   const price = selected.price;
+  const rangeLabel = w.step1.guestRanges.find((r) => r.id === range)?.label ?? selected.guests;
 
   /* Scroll lock + ESC while the modal is mounted. */
   useEffect(() => {
@@ -58,29 +73,44 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
   const setField = (key: keyof Fields) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFields((v) => ({ ...v, [key]: e.target.value }));
 
-  const couple = [fields.name, fields.partner].filter(Boolean).join(' & ') || '—';
-  const continueLabel = w.continueLabel.replace('{plan}', selected.name).replace('{price}', `$${price}`);
+  const pickRange = (r: GuestRange) => {
+    setRange(r);
+    setPlan(RANGE_TO_PLAN[r]);
+  };
 
-  /* Order payload — same field names and subject line as production. */
+  const couple = [fields.name, fields.partner].filter(Boolean).join(' & ') || '·';
+  const addonIncluded = plan === 'grande';
+  const addonLabel = addonIncluded ? w.step2.addon.includedNote : addon ? w.step4.addonYes : w.step4.addonNo;
+
+  const reason =
+    range === 'grande-plus'
+      ? w.step2.reasonPlus
+      : w.step2.reason.replace('{guests}', rangeLabel).replace('{plan}', selected.name);
+
+  /* Order payload: same field names and subject shape as production. */
   const order = useMemo(
     () => ({
       couple,
-      email: fields.email || '—',
-      phone: fields.phone || '—',
-      wedding_date: fields.date || '—',
-      location: fields.location || '—',
+      email: fields.email || '·',
+      phone: fields.phone || '·',
+      wedding_date: date || '·',
+      location: location || '·',
+      guest_range: rangeLabel,
       plan: `${selected.name} · ${selected.guests}`,
+      ai_coordinator: addonIncluded ? 'included (Grande)' : addon ? 'yes ($79 one-time)' : 'no',
       price: `$${price} · one-time`,
-      notes: fields.notes || '—',
+      notes: fields.notes || '·',
+      language: lang,
     }),
-    [couple, fields, selected, price],
+    [couple, fields, date, location, rangeLabel, selected, addon, addonIncluded, price, lang],
   );
-  const orderSubject = `New order — ${couple} · ${selected.name} · $${price}`;
+  const orderSubject = `New order: ${couple} · ${selected.name} · $${price}`;
 
   const confirmOrder = () => {
-    /* Notify Guest-ly, fire-and-forget — the mailto fallback below covers failures. */
+    /* The lead is captured here, at the end of step 3, even if payment is
+       abandoned. Fire-and-forget; the mailto fallback covers failures. */
     sendNotification(orderSubject, order).catch(() => {});
-    setStep(3);
+    setStep(4);
   };
 
   const mailtoHref = useMemo(() => {
@@ -90,7 +120,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
     return `mailto:${ORDER_INBOX}?subject=${encodeURIComponent(orderSubject)}&body=${encodeURIComponent(body)}`;
   }, [order, orderSubject]);
 
-  /* Stripe payment link for this plan ('' → fallback note). */
+  /* Stripe payment link for this plan ('' means the honest fallback). */
   const payLink = PAY_LINKS[plan] || '';
   const payUrl = payLink
     ? payLink + (fields.email ? (payLink.includes('?') ? '&' : '?') + 'prefilled_email=' + encodeURIComponent(fields.email) : '')
@@ -121,11 +151,57 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
         </ol>
 
         {step === 1 && (
-          <div className="wiz__body">
+          <form
+            className="wiz__body"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (range) setStep(2);
+            }}
+          >
             <h2 className="wiz__title">{w.step1.title}</h2>
             <p className="wiz__sub">{w.step1.sub}</p>
 
-            <div className="wiz__plans" role="radiogroup" aria-label={w.stepLabels[0]}>
+            <fieldset className="wiz__ranges">
+              <legend className="wiz__legend">{w.step1.guestsLabel}</legend>
+              <div className="wiz__range-grid" role="radiogroup" aria-label={w.step1.guestsLabel}>
+                {w.step1.guestRanges.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={range === r.id}
+                    className={range === r.id ? 'wiz-range on' : 'wiz-range'}
+                    onClick={() => pickRange(r.id)}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <div className="wiz__fields">
+              <label className="field">
+                <span>{w.step1.dateLabel}</span>
+                <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              </label>
+              <label className="field">
+                <span>{w.step1.locationLabel}</span>
+                <input required value={location} onChange={(e) => setLocation(e.target.value)} />
+              </label>
+            </div>
+
+            <button type="submit" className="btn btn--gold btn--lg wiz__continue" disabled={!range}>
+              {w.step1.next}
+            </button>
+          </form>
+        )}
+
+        {step === 2 && (
+          <div className="wiz__body">
+            <h2 className="wiz__title">{w.step2.title}</h2>
+            <p className="wiz__sub">{reason}</p>
+
+            <div className="wiz__plans" role="radiogroup" aria-label={w.stepLabels[1]}>
               {plans.map((pl) => (
                 <button
                   key={pl.id}
@@ -137,7 +213,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                 >
                   <span className="wiz-plan__name">
                     {pl.name}
-                    {pl.popular ? (
+                    {pl.id === RANGE_TO_PLAN[range ?? 'signature'] ? (
                       <em className="wiz-plan__pop" aria-hidden="true">
                         ✦
                       </em>
@@ -150,13 +226,33 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               ))}
             </div>
 
-            <button type="button" className="btn btn--gold btn--lg wiz__continue" onClick={() => setStep(2)}>
-              {continueLabel}
-            </button>
+            <p className="wiz__note">{w.step2.sub}</p>
+
+            <label className={addonIncluded ? 'wiz-addon wiz-addon--included' : 'wiz-addon'}>
+              <input
+                type="checkbox"
+                checked={addonIncluded ? true : addon}
+                disabled={addonIncluded}
+                onChange={(e) => setAddon(e.target.checked)}
+              />
+              <span className="wiz-addon__txt">
+                <strong>{w.step2.addon.title}</strong>
+                <span>{addonIncluded ? w.step2.addon.includedNote : w.step2.addon.pitch}</span>
+              </span>
+            </label>
+
+            <div className="wiz__nav">
+              <button type="button" className="btn btn--ghost" onClick={() => setStep(1)}>
+                {w.step2.back}
+              </button>
+              <button type="button" className="btn btn--gold" onClick={() => setStep(3)}>
+                {w.step2.next}
+              </button>
+            </div>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <form
             className="wiz__body"
             onSubmit={(e) => {
@@ -164,76 +260,76 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               confirmOrder();
             }}
           >
-            <h2 className="wiz__title">{w.step2.title}</h2>
-            <p className="wiz__sub">{w.step2.sub}</p>
+            <h2 className="wiz__title">{w.step3.title}</h2>
+            <p className="wiz__sub">{w.step3.sub}</p>
 
             <div className="wiz__fields">
               <label className="field">
-                <span>{w.step2.fields.name}</span>
+                <span>{w.step3.fields.name}</span>
                 <input required autoComplete="name" value={fields.name} onChange={setField('name')} />
               </label>
               <label className="field">
-                <span>{w.step2.fields.partner}</span>
+                <span>{w.step3.fields.partner}</span>
                 <input value={fields.partner} onChange={setField('partner')} />
               </label>
               <label className="field">
-                <span>{w.step2.fields.email}</span>
+                <span>{w.step3.fields.email}</span>
                 <input required type="email" autoComplete="email" value={fields.email} onChange={setField('email')} />
               </label>
               <label className="field">
-                <span>{w.step2.fields.phone}</span>
+                <span>{w.step3.fields.phone}</span>
                 <input type="tel" autoComplete="tel" value={fields.phone} onChange={setField('phone')} />
               </label>
-              <label className="field">
-                <span>{w.step2.fields.date}</span>
-                <input required type="date" value={fields.date} onChange={setField('date')} />
-              </label>
-              <label className="field">
-                <span>{w.step2.fields.location}</span>
-                <input required value={fields.location} onChange={setField('location')} />
-              </label>
               <label className="field field--full">
-                <span>{w.step2.fields.notes}</span>
+                <span>{w.step3.fields.notes}</span>
                 <textarea rows={3} value={fields.notes} onChange={setField('notes')} />
               </label>
             </div>
 
             <div className="wiz__nav">
-              <button type="button" className="btn btn--ghost" onClick={() => setStep(1)}>
-                {w.step2.back}
+              <button type="button" className="btn btn--ghost" onClick={() => setStep(2)}>
+                {w.step3.back}
               </button>
               <button type="submit" className="btn btn--gold">
-                {w.step2.confirm}
+                {w.step3.confirm}
               </button>
             </div>
           </form>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="wiz__body wiz__body--confirm">
             <span className="badge">
               <span className="badge__dot" aria-hidden="true" />
-              {w.step3.badge}
+              {w.step4.badge}
             </span>
-            <h2 className="wiz__title">{w.step3.title}</h2>
+            <h2 className="wiz__title">{w.step4.title}</h2>
 
             <div className="wiz-summary">
-              <h3 className="wiz-summary__head">{w.step3.summaryTitle}</h3>
+              <h3 className="wiz-summary__head">{w.step4.summaryTitle}</h3>
               <dl>
                 <div>
-                  <dt>{w.step3.rows.plan}</dt>
+                  <dt>{w.step4.rows.plan}</dt>
                   <dd>{selected.name}</dd>
                 </div>
                 <div>
-                  <dt>{w.step3.rows.guests}</dt>
-                  <dd>{selected.guests}</dd>
+                  <dt>{w.step4.rows.guests}</dt>
+                  <dd>{rangeLabel}</dd>
                 </div>
                 <div>
-                  <dt>{w.step3.rows.couple}</dt>
+                  <dt>{w.step4.rows.couple}</dt>
                   <dd>{couple}</dd>
                 </div>
                 <div>
-                  <dt>{w.step3.rows.price}</dt>
+                  <dt>{w.step4.rows.date}</dt>
+                  <dd>{date || '·'}</dd>
+                </div>
+                <div>
+                  <dt>{w.step4.rows.addon}</dt>
+                  <dd>{addonLabel}</dd>
+                </div>
+                <div>
+                  <dt>{w.step4.rows.price}</dt>
                   <dd>${price}</dd>
                 </div>
               </dl>
@@ -243,13 +339,13 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               {payUrl ? (
                 <>
                   <a className="btn btn--gold btn--lg" href={payUrl} target="_blank" rel="noopener noreferrer">
-                    {w.step3.payCta.replace('{price}', `$${price}`)}
+                    {w.step4.payCta.replace('{price}', `$${price}`)}
                   </a>
-                  <p className="wiz-pay__note">{w.step3.payNoteLinked}</p>
+                  <p className="wiz-pay__note">{w.step4.payNoteLinked}</p>
                 </>
               ) : (
                 <p className="wiz-pay__note">
-                  {w.step3.payNoteFallback.replace('{email}', fields.email || '—')}
+                  {w.step4.payNoteFallback.replace('{email}', fields.email || '·')}
                 </p>
               )}
               {WHATSAPP ? (
@@ -259,15 +355,18 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {w.step3.whatsapp}
+                  {w.step4.whatsapp}
                 </a>
               ) : null}
+              <p className="wiz-pay__refund">
+                {w.step4.refundLine} <a href="/refunds">{w.step4.refundLink}</a>.
+              </p>
             </div>
 
             <div className="wiz-next">
-              <h3 className="wiz-next__head">{w.step3.nextTitle}</h3>
+              <h3 className="wiz-next__head">{w.step4.nextTitle}</h3>
               <ol>
-                {w.step3.next.map((n, i) => (
+                {w.step4.next.map((n, i) => (
                   <li key={i}>
                     <span className="wiz-next__n" aria-hidden="true">
                       {i + 1}
@@ -282,12 +381,12 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
             </div>
 
             <p className="wiz-mailfb">
-              {w.step3.mailFallback} <a href={mailtoHref}>{w.step3.mailFallbackLink}</a>.
+              {w.step4.mailFallback} <a href={mailtoHref}>{w.step4.mailFallbackLink}</a>.
             </p>
 
             <div className="wiz__nav wiz__nav--confirm">
               <button type="button" className="btn btn--ghost" onClick={onClose}>
-                {w.step3.backHome}
+                {w.step4.backHome}
               </button>
             </div>
           </div>

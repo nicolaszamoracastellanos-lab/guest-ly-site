@@ -29,7 +29,7 @@ export function Hero() {
               <button type="button" className="btn btn--gold btn--lg" onClick={() => open()}>
                 {h.primary}
               </button>
-              <a className="btn btn--ghost btn--lg" href="#how">
+              <a className="btn btn--ghost btn--lg" href="#demo">
                 {h.secondary}
               </a>
             </div>
@@ -43,7 +43,7 @@ export function Hero() {
             </div>
           </div>
 
-          <div className="hero__visual reveal">
+          <div id="demo" className="hero__visual reveal">
             <ChatCard />
           </div>
         </div>
