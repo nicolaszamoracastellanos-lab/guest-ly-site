@@ -49,3 +49,26 @@ BUILD: ChatCard.tsx dual-mode (live: autoplay opener then real input + sending c
 VERIFY (wizard walkthrough, scripts/wizard-test.mjs, EN night 1440 + ES day 390): 18/18 PASS, including FormSubmit payload intercepted at the network layer (dry: request aborted, real inbox untouched) with correct field set, add-on flag and step 1 date. Screenshots of steps 1 to 4 in docs/wave5-screens/c-wizard.
 REVISE 1: four step labels crowded the sheet header at 390px; phones now label only the current step.
 VERIFY (live demo, endpoint temporarily set and mocked at network layer, then reverted to PENDING): live placeholder PASS; honest "fictional wedding" label PASS; typed message gets reply PASS; rate-limit copy PASS (screenshot c-live/live-rate-limit.png); outage degrades to napping fallback PASS; chip sends PASS; session cap copy PASS (screenshot c-live/live-session-cap.png).
+
+Committed: 20dc0ec.
+
+---
+
+## Workstream D: pricing, honest and singular
+
+GOAL: canonical pricing (199/399/699 one-time; coordinator 79 one-time or 19/mo, included with Grande) propagated everywhere; plan cards at 5 feature lines max; competitor table deleted and replaced by the single Zola line; zero stray prices.
+
+### Cycle D-1
+BUILD: Pricing.tsx rebuilt (cards + Zola line + coordinator strip + guarantee; founding banner moved to the Founding section, one place only). Feature lists now 4 lines per card. Comparison table component, copy and CSS deleted.
+VERIFY (grep): stray price tokens (97|247|447|747|267|547|897|2,499|$5/mo|$12/mo) in src: zero (one false positive: the 247 channel of an rgba() ivory in tokens.css). All $19/mo|$19/mes occurrences sit in coordinator context: PASS. Screenshots: pricing at both viewports/themes clean; nothing horizontally scrollable at 390px anymore.
+OUTSIDE THIS REPO (for the final summary): PLATFORM-STATE.md, DECISIONS.md, Stripe products, Notion pricing docs must be reconciled by Nico if they still carry the old creation-fee model.
+
+---
+
+## Workstream E: truth layer
+
+GOAL: no fabricated social proof anywhere, in either language; Founding Couples section with the true present-tense story; FoundingProof slot for real testimonials.
+
+### Cycle E-1
+BUILD: Testimonials component deleted with its copy (Valentina & Diego, Camila & Rodrigo, past-tense Alexandra & Nicolas quote, five-star rows, "Real weddings" kicker, past-tense badges). Founding.tsx: kicker "The origin", title "Built for our own wedding first", present-tense body, founding offer card (30% off, Coordinator included, honest testimonial, ends Aug 31 2026), CTA opens the wizard. FoundingProof.tsx returns null on the empty proof array.
+VERIFY (grep): Valentina|Camila|Rodrigo|star glyph in src: ZERO. "couldn't believe"|"Real weddings"|5-star fragments: ZERO. proof: [] present in both locales. Screenshots: founding section night/day, both viewports (docs/wave5-screens/b-final).
