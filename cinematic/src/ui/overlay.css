@@ -2287,3 +2287,19 @@ body.js-ready .reveal.is-visible {
 .legal-page__back:hover {
   border-bottom-color: var(--accent-text);
 }
+
+/* Four steps crowd the sheet header on phones: keep every dot, label only
+   the current step (the last one marked .on). */
+@media (max-width: 639px) {
+  .wiz__steps {
+    padding-right: 2.4rem;
+  }
+
+  .wiz__steps li .wiz__step-label {
+    display: none;
+  }
+
+  .wiz__steps li.on:not(:has(~ li.on)) .wiz__step-label {
+    display: inline;
+  }
+}

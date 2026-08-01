@@ -35,3 +35,17 @@ VERIFY (screenshots): pillars collapsed + expanded, how, pricing, founding, faq,
 REVISE 1: footer wrapped its new Legal column badly; grid updated to four columns at >=820px. Re-shot: clean.
 VERIFY (word count, scripts/wordcount.mjs): counts words in text nodes with a visible rendered box; collapsed (inert) panels excluded; the marquee's aria-hidden duplicate animation track counted once; off-canvas skip link excluded. Result: 599 total (537 excluding the decorative multilingual marquee), was 1,944 per the master prompt. PASS (<600), stable across 3 runs.
 VERIFY (keyboard): Tab reaches pillar toggle PASS; Enter expands (aria-expanded false->true) PASS; aria-controls resolves PASS; collapsed bodies inert PASS; Enter collapses PASS.
+
+Committed: 47a3db4.
+
+---
+
+## Workstream C: live hero demo + hero copy + wizard inversion
+
+GOAL: ChatCard upgraded to a real typeable chat behind the LIVE_DEMO flag (scripted fallback while SANDBOX_BOT_ENDPOINT is PENDING), client guardrails (6 msgs/session, 250 chars, 1 per 3s, in-memory state), graceful degradation, honest live label; hero stats and badge per Part 4.2; wizard inverted to 4 steps (guest count + date + city first, recommendation second, contact third with lead capture, honest payment last).
+
+### Cycle C-1
+BUILD: ChatCard.tsx dual-mode (live: autoplay opener then real input + sending chips; scripted: cleaned loop). Wizard.tsx rewritten: range radios map to recommended tier ("{guests} guests fits {plan}", 300+ flagged for capacity confirmation), coordinator add-on checkbox (locked to included on Grande), FormSubmit fires at end of step 3, step 4 = summary incl. date and add-on + pay link/fallback + refund line linking /refunds. docs/sandbox-bot-setup.md written (fictional tenant, no keys in this repo, server-side IP rate limiting + low max_tokens).
+VERIFY (wizard walkthrough, scripts/wizard-test.mjs, EN night 1440 + ES day 390): 18/18 PASS, including FormSubmit payload intercepted at the network layer (dry: request aborted, real inbox untouched) with correct field set, add-on flag and step 1 date. Screenshots of steps 1 to 4 in docs/wave5-screens/c-wizard.
+REVISE 1: four step labels crowded the sheet header at 390px; phones now label only the current step.
+VERIFY (live demo, endpoint temporarily set and mocked at network layer, then reverted to PENDING): live placeholder PASS; honest "fictional wedding" label PASS; typed message gets reply PASS; rate-limit copy PASS (screenshot c-live/live-rate-limit.png); outage degrades to napping fallback PASS; chip sends PASS; session cap copy PASS (screenshot c-live/live-session-cap.png).
