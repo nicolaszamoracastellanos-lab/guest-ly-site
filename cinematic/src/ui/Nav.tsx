@@ -1,7 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
+
+function ThemeToggle({ className }: { className?: string }) {
+  const { t } = useLang();
+  const { theme, setTheme } = useTheme();
+  const labels = t.nav.theme;
+  return (
+    <div
+      className={className ? `lang-toggle theme-toggle ${className}` : 'lang-toggle theme-toggle'}
+      role="group"
+      aria-label={labels.label}
+    >
+      <button
+        type="button"
+        className={theme === 'day' ? 'on' : ''}
+        aria-pressed={theme === 'day'}
+        onClick={() => setTheme('day')}
+      >
+        {labels.day}
+      </button>
+      <button
+        type="button"
+        className={theme === 'night' ? 'on' : ''}
+        aria-pressed={theme === 'night'}
+        onClick={() => setTheme('night')}
+      >
+        {labels.night}
+      </button>
+    </div>
+  );
+}
 
 function LangToggle({ className }: { className?: string }) {
   const { lang, setLang } = useLang();
@@ -64,14 +95,16 @@ export function Nav() {
           <a className="nav__login" href={t.nav.login.href}>
             {t.nav.login.label}
           </a>
+          <ThemeToggle />
           <LangToggle />
           <button type="button" className="btn btn--gold" onClick={() => open()}>
             {t.nav.cta}
           </button>
         </div>
 
-        {/* Always-visible language switch on phones; desktop shows the one
-            in nav__actions instead. */}
+        {/* Always-visible language + theme switches on phones; desktop shows
+            the ones in nav__actions instead. */}
+        <ThemeToggle className="lang-toggle--bar theme-toggle--bar" />
         <LangToggle className="lang-toggle--bar" />
 
         <button
@@ -99,7 +132,10 @@ export function Nav() {
           </a>
         </nav>
         <div className="nav__menu-foot">
-          <LangToggle className="lang-toggle--menu" />
+          <div className="nav__menu-toggles">
+            <ThemeToggle className="lang-toggle--menu" />
+            <LangToggle className="lang-toggle--menu" />
+          </div>
           <button type="button" className="btn btn--gold btn--lg" onClick={startOrder} tabIndex={menuOpen ? 0 : -1}>
             {t.nav.cta}
           </button>

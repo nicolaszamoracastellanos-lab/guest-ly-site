@@ -1,14 +1,86 @@
-import { useRef } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getProgress } from '../scroll/progress';
+import { getTheme, subscribeTheme } from '../theme/theme';
+import type { Theme } from '../theme/theme';
 import { FloralField } from './scenes/FloralField';
 import { BokehParticles } from './scenes/BokehParticles';
 import { SilkBackdrop } from './scenes/SilkBackdrop';
 
-/* Ambient backdrop only — content is king. A static camera with a whisper of
+/* Ambient backdrop only: content is king. A static camera with a whisper of
    mouse/scroll drift; petals at the frame edges, bokeh that warms as you
-   scroll toward the pricing/CTA "evening", dim silk far behind. */
+   scroll toward the pricing/CTA "evening", dim silk far behind.
+
+   Wave 5: the whole scene is theme-aware. Night keeps the exact pre-wave-5
+   values (regression guard); day re-lights the same world in warm ivory so
+   petals and bokeh read as soft gold on cream. Colors lerp on theme change
+   behind the 0.5s CSS transition. */
+
+export interface SceneTheme {
+  bg: string;
+  fog: string;
+  ambientIntensity: number;
+  ambientColor: string;
+  keyIntensity: number;
+  /* Scroll warmth curve: key light color = base minus warmth * dropoff.
+     Night drifts to amber; day warms toward late-afternoon gold. */
+  keyBase: [number, number, number];
+  keyWarmDrop: [number, number, number];
+  exposure: number;
+  petalOpacity: number;
+  petalEmissive: number;
+  bokehColor: string;
+  bokehBase: number;
+  bokehGain: number;
+  bokehAdditive: boolean;
+  silkTint: string;
+  silkFallback: string;
+}
+
+export const THEME_SCENE: Record<Theme, SceneTheme> = {
+  night: {
+    bg: '#0d1117',
+    fog: '#0d1117',
+    ambientIntensity: 0.9,
+    ambientColor: '#f7f3ec',
+    keyIntensity: 40,
+    keyBase: [1, 0.94, 0.85],
+    keyWarmDrop: [0, 0.12, 0.25],
+    exposure: 1.1,
+    petalOpacity: 0.75,
+    petalEmissive: 0.05,
+    bokehColor: '#e2c892',
+    bokehBase: 0.12,
+    bokehGain: 0.55,
+    bokehAdditive: true,
+    silkTint: '#211e19',
+    silkFallback: '#161b22',
+  },
+  day: {
+    bg: '#f2ece1',
+    fog: '#f2ece1',
+    ambientIntensity: 1.25,
+    ambientColor: '#fffdf9',
+    keyIntensity: 26,
+    keyBase: [1, 0.93, 0.8],
+    keyWarmDrop: [0, 0.1, 0.22],
+    exposure: 1.0,
+    petalOpacity: 0.55,
+    petalEmissive: 0.02,
+    bokehColor: '#b8965a',
+    bokehBase: 0.06,
+    bokehGain: 0.16,
+    bokehAdditive: false,
+    silkTint: '#d8cfbf',
+    silkFallback: '#ece5d8',
+  },
+};
+
+export function useSceneTheme(): SceneTheme {
+  const theme = useSyncExternalStore(subscribeTheme, getTheme, () => 'night' as Theme);
+  return THEME_SCENE[theme];
+}
 
 function CameraRig() {
   const { camera, pointer } = useThree();
@@ -31,20 +103,52 @@ function CameraRig() {
 
 function Atmosphere() {
   const key = useRef<THREE.PointLight>(null);
+  const ambient = useRef<THREE.AmbientLight>(null);
+  const scene = useSceneTheme();
+  const targets = useRef({
+    bg: new THREE.Color(THEME_SCENE[getTheme()].bg),
+    fog: new THREE.Color(THEME_SCENE[getTheme()].fog),
+    keyColor: new THREE.Color(),
+    ambientColor: new THREE.Color(THEME_SCENE[getTheme()].ambientColor),
+  });
 
-  useFrame(() => {
-    /* Day → night: ivory light at the top of the page, amber by the end. */
+  useFrame((state, delta) => {
+    const k = Math.min(1, delta * 5);
+    const t = targets.current;
+
+    /* Scroll warmth inside the current theme's curve. */
     const warmth = Math.min(1, getProgress() * 1.4);
+    t.keyColor.setRGB(
+      scene.keyBase[0] - warmth * scene.keyWarmDrop[0],
+      scene.keyBase[1] - warmth * scene.keyWarmDrop[1],
+      scene.keyBase[2] - warmth * scene.keyWarmDrop[2],
+    );
+
+    /* Lerp background, fog, lights and exposure toward the theme targets. */
+    t.bg.set(scene.bg);
+    t.fog.set(scene.fog);
+    t.ambientColor.set(scene.ambientColor);
+
+    const world = state.scene;
+    if (world.background instanceof THREE.Color) world.background.lerp(t.bg, k);
+    if (world.fog) world.fog.color.lerp(t.fog, k);
+    state.gl.toneMappingExposure += (scene.exposure - state.gl.toneMappingExposure) * k;
+
     if (key.current) {
-      key.current.color.setRGB(1, 0.94 - warmth * 0.12, 0.85 - warmth * 0.25);
+      key.current.color.lerp(t.keyColor, Math.min(1, delta * 8));
+      key.current.intensity += (scene.keyIntensity - key.current.intensity) * k;
+    }
+    if (ambient.current) {
+      ambient.current.color.lerp(t.ambientColor, k);
+      ambient.current.intensity += (scene.ambientIntensity - ambient.current.intensity) * k;
     }
   });
 
   return (
     <>
-      <ambientLight intensity={0.9} color="#f7f3ec" />
+      <ambientLight ref={ambient} intensity={0.9} color="#f7f3ec" />
       <pointLight ref={key} position={[2.5, 3, 4]} intensity={40} distance={0} decay={2} color="#fff2df" />
-      <fog attach="fog" args={['#0d1117', 10, 30]} />
+      <fog attach="fog" args={[THEME_SCENE[getTheme()].fog, 10, 30]} />
     </>
   );
 }
@@ -57,8 +161,8 @@ export function Experience() {
         gl={{ antialias: true, alpha: false }}
         onCreated={({ gl, scene }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.1;
-          scene.background = new THREE.Color('#0d1117');
+          gl.toneMappingExposure = THEME_SCENE[getTheme()].exposure;
+          scene.background = new THREE.Color(THEME_SCENE[getTheme()].bg);
           if (import.meta.env.DEV) (window as unknown as { __scene?: THREE.Scene }).__scene = scene;
         }}
         dpr={[1, 1.75]}

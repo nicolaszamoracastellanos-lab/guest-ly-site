@@ -25,6 +25,8 @@
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
+    "playwright": "^1.62.1",
+    "serve": "^14.2.6",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }

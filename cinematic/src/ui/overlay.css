@@ -5,17 +5,8 @@
    backdrop stays visible everywhere (no opaque section backgrounds). */
 
 .overlay-page {
-  --text-muted: color-mix(in srgb, var(--ivory) 68%, transparent);
-  --text-faint: color-mix(in srgb, var(--ivory) 46%, transparent);
-  --gold-08: color-mix(in srgb, var(--gold) 8%, transparent);
-  --gold-12: color-mix(in srgb, var(--gold) 12%, transparent);
-  --gold-20: color-mix(in srgb, var(--gold) 20%, transparent);
-  --gold-35: color-mix(in srgb, var(--gold) 35%, transparent);
-  --ink-veil: color-mix(in srgb, var(--ink) 74%, transparent);
-  --ivory-veil: color-mix(in srgb, var(--ivory) 12%, transparent);
-
   position: relative;
-  color: var(--ivory);
+  color: var(--text);
   font-family: var(--font-ui);
   overflow-x: clip;
 }
@@ -86,9 +77,9 @@ html.wizard-locked {
 }
 
 .btn--gold {
-  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
-  color: var(--ink);
-  box-shadow: 0 10px 30px var(--gold-20);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
+  box-shadow: 0 10px 30px var(--accent-20);
 }
 
 .btn--gold:hover {
@@ -97,31 +88,31 @@ html.wizard-locked {
 }
 
 .btn--gold-line {
-  border-color: var(--gold);
-  color: var(--gold-bright);
-  background: var(--gold-08);
+  border-color: var(--accent-text);
+  color: var(--accent-text-strong);
+  background: var(--accent-08);
 }
 
 .btn--gold-line:hover {
-  background: var(--gold-20);
+  background: var(--accent-20);
   transform: translateY(-1px);
 }
 
 .btn--ghost {
   border-color: var(--glass-border);
-  color: var(--ivory);
+  color: var(--text);
   background: var(--glass-bg);
 }
 
 .btn--ghost:hover {
-  border-color: var(--gold);
-  color: var(--gold-bright);
+  border-color: var(--accent-text);
+  color: var(--accent-text-strong);
 }
 
 .btn:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -143,9 +134,9 @@ a:focus-visible {
   gap: 0.5rem;
   width: max-content;
   max-width: 100%;
-  border: 1px solid var(--gold-35);
-  background: var(--gold-12);
-  color: var(--gold-bright);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-12);
+  color: var(--accent-text-strong);
   border-radius: var(--radius-pill);
   padding: 0.45rem 1rem;
   font-size: var(--text-label);
@@ -159,13 +150,13 @@ a:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--gold);
+  background: var(--accent);
 }
 
 .accent {
   font-family: var(--font-display);
   font-style: italic;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .card-title {
@@ -226,13 +217,13 @@ body.js-ready .reveal.is-visible {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 0.95rem;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .sec-rule {
   width: 2.5rem;
   height: 1px;
-  background: linear-gradient(90deg, var(--gold), transparent);
+  background: linear-gradient(90deg, var(--accent), transparent);
 }
 
 .sec-kicker,
@@ -241,7 +232,7 @@ body.js-ready .reveal.is-visible {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .sec-title {
@@ -288,7 +279,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .nav--scrolled {
-  background: var(--ink-veil);
+  background: var(--scrim-nav);
   border-bottom-color: var(--glass-border);
 }
 
@@ -302,10 +293,18 @@ body.js-ready .reveal.is-visible {
 .nav__inner {
   max-width: 1180px;
   margin-inline: auto;
-  padding: 0.65rem 20px;
+  padding: 0.65rem 16px;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  /* Phones: logo + theme pill + language pill + burger must fit at 390px. */
+  gap: 0.5rem;
+}
+
+@media (min-width: 881px) {
+  .nav__inner {
+    padding-inline: 20px;
+    gap: 1.5rem;
+  }
 }
 
 .nav__logo {
@@ -324,14 +323,14 @@ body.js-ready .reveal.is-visible {
   font-size: 1.5rem;
   letter-spacing: -0.01em;
   line-height: 1;
-  color: var(--ivory);
+  color: var(--text);
 }
 
 .logo__gem {
   display: inline-block;
   width: 0.28em;
   height: 0.28em;
-  background: var(--gold);
+  background: var(--accent);
   transform: rotate(45deg);
   margin: 0 0.22em;
   border-radius: 1px;
@@ -351,7 +350,7 @@ body.js-ready .reveal.is-visible {
   }
   90% {
     transform: rotate(45deg) scale(1.5);
-    box-shadow: 0 0 12px rgba(201, 169, 110, 0.75);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 75%, transparent);
   }
   94% {
     transform: rotate(45deg) scale(1);
@@ -388,7 +387,7 @@ body.js-ready .reveal.is-visible {
   display: block;
   width: 20px;
   height: 1.5px;
-  background: var(--ivory);
+  background: var(--text);
   transition: transform var(--dur-fast) var(--ease-lux), opacity var(--dur-fast) ease;
 }
 
@@ -413,7 +412,7 @@ body.js-ready .reveal.is-visible {
   justify-content: center;
   gap: 2.5rem;
   padding: 5.5rem 24px 3rem;
-  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  background: var(--scrim-menu);
   -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.5));
   backdrop-filter: blur(calc(var(--glass-blur) * 1.5));
   opacity: 0;
@@ -437,11 +436,11 @@ body.js-ready .reveal.is-visible {
   font-size: 1.9rem;
   line-height: 1.3;
   padding-block: 0.45rem;
-  color: var(--ivory);
+  color: var(--text);
 }
 
 .nav__menu-links a:hover {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .nav__menu-links .nav__menu-login {
@@ -479,8 +478,8 @@ body.js-ready .reveal.is-visible {
 }
 
 .lang-toggle button.on {
-  background: var(--gold-20);
-  color: var(--gold-bright);
+  background: var(--accent-20);
+  color: var(--accent-text-strong);
 }
 
 .lang-toggle--menu button {
@@ -492,7 +491,7 @@ body.js-ready .reveal.is-visible {
 .lang-toggle--bar {
   margin-left: auto;
   margin-right: 0.4rem;
-  background: rgba(13, 17, 23, 0.55);
+  background: var(--scrim-bar);
   backdrop-filter: blur(6px);
 }
 
@@ -500,6 +499,30 @@ body.js-ready .reveal.is-visible {
   min-width: 40px;
   min-height: 36px;
   padding: 0.25rem 0.6rem;
+}
+
+/* Theme pill on the phone bar: tighter so logo + both pills + burger fit
+   at 390px. The theme pill takes the auto margin; the language pill that
+   follows it sits right next to it. */
+.theme-toggle--bar {
+  margin-left: auto;
+}
+
+.theme-toggle--bar ~ .lang-toggle--bar {
+  margin-left: 0.4rem;
+}
+
+.theme-toggle--bar button {
+  min-width: 34px;
+  min-height: 36px;
+  padding: 0.25rem 0.45rem;
+  font-size: 0.66rem;
+}
+
+.nav__menu-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 @media (min-width: 881px) {
@@ -522,7 +545,7 @@ body.js-ready .reveal.is-visible {
   }
 
   .nav__links a:hover {
-    color: var(--ivory);
+    color: var(--text);
   }
 
   .nav__actions {
@@ -538,18 +561,18 @@ body.js-ready .reveal.is-visible {
   }
 
   .nav__login:hover {
-    color: var(--gold-bright);
+    color: var(--accent-text-strong);
   }
 
   /* Operator link: for the internal operator, styled as a subtle secondary. */
   .nav__login--ops {
-    border: 1px solid rgba(201, 169, 110, 0.4);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-radius: 999px;
     padding-inline: 0.85rem;
     padding-block: 0.42rem;
   }
   .nav__login--ops:hover {
-    border-color: var(--gold-bright);
+    border-color: var(--accent-text-strong);
   }
 
   .nav__burger,
@@ -622,7 +645,7 @@ body.js-ready .reveal.is-visible {
   display: block;
   font-family: var(--font-display);
   font-size: 1.65rem;
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
   line-height: 1.1;
 }
 
@@ -655,7 +678,7 @@ body.js-ready .reveal.is-visible {
   content: '';
   width: 1px;
   height: 2.2rem;
-  background: linear-gradient(var(--gold), transparent);
+  background: linear-gradient(var(--accent), transparent);
   animation: hint-pulse 2.2s var(--ease-lux) infinite;
 }
 
@@ -726,8 +749,8 @@ body.js-ready .reveal.is-visible {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--gold), var(--gold-deep));
-  color: var(--ink);
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: var(--accent-ink);
   font-family: var(--font-display);
   font-size: 1.25rem;
   line-height: 1;
@@ -760,8 +783,8 @@ body.js-ready .reveal.is-visible {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--online);
-  box-shadow: 0 0 8px var(--online);
+  background: var(--status-online);
+  box-shadow: 0 0 8px var(--status-online);
 }
 
 .chat-card__chips {
@@ -775,8 +798,8 @@ body.js-ready .reveal.is-visible {
   padding: 0.32rem 0.75rem;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-pill);
-  color: var(--gold-bright);
-  background: var(--gold-08);
+  color: var(--accent-text-strong);
+  background: var(--accent-08);
   white-space: nowrap;
 }
 
@@ -816,14 +839,14 @@ body.js-ready .reveal.is-visible {
 
 .bubble--guest {
   align-self: flex-end;
-  background: var(--ivory-veil);
+  background: var(--text-12);
   border-bottom-right-radius: 4px;
 }
 
 .bubble--ai {
   align-self: flex-start;
-  background: var(--gold-12);
-  border: 1px solid var(--gold-20);
+  background: var(--accent-12);
+  border: 1px solid var(--accent-20);
   border-bottom-left-radius: 4px;
 }
 
@@ -838,7 +861,7 @@ body.js-ready .reveal.is-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--gold-bright);
+  background: var(--accent-strong);
   animation: typing-blink 1s ease-in-out infinite;
 }
 
@@ -881,7 +904,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .chat-card__send {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -948,9 +971,9 @@ body.js-ready .reveal.is-visible {
   margin-top: 1.1rem;
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--gold-35);
-  background: var(--gold-08);
-  color: var(--gold-bright);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-08);
+  color: var(--accent-text-strong);
   border-radius: var(--radius-pill);
   padding: 0.28rem 0.8rem;
   font-size: var(--text-label);
@@ -971,7 +994,7 @@ body.js-ready .reveal.is-visible {
   font-family: var(--font-serif);
   font-size: 2.8rem;
   line-height: 1;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .unify__title {
@@ -1018,9 +1041,9 @@ body.js-ready .reveal.is-visible {
   width: 2.3rem;
   height: 2.3rem;
   border-radius: 50%;
-  border: 1px solid var(--gold-35);
-  background: var(--gold-08);
-  color: var(--gold-bright);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-08);
+  color: var(--accent-text-strong);
   display: grid;
   place-items: center;
   font-family: var(--font-serif);
@@ -1035,7 +1058,7 @@ body.js-ready .reveal.is-visible {
   top: 2.6rem;
   bottom: -1.9rem;
   width: 1px;
-  background: linear-gradient(var(--gold-35), transparent);
+  background: linear-gradient(var(--accent-35), transparent);
 }
 
 .step__title {
@@ -1082,7 +1105,7 @@ body.js-ready .reveal.is-visible {
     bottom: auto;
     width: auto;
     height: 1px;
-    background: linear-gradient(90deg, var(--gold-35), transparent);
+    background: linear-gradient(90deg, var(--accent-35), transparent);
   }
 }
 
@@ -1154,13 +1177,13 @@ body.js-ready .reveal.is-visible {
 }
 
 .cmp--without {
-  border-color: var(--ivory-veil);
-  background: color-mix(in srgb, var(--ink-soft) 45%, transparent);
+  border-color: var(--text-12);
+  background: var(--scrim-card);
   color: var(--text-muted);
 }
 
 .cmp--without .cmp__label {
-  border: 1px solid var(--ivory-veil);
+  border: 1px solid var(--text-12);
   color: var(--text-faint);
 }
 
@@ -1173,19 +1196,19 @@ body.js-ready .reveal.is-visible {
 }
 
 .cmp--with {
-  background: var(--gold-08);
-  border-color: var(--gold-35);
-  box-shadow: 0 0 50px var(--gold-12), var(--shadow-card);
+  background: var(--accent-08);
+  border-color: var(--accent-35);
+  box-shadow: 0 0 50px var(--accent-12), var(--shadow-card);
 }
 
 .cmp--with .cmp__label {
-  border: 1px solid var(--gold-35);
-  background: var(--gold-12);
-  color: var(--gold-bright);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-12);
+  color: var(--accent-text-strong);
 }
 
 .cmp--with .cmp__mark {
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 @media (min-width: 880px) {
@@ -1210,9 +1233,9 @@ body.js-ready .reveal.is-visible {
 }
 
 .plan--popular {
-  border-color: var(--gold);
-  background: var(--gold-08);
-  box-shadow: 0 0 60px var(--gold-12), var(--shadow-card);
+  border-color: var(--accent-text);
+  background: var(--accent-08);
+  box-shadow: 0 0 60px var(--accent-12), var(--shadow-card);
 }
 
 .plan__ribbon {
@@ -1220,8 +1243,8 @@ body.js-ready .reveal.is-visible {
   top: -0.85rem;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, var(--gold), var(--gold-bright));
-  color: var(--ink);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -1255,7 +1278,7 @@ body.js-ready .reveal.is-visible {
 
 .plan__cur {
   font-size: 1.4rem;
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .plan__num {
@@ -1297,7 +1320,7 @@ body.js-ready .reveal.is-visible {
 
 .tick {
   flex: none;
-  color: var(--gold);
+  color: var(--accent-text);
   font-size: 0.85rem;
 }
 
@@ -1326,7 +1349,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .coord-strip__body strong {
-  color: var(--ivory);
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -1340,9 +1363,9 @@ body.js-ready .reveal.is-visible {
   gap: 0.7rem;
   padding: clamp(1.5rem, 3.5vw, 2.2rem);
   text-align: center;
-  border-color: var(--gold);
-  background: var(--gold-08);
-  box-shadow: 0 0 50px var(--gold-12), var(--shadow-card);
+  border-color: var(--accent-text);
+  background: var(--accent-08);
+  box-shadow: 0 0 50px var(--accent-12), var(--shadow-card);
 }
 
 .founding__body {
@@ -1372,7 +1395,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .guarantee__mark {
-  color: var(--gold);
+  color: var(--accent-text);
   margin-right: 0.45rem;
 }
 
@@ -1433,11 +1456,11 @@ body.js-ready .reveal.is-visible {
   display: block;
   font-family: var(--font-display);
   font-size: 1.02rem;
-  color: var(--ivory);
+  color: var(--text);
 }
 
 .cmp-table th.is-us .cmp-table__name {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .cmp-table__colsub {
@@ -1452,11 +1475,11 @@ body.js-ready .reveal.is-visible {
 
 .cmp-table td.is-us,
 .cmp-table th.is-us {
-  background: var(--gold-08);
+  background: var(--accent-08);
 }
 
 .cmp-yes {
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .cmp-no {
@@ -1466,12 +1489,12 @@ body.js-ready .reveal.is-visible {
 .cmp-table__price-row th,
 .cmp-table__price-row td {
   font-weight: 600;
-  color: var(--ivory);
+  color: var(--text);
   white-space: nowrap;
 }
 
 .cmp-table__price-row td.is-us {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .cmp-table__note {
@@ -1480,7 +1503,7 @@ body.js-ready .reveal.is-visible {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.05rem;
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 @media (min-width: 980px) {
@@ -1507,7 +1530,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .testi__stars {
-  color: var(--gold);
+  color: var(--accent-text);
   letter-spacing: 0.28em;
   font-size: 0.85rem;
 }
@@ -1517,7 +1540,7 @@ body.js-ready .reveal.is-visible {
   font-family: var(--font-serif);
   font-size: 1.06rem;
   line-height: 1.6;
-  color: var(--ivory);
+  color: var(--text);
   flex: 1;
 }
 
@@ -1538,8 +1561,8 @@ body.js-ready .reveal.is-visible {
   display: grid;
   place-items: center;
   font-size: 1.3rem;
-  background: var(--gold-12);
-  border: 1px solid var(--gold-35);
+  background: var(--accent-12);
+  border: 1px solid var(--accent-35);
 }
 
 .testi__id {
@@ -1566,9 +1589,9 @@ body.js-ready .reveal.is-visible {
 }
 
 .badge-chip {
-  border: 1px solid var(--gold-35);
-  background: var(--gold-08);
-  color: var(--gold-bright);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-08);
+  color: var(--accent-text-strong);
   border-radius: var(--radius-pill);
   padding: 0.5rem 1.05rem;
   font-size: 0.8rem;
@@ -1596,13 +1619,13 @@ body.js-ready .reveal.is-visible {
   display: inline-block;
   margin-top: 1rem;
   padding-block: 0.35rem;
-  color: var(--gold-bright);
-  border-bottom: 1px solid var(--gold-35);
+  color: var(--accent-text-strong);
+  border-bottom: 1px solid var(--accent-35);
   transition: border-color var(--dur-fast) ease;
 }
 
 .faq-human__mail:hover {
-  border-bottom-color: var(--gold-bright);
+  border-bottom-color: var(--accent-text-strong);
 }
 
 .faq-list {
@@ -1624,17 +1647,17 @@ body.js-ready .reveal.is-visible {
   text-align: left;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--ivory);
+  color: var(--text);
   transition: color var(--dur-fast) ease;
 }
 
 .faq-q:hover {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .faq-plus {
   flex: none;
-  color: var(--gold);
+  color: var(--accent-text);
   font-size: 1.45rem;
   font-weight: 400;
   line-height: 1;
@@ -1734,7 +1757,7 @@ body.js-ready .reveal.is-visible {
 
 .wiz-pay__note {
   font-size: 0.78rem;
-  color: color-mix(in srgb, var(--ivory) 45%, transparent);
+  color: var(--text-faint);
   line-height: 1.7;
   max-width: 420px;
   text-align: center;
@@ -1742,20 +1765,20 @@ body.js-ready .reveal.is-visible {
 
 .wiz-pay__wa {
   font-size: 0.8rem;
-  color: var(--gold);
+  color: var(--accent-text);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .wiz-mailfb {
   font-size: 0.7rem;
-  color: color-mix(in srgb, var(--ivory) 28%, transparent);
+  color: var(--text-faint);
   margin-top: 1.8rem;
   text-align: center;
 }
 
 .wiz-mailfb a {
-  color: color-mix(in srgb, var(--ivory) 45%, transparent);
+  color: var(--text-faint);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -1772,7 +1795,7 @@ body.js-ready .reveal.is-visible {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--gold);
+  color: var(--accent-text);
   margin-bottom: 1.1rem;
 }
 
@@ -1794,7 +1817,7 @@ body.js-ready .reveal.is-visible {
 
 .footer__col a:hover,
 .footer__link-btn:hover {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .footer__base {
@@ -1812,7 +1835,7 @@ body.js-ready .reveal.is-visible {
 .footer__crafted {
   font-family: var(--font-serif);
   font-style: italic;
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 @media (min-width: 820px) {
@@ -1828,7 +1851,7 @@ body.js-ready .reveal.is-visible {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--ink) 78%, transparent);
+  background: var(--scrim-modal);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   display: flex;
@@ -1877,8 +1900,8 @@ body.js-ready .reveal.is-visible {
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--glass-border);
-  background: var(--ink-veil);
-  color: var(--ivory);
+  background: var(--scrim-nav);
+  color: var(--text);
   font-size: 1.35rem;
   line-height: 1;
   display: grid;
@@ -1886,8 +1909,8 @@ body.js-ready .reveal.is-visible {
 }
 
 .wiz__close:hover {
-  border-color: var(--gold);
-  color: var(--gold-bright);
+  border-color: var(--accent-text);
+  color: var(--accent-text-strong);
 }
 
 .wiz__steps {
@@ -1921,13 +1944,13 @@ body.js-ready .reveal.is-visible {
 }
 
 .wiz__steps li.on {
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .wiz__steps li.on .wiz__dot {
-  background: var(--gold-20);
-  border-color: var(--gold);
-  color: var(--gold-bright);
+  background: var(--accent-20);
+  border-color: var(--accent-text);
+  color: var(--accent-text-strong);
 }
 
 .wiz__title {
@@ -1966,9 +1989,9 @@ body.js-ready .reveal.is-visible {
 }
 
 .wiz-plan.on {
-  border-color: var(--gold);
-  background: var(--gold-12);
-  box-shadow: 0 0 30px var(--gold-12);
+  border-color: var(--accent-text);
+  background: var(--accent-12);
+  box-shadow: 0 0 30px var(--accent-12);
 }
 
 .wiz-plan__name {
@@ -1982,7 +2005,7 @@ body.js-ready .reveal.is-visible {
 
 .wiz-plan__pop {
   font-style: normal;
-  color: var(--gold);
+  color: var(--accent-text);
   font-size: 0.85rem;
 }
 
@@ -1997,7 +2020,7 @@ body.js-ready .reveal.is-visible {
   font-family: var(--font-display);
   font-size: 1.75rem;
   line-height: 1;
-  color: var(--gold-bright);
+  color: var(--accent-text-strong);
 }
 
 .wiz-plan__fee {
@@ -2033,8 +2056,8 @@ body.js-ready .reveal.is-visible {
   padding: 0.65rem 0.9rem;
   border-radius: calc(var(--radius-card) - 8px);
   border: 1px solid var(--glass-border);
-  background: color-mix(in srgb, var(--ink-soft) 60%, transparent);
-  color: var(--ivory);
+  background: var(--field-bg);
+  color: var(--text);
   font: inherit;
   color-scheme: dark;
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
@@ -2048,8 +2071,8 @@ body.js-ready .reveal.is-visible {
 .field input:focus,
 .field textarea:focus {
   outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px var(--gold-12);
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 3px var(--accent-12);
 }
 
 .wiz__nav {
@@ -2066,8 +2089,8 @@ body.js-ready .reveal.is-visible {
 
 .wiz-summary {
   margin-top: 1.5rem;
-  border: 1px solid var(--gold-35);
-  background: var(--gold-08);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-08);
   border-radius: var(--radius-card);
   padding: 1.3rem 1.4rem;
 }
@@ -2078,7 +2101,7 @@ body.js-ready .reveal.is-visible {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: var(--gold);
+  color: var(--accent-text);
 }
 
 .wiz-summary dl {
@@ -2125,9 +2148,9 @@ body.js-ready .reveal.is-visible {
   width: 1.9rem;
   height: 1.9rem;
   border-radius: 50%;
-  border: 1px solid var(--gold-35);
-  background: var(--gold-08);
-  color: var(--gold-bright);
+  border: 1px solid var(--accent-35);
+  background: var(--accent-08);
+  color: var(--accent-text-strong);
   display: grid;
   place-items: center;
   font-family: var(--font-serif);

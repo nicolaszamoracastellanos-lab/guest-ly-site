@@ -29,6 +29,7 @@ export function Faq() {
                     type="button"
                     className="faq-q"
                     aria-expanded={isOpen}
+                    aria-controls={`faq-a-${i}`}
                     onClick={() => setOpenIdx(isOpen ? null : i)}
                   >
                     <span>{item.q}</span>
@@ -36,7 +37,9 @@ export function Faq() {
                       +
                     </span>
                   </button>
-                  <div className="faq-a">
+                  {/* inert while collapsed: keyboard and AT users never land
+                      inside a visually hidden answer. */}
+                  <div className="faq-a" id={`faq-a-${i}`} inert={!isOpen}>
                     <div className="faq-a__inner">
                       <p>{item.a}</p>
                     </div>

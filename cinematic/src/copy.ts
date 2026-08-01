@@ -17,6 +17,8 @@ export interface SiteCopy {
     links: { label: string; href: string }[];
     login: { label: string; href: string };
     cta: string;
+    theme: { label: string; day: string; night: string };
+    skip: string;
   };
   hero: {
     badge: string;
@@ -206,6 +208,8 @@ const en: SiteCopy = {
     ],
     login: { label: 'Client Login', href: 'https://app.guest-ly.com' },
     cta: 'Get started',
+    theme: { label: 'Theme', day: 'Day', night: 'Night' },
+    skip: 'Skip to content',
   },
 
   hero: {
@@ -698,6 +702,8 @@ const es: SiteCopy = {
     ],
     login: { label: 'Acceso clientes', href: 'https://app.guest-ly.com' },
     cta: 'Empezar',
+    theme: { label: 'Tema', day: 'Día', night: 'Noche' },
+    skip: 'Saltar al contenido',
   },
 
   hero: {

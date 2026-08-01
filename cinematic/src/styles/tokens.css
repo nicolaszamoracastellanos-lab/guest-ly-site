@@ -1,22 +1,28 @@
-/* Guest-ly design tokens — single source of truth for the cinematic experience.
-   Inherits the brand system from the existing landing page. */
+/* Guest-ly design tokens: single source of truth for the cinematic experience.
+   Two layers:
+   1. Raw palette constants at :root. These are the ONLY place raw brand
+      colors may appear. Components never reference them directly.
+   2. Semantic tokens per theme scope ([data-theme="night"] / [data-theme="day"]).
+      Components use semantic tokens only. Night reproduces the pre-wave-5
+      look exactly (regression guard); day is the wave 5 addition. */
+
 :root {
-  /* Color */
+  /* Raw palette (never referenced outside this file) */
   --ink: #0d1117;
   --ink-soft: #161b22;
+  --navy: #0d1b2a;
   --ivory: #f7f3ec;
   --ivory-warm: #fffdf9;
+  --ivory-day: #faf6f0;
   --gold: #c9a96e;
   --gold-bright: #e2c892;
+  --gold-brand: #b8965a;
   --gold-deep: #8a6d3e;
+  --gold-text-day: #7a5f33;
   --blush: #e8c9c4;
   --sage: #79705f;
   --online: #4ade80;
 
-  /* Glass */
-  --glass-bg: rgba(247, 243, 236, 0.06);
-  --glass-border: rgba(201, 169, 110, 0.28);
-  --glass-highlight: rgba(255, 253, 249, 0.12);
   --glass-blur: 18px;
 
   /* Type */
@@ -45,7 +51,107 @@
   --dur-fast: 0.35s;
 
   /* Elevation */
-  --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.55);
   --radius-card: 20px;
   --radius-pill: 999px;
+}
+
+/* ------------------------------------------------- night (default look) */
+[data-theme='night'] {
+  color-scheme: dark;
+
+  --bg: var(--ink);
+  --bg-grad: none;
+  --surface: var(--ink-soft);
+  --surface-raised: var(--ink-soft);
+
+  --text: var(--ivory);
+  --text-muted: color-mix(in srgb, var(--ivory) 68%, transparent);
+  /* 52% (was 46%): the pre-wave-5 faint tone missed WCAG AA on ink. */
+  --text-faint: color-mix(in srgb, var(--ivory) 52%, transparent);
+  --text-12: color-mix(in srgb, var(--ivory) 12%, transparent);
+
+  --border: rgba(201, 169, 110, 0.28);
+  --border-soft: color-mix(in srgb, var(--ivory) 12%, transparent);
+
+  --accent: var(--gold);
+  --accent-strong: var(--gold-bright);
+  --accent-deep: var(--gold-deep);
+  --accent-text: var(--gold);
+  --accent-text-strong: var(--gold-bright);
+  --accent-ink: var(--ink);
+
+  --accent-08: color-mix(in srgb, var(--accent) 8%, transparent);
+  --accent-12: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-20: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-35: color-mix(in srgb, var(--accent) 35%, transparent);
+
+  --glass-bg: rgba(247, 243, 236, 0.06);
+  --glass-border: rgba(201, 169, 110, 0.28);
+  --glass-highlight: rgba(255, 253, 249, 0.12);
+
+  --scrim-nav: color-mix(in srgb, var(--ink) 74%, transparent);
+  --scrim-menu: color-mix(in srgb, var(--ink) 88%, transparent);
+  --scrim-modal: color-mix(in srgb, var(--ink) 78%, transparent);
+  --scrim-bar: rgba(13, 17, 23, 0.55);
+  --scrim-card: color-mix(in srgb, var(--surface) 45%, transparent);
+  --field-bg: color-mix(in srgb, var(--ink-soft) 60%, transparent);
+
+  --status-online: var(--online);
+
+  --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.55);
+
+  /* Finishing layer: vignette softened (was 0.55) and grain reduced
+     (was 0.05) so edges and text stay legible. Part 2.4 fixes. */
+  --vignette: rgba(6, 8, 12, 0.38);
+  --grain-opacity: 0.03;
+}
+
+/* ------------------------------------------------------------------ day */
+[data-theme='day'] {
+  color-scheme: light;
+
+  --bg: var(--ivory-day);
+  --bg-grad: radial-gradient(120% 90% at 50% 0%, var(--ivory-warm) 0%, rgba(255, 253, 249, 0) 65%);
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+
+  --text: var(--navy);
+  --text-muted: color-mix(in srgb, var(--navy) 76%, transparent);
+  --text-faint: color-mix(in srgb, var(--navy) 64%, transparent);
+  --text-12: color-mix(in srgb, var(--navy) 10%, transparent);
+
+  --border: rgba(13, 27, 42, 0.14);
+  --border-soft: rgba(13, 27, 42, 0.08);
+
+  /* Gold contrast rule: brand gold fails AA as text on ivory, so day text
+     gold is the deep tone; brand gold stays for fills, rules and buttons. */
+  --accent: var(--gold-brand);
+  --accent-strong: var(--gold);
+  --accent-deep: var(--gold-deep);
+  --accent-text: var(--gold-text-day);
+  --accent-text-strong: var(--gold-text-day);
+  --accent-ink: var(--navy);
+
+  --accent-08: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-12: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-20: color-mix(in srgb, var(--accent) 24%, transparent);
+  --accent-35: color-mix(in srgb, var(--accent) 40%, transparent);
+
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-border: rgba(13, 27, 42, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+
+  --scrim-nav: color-mix(in srgb, var(--ivory-day) 82%, transparent);
+  --scrim-menu: color-mix(in srgb, var(--ivory-day) 93%, transparent);
+  --scrim-modal: color-mix(in srgb, var(--ivory-day) 80%, transparent);
+  --scrim-bar: rgba(250, 246, 240, 0.6);
+  --scrim-card: color-mix(in srgb, var(--surface) 45%, transparent);
+  --field-bg: #ffffff;
+
+  --status-online: #15803d;
+
+  --shadow-card: 0 18px 60px rgba(13, 27, 42, 0.1);
+
+  --vignette: rgba(122, 95, 51, 0.05);
+  --grain-opacity: 0.02;
 }

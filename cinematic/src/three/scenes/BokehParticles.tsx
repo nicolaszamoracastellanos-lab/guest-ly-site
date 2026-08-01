@@ -7,6 +7,7 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { getProgress } from '../../scroll/progress';
+import { useSceneTheme } from '../Experience';
 
 const COUNT = 320;
 const BOUNDS = { x: 7, y: 4.2, z: 4 };
@@ -38,6 +39,8 @@ function makeBokehSprite(): THREE.CanvasTexture {
 
 export function BokehParticles() {
   const materialRef = useRef<THREE.PointsMaterial>(null);
+  const sceneTheme = useSceneTheme();
+  const targetColor = useMemo(() => new THREE.Color(), []);
 
   const sprite = useMemo(makeBokehSprite, []);
 
@@ -76,9 +79,22 @@ export function BokehParticles() {
 
     const material = materialRef.current;
     if (material) {
-      /* Warm up gradually through the back half of the page ("evening"). */
+      /* Warm up gradually through the back half of the page ("evening").
+         Base and gain are themed: day mode keeps bokeh faint so it never
+         muddies text on the light background. */
       const p = Math.min(1, Math.max(0, (getProgress() - 0.45) / 0.4));
-      material.opacity = 0.12 + 0.55 * easeInOutSine(p);
+      material.opacity = sceneTheme.bokehBase + sceneTheme.bokehGain * easeInOutSine(p);
+
+      targetColor.set(sceneTheme.bokehColor);
+      material.color.lerp(targetColor, Math.min(1, delta * 5));
+
+      /* Additive blending washes out on a light background: hard-swap the
+         blend mode per theme (the color/opacity lerp covers the moment). */
+      const blending = sceneTheme.bokehAdditive ? THREE.AdditiveBlending : THREE.NormalBlending;
+      if (material.blending !== blending) {
+        material.blending = blending;
+        material.needsUpdate = true;
+      }
     }
   });
 

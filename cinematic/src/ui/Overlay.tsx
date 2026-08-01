@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LanguageProvider } from './LanguageContext';
+import { LanguageProvider, useLang } from './LanguageContext';
+import { ThemeEffects } from '../theme/ThemeContext';
 import { WizardContext } from './WizardContext';
 import type { PlanId, WizardApi } from './WizardContext';
 import { Nav } from './Nav';
@@ -14,6 +15,16 @@ import './overlay.css';
 interface WizardRequest {
   id: number;
   plan: PlanId;
+}
+
+/* Keyboard users jump straight past the fixed nav. */
+function SkipLink() {
+  const { t } = useLang();
+  return (
+    <a className="skip-link" href="#main">
+      {t.nav.skip}
+    </a>
+  );
 }
 
 export function Overlay() {
@@ -53,9 +64,11 @@ export function Overlay() {
   return (
     <LanguageProvider>
       <WizardContext.Provider value={wizardApi}>
+        <ThemeEffects />
+        <SkipLink />
         <div className="overlay-page">
           <Nav />
-          <main>
+          <main id="main">
             <Hero />
             <Channels />
             <How />
