@@ -84,3 +84,33 @@ BUILD: capabilities.ts gate; App lazy-loads the Experience chunk after first pai
 NUMBERS (real, from vite): initial JS 255.19KB uncompressed / 79.34KB gzip (target <300KB: PASS); deferred: driver 113.10KB, Experience (three.js) 888.71KB, total JS 1,257KB (was: single 995KB-class eager bundle including three+gsap up front). CSS 37.75KB.
 VERIFY (built output, served dist): curl finds real copy ("Ask anything, any hour, in their language", "Three promises") in the HTML PASS; /privacy /terms /refunds resolve as real prerendered files with correct titles PASS; both JSON-LD blocks parse PASS; page hydrates with zero console errors and the canvas mounts after paint PASS; reduced-motion run: static backdrop, no canvas, Experience and gsap chunks never even fetched PASS.
 VERIFY (Lighthouse 12, mobile emulation, simulated throttling): performance 37 (old committed build) -> 60 (new dist). FCP 4.7s -> 3.5s, LCP 5.3s -> 3.6s, TBT 2,880ms -> 1,070ms, Speed Index 6.0s -> 3.5s. Remaining cost is hydration of the full page; acceptable for this wave, logged honestly.
+
+Committed: 687e4cc.
+
+---
+
+## Workstream G: payments (blocked on Nico) + wizard honesty
+
+ABSOLUTE STOP HONORED: PAY_LINKS are PENDING, so no live Stripe URL exists anywhere. The UI is fully config-driven: paste three URLs into cinematic/src/config.ts and rebuild.
+
+### Cycle G-1
+BUILD: payUrl builder adds prefilled_email and client_reference_id (slug of couple + date) via URLSearchParams. WHATSAPP key wired the same way ('' hides the button). Confirmation step carries the plain-language what-happens-next list, the restated refund guarantee and a link to /refunds (built in C).
+VERIFY: with a placeholder link temporarily set (then reverted): "Pay $399 securely" renders, href carries prefilled_email=demo%40example.com and client_reference_id=anna-luis-2027-03-20: PASS (screenshot c-wizard/wiz-step4-paylink.png). PENDING path re-verified after revert (config back to '').
+BLOCKER #1 (for the final summary): create 3 Stripe Payment Links and paste into cinematic/src/config.ts PAY_LINKS (guide: STRIPE-SETUP.md).
+
+---
+
+## Workstream H: legal + footer
+
+### Cycle H-1
+BUILD: /privacy, /terms, /refunds as bilingual pages (EN/ES + Day/Night toggles) served as real prerendered files (privacy/index.html etc.) so they are hash-free and crawlable on GitHub Pages; content covers FormSubmit order fields, live-demo message handling, retention, one-time payment terms with the "yours until the wedding" definition (wedding date + 30 days), fair use, and the expanded refund guarantee with how-to-request. Footer: Legal column + entity line renders only when LEGAL_ENTITY is set (PENDING: terms page says "operated by its founding team; the registered legal entity name will be published here", flagged as blocker).
+VERIFY: routes return 200 as real files on a static server simulating Pages, correct titles PASS; EN/ES toggle flips content PASS; back link works PASS; footer links present PASS. Screenshots docs/wave5-screens/h-legal (night 1440, day 390, ES).
+
+---
+
+## Workstream I: copy conformance
+
+### Cycle I-1
+BUILD: copy.ts was born clean in the B rewrite (zero em dashes, zero emojis); the remaining 8 em dashes across src (comments + one aria-label) rewritten with periods/colons/semicolons, not hyphen swaps. scripts/lint-copy.mjs fails the build on em dash anywhere in src or emoji codepoints in copy.ts (the permitted diamond/check/cross glyphs stay permitted); wired into npm run build and as a blocking lint-copy job in .github/workflows/deploy.yml.
+VERIFY: lint-copy exits clean. grep em dash in cinematic/src: zero. ES screenshots at every section (56-shot b-final set + i-es re-shots): no EN strings leaking into ES mode; chat mock and marquee emoji-free.
+REVISE: ES desktop nav labels wrapped mid-word at 1440; labels now wrap as whole units and the link gap tightened: ES fits a single row (measured 41.7px row height).

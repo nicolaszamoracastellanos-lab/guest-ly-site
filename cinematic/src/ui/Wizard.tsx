@@ -120,11 +120,19 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
     return `mailto:${ORDER_INBOX}?subject=${encodeURIComponent(orderSubject)}&body=${encodeURIComponent(body)}`;
   }, [order, orderSubject]);
 
-  /* Stripe payment link for this plan ('' means the honest fallback). */
+  /* Stripe payment link for this plan ('' means the honest fallback).
+     Payment Links accept prefilled_email and client_reference_id as query
+     params; the reference ties the checkout back to the emailed order. */
   const payLink = PAY_LINKS[plan] || '';
-  const payUrl = payLink
-    ? payLink + (fields.email ? (payLink.includes('?') ? '&' : '?') + 'prefilled_email=' + encodeURIComponent(fields.email) : '')
-    : '';
+  const payUrl = useMemo(() => {
+    if (!payLink) return '';
+    const ref = `${couple}-${date}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+    const params = new URLSearchParams();
+    if (fields.email) params.set('prefilled_email', fields.email);
+    if (ref) params.set('client_reference_id', ref);
+    const qs = params.toString();
+    return qs ? payLink + (payLink.includes('?') ? '&' : '?') + qs : payLink;
+  }, [payLink, couple, date, fields.email]);
 
   return (
     <div

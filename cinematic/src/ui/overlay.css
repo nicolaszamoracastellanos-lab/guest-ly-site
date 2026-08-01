@@ -533,15 +533,25 @@ body.js-ready .reveal.is-visible {
   .nav__links {
     display: flex;
     align-items: center;
-    gap: 1.9rem;
+    gap: 1.4rem;
     margin-inline: auto;
+  }
+
+  .nav__links {
+    flex-wrap: wrap;
+    row-gap: 0;
   }
 
   .nav__links a {
     font-size: 0.88rem;
     color: var(--text-muted);
     padding-block: 0.6rem;
+    white-space: nowrap;
     transition: color var(--dur-fast) ease;
+  }
+
+  .nav__login {
+    white-space: nowrap;
   }
 
   .nav__links a:hover {
