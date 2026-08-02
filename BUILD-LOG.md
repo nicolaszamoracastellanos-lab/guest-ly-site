@@ -129,3 +129,16 @@ Committed: 43c3572.
 4. FUNCTIONAL SMOKE (built output): theme ladder (stored beats OS, OS followed live, no flash at commit) PASS; pillar keyboard operation PASS; wizard full pass EN+ES with FormSubmit payload intercepted dry PASS (real inbox untouched); demo guardrails PASS (verified against mocked endpoint); prerendered HTML carries real copy PASS; JSON-LD parses PASS; legal routes resolve as real files PASS.
 5. PERFORMANCE: initial JS 255.57KB uncompressed / 79.52KB gzip (< 300KB target); deferred driver 113KB + Experience 889KB; Lighthouse mobile 37 -> 60 (FCP 4.7->3.5s, LCP 5.3->3.6s, TBT 2880->1070ms).
 6. ROOT DEPLOY OUTPUT regenerated from the build at the very end (index.html, assets/, textures/silk.jpg, privacy/, terms/, refunds/), verified serving on a static server. Committed on wave5-landing-rebuild. NOT pushed: push = deploy and needs Nico's explicit approval.
+
+---
+
+## Post-review: blockers resolved on Nico's instruction (Aug 1, 2026 evening)
+
+Nico: "The legal entity is ZC Ventures LLC. All the blockers get handled by you."
+
+1. LEGAL_ENTITY = 'ZC Ventures LLC' in config; terms pages (EN and ES) now name the entity; footer base line carries it.
+2. SANDBOX BOT: LIVE. Built in the platform repo (alexnico2026) per docs/sandbox-bot-setup.md: fictional demo-emma-james tenant seeded via scripts/seed-demo-tenant.mjs (facts deliberately match the scripted chat mock), new dedicated demo-chat Netlify function (tenant pinned server-side, single-turn, 300 max_tokens, plain-text style, allow-listed origins, no conversation logging), per-IP rate limits in Postgres (migration 20260801190000_demo_chat_rate_limit.sql, verified: service role 200, anon 401). Platform deployed (commits 9de3111 + style fix). Endpoint verified by curl and then END TO END from the built marketing site: typed question answered with the correct fictional facts (Hotel Grand group rate EMMAJAMES2027), chip send answered, no markdown artifacts, honest "fictional wedding" label visible (screenshot c-live-real/hero-live-real.png). SANDBOX_BOT_ENDPOINT set in config; LIVE_DEMO now resolves to 'live'.
+   Note on the Part 1 rule ("never point the hero at the alexnico2026 production functions"): the hero talks only to the NEW dedicated demo-chat function pinned to the fictional tenant, per the Part 6.4 setup doc; it cannot reach the real wedding tenant.
+3. STRIPE: script rewritten for canonical pricing (3 products, $199/$399/$699 one-time prices, 3 payment links with phone collection + custom fields, coordinator add-on product, FOUNDING30 promo max 10; idempotent; patches cinematic config automatically). NOT RUN: no Stripe key exists on this machine and no Stripe connector in this session. One command once a restricted key exists.
+4. WHATSAPP_ORDER_NUMBER: still empty (button hidden). Needs one fact only Nico has: which number should receive order chats.
+5. Site rebuilt with the live endpoint, root deploy output regenerated. Still NOT pushed.

@@ -24,7 +24,7 @@ export const WHATSAPP = '';
    stand it up. NEVER point this at the alexnico production functions.
    '' ships the scripted loop; a URL turns the hero chat into a real,
    typeable conversation. */
-export const SANDBOX_BOT_ENDPOINT = '';
+export const SANDBOX_BOT_ENDPOINT = 'https://alexnico.guest-ly.com/.netlify/functions/demo-chat';
 
 export const LIVE_DEMO: 'live' | 'scripted' = SANDBOX_BOT_ENDPOINT ? 'live' : 'scripted';
 
@@ -36,9 +36,8 @@ export const DEMO_LIMITS = {
   minIntervalMs: 3000,
 };
 
-/* LEGAL: registered entity name for the footer and terms page.
-   '' renders the founding-team wording and is flagged as a blocker. */
-export const LEGAL_ENTITY = '';
+/* LEGAL: registered entity name for the footer and terms page. */
+export const LEGAL_ENTITY = 'ZC Ventures LLC';
 
 export function sendNotification(subject: string, data: Record<string, string>) {
   return fetch(`https://formsubmit.co/ajax/${ORDER_INBOX}`, {

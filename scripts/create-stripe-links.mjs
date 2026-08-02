@@ -1,25 +1,28 @@
 #!/usr/bin/env node
 /**
- * Guest-ly · Stripe bootstrap
+ * Guest-ly · Stripe bootstrap (wave 5, canonical one-time pricing)
  *
  * Creates everything the order flow needs, idempotently (safe to re-run):
- *   - 3 products  (Basic / Standard / Premium)
- *   - 12 one-time prices (4 guest-count bands per product)
- *   - 12 payment links (phone collection, custom fields, promo codes,
+ *   - 3 products: Essentials / Signature / Grande
+ *   - 3 one-time prices: $199 / $399 / $699
+ *   - 1 add-on product + price: AI Coordinator $79 one-time
+ *   - 3 payment links (phone collection, custom fields, promo codes,
  *     after-payment redirect to https://guest-ly.com/#intake)
  *   - FOUNDING30 promotion code (30% off, max 10 redemptions)
- *   - Patches PAY_LINKS in index.html with the 12 live URLs
+ *   - Patches PAY_LINKS in cinematic/src/config.ts with the 3 live URLs
  *
  * Usage:
- *   STRIPE_SECRET_KEY=sk_live_... node scripts/create-stripe-links.mjs
- *   STRIPE_SECRET_KEY=rk_live_... node scripts/create-stripe-links.mjs   (restricted key — recommended)
+ *   STRIPE_SECRET_KEY=rk_live_... node scripts/create-stripe-links.mjs
  *
  * A restricted key needs WRITE on: Products, Prices (under Products),
  * Payment Links, Coupons/Promotion codes.
- * Run with sk_test_/rk_test_ first for a dry run in sandbox if you like.
+ * Run with rk_test_/sk_test_ first for a sandbox dry run if you like.
  * Requires Node 18+. No dependencies.
+ *
+ * Afterwards: cd cinematic && npm run build, copy dist/ over the repo
+ * root, commit. The wizard reads the links from config.ts.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,23 +36,33 @@ const SITE = 'https://guest-ly.com';
 const REDIRECT = SITE + '/#intake';
 
 const PLANS = {
-  basic: {
-    name: 'Guest-ly Basic — AI Web Concierge',
-    description: 'AI concierge on a custom web URL, 30+ languages — creation fee, first 3 months of hosting included.',
-    prices: [97, 147, 197, 267],
+  essentials: {
+    name: 'Guest-ly Essentials',
+    description:
+      'AI wedding concierge on WhatsApp and the web (EN/ES), wedding website with registry and RSVP, guest import, dashboard with full transcripts. Up to 60 guests. One payment, yours until the wedding.',
+    amount: 19900,
   },
-  standard: {
-    name: 'Guest-ly Standard — All Channels',
-    description: 'AI concierge on Web, WhatsApp, SMS & Telegram — creation fee, first 3 months of hosting included.',
-    prices: [247, 347, 447, 547],
+  signature: {
+    name: 'Guest-ly Signature',
+    description:
+      'Everything in Essentials plus per-person per-event RSVP, unlimited broadcasts, QR day-of check-in and Zola RSVP sync. Up to 160 guests. One payment, yours until the wedding.',
+    amount: 39900,
   },
-  premium: {
-    name: 'Guest-ly Premium — All Channels + Dashboard',
-    description: 'All channels plus guest dashboard, RSVP tracking and unlimited revisions — creation fee, first 3 months of hosting included.',
-    prices: [447, 597, 747, 897],
+  grande: {
+    name: 'Guest-ly Grande',
+    description:
+      'Everything in Signature plus the AI Coordinator, done-for-you setup and a planner seat. Up to 300 guests. One payment, yours until the wedding.',
+    amount: 69900,
   },
 };
-const BANDS = ['0-100 guests', '100-300 guests', '300-500 guests', '500+ guests'];
+
+const ADDON = {
+  key: 'coordinator',
+  name: 'Guest-ly AI Coordinator (add-on)',
+  description:
+    'Run your wedding by chat: guest list, RSVPs, knowledge base and reminders, with a confirmation card before every change. One-time add-on for Essentials and Signature; already included with Grande.',
+  amount: 7900,
+};
 
 /* ── tiny Stripe client (form-encoded, like the official SDK) ── */
 function encode(obj, prefix = '', out = []) {
@@ -73,7 +86,7 @@ async function stripe(method, path, body) {
   const json = await res.json();
   if (!res.ok) {
     const msg = json.error ? `${json.error.type}: ${json.error.message}` : res.statusText;
-    const err = new Error(`${method} ${path} → ${msg}`);
+    const err = new Error(`${method} ${path} -> ${msg}`);
     err.code = json.error && json.error.code;
     err.status = res.status;
     throw err;
@@ -85,43 +98,41 @@ async function list(path, params = {}) {
   return (await stripe('GET', path + '?' + q)).data;
 }
 
-/* ── idempotent creators ── */
-async function ensureProduct(planKey) {
-  const plan = PLANS[planKey];
+/* ── idempotent creators (everything is keyed by metadata) ── */
+async function ensureProduct(key, def) {
   const existing = (await list('products', { active: true })).find(
-    (p) => p.metadata && p.metadata.guestly_plan === planKey
+    (p) => p.metadata && p.metadata.guestly_plan === key,
   );
   if (existing) return existing;
-  console.log(`  + product ${plan.name}`);
+  console.log(`  + product ${def.name}`);
   return stripe('POST', 'products', {
-    name: plan.name,
-    description: plan.description,
-    metadata: { guestly_plan: planKey },
+    name: def.name,
+    description: def.description,
+    metadata: { guestly_plan: key },
   });
 }
 
-async function ensurePrice(product, planKey, band) {
-  const lookup = `guestly_${planKey}_${band}`;
+async function ensurePrice(product, key, amount) {
+  const lookup = `guestly_${key}_onetime`;
   const found = await list('prices', { lookup_keys: [lookup] });
   if (found.length) return found[0];
-  console.log(`  + price  $${PLANS[planKey].prices[band]} (${lookup})`);
+  console.log(`  + price  $${amount / 100} (${lookup})`);
   return stripe('POST', 'prices', {
     product: product.id,
-    unit_amount: PLANS[planKey].prices[band] * 100,
+    unit_amount: amount,
     currency: 'usd',
-    nickname: `${planKey} · ${BANDS[band]}`,
+    nickname: `${key} · one-time`,
     lookup_key: lookup,
-    metadata: { guestly_plan: planKey, guestly_band: band },
+    metadata: { guestly_plan: key },
   });
 }
 
-async function ensurePaymentLink(price, planKey, band) {
-  const tag = `${planKey}-${band}`;
+async function ensurePaymentLink(price, key) {
   const existing = (await list('payment_links', { active: true })).find(
-    (l) => l.metadata && l.metadata.guestly === tag
+    (l) => l.metadata && l.metadata.guestly === `wave5-${key}`,
   );
   if (existing) return existing;
-  console.log(`  + link   ${planKey} · ${BANDS[band]}`);
+  console.log(`  + link   ${key}`);
   return stripe('POST', 'payment_links', {
     line_items: { 0: { price: price.id, quantity: 1 } },
     allow_promotion_codes: true,
@@ -132,77 +143,55 @@ async function ensurePaymentLink(price, planKey, band) {
       2: { key: 'city_country', label: { type: 'custom', custom: 'City / Country' }, type: 'text', optional: true },
     },
     after_completion: { type: 'redirect', redirect: { url: REDIRECT } },
-    metadata: { guestly: tag },
+    metadata: { guestly: `wave5-${key}` },
   });
 }
 
 async function ensureFoundingCode() {
-  const couponId = 'guestly-founding-30';
-  let coupon;
-  try {
-    coupon = await stripe('GET', 'coupons/' + couponId);
-  } catch (e) {
-    if (e.status !== 404) throw e;
-    console.log('  + coupon 30% off, max 10 redemptions');
-    coupon = await stripe('POST', 'coupons', {
-      id: couponId,
-      percent_off: 30,
-      duration: 'once',
-      max_redemptions: 10,
-      name: 'Founding couples — 30% off',
-    });
-  }
   const codes = await list('promotion_codes', { code: 'FOUNDING30' });
-  if (codes.length) return codes[0];
-  console.log('  + promotion code FOUNDING30');
-  return stripe('POST', 'promotion_codes', { coupon: coupon.id, code: 'FOUNDING30' });
-}
-
-/* ── main ── */
-console.log(`Stripe mode: ${MODE}\n`);
-if (MODE.startsWith('TEST')) {
-  console.log('⚠  Test-mode links cannot take real cards. Re-run with your live key');
-  console.log('   after activating the account to generate the real links.\n');
-}
-
-const urls = { basic: [], standard: [], premium: [] };
-for (const planKey of Object.keys(PLANS)) {
-  console.log(planKey.toUpperCase());
-  const product = await ensureProduct(planKey);
-  for (let band = 0; band < 4; band++) {
-    const price = await ensurePrice(product, planKey, band);
-    const link = await ensurePaymentLink(price, planKey, band);
-    urls[planKey].push(link.url);
+  if (codes.length) {
+    console.log('  FOUNDING30 exists');
+    return codes[0];
   }
+  const coupon = await stripe('POST', 'coupons', {
+    percent_off: 30,
+    duration: 'once',
+    name: 'Founding Couples 30%',
+  });
+  console.log('  + FOUNDING30 (max 10 redemptions)');
+  return stripe('POST', 'promotion_codes', {
+    coupon: coupon.id,
+    code: 'FOUNDING30',
+    max_redemptions: 10,
+  });
 }
-console.log('\nFOUNDING OFFER');
+
+function patchConfig(links) {
+  const configPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'cinematic', 'src', 'config.ts');
+  let src = readFileSync(configPath, 'utf8');
+  for (const [key, url] of Object.entries(links)) {
+    const re = new RegExp(`(  ${key}: ')[^']*(',)`);
+    if (!re.test(src)) throw new Error(`PAY_LINKS entry for ${key} not found in config.ts`);
+    src = src.replace(re, `$1${url}$2`);
+  }
+  writeFileSync(configPath, src);
+  console.log('\nPatched cinematic/src/config.ts PAY_LINKS. Now rebuild:');
+  console.log('  cd cinematic && npm run build   (then copy dist/ over the repo root and commit)');
+}
+
+console.log(`Stripe bootstrap in ${MODE} mode\n`);
+const links = {};
+for (const [key, def] of Object.entries(PLANS)) {
+  const product = await ensureProduct(key, def);
+  const price = await ensurePrice(product, key, def.amount);
+  const link = await ensurePaymentLink(price, key);
+  links[key] = link.url;
+}
+const addonProduct = await ensureProduct(ADDON.key, {
+  name: ADDON.name,
+  description: ADDON.description,
+});
+await ensurePrice(addonProduct, ADDON.key, ADDON.amount);
 await ensureFoundingCode();
-
-const block =
-  'var PAY_LINKS = {\n' +
-  `  basic:    ['${urls.basic.join("', '")}'],\n` +
-  `  standard: ['${urls.standard.join("', '")}'],\n` +
-  `  premium:  ['${urls.premium.join("', '")}']\n` +
-  '};';
-
-console.log('\n──── PAY_LINKS block ────\n' + block + '\n─────────────────────────');
-
-/* patch index.html if we can find it */
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const htmlPath = join(root, 'index.html');
-if (existsSync(htmlPath)) {
-  const html = readFileSync(htmlPath, 'utf8');
-  const re = /var PAY_LINKS = \{[\s\S]*?\};/;
-  if (re.test(html)) {
-    writeFileSync(htmlPath, html.replace(re, block));
-    console.log('\n✓ index.html patched. Review with `git diff`, then commit & deploy.');
-  } else {
-    console.log('\n⚠ Could not find the PAY_LINKS block in index.html — paste the block above manually.');
-  }
-} else {
-  console.log('\n⚠ index.html not found next to scripts/ — paste the block above manually.');
-}
-if (MODE === 'LIVE') {
-  console.log('\nDone. Place one $0-risk test: open the site, order, pay with a real card,');
-  console.log('then refund yourself from the Stripe dashboard (Payments → ⋯ → Refund).');
-}
+patchConfig(links);
+console.log('\nDone.');

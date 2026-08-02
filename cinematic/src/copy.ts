@@ -649,7 +649,7 @@ const en: SiteCopy = {
             h: 'The service',
             body: [
               'Guest-ly builds and operates an AI wedding concierge for your guests (web chat and WhatsApp), a wedding website with per-person RSVPs, and a private couple portal. We handle setup, hosting and monitoring.',
-              'Guest-ly is operated by its founding team; the registered legal entity name will be published here. Contact: nicolas@guest-ly.com.',
+              'Guest-ly is operated by ZC Ventures LLC. Contact: nicolas@guest-ly.com.',
             ],
           },
           {
@@ -1133,7 +1133,7 @@ const es: SiteCopy = {
             h: 'El servicio',
             body: [
               'Guest-ly construye y opera un asistente IA para tus invitados (chat web y WhatsApp), una página de boda con RSVP por persona, y un portal privado de pareja. Nosotros manejamos la configuración, el hosting y el monitoreo.',
-              'Guest-ly es operado por su equipo fundador; el nombre de la entidad legal registrada se publicará aquí. Contacto: nicolas@guest-ly.com.',
+              'Guest-ly es operado por ZC Ventures LLC. Contacto: nicolas@guest-ly.com.',
             ],
           },
           {

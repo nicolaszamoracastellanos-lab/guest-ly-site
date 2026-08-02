@@ -1,10 +1,18 @@
 # Sandbox demo bot setup (for the live hero demo)
 
-The hero chat card can run against a real Guest-ly concierge for a
-FICTIONAL demo wedding ("Emma & James"). It ships dormant: the scripted
-loop plays until `SANDBOX_BOT_ENDPOINT` is set in
-`cinematic/src/config.ts`. Target: under an hour, all inside
-infrastructure you already run.
+STATUS: LIVE since Aug 1, 2026. The endpoint is
+`https://alexnico.guest-ly.com/.netlify/functions/demo-chat` (a dedicated
+`demo-chat` Netlify function in the platform repo, pinned server-side to
+the fictional `demo-emma-james` tenant), already set in
+`cinematic/src/config.ts`. Seed script:
+`alexnico2026/scripts/seed-demo-tenant.mjs` (idempotent; re-run it to
+change the demo wedding's facts). Rate limits live in Postgres
+(`demo_chat_hit` RPC, 10/min and 60/day per IP) on top of the browser
+caps. The notes below remain as the reference for how it is built.
+
+The hero chat card runs against a real Guest-ly concierge for a
+FICTIONAL demo wedding ("Emma & James"). If `SANDBOX_BOT_ENDPOINT` is
+ever cleared, the scripted loop plays instead.
 
 ## Hard rules
 
