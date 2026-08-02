@@ -2313,3 +2313,20 @@ body.js-ready .reveal.is-visible {
     display: inline;
   }
 }
+
+/* ------------------------------------------ wave 5.1: icon theme toggle */
+
+.theme-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.theme-toggle button svg {
+  display: block;
+}
+
+.theme-toggle--bar button {
+  min-width: 38px;
+}

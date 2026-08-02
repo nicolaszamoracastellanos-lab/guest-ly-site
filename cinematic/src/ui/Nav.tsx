@@ -4,6 +4,23 @@ import { useWizard } from './WizardContext';
 import { useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
 
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+      <path d="M20.6 14.5A8.6 8.6 0 0 1 9.5 3.4a.6.6 0 0 0-.8-.74 9.6 9.6 0 1 0 12.64 12.64.6.6 0 0 0-.74-.8Z" />
+    </svg>
+  );
+}
+
 function ThemeToggle({ className }: { className?: string }) {
   const { t } = useLang();
   const { theme, setTheme } = useTheme();
@@ -18,17 +35,21 @@ function ThemeToggle({ className }: { className?: string }) {
         type="button"
         className={theme === 'day' ? 'on' : ''}
         aria-pressed={theme === 'day'}
+        aria-label={labels.day}
+        title={labels.day}
         onClick={() => setTheme('day')}
       >
-        {labels.day}
+        <SunIcon />
       </button>
       <button
         type="button"
         className={theme === 'night' ? 'on' : ''}
         aria-pressed={theme === 'night'}
+        aria-label={labels.night}
+        title={labels.night}
         onClick={() => setTheme('night')}
       >
-        {labels.night}
+        <MoonIcon />
       </button>
     </div>
   );
