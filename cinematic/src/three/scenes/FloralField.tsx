@@ -1,10 +1,11 @@
-/* Ambient petals drifting at the frame edges — the only "florals" in the
+/* Ambient petals drifting at the frame edges, the only "florals" in the
    scene. No photo billboards: content stays king, petals stay peripheral.
    The center is kept clear so text is never crossed at any viewport width. */
 
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { useSceneTheme } from '../Experience';
 
 const PETAL_COUNT = 36;
 
@@ -47,6 +48,7 @@ function makeSeeds(): PetalSeed[] {
 
 export function FloralField() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const sceneTheme = useSceneTheme();
 
   const seeds = useMemo(makeSeeds, []);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -79,10 +81,17 @@ export function FloralField() {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, [seeds]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const t = clock.elapsedTime;
     const mesh = meshRef.current;
     if (!mesh) return;
+
+    /* Theme-aware material: petals dim their glow and opacity in day mode
+       so they read as soft silhouettes on cream, not glow-in-the-dark. */
+    const k = Math.min(1, delta * 5);
+    petalMaterial.opacity += (sceneTheme.petalOpacity - petalMaterial.opacity) * k;
+    petalMaterial.emissiveIntensity += (sceneTheme.petalEmissive - petalMaterial.emissiveIntensity) * k;
+
     for (let i = 0; i < PETAL_COUNT; i++) {
       const s = seeds[i];
       dummy.position.set(

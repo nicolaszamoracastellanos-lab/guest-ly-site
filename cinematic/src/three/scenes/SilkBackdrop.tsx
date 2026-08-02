@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { getProgress } from '../../scroll/progress';
 import { useSafeTexture } from './useSafeTexture';
+import { useSceneTheme } from '../Experience';
 
 const WIDTH = 60;
 const HEIGHT = 34;
@@ -16,6 +17,9 @@ const SEG_Y = 28;
 
 export function SilkBackdrop() {
   const groupRef = useRef<THREE.Group>(null);
+  const sceneTheme = useSceneTheme();
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+  const targetTint = useMemo(() => new THREE.Color(), []);
 
   const silkTexture = useSafeTexture('/textures/silk.jpg');
 
@@ -24,8 +28,15 @@ export function SilkBackdrop() {
     [],
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const t = clock.elapsedTime;
+
+    /* Theme tint: multiplied toward ink at night, toward warm parchment in
+       day mode, so the silk stays a whisper on both backgrounds. */
+    if (materialRef.current) {
+      targetTint.set(silkTexture ? sceneTheme.silkTint : sceneTheme.silkFallback);
+      materialRef.current.color.lerp(targetTint, Math.min(1, delta * 5));
+    }
 
     /* Gentle silk wave: displace z with layered sines over x and y. */
     const attr = geometry.getAttribute('position') as THREE.BufferAttribute;
@@ -52,10 +63,9 @@ export function SilkBackdrop() {
     <group ref={groupRef}>
       <mesh geometry={geometry}>
         {silkTexture ? (
-          /* Color-multiplied toward ink so the silk stays a whisper. */
-          <meshBasicMaterial map={silkTexture} color="#211e19" toneMapped={false} />
+          <meshBasicMaterial ref={materialRef} map={silkTexture} color="#211e19" toneMapped={false} />
         ) : (
-          <meshBasicMaterial color="#161b22" toneMapped={false} />
+          <meshBasicMaterial ref={materialRef} color="#161b22" toneMapped={false} />
         )}
       </mesh>
     </group>

@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LanguageProvider } from './LanguageContext';
+import { LanguageProvider, useLang } from './LanguageContext';
+import { ThemeEffects } from '../theme/ThemeContext';
 import { WizardContext } from './WizardContext';
 import type { PlanId, WizardApi } from './WizardContext';
 import { Nav } from './Nav';
 import { Hero } from './Hero';
-import { Channels, How, Included, Platform, Difference, Testimonials, FinalCta } from './Sections';
+import { FinalCta } from './Sections';
+import { Scenarios } from './Scenarios';
+import { Pillars } from './Pillars';
+import { Channels } from './Channels';
+import { PlatformTabs } from './PlatformTabs';
+import { CoordinatorSpotlight } from './CoordinatorSpotlight';
+import { HowStepper } from './HowStepper';
+import { Compare } from './Compare';
 import { Pricing } from './Pricing';
+import { Founding } from './Founding';
 import { Faq } from './Faq';
 import { Footer } from './Footer';
 import { Wizard } from './Wizard';
@@ -14,6 +23,16 @@ import './overlay.css';
 interface WizardRequest {
   id: number;
   plan: PlanId;
+}
+
+/* Keyboard users jump straight past the fixed nav. */
+function SkipLink() {
+  const { t } = useLang();
+  return (
+    <a className="skip-link" href="#main">
+      {t.nav.skip}
+    </a>
+  );
 }
 
 export function Overlay() {
@@ -26,7 +45,7 @@ export function Overlay() {
   const wizardApi = useMemo<WizardApi>(() => ({ open: openWizard }), [openWizard]);
 
   /* Scroll reveals: one IntersectionObserver toggling `is-visible`.
-     Content is visible by default — `.reveal` only hides once `body.js-ready`
+     Content is visible by default; `.reveal` only hides once `body.js-ready`
      exists, so a missing observer/JS failure never blanks the page. */
   useEffect(() => {
     document.body.classList.add('js-ready');
@@ -53,17 +72,24 @@ export function Overlay() {
   return (
     <LanguageProvider>
       <WizardContext.Provider value={wizardApi}>
+        <ThemeEffects />
+        <SkipLink />
         <div className="overlay-page">
           <Nav />
-          <main>
+          {/* Wave 5.1 order: hero + marquee, scenarios, pillars, channels,
+              platform tour, coordinator spotlight, how stepper, compare,
+              pricing, founding, faq, final CTA. */}
+          <main id="main">
             <Hero />
+            <Scenarios />
+            <Pillars />
             <Channels />
-            <How />
-            <Included />
-            <Platform />
-            <Difference />
+            <PlatformTabs />
+            <CoordinatorSpotlight />
+            <HowStepper />
+            <Compare />
             <Pricing />
-            <Testimonials />
+            <Founding />
             <Faq />
             <FinalCta />
           </main>

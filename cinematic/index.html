@@ -1,27 +1,147 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="night">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      /* Theme bootstrap: resolve the ladder (stored choice, then OS
+         preference, then night) and stamp <html> before first paint. */
+      (function () {
+        var theme = null;
+        try {
+          theme = localStorage.getItem('gl-theme');
+        } catch (e) {}
+        if (theme !== 'day' && theme !== 'night') {
+          theme =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'day'
+              : 'night';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'day' ? '#faf6f0' : '#0d1117');
+      })();
+    </script>
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0d1117" />
     <meta name="description" content="Guest-ly is the AI-powered wedding platform: a 24/7 concierge for your guests on WhatsApp and the web, a wedding website with per-person RSVPs, and a couple portal with its own AI Coordinator." />
-    <meta property="og:title" content="Guest-ly — AI Concierge &amp; Wedding Platform" />
-    <meta property="og:description" content="Stop answering the same questions 200 times. A 24/7 AI concierge for your guests, a wedding website with per-person RSVPs, and a portal where you run it all — even by chat." />
+    <meta property="og:title" content="Guest-ly: AI Concierge &amp; Wedding Platform" />
+    <meta property="og:description" content="Stop answering the same questions 200 times. A 24/7 AI concierge for your guests, a wedding website with per-person RSVPs, and a portal where you run it all, even by chat." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://guest-ly.com/" />
     <meta property="og:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Guest-ly — AI Concierge &amp; Wedding Platform" />
-    <meta name="twitter:description" content="The AI-powered wedding platform — concierge, website, RSVPs, and an AI Coordinator for the couple." />
+    <meta name="twitter:title" content="Guest-ly: AI Concierge &amp; Wedding Platform" />
+    <meta name="twitter:description" content="The AI-powered wedding platform: concierge, website, RSVPs, and an AI Coordinator for the couple." />
     <meta name="twitter:image" content="https://guest-ly.com/logos/png/guest-ly-on-navy.png" />
     <link rel="canonical" href="https://guest-ly.com/" />
     <link rel="icon" type="image/svg+xml" href="/favicon-diamond.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- The two critical faces (display serif 500 + body sans 400, latin) preloaded. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKd3vXDXbtPK-F2qC0s.woff2"
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=EB+Garamond:ital@0;1&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>Guest-ly — AI Concierge &amp; Wedding Platform</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Guest-ly",
+        "description": "AI wedding concierge for guests on WhatsApp and the web, a wedding website with per-person RSVPs, and a private couple portal.",
+        "brand": { "@type": "Brand", "name": "Guest-ly" },
+        "url": "https://guest-ly.com/",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Essentials",
+            "description": "Up to 60 guests. One-time payment, yours until the wedding.",
+            "price": "199",
+            "priceCurrency": "USD",
+            "url": "https://guest-ly.com/#pricing"
+          },
+          {
+            "@type": "Offer",
+            "name": "Signature",
+            "description": "Up to 160 guests. One-time payment, yours until the wedding.",
+            "price": "399",
+            "priceCurrency": "USD",
+            "url": "https://guest-ly.com/#pricing"
+          },
+          {
+            "@type": "Offer",
+            "name": "Grande",
+            "description": "Up to 300 guests. One-time payment, yours until the wedding. AI Coordinator included.",
+            "price": "699",
+            "priceCurrency": "USD",
+            "url": "https://guest-ly.com/#pricing"
+          }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Why not just use Zola for free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Zola gives you a website and an RSVP form; it does not answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola. We sync with it."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is it really one payment?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Every plan is a single one-time price, yours until the wedding. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it work in Bolivia and Latin America?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "That is our home turf. Guest-ly is WhatsApp-first and fully bilingual, with proper +591 (and any international) phone handling built in."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What if the AI is not sure?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It only answers from your wedding's information. When it is not sure, it tells the guest it is checking with you and flags the question on your dashboard. You see every transcript."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What about refunds?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Full refund before your first guest messages the concierge, or within 30 days, whichever comes first."
+            }
+          }
+        ]
+      }
+    </script>
+    <title>Guest-ly: AI Concierge &amp; Wedding Platform</title>
   </head>
   <body>
     <div id="root"></div>

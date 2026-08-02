@@ -1,7 +1,59 @@
 import { useEffect, useState } from 'react';
 import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
+import { useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+      <path d="M20.6 14.5A8.6 8.6 0 0 1 9.5 3.4a.6.6 0 0 0-.8-.74 9.6 9.6 0 1 0 12.64 12.64.6.6 0 0 0-.74-.8Z" />
+    </svg>
+  );
+}
+
+function ThemeToggle({ className }: { className?: string }) {
+  const { t } = useLang();
+  const { theme, setTheme } = useTheme();
+  const labels = t.nav.theme;
+  return (
+    <div
+      className={className ? `lang-toggle theme-toggle ${className}` : 'lang-toggle theme-toggle'}
+      role="group"
+      aria-label={labels.label}
+    >
+      <button
+        type="button"
+        className={theme === 'day' ? 'on' : ''}
+        aria-pressed={theme === 'day'}
+        aria-label={labels.day}
+        title={labels.day}
+        onClick={() => setTheme('day')}
+      >
+        <SunIcon />
+      </button>
+      <button
+        type="button"
+        className={theme === 'night' ? 'on' : ''}
+        aria-pressed={theme === 'night'}
+        aria-label={labels.night}
+        title={labels.night}
+        onClick={() => setTheme('night')}
+      >
+        <MoonIcon />
+      </button>
+    </div>
+  );
+}
 
 function LangToggle({ className }: { className?: string }) {
   const { lang, setLang } = useLang();
@@ -48,7 +100,7 @@ export function Nav() {
         .join(' ')}
     >
       <div className="nav__inner">
-        <a href="#hero" className="nav__logo" onClick={closeMenu} aria-label="Guest-ly — home">
+        <a href="#hero" className="nav__logo" onClick={closeMenu} aria-label="Guest-ly: home">
           <Logo />
         </a>
 
@@ -64,14 +116,16 @@ export function Nav() {
           <a className="nav__login" href={t.nav.login.href}>
             {t.nav.login.label}
           </a>
+          <ThemeToggle />
           <LangToggle />
           <button type="button" className="btn btn--gold" onClick={() => open()}>
             {t.nav.cta}
           </button>
         </div>
 
-        {/* Always-visible language switch on phones; desktop shows the one
-            in nav__actions instead. */}
+        {/* Always-visible language + theme switches on phones; desktop shows
+            the ones in nav__actions instead. */}
+        <ThemeToggle className="lang-toggle--bar theme-toggle--bar" />
         <LangToggle className="lang-toggle--bar" />
 
         <button
@@ -99,7 +153,10 @@ export function Nav() {
           </a>
         </nav>
         <div className="nav__menu-foot">
-          <LangToggle className="lang-toggle--menu" />
+          <div className="nav__menu-toggles">
+            <ThemeToggle className="lang-toggle--menu" />
+            <LangToggle className="lang-toggle--menu" />
+          </div>
           <button type="button" className="btn btn--gold btn--lg" onClick={startOrder} tabIndex={menuOpen ? 0 : -1}>
             {t.nav.cta}
           </button>

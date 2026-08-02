@@ -1,0 +1,1 @@
+var e={progress:0,velocity:0},t=0;function n(n){e.velocity=n-t,t=n,e.progress=n}function r(){return e.progress}export{n,r as t};

@@ -10,11 +10,14 @@
 
 html {
   scroll-behavior: auto; /* GSAP owns the scroll feel */
+  background: var(--bg);
 }
 
 body {
-  background: var(--ink);
-  color: var(--ivory);
+  background-color: var(--bg);
+  background-image: var(--bg-grad);
+  background-repeat: no-repeat;
+  color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--text-body);
   line-height: 1.6;
@@ -23,8 +26,8 @@ body {
 }
 
 ::selection {
-  background: var(--gold);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 a {
@@ -40,11 +43,58 @@ button {
   color: inherit;
 }
 
-/* The R3F canvas sits fixed behind all scrolling content. */
+/* Theme switch: a short-lived class on <html> turns on the 0.5s color
+   transition for the whole page, then removes itself. Reduced motion gets
+   the instant swap via the global media query below. */
+html.theme-switching body,
+html.theme-switching .overlay-page,
+html.theme-switching .overlay-page * {
+  transition:
+    background-color 0.5s var(--ease-lux),
+    border-color 0.5s var(--ease-lux),
+    color 0.5s var(--ease-lux),
+    box-shadow 0.5s var(--ease-lux) !important;
+}
+
+/* Skip link: first focusable element on the page. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  transform: translateY(-400%);
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: transform var(--dur-fast) var(--ease-lux);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* The R3F canvas (or its static gradient stand-in) sits fixed behind all
+   scrolling content. */
 .webgl-stage {
   position: fixed;
   inset: 0;
   z-index: 0;
+}
+
+/* Static themed backdrop: shown while the three.js chunk loads and as the
+   permanent backdrop when WebGL is gated off (low memory, save-data,
+   reduced motion, context failure). */
+.static-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(90% 60% at 70% 20%, var(--accent-12) 0%, transparent 60%),
+    radial-gradient(120% 80% at 30% 90%, var(--accent-08) 0%, transparent 55%),
+    var(--bg);
 }
 
 /* Scrolling DOM content above the canvas. */
@@ -54,14 +104,15 @@ button {
 }
 
 /* Cinematic finishing layer: vignette + animated film grain above everything,
-   below nothing interactive (pointer-events none). */
+   below nothing interactive (pointer-events none). Strength is themed, and
+   the grain is masked away from the central text column. */
 .overlay-root::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(6, 8, 12, 0.55) 100%);
+  background: radial-gradient(ellipse at center, transparent 62%, var(--vignette) 100%);
 }
 
 .overlay-root::after {
@@ -70,9 +121,18 @@ button {
   inset: -100%;
   z-index: 3;
   pointer-events: none;
-  opacity: 0.05;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  -webkit-mask-image: linear-gradient(90deg, black 0%, transparent 30%, transparent 70%, black 100%);
+  mask-image: linear-gradient(90deg, black 0%, transparent 30%, transparent 70%, black 100%);
   animation: grain 0.9s steps(6) infinite;
+}
+
+/* Phones skip the grain layer entirely (performance, Part 7.1). */
+@media (max-width: 719px) {
+  .overlay-root::after {
+    display: none;
+  }
 }
 
 @keyframes grain {
