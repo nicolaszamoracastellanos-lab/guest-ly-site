@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
 
-/* The Three Pillars: the signature progressive-disclosure interaction.
-   Three glass cards, one line each; the expander carries every factual
-   claim migrated from the old Channels / Included / Portal / Difference
-   sections. Only these three expanders and the FAQ use disclosure. */
+/* The Three Pillars: three glass cards, one line each; the expanders carry
+   the summary claims, with deep links into the richer wave 5.1 sections
+   (scenarios, channels, platform tour, coordinator). */
 export function Pillars() {
   const { t } = useLang();
   const p = t.pillars;
@@ -47,7 +46,13 @@ export function Pillars() {
                       <ul className="pillar__list">
                         {item.details.map((d) => (
                           <li key={d.h}>
-                            <strong>{d.h}.</strong> {d.b}
+                            <strong>{`${d.h}.`}</strong>
+                            {` ${d.b}`}
+                            {d.link ? (
+                              <a className="pillar__link" href={d.link.href}>
+                                {`${d.link.label} →`}
+                              </a>
+                            ) : null}
                           </li>
                         ))}
                       </ul>

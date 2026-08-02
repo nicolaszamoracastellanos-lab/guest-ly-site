@@ -69,6 +69,11 @@ for (const [route, outFile] of routes) {
        even if JS never runs) and is-visible is added back by the observer. */
     document.body.classList.remove('js-ready');
     document.querySelectorAll('.reveal.is-visible').forEach((el) => el.classList.remove('is-visible'));
+    /* The hero chat transcript is runtime ambience painted by effects; the
+       client hydrates with an empty stage and replays it, so an embedded
+       transcript would be a hydration text mismatch. */
+    document.querySelectorAll('.chat-card__body').forEach((el) => el.replaceChildren());
+    document.querySelectorAll('.chat-card__note').forEach((el) => el.remove());
     /* Night-default markup: the bootstrap script re-resolves per visitor. */
     document.documentElement.setAttribute('data-theme', 'night');
     return '<!doctype html>\n' + document.documentElement.outerHTML;

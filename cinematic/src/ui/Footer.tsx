@@ -58,10 +58,7 @@ export function Footer() {
       </div>
 
       <div className="container footer__base">
-        <p>
-          {f.copyright}
-          {LEGAL_ENTITY ? ` · ${LEGAL_ENTITY}` : ''}
-        </p>
+        <p>{`${f.copyright}${LEGAL_ENTITY ? ' · ' + LEGAL_ENTITY : ''}`}</p>
         <p className="footer__crafted">{f.crafted}</p>
       </div>
     </footer>

@@ -32,37 +32,6 @@ export function SectionHeader({
   );
 }
 
-/* --------------------------------------------------------- How it works */
-export function How() {
-  const { t } = useLang();
-  const { open } = useWizard();
-  const h = t.how;
-  return (
-    <section id="how" className="section">
-      <div className="container">
-        <SectionHeader no={h.no} kicker={h.kicker} title={h.title} intro={h.intro || undefined} />
-        <ol className="steps">
-          {h.steps.map((s) => (
-            <li key={s.n} className="step reveal">
-              <span className="step__n" aria-hidden="true">
-                {s.n}
-              </span>
-              <h3 className="step__title">{s.title}</h3>
-              <p className="step__body">{s.body}</p>
-            </li>
-          ))}
-        </ol>
-        <div className="how__cta reveal">
-          <button type="button" className="btn btn--gold btn--lg" onClick={() => open()}>
-            {h.cta}
-          </button>
-          <p className="how__note">{h.ctaNote}</p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ------------------------------------------------------------ Final CTA */
 export function FinalCta() {
   const { t } = useLang();

@@ -32,6 +32,9 @@ export function Hero() {
               <a className="btn btn--ghost btn--lg" href="#demo">
                 {h.secondary}
               </a>
+              <a className="hero__watch" href="#scenarios">
+                {`${h.watchLink} →`}
+              </a>
             </div>
             <div className="hero__stats reveal">
               {h.stats.map((s) => (

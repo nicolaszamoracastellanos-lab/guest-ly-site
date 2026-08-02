@@ -142,3 +142,29 @@ Nico: "The legal entity is ZC Ventures LLC. All the blockers get handled by you.
 3. STRIPE: script rewritten for canonical pricing (3 products, $199/$399/$699 one-time prices, 3 payment links with phone collection + custom fields, coordinator add-on product, FOUNDING30 promo max 10; idempotent; patches cinematic config automatically). NOT RUN: no Stripe key exists on this machine and no Stripe connector in this session. One command once a restricted key exists.
 4. WHATSAPP_ORDER_NUMBER: still empty (button hidden). Needs one fact only Nico has: which number should receive order chats.
 5. Site rebuilt with the live endpoint, root deploy output regenerated. Still NOT pushed.
+
+---
+
+## Wave 5.1: Nico's feedback round (Aug 1, 2026, "ultracode")
+
+Feedback: sun/moon icons; deleted breadth back (30+ languages, international guide, channels, richer steps); showcase seating/budget/planner/coordinator; comparison table back but compact; interactivity over brevity; phone-first.
+
+DESIGN: 8-agent workflow (capability inventory from the real platform repo + memories; site audit; 3 competing interaction designs: product-tour / scenario-first / mobile-app-feel; 2 judges; synthesized hybrid spec). Winning hybrid: shared ScenarioPlayer engine + visitor-pressed Confirm, MockScreen platform tour, pinned-card mobile compare, hash deep links, canonical truth sentences.
+
+BUILD (all EN + ES, ~350 new strings each):
+- Sun/moon SVG icon toggle everywhere (committed 4cb1ba2).
+- New section order: hero, marquee, № 01 Scenarios, № 02 Pillars (now with deep links), № 03 Channels, № 04 Platform tour, № 05 Coordinator, № 06 How stepper, № 07 Compare, № 08 Pricing, № 09 Founding, № 10 FAQ (9 items), CTA, footer.
+- ScenarioPlayer.tsx: timed playback, tap-to-skip, reduced-motion instant mode, and the honest centerpiece: playback PAUSES at every confirmation card until the visitor presses Confirm ("nothing writes without your click", physically enacted). Static transcripts stay in the DOM for crawlers.
+- Scenarios: 2am multilingual guest question, Marco cannot make it, planner batch approval, photo-to-budget import (real 109-item / 285,545.06 stat).
+- Channels: switcher with Live dots on Web + WhatsApp and honest Coming-soon pills on SMS/Telegram (dimmed panes, no plan tags); WhatsApp pane shows the real RSVP-in-chat flow; languages strip with the canonical sentence ("Understands 30+ languages, perfected in English and Spanish." / ES with accents) + 7 sample-language chips; international guide expander.
+- Platform tour: portal window (app.guest-ly.com bar), 8 tab panes built from shared mock primitives (dashboard, guests and RSVPs, broadcasts, seating, budget, Wedding Brain, planner, day-of check-in), each with real facts, real wow numbers only (401/359 Zola, 46 RSVPs, 109 items, 50-guest diff, ~30 screens, nine presets), and one micro-interaction per pane. Tablist with arrow keys; #platform=seating style deep links.
+- Coordinator spotlight (THE STAR): 4 quoted command chips (spreadsheet import, Marco, remind non-responders, caterer export), every script ends in a visitor-confirmed card; capability rail of the 7 real tool groups; price line; wizard CTA.
+- How: day-marked stepper (Day 0 / 1-4 / 5-6 / 7) with expandable detail.
+- Compare: collapsed glass expander; phones get a pinned Guest-ly column vs one selectable competitor (chips), desktop gets the classic table in its own scroll box; data restored verbatim from the wave-4 table; vendor-pricing footnote; upgraded Zola line.
+- Pricing: per-plan "See everything included" expanders with the full truthful lists, channels footnote, links to compare + coordinator.
+
+VERIFY: 17/17 interaction checks on dev at 390px, then rebuilt and re-verified on the BUILT output (scenario confirm, coordinator flow, platform micro, compare card, wizard, live hero demo against the real sandbox, zero console errors, no horizontal body scroll at 390).
+REVISE 1: tour/channel panes rendered side by side (display:grid beat the hidden attribute); [hidden]{display:none} added.
+REVISE 2: hydration mismatch #418 on the built output. Two causes, both fixed: the prerender snapshot embedded the runtime chat transcript (now stripped in prerender.mjs), and adjacent JSX text children ({label} + literal) merge into single DOM text nodes in a snapshot-based prerender (all such patterns rewritten as single expressions; spacing via CSS). Hydration now clean in light and dark schemes.
+NUMBERS: initial JS 319.73KB uncompressed / 96.81KB gzip (over the wave-5 255KB by the weight of the new interactive sections; still under the deferred three.js chunk by 3x). First-paint visible words 1,198 (up from 599 by design: Nico chose breadth + interactivity over brevity; detail sits behind disclosure).
+Screenshots: docs/wave5-screens/w51* (scenario confirmed, coordinator done, platform day 1440, channels ES day 390, stepper ES night 390, compare mobile).

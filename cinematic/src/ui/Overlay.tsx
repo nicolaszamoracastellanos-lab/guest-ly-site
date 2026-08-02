@@ -5,8 +5,14 @@ import { WizardContext } from './WizardContext';
 import type { PlanId, WizardApi } from './WizardContext';
 import { Nav } from './Nav';
 import { Hero } from './Hero';
-import { How, FinalCta } from './Sections';
+import { FinalCta } from './Sections';
+import { Scenarios } from './Scenarios';
 import { Pillars } from './Pillars';
+import { Channels } from './Channels';
+import { PlatformTabs } from './PlatformTabs';
+import { CoordinatorSpotlight } from './CoordinatorSpotlight';
+import { HowStepper } from './HowStepper';
+import { Compare } from './Compare';
 import { Pricing } from './Pricing';
 import { Founding } from './Founding';
 import { Faq } from './Faq';
@@ -70,12 +76,18 @@ export function Overlay() {
         <SkipLink />
         <div className="overlay-page">
           <Nav />
-          {/* Nine sections: hero, marquee (inside Hero), pillars, how,
-              pricing, founding, faq, final CTA, footer. */}
+          {/* Wave 5.1 order: hero + marquee, scenarios, pillars, channels,
+              platform tour, coordinator spotlight, how stepper, compare,
+              pricing, founding, faq, final CTA. */}
           <main id="main">
             <Hero />
+            <Scenarios />
             <Pillars />
-            <How />
+            <Channels />
+            <PlatformTabs />
+            <CoordinatorSpotlight />
+            <HowStepper />
+            <Compare />
             <Pricing />
             <Founding />
             <Faq />
