@@ -17,7 +17,7 @@ export const ORDER_INBOX = 'nicolas@guest-ly.com';
 
 /* WhatsApp number, digits only with country code (e.g. '59171234567');
    '' hides the WhatsApp button on the confirmation step. */
-export const WHATSAPP = '';
+export const WHATSAPP = '19106107193';
 
 /* LIVE HERO DEMO: endpoint of the dedicated sandbox concierge (a fictional
    demo wedding on its own tenant). See docs/sandbox-bot-setup.md for how to
