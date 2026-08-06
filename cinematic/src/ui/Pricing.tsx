@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
 import { SectionHeader } from './Sections';
+import { veilPrices } from './veil';
 
 /* № 08 Pricing: three one-time tiers from the canonical pricing block. Each
    card keeps its 4 headline features and gains a "See everything included"
@@ -16,7 +17,7 @@ export function Pricing() {
   return (
     <section id="pricing" className="section">
       <div className="container">
-        <SectionHeader no={p.no} kicker={p.kicker} title={p.title} intro={p.intro} />
+        <SectionHeader no={p.no} kicker={p.kicker} title={p.title} intro={veilPrices(p.intro)} />
 
         <div className="plan-grid">
           {p.plans.map((plan) => {
@@ -28,7 +29,7 @@ export function Pricing() {
                   {plan.popular && <span className="plan__ribbon">{p.popularTag}</span>}
                   <h3 className="plan__name">{plan.name}</h3>
                   <p className="plan__channels">{plan.guests}</p>
-                  <p className="plan__price">
+                  <p className="plan__price price-veil" aria-hidden="true">
                     <span className="plan__cur" aria-hidden="true">
                       $
                     </span>
@@ -99,8 +100,8 @@ export function Pricing() {
         <div className="glass coord-strip reveal">
           <span className="badge">{p.coordinator.badge}</span>
           <p className="coord-strip__body">
-            <strong>{p.coordinator.name}</strong>
-            {` ${p.coordinator.body}`}
+            <strong>{p.coordinator.name}</strong>{' '}
+            {veilPrices(p.coordinator.body)}
             <a href="#coordinator">{`${p.coordLink} →`}</a>
           </p>
         </div>

@@ -315,6 +315,8 @@ export interface SiteCopy {
       payCta: string;
       payNoteLinked: string;
       payNoteFallback: string;
+      emailCta: string;
+      emailNote: string;
       whatsapp: string;
       refundLine: string;
       refundLink: string;
@@ -1271,7 +1273,7 @@ const en: SiteCopy = {
       addonNo: 'No',
       nextTitle: 'What happens next',
       next: [
-        { title: 'Pay once to lock your build slot', body: 'Secure Stripe checkout. We confirm within 2 hours during business hours.' },
+        { title: 'We confirm your quote by email', body: 'You reply to lock your build slot. We answer within 2 hours during business hours.' },
         { title: 'We send you the intake form', body: 'A 15-minute form with everything your bot needs.' },
         { title: 'We build your bot (~7 days)', body: 'AI training, channel setup, design: all handled.' },
         { title: 'You test, approve and share', body: 'Your guests get a 24/7 concierge experience.' },
@@ -1279,6 +1281,8 @@ const en: SiteCopy = {
       payCta: 'Pay {price} securely →',
       payNoteLinked: 'Secure checkout by Stripe. Your build slot is reserved the moment payment comes through.',
       payNoteFallback: 'We will send a secure Stripe payment link to {email} within 2 hours to reserve your build slot.',
+      emailCta: 'Email us to complete your order →',
+      emailNote: 'We confirm your quote and reserve your build slot by email, usually within a few hours.',
       whatsapp: 'Prefer WhatsApp? Chat with us →',
       refundLine: 'Full refund before your first guest messages the concierge, or within 30 days, whichever comes first.',
       refundLink: 'Read the refund policy',
@@ -2292,7 +2296,7 @@ const es: SiteCopy = {
       addonNo: 'No',
       nextTitle: 'Qué pasa después',
       next: [
-        { title: 'Paga una sola vez para reservar tu lugar', body: 'Checkout seguro con Stripe. Confirmamos en menos de 2 horas en horario laboral.' },
+        { title: 'Confirmamos tu cotización por email', body: 'Respondes para reservar tu lugar. Contestamos en menos de 2 horas en horario laboral.' },
         { title: 'Te enviamos el formulario', body: 'Un formulario de 15 minutos con todo lo que tu bot necesita.' },
         { title: 'Construimos tu bot (~7 días)', body: 'Entrenamiento de IA, configuración de canales, diseño: nos encargamos de todo.' },
         { title: 'Pruebas, apruebas y compartes', body: 'Tus invitados reciben una experiencia de asistente 24/7.' },
@@ -2300,6 +2304,8 @@ const es: SiteCopy = {
       payCta: 'Pagar {price} de forma segura →',
       payNoteLinked: 'Checkout seguro con Stripe. Tu lugar queda reservado en cuanto se procesa el pago.',
       payNoteFallback: 'Te enviaremos un link de pago seguro de Stripe a {email} en menos de 2 horas para reservar tu lugar.',
+      emailCta: 'Escríbenos para completar tu pedido →',
+      emailNote: 'Confirmamos tu cotización y reservamos tu lugar por email, normalmente en unas horas.',
       whatsapp: '¿Prefieres WhatsApp? Escríbenos →',
       refundLine: 'Reembolso total antes de que tu primer invitado le escriba al asistente, o dentro de 30 días, lo que ocurra primero.',
       refundLink: 'Lee la política de reembolsos',

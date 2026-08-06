@@ -12,7 +12,7 @@ export function SectionHeader({
   no: string;
   kicker: string;
   title: string;
-  intro?: string;
+  intro?: import('react').ReactNode;
   center?: boolean;
 }) {
   return (

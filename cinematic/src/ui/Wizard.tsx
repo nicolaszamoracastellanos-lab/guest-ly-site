@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react';
 import { useLang } from './LanguageContext';
 import type { PlanId } from './WizardContext';
 import { ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
+import { veilPrices } from './veil';
 
 interface WizardProps {
   initialPlan: PlanId;
@@ -228,7 +229,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                     ) : null}
                   </span>
                   <span className="wiz-plan__channels">{pl.guests}</span>
-                  <span className="wiz-plan__price">${pl.price}</span>
+                  <span className="wiz-plan__price price-veil" aria-hidden="true">${pl.price}</span>
                   <span className="wiz-plan__fee">{pl.priceNote}</span>
                 </button>
               ))}
@@ -245,7 +246,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               />
               <span className="wiz-addon__txt">
                 <strong>{w.step2.addon.title}</strong>
-                <span>{addonIncluded ? w.step2.addon.includedNote : w.step2.addon.pitch}</span>
+                <span>{addonIncluded ? w.step2.addon.includedNote : veilPrices(w.step2.addon.pitch)}</span>
               </span>
             </label>
 
@@ -338,7 +339,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                 </div>
                 <div>
                   <dt>{w.step4.rows.price}</dt>
-                  <dd>${price}</dd>
+                  <dd className="price-veil" aria-hidden="true">${price}</dd>
                 </div>
               </dl>
             </div>
@@ -352,9 +353,12 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                   <p className="wiz-pay__note">{w.step4.payNoteLinked}</p>
                 </>
               ) : (
-                <p className="wiz-pay__note">
-                  {w.step4.payNoteFallback.replace('{email}', fields.email || '·')}
-                </p>
+                <>
+                  <a className="btn btn--gold btn--lg" href={mailtoHref}>
+                    {w.step4.emailCta}
+                  </a>
+                  <p className="wiz-pay__note">{w.step4.emailNote}</p>
+                </>
               )}
               {WHATSAPP ? (
                 <a
