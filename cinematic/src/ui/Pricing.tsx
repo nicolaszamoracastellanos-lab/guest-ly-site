@@ -85,6 +85,7 @@ export function Pricing() {
         </div>
 
         <p className="plan-footnote reveal">{p.channelsFootnote}</p>
+        <p className="plan-footnote plan-footnote--maintenance reveal">{p.maintenanceLine}</p>
 
         <p className="zola-line reveal">
           <span className="zola-line__mark" aria-hidden="true">

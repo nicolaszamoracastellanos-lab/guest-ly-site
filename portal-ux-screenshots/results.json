@@ -1,0 +1,377 @@
+[
+  {
+    "check": "bell desktop: panel fully inside the viewport",
+    "status": "PASS",
+    "detail": "{\"x\":192,\"y\":64,\"width\":360,\"height\":457.25}"
+  },
+  {
+    "check": "bell desktop: panel at least 360 wide",
+    "status": "PASS",
+    "detail": "360"
+  },
+  {
+    "check": "bell desktop: panel extends past the 256px sidebar",
+    "status": "PASS",
+    "detail": "552"
+  },
+  {
+    "check": "bell desktop: panel is on top of the main column",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "bell desktop: rows are readable (width)",
+    "status": "PASS",
+    "detail": "358"
+  },
+  {
+    "check": "bell desktop: Escape closes",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "bell desktop: outside click closes",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "bell desktop: no console errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "bell phone: bottom sheet full width",
+    "status": "PASS",
+    "detail": "390"
+  },
+  {
+    "check": "bell phone: sheet inside viewport and at the bottom",
+    "status": "PASS",
+    "detail": "{\"x\":0,\"y\":363.75,\"width\":390,\"height\":480.25}"
+  },
+  {
+    "check": "bell phone: max 80vh",
+    "status": "PASS",
+    "detail": "480.25"
+  },
+  {
+    "check": "before: sidebar overflow-x is auto (clips absolute children)",
+    "status": "PASS",
+    "detail": "{\"asideOverflowX\":\"auto\",\"asideOverflowY\":\"auto\",\"asideWidth\":256,\"panelRight\":512,\"panelWidth\":320}"
+  },
+  {
+    "check": "before: panel wider than the sidebar (clipped)",
+    "status": "PASS",
+    "detail": "{\"asideOverflowX\":\"auto\",\"asideOverflowY\":\"auto\",\"asideWidth\":256,\"panelRight\":512,\"panelWidth\":320}"
+  },
+  {
+    "check": "search: Cmd+K opens",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search: input focused on open",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search desktop: 640 wide",
+    "status": "PASS",
+    "detail": "640"
+  },
+  {
+    "check": "search empty: You can search for",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search: Cmd+K closes",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search: Ctrl+K opens",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search 2 chars: hint shown",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search 2 chars: pages matched client-side",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search results: mixed groups (Guests + RSVPs)",
+    "status": "PASS",
+    "detail": "Guests,RSVPs,Conversations"
+  },
+  {
+    "check": "search results: no phone or email in subtitles",
+    "status": "PASS",
+    "detail": "Attending|Attending|Declined · party member|Attending · matches email|Declined"
+  },
+  {
+    "check": "search: accented and unaccented queries agree",
+    "status": "PASS",
+    "detail": "8 vs 8"
+  },
+  {
+    "check": "search: Enter on a guest opens the drawer",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search: recent searches persist across reload",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search scope task: only tasks (or nothing)",
+    "status": "PASS",
+    "detail": "Tasks"
+  },
+  {
+    "check": "search zero: No results shown",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search zero: suggestions for a near miss",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search: no console errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "fab phone: 52px",
+    "status": "PASS",
+    "detail": "52"
+  },
+  {
+    "check": "fab phone: sits above the bottom bar",
+    "status": "PASS",
+    "detail": "768 vs nav 781"
+  },
+  {
+    "check": "search phone: input focused (keyboard up)",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search phone: full screen",
+    "status": "PASS",
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":844}"
+  },
+  {
+    "check": "search phone: 3 letters bring guest suggestions",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "search phone: tapping a guest opens the guest",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "bottom bar: exactly Home, Guests, RSVPs, Messages, More",
+    "status": "FAIL",
+    "detail": "Home|Guests|RSVPs|10Messages|⋯More"
+  },
+  {
+    "check": "bottom bar: no horizontal overflow",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "bottom bar: Messages active on /conversations",
+    "status": "PASS",
+    "detail": "10Messages"
+  },
+  {
+    "check": "bottom bar: More shows active when the page lives inside it",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "more sheet: four groups",
+    "status": "PASS",
+    "detail": "Planning|Communication|Event day|Setup"
+  },
+  {
+    "check": "more sheet: every remaining tab reachable",
+    "status": "PASS",
+    "detail": "/tasks,/seating,/budget,/brain,/vendors,/runsheet,/broadcasts,/requests,/coordinator,/checkin,/website,/guide"
+  },
+  {
+    "check": "more sheet: respects the bottom edge",
+    "status": "PASS",
+    "detail": "{\"x\":0,\"y\":314,\"width\":390,\"height\":530}"
+  },
+  {
+    "check": "more sheet: Escape closes",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab dashboard (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab brain (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab guests (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab tasks (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab rsvps (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab conversations (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab seating (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab budget (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab vendors (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab runsheet (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab broadcasts (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab requests (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab coordinator (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab checkin (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab website (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "tab guide (390): renders without overflow or errors",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "collapsible: Filters collapsed by default on phone",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "collapsible: click expands",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "collapsible: state persists across reload",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "collapsible: key is scoped per page and section",
+    "status": "PASS",
+    "detail": "gl_sec:11111111-1111-4111-8111-111111111111:959dcd7b-af9d-41b7-b391-70f76c2a120b:guests:filters,gl_sec:11111111-1111-4111-8111-111111111111:959dcd7b-af9d-41b7-b391-70f76c2a120b:dashboard:stats"
+  },
+  {
+    "check": "collapsible: other page untouched (isolation)",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "api: query under 3 chars rejected (too_short)",
+    "status": "PASS",
+    "detail": "400 too_short"
+  },
+  {
+    "check": "api: rate limiter blocks the 31st call in a minute",
+    "status": "PASS",
+    "detail": "200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,429"
+  },
+  {
+    "check": "isolation: owner of another wedding gets no Salomé rows",
+    "status": "PASS",
+    "detail": "[]"
+  },
+  {
+    "check": "isolation: no cross-tenant suggestions either",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "planner: lands on /planner",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "planner search: returns names",
+    "status": "PASS",
+    "detail": "9"
+  },
+  {
+    "check": "planner search: no phone or email anywhere in items",
+    "status": "PASS",
+    "detail": "[{\"group\":\"guest\",\"id\":\"0cb1b2ea-fec3-49ec-aef3-44deb44c3e76\",\"title\":\"Valentina Salomé\",\"subtitle\":\"\",\"href\":\"\",\"badge\":\"name\"},{\"group\":\"guest\",\"id\":\"0db1437b-3923-4b97-a3ed-419d21af3b49\",\"title\":\"Adriana Salomé\",\"subtitle\":\"\",\"href\":\"\",\"badge\":\"name\"}]"
+  },
+  {
+    "check": "planner search: hrefs stay inside /planner",
+    "status": "PASS",
+    "detail": ",,,,,,/planner/guests?q=Carmen%20Schuab,/planner/guests?q=M%C3%B3nica%20Salom%C3%A9,/planner/guests?q=Eduardo%20Salom%C3%A9"
+  },
+  {
+    "check": "planner search: no conversations group",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "check": "planner bottom bar: Home, Guests, Requests, Budget, More",
+    "status": "FAIL",
+    "detail": "Home|Guests|1Requests|Budget|⋯More"
+  }
+]

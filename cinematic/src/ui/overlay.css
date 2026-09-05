@@ -3813,3 +3813,8 @@ body.js-ready .reveal.is-visible {
 .intl__closing a {
   margin-left: 0.4rem;
 }
+
+.plan-footnote--maintenance {
+  color: var(--accent);
+  margin-top: 0.4rem;
+}

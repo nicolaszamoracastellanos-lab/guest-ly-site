@@ -234,6 +234,8 @@ export interface SiteCopy {
     fullListLabel: string;
     fullLists: { essentials: string[]; signature: string[]; grande: string[] };
     channelsFootnote: string;
+    /* 5 months included, then $20/mo: rendered under the plan cards. */
+    maintenanceLine: string;
     coordLink: string;
     compareLink: string;
   };
@@ -1014,7 +1016,7 @@ const en: SiteCopy = {
     footnote: 'Public pricing as listed by each vendor, mid-2026.',
     zolaLine: 'Keep Zola. We sync with it: 46 real RSVPs brought over with zero conflicts.',
     columns: [
-      { id: 'guestly', name: 'Guest-ly', sub: 'Signature plan', price: '$399 once', marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
+      { id: 'guestly', name: 'Guest-ly', sub: 'Signature plan', price: '$399 once, 5 months live', marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
       { id: 'vino', name: 'Vino', sub: 'No web chat', price: '$2,499', marks: ['yes', 'yes', 'no', 'no', 'yes', 'no'] },
       { id: 'daisy', name: 'Daisy Chat', sub: 'SMS only', price: '$125 to $175', marks: ['no', 'no', 'no', 'no', 'yes', 'no'] },
       { id: 'guestbook', name: 'GuestBook', sub: 'Web chat only', price: '$10 to $99/mo', marks: ['no', 'no', 'no', 'no', 'no', 'no'] },
@@ -1026,7 +1028,7 @@ const en: SiteCopy = {
     no: '№ 08',
     kicker: 'Pricing',
     title: 'One price.\nEvery question answered.',
-    intro: 'From $199, once. Yours until the wedding.',
+    intro: 'From $199, once. 5 months live included, then $20/mo only if you want to keep it going.',
     popularTag: '✦ Most popular',
     plans: [
       {
@@ -1034,7 +1036,7 @@ const en: SiteCopy = {
         name: 'Essentials',
         guests: 'Up to 60 guests',
         price: 199,
-        priceNote: 'One payment',
+        priceNote: 'One payment · 5 months live',
         features: [
           'Concierge: WhatsApp + web, EN/ES',
           'Website + registry + RSVP',
@@ -1048,7 +1050,7 @@ const en: SiteCopy = {
         name: 'Signature',
         guests: 'Up to 160 guests',
         price: 399,
-        priceNote: 'One payment',
+        priceNote: 'One payment · 5 months live',
         features: [
           'Everything in Essentials',
           'Per-person, per-event RSVP',
@@ -1063,7 +1065,7 @@ const en: SiteCopy = {
         name: 'Grande',
         guests: 'Up to 300 guests',
         price: 699,
-        priceNote: 'One payment',
+        priceNote: 'One payment · 5 months live',
         features: [
           'Everything in Signature',
           'AI Coordinator included',
@@ -1111,6 +1113,7 @@ const en: SiteCopy = {
       ],
     },
     channelsFootnote: 'SMS and Telegram concierge channels are coming soon and will join when they launch.',
+    maintenanceLine: 'Every plan includes 5 months live from delivery. Keep it live longer for $20/mo, cancel any time.',
     coordLink: 'See it in action',
     compareLink: 'See how this compares',
   },
@@ -1148,7 +1151,11 @@ const en: SiteCopy = {
       },
       {
         q: 'Is it really one payment?',
-        a: 'Yes. Every plan is a single one-time price, yours until the wedding. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo.',
+        a: 'Yes. Every plan is a single one-time price that includes 5 months live, counted from the day we deliver your concierge. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo.',
+      },
+      {
+        q: 'What happens after the 5 months?',
+        a: 'If your wedding is within the 5 months, nothing: you are covered. If you want your website, RSVP and concierge to stay live longer, a $20/mo maintenance fee keeps everything running for as long as you need, cancel any time. We remind you inside your portal and by email when month 5 starts, so nothing ever switches off by surprise.',
       },
       {
         q: 'Does it work in Bolivia and Latin America?',
@@ -1342,9 +1349,11 @@ const en: SiteCopy = {
             ],
           },
           {
-            h: 'One-time payment, yours until the wedding',
+            h: 'One-time payment, 5 months live included',
             body: [
-              'Every plan is a single one-time payment. "Yours until the wedding" means the service runs from launch through your wedding date plus 30 days after it, so late thank-you questions still get answered. Only the optional AI Coordinator has a monthly billing option.',
+              'Every plan is a single one-time payment that includes 5 months of live service, counted from the delivery date (the day we email you that your concierge is ready). During those months the concierge, website, RSVP and portal run with no further charge.',
+              'After the included 5 months, keeping the service live costs a maintenance fee of $20 per month, billed monthly through Stripe and cancellable at any time. We notify you in your portal and by email when your 5th included month starts, a week before the included period ends, and on the day it ends. If no maintenance plan is active after the included period, the service may be paused until one is.',
+              'The optional AI Coordinator is billed separately: $79 one-time (stays active for as long as your service is live) or $19 per month, which continues alongside the maintenance fee.',
             ],
           },
           {
@@ -2039,7 +2048,7 @@ const es: SiteCopy = {
     footnote: 'Precios públicos según cada proveedor, mediados de 2026.',
     zolaLine: 'Conserva Zola. Nos sincronizamos: 46 RSVPs reales migrados sin conflictos.',
     columns: [
-      { id: 'guestly', name: 'Guest-ly', sub: 'Plan Signature', price: '$399 una vez', marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
+      { id: 'guestly', name: 'Guest-ly', sub: 'Plan Signature', price: '$399 una vez, 5 meses activos', marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
       { id: 'vino', name: 'Vino', sub: 'Sin chat web', price: '$2,499', marks: ['yes', 'yes', 'no', 'no', 'yes', 'no'] },
       { id: 'daisy', name: 'Daisy Chat', sub: 'Solo SMS', price: '$125 a $175', marks: ['no', 'no', 'no', 'no', 'yes', 'no'] },
       { id: 'guestbook', name: 'GuestBook', sub: 'Solo chat web', price: '$10 a $99/mes', marks: ['no', 'no', 'no', 'no', 'no', 'no'] },
@@ -2051,7 +2060,7 @@ const es: SiteCopy = {
     no: '№ 08',
     kicker: 'Precios',
     title: 'Un solo pago.\nCada pregunta respondida.',
-    intro: 'Desde $199, una sola vez. Tuyo hasta la boda.',
+    intro: 'Desde $199, una sola vez. 5 meses activos incluidos, luego $20/mes solo si quieres seguir.',
     popularTag: '✦ Más popular',
     plans: [
       {
@@ -2059,7 +2068,7 @@ const es: SiteCopy = {
         name: 'Essentials',
         guests: 'Hasta 60 invitados',
         price: 199,
-        priceNote: 'Pago único',
+        priceNote: 'Pago único · 5 meses activos',
         features: [
           'Asistente: WhatsApp + web, ES/EN',
           'Página + regalos + RSVP',
@@ -2073,7 +2082,7 @@ const es: SiteCopy = {
         name: 'Signature',
         guests: 'Hasta 160 invitados',
         price: 399,
-        priceNote: 'Pago único',
+        priceNote: 'Pago único · 5 meses activos',
         features: [
           'Todo lo de Essentials',
           'RSVP por persona y por evento',
@@ -2088,7 +2097,7 @@ const es: SiteCopy = {
         name: 'Grande',
         guests: 'Hasta 300 invitados',
         price: 699,
-        priceNote: 'Pago único',
+        priceNote: 'Pago único · 5 meses activos',
         features: [
           'Todo lo de Signature',
           'Coordinador IA incluido',
@@ -2136,6 +2145,7 @@ const es: SiteCopy = {
       ],
     },
     channelsFootnote: 'Los canales de SMS y Telegram llegan pronto y se sumarán cuando estén activos.',
+    maintenanceLine: 'Cada plan incluye 5 meses activos desde la entrega. Mantenlo activo más tiempo por $20/mes, cancela cuando quieras.',
     coordLink: 'Míralo en acción',
     compareLink: 'Mira cómo se compara',
   },
@@ -2173,7 +2183,11 @@ const es: SiteCopy = {
       },
       {
         q: '¿De verdad es un solo pago?',
-        a: 'Sí. Cada plan es un único pago, tuyo hasta la boda. Solo el Coordinador IA, que es opcional, tiene opción mensual: $79 pago único o $19/mes.',
+        a: 'Sí. Cada plan es un único pago que incluye 5 meses activos, contados desde el día en que te entregamos tu asistente. Solo el Coordinador IA, que es opcional, tiene opción mensual: $79 pago único o $19/mes.',
+      },
+      {
+        q: '¿Qué pasa después de los 5 meses?',
+        a: 'Si tu boda es dentro de esos 5 meses, nada: estás cubierto. Si quieres que tu página, RSVP y asistente sigan activos más tiempo, una cuota de mantenimiento de $20/mes mantiene todo funcionando el tiempo que necesites, y la cancelas cuando quieras. Te avisamos en tu portal y por email cuando empieza el mes 5, así nada se apaga por sorpresa.',
       },
       {
         q: '¿Funciona en Bolivia y Latinoamérica?',
@@ -2367,9 +2381,11 @@ const es: SiteCopy = {
             ],
           },
           {
-            h: 'Pago único, tuyo hasta la boda',
+            h: 'Pago único, 5 meses activos incluidos',
             body: [
-              'Cada plan es un único pago. "Tuyo hasta la boda" significa que el servicio funciona desde el lanzamiento hasta la fecha de tu boda más 30 días después, para que las preguntas tardías también tengan respuesta. Solo el Coordinador IA opcional tiene opción de pago mensual.',
+              'Cada plan es un único pago que incluye 5 meses de servicio activo, contados desde la fecha de entrega (el día en que te enviamos el email de que tu asistente está listo). Durante esos meses el asistente, la página, el RSVP y el portal funcionan sin ningún cargo adicional.',
+              'Después de los 5 meses incluidos, mantener el servicio activo cuesta una cuota de mantenimiento de $20 al mes, cobrada mensualmente por Stripe y cancelable en cualquier momento. Te avisamos en tu portal y por email cuando empieza tu 5° mes incluido, una semana antes de que termine el periodo incluido y el día en que termina. Si no hay un plan de mantenimiento activo después del periodo incluido, el servicio puede pausarse hasta que lo haya.',
+              'El Coordinador IA opcional se cobra por separado: $79 pago único (sigue activo mientras tu servicio esté activo) o $19 al mes, que continúa junto con la cuota de mantenimiento.',
             ],
           },
           {
