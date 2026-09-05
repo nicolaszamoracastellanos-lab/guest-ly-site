@@ -1,4 +1,4 @@
-# Guest·ly Content Generation Guide (v2)
+# Guest-ly Content Generation Guide (v2)
 
 Version 2.0. August 2026. Supersedes v1 (July 2026).
 
@@ -36,7 +36,7 @@ Same table as the marketing plan; the two items that live primarily in THIS docu
 **Reusable brand block (copy-paste):**
 
 ```
-Brand: Guest·ly, an AI wedding concierge. Palette: deep navy #0D1B2A,
+Brand: Guest-ly, an AI wedding concierge. Palette: deep navy #0D1B2A,
 ivory #FAF6F0, gold accent #B8965A. Typography: elegant serif headlines
 (Cormorant Garamond style), clean geometric sans body (Jost style).
 Mood: editorial, minimal, warm, destination-wedding luxury. Generous
@@ -76,7 +76,7 @@ Workflow: generate from a full brief in this chat, adjust text manually in Canva
 Using Canva, create a 7-slide Instagram carousel template, 1080x1350.
 [PASTE BRAND BLOCK]
 Slide 1 (hook): navy background, large ivory serif headline centered,
-small gold diamond accent, tiny "Guest·ly" wordmark bottom center.
+small gold diamond accent, tiny "Guest-ly" wordmark bottom center.
 Slides 2-6 (content): ivory background, navy serif heading top-left,
 navy sans body text, gold number top-right, thin gold divider.
 Slide 7 (CTA): navy background, ivory serif line "Your guests have
@@ -154,14 +154,14 @@ Best for one-pagers and planner pitch visuals where template gravity fights the 
 **Planner one-pager prompt:**
 
 ```
-Design a one-page visual for Guest·ly aimed at wedding planners.
+Design a one-page visual for Guest-ly aimed at wedding planners.
 [PASTE BRAND BLOCK]
 Top navy band: wordmark plus "Your guests' questions, answered before
 they reach you." Middle ivory section: three columns (WhatsApp + Web,
 English + Spanish, Destination travel intelligence), each with a navy
 serif heading and two-line navy sans description. Gold-on-navy
 pull-quote band: "One planner. 120 guests. Zero midnight taxi
-questions." Bottom: "Partner with Guest·ly" and the site URL.
+questions." Bottom: "Partner with Guest-ly" and the site URL.
 Export at 1080x1350 and US Letter.
 ```
 
@@ -187,7 +187,7 @@ Rule zero: **never record a real guest's conversation.** All demo footage comes 
 | # | Item to check | Where it leaks | Fix |
 |---|---|---|---|
 | 1 | Real guest names | Chat history visible when opening WhatsApp, contact autocomplete, forwarded-message headers | Record inside a dedicated test thread only; never show the chat list screen; archive real threads before recording |
-| 2 | Phone numbers | Contact header at top of chat, status bar carrier info, message metadata, the sandbox number itself | Name the test contact "Guest·ly Demo" (no number visible in header); decide deliberately whether the Twilio sandbox number may appear on camera, and if not, crop the header |
+| 2 | Phone numbers | Contact header at top of chat, status bar carrier info, message metadata, the sandbox number itself | Name the test contact "Guest-ly Demo" (no number visible in header); decide deliberately whether the Twilio sandbox number may appear on camera, and if not, crop the header |
 | 3 | Twilio sandbox join code | The "join <word-word>" onboarding message at the top of any sandbox thread | Scroll it out of frame or delete it from the test thread before recording; the code lets anyone join your sandbox |
 | 4 | The planner's real number (Raquel) | The bot's own answers include her WhatsApp number by design | Either get her written OK to appear in public marketing, or use a test knowledge base with a dummy planner number for recordings. Do not broadcast a real person's phone number without consent. |
 | 5 | Email addresses | Autocomplete, notification banners | Do Not Disturb ON for the entire capture session |

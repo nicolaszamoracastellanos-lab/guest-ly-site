@@ -1,4 +1,4 @@
-# Guest·ly Social Media Marketing Plan (v2)
+# Guest-ly Social Media Marketing Plan (v2)
 
 Version 2.0. August 2026. Owner: Nico. Supersedes v1 (July 2026).
 
@@ -37,7 +37,7 @@ Rule for the calendar below: any row gated on an unresolved item states its fall
 
 Unchanged from v1.
 
-**Primary: The Destination Couple.** Engaged, 26 to 38, 30%+ of guests traveling internationally. LatAm destination weddings as beachhead plus US couples with bilingual guest lists. Pain: the same 40 questions over WhatsApp for months. They already have Zola; Guest·ly is the layer on top. Found on Instagram, Pinterest, wedding subreddits, planner referrals.
+**Primary: The Destination Couple.** Engaged, 26 to 38, 30%+ of guests traveling internationally. LatAm destination weddings as beachhead plus US couples with bilingual guest lists. Pain: the same 40 questions over WhatsApp for months. They already have Zola; Guest-ly is the layer on top. Found on Instagram, Pinterest, wedding subreddits, planner referrals.
 
 **Secondary: The Wedding Planner.** Independent and boutique destination planners. Pain: they ARE the concierge, at 11pm. Pitch: makes them look high-tech and cuts message volume. Found on Instagram and LinkedIn.
 
@@ -47,7 +47,7 @@ Unchanged from v1.
 
 ## 3. Key Messages
 
-Core message unchanged: **Your wedding website answers nothing. Guest·ly answers everything, in your guests' language, on WhatsApp, instantly.**
+Core message unchanged: **Your wedding website answers nothing. Guest-ly answers everything, in your guests' language, on WhatsApp, instantly.**
 
 | Message | Proof point | v2 caveat |
 |---|---|---|
