@@ -9,3 +9,7 @@ guestly-capabilities-wave3-master-prompt.md
 wave4-ai-coordinator-master-prompt.md
 wave3-screenshots/
 wave4-screenshots/
+
+# nested repos owned by other work (never part of the published site)
+guestly-portal/
+guestly-portal-deploy/
