@@ -343,6 +343,12 @@ body.js-ready .reveal.is-visible {
   font-weight: 400;
 }
 
+/* Playfair renders the trademark glyph a touch heavy at the base 0.55em, so
+   the wordmark uses a slightly smaller symbol (Part 3 Playfair exception). */
+.logo .tm {
+  font-size: 0.5em;
+}
+
 @keyframes diamondGlow {
   0%, 86%, 100% {
     transform: rotate(45deg) scale(1);
@@ -1478,6 +1484,16 @@ body.js-ready .reveal.is-visible {
   font-family: var(--font-serif);
   font-style: italic;
   color: var(--accent-text-strong);
+}
+
+/* Trademark notice: its own full-width line under the copyright/crafted row,
+   so the footer grows by exactly one line. */
+.footer__tm {
+  flex-basis: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-faint);
 }
 
 @media (min-width: 820px) {

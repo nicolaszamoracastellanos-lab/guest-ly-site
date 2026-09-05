@@ -151,3 +151,17 @@ html.theme-switching .overlay-page * {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Trademark superscript. Small, layout-neutral (line-height 0 so it never
+   changes the line box), inherits color from the wordmark so it is never gold
+   on ivory. Sits next to the wordmark, never baked into a logo image. */
+.tm {
+  font-size: 0.55em;
+  line-height: 0;
+  vertical-align: super;
+  margin-left: 0.08em;
+  letter-spacing: 0;
+  font-family: inherit;
+  font-weight: inherit;
+  color: inherit;
+}

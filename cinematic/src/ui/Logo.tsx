@@ -6,7 +6,7 @@ export function Logo({ className }: { className?: string }) {
     <span className={className ? `logo ${className}` : 'logo'}>
       <span>Guest</span>
       <span className="logo__gem" aria-hidden="true" />
-      <span className="logo__ly">ly</span>
+      <span className="logo__ly">ly<sup className="tm" aria-hidden="true">™</sup></span>
     </span>
   );
 }

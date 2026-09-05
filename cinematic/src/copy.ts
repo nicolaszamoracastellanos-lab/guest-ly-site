@@ -268,6 +268,7 @@ export interface SiteCopy {
     legal: { title: string; links: { label: string; href: string }[] };
     entityNote: string;
     copyright: string;
+    tmNotice: string;
     crafted: string;
   };
   wizard: {
@@ -1212,6 +1213,7 @@ const en: SiteCopy = {
     },
     entityNote: '',
     copyright: '© 2026 Guest-ly',
+    tmNotice: 'Guest-ly™ and the Guest-ly logo are trademarks of ZC Ventures LLC.',
     crafted: 'Crafted with ✦ for unforgettable celebrations',
   },
 
@@ -2235,6 +2237,7 @@ const es: SiteCopy = {
     },
     entityNote: '',
     copyright: '© 2026 Guest-ly',
+    tmNotice: 'Guest-ly™ y el logotipo de Guest-ly son marcas de ZC Ventures LLC.',
     crafted: 'Hecho con ✦ para celebraciones inolvidables',
   },
 
