@@ -2,15 +2,27 @@
    Every PENDING input from the wave 5 master prompt lands here, so going
    live is a paste-values-and-rebuild operation. */
 
-/* PAYMENTS: Stripe Payment Link URLs, one per plan (each plan is a single
-   one-time price). See STRIPE-SETUP.md in the repo root for the
-   click-by-click guide. Leave '' until a link exists; the wizard falls back
-   to "we'll send you a payment link" so nothing breaks. */
-export const PAY_LINKS: Record<'essentials' | 'signature' | 'grande', string> = {
-  essentials: '',
-  signature: '',
-  grande: '',
+/* PAYMENTS: live Stripe Payment Links (created Sep 5 2026 in the Guest-ly
+   Stripe account, Managed Payments off, promo codes on, phone required).
+   '' for any entry makes the wizard fall back to "we'll send you a payment
+   link" so nothing breaks. */
+export type PayLinkKey =
+  | 'essentials'
+  | 'signature'
+  | 'grande'
+  | 'essentials-coordinator'
+  | 'signature-coordinator';
+export const PAY_LINKS: Record<PayLinkKey, string> = {
+  essentials: 'https://buy.stripe.com/aFa14g1g1219bHDdoY63K00',
+  signature: 'https://buy.stripe.com/cNi8wI3o95dl9zvckU63K01',
+  grande: 'https://buy.stripe.com/14AeV69Mx49hdPLet263K02',
+  /* Plan + AI Coordinator add-on ($79) in one checkout. Grande includes it. */
+  'essentials-coordinator': 'https://buy.stripe.com/14AdR28It7ltaDzbgQ63K03',
+  'signature-coordinator': 'https://buy.stripe.com/00w4gscYJ9tB7rn5Ww63K04',
 };
+
+/* One-time price of the AI Coordinator add-on, must match the Stripe price. */
+export const ADDON_PRICE = 79;
 
 /* Receives order notifications via FormSubmit (same inbox as production). */
 export const ORDER_INBOX = 'nicolas@guest-ly.com';

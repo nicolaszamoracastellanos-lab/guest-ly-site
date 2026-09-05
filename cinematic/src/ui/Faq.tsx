@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
-import { veilPrices } from './veil';
 
 export function Faq() {
   const { t } = useLang();
@@ -42,7 +41,7 @@ export function Faq() {
                       inside a visually hidden answer. */}
                   <div className="faq-a" id={`faq-a-${i}`} inert={!isOpen}>
                     <div className="faq-a__inner">
-                      <p>{veilPrices(item.a)}</p>
+                      <p>{item.a}</p>
                     </div>
                   </div>
                 </div>

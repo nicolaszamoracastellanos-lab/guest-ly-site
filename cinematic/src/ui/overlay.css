@@ -3781,11 +3781,3 @@ body.js-ready .reveal.is-visible {
 .intl__closing a {
   margin-left: 0.4rem;
 }
-
-/* ── TEMPORARY price veil (pricing being finalized; see veil.tsx) ── */
-.price-veil {
-  filter: blur(0.55em);
-  user-select: none;
-  -webkit-user-select: none;
-  pointer-events: none;
-}

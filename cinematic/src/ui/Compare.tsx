@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { useHashParam } from './useHashParam';
-import { veilPrices } from './veil';
 
 /* № 07: the competitor comparison, back by request but collapsed by default.
    Phones get a pinned two-column card (Guest-ly locked left, one selectable
@@ -103,7 +102,7 @@ export function Compare() {
                     ))}
                     <div className="compare__pair compare__pair--price">
                       <span className="compare__rowlabel">{c.priceLabel}</span>
-                      <span className="compare__cell compare__cell--us">{veilPrices(guestly.price)}</span>
+                      <span className="compare__cell compare__cell--us">{guestly.price}</span>
                       <span className="compare__cell">{rival.price}</span>
                     </div>
                   </div>
@@ -141,7 +140,7 @@ export function Compare() {
                           <th scope="row">{c.priceLabel}</th>
                           {c.columns.map((col) => (
                             <td key={col.id} className={col.highlight ? 'is-us' : undefined}>
-                              {col.highlight ? veilPrices(col.price) : col.price}
+                              {col.price}
                             </td>
                           ))}
                         </tr>

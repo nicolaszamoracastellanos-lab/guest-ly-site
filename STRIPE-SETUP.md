@@ -1,5 +1,12 @@
 # Stripe setup — from sandbox to first dollar
 
+> **DONE Sep 5 2026.** Live Stripe (Guest-ly account): 4 products (Essentials $199,
+> Signature $399, Grande $699, AI Coordinator add-on $79), 5 payment links
+> (3 plans + Essentials/Signature bundled with the Coordinator), promo code
+> FOUNDING30 (30% off once, max 10). Links live in `cinematic/src/config.ts`
+> PAY_LINKS. Managed Payments is OFF on every link (it adds 3.5% per sale).
+> The rest of this file is the older manual guide and its prices are stale.
+
 The site is already wired for payments. The order flow now ends with a
 **"Pay creation fee · $X →"** button that opens a Stripe Payment Link for the
 exact plan + guest-count the couple picked. All that's missing is the 12 links.

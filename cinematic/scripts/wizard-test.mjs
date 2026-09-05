@@ -90,9 +90,14 @@ for (const [lang, theme, vp] of [
     check(`[${tag}] payload date from step 1`, payload.wedding_date === '2027-03-20');
   }
 
-  /* Step 4: honest payment fallback + refund link. */
-  const fallback = await page.locator('.wiz-pay__note').textContent();
-  check(`[${tag}] step4 pay fallback mentions the email`, /demo@example.com/.test(fallback || ''));
+  /* Step 4: live Stripe checkout for plan + add-on, and the refund link. */
+  const payHref = (await page.locator('.wiz-pay .btn--gold').getAttribute('href')) || '';
+  check(`[${tag}] step4 pay button opens Stripe`, /^https:\/\/buy\.stripe\.com\//.test(payHref));
+  check(`[${tag}] step4 uses the Signature + Coordinator bundle link`, /00w4gscYJ9tB7rn5Ww63K04/.test(payHref));
+  check(`[${tag}] step4 prefills the email`, /prefilled_email=demo%40example\.com/.test(payHref));
+  const payText = await page.locator('.wiz-pay .btn--gold').textContent();
+  check(`[${tag}] step4 total is plan + add-on ($478)`, /\$478/.test(payText || ''));
+  if (payload) check(`[${tag}] payload price is the total`, /\$478/.test(payload.price || ''));
   const refundHref = await page.locator('.wiz-pay__refund a').getAttribute('href');
   check(`[${tag}] step4 links the refund policy`, refundHref === '/refunds');
   await page.screenshot({ path: `${outDir}/wiz-step4-${tag}.png` });

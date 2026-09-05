@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useLang } from './LanguageContext';
 import type { PlanId } from './WizardContext';
-import { ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
-import { veilPrices } from './veil';
+import { ADDON_PRICE, ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
+import type { PayLinkKey } from '../config';
 
 interface WizardProps {
   initialPlan: PlanId;
@@ -81,6 +81,9 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
 
   const couple = [fields.name, fields.partner].filter(Boolean).join(' & ') || '·';
   const addonIncluded = plan === 'grande';
+  /* What the couple actually pays: plan price, plus the add-on when picked. */
+  const addonCharged = addon && !addonIncluded;
+  const total = price + (addonCharged ? ADDON_PRICE : 0);
   const addonLabel = addonIncluded ? w.step2.addon.includedNote : addon ? w.step4.addonYes : w.step4.addonNo;
 
   const reason =
@@ -98,14 +101,14 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
       location: location || '·',
       guest_range: rangeLabel,
       plan: `${selected.name} · ${selected.guests}`,
-      ai_coordinator: addonIncluded ? 'included (Grande)' : addon ? 'yes ($79 one-time)' : 'no',
-      price: `$${price} · one-time`,
+      ai_coordinator: addonIncluded ? 'included (Grande)' : addon ? `yes ($${ADDON_PRICE} one-time)` : 'no',
+      price: `$${total} · one-time`,
       notes: fields.notes || '·',
       language: lang,
     }),
-    [couple, fields, date, location, rangeLabel, selected, addon, addonIncluded, price, lang],
+    [couple, fields, date, location, rangeLabel, selected, addon, addonIncluded, total, lang],
   );
-  const orderSubject = `New order: ${couple} · ${selected.name} · $${price}`;
+  const orderSubject = `New order: ${couple} · ${selected.name}${addonCharged ? ' + Coordinator' : ''} · $${total}`;
 
   const confirmOrder = () => {
     /* The lead is captured here, at the end of step 3, even if payment is
@@ -124,7 +127,8 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
   /* Stripe payment link for this plan ('' means the honest fallback).
      Payment Links accept prefilled_email and client_reference_id as query
      params; the reference ties the checkout back to the emailed order. */
-  const payLink = PAY_LINKS[plan] || '';
+  const payKey: PayLinkKey = addonCharged ? (`${plan}-coordinator` as PayLinkKey) : plan;
+  const payLink = PAY_LINKS[payKey] || PAY_LINKS[plan] || '';
   const payUrl = useMemo(() => {
     if (!payLink) return '';
     const ref = `${couple}-${date}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
@@ -229,7 +233,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                     ) : null}
                   </span>
                   <span className="wiz-plan__channels">{pl.guests}</span>
-                  <span className="wiz-plan__price price-veil" aria-hidden="true">${pl.price}</span>
+                  <span className="wiz-plan__price">${pl.price}</span>
                   <span className="wiz-plan__fee">{pl.priceNote}</span>
                 </button>
               ))}
@@ -246,7 +250,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               />
               <span className="wiz-addon__txt">
                 <strong>{w.step2.addon.title}</strong>
-                <span>{addonIncluded ? w.step2.addon.includedNote : veilPrices(w.step2.addon.pitch)}</span>
+                <span>{addonIncluded ? w.step2.addon.includedNote : w.step2.addon.pitch}</span>
               </span>
             </label>
 
@@ -339,7 +343,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                 </div>
                 <div>
                   <dt>{w.step4.rows.price}</dt>
-                  <dd className="price-veil" aria-hidden="true">${price}</dd>
+                  <dd>${total}</dd>
                 </div>
               </dl>
             </div>
@@ -348,17 +352,14 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               {payUrl ? (
                 <>
                   <a className="btn btn--gold btn--lg" href={payUrl} target="_blank" rel="noopener noreferrer">
-                    {w.step4.payCta.replace('{price}', `$${price}`)}
+                    {w.step4.payCta.replace('{price}', `$${total}`)}
                   </a>
                   <p className="wiz-pay__note">{w.step4.payNoteLinked}</p>
                 </>
               ) : (
-                <>
-                  <a className="btn btn--gold btn--lg" href={mailtoHref}>
-                    {w.step4.emailCta}
-                  </a>
-                  <p className="wiz-pay__note">{w.step4.emailNote}</p>
-                </>
+                <p className="wiz-pay__note">
+                  {w.step4.payNoteFallback.replace('{email}', fields.email || '·')}
+                </p>
               )}
               {WHATSAPP ? (
                 <a

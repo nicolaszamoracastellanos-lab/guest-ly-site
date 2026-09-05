@@ -3,7 +3,6 @@ import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
 import { ScenarioPlayer } from './ScenarioPlayer';
 import { useHashParam } from './useHashParam';
-import { veilPrices } from './veil';
 
 /* № 05 THE STAR: the AI Coordinator. Four quoted commands, each running a
    compact script that pauses at its confirmation card until the visitor
@@ -93,7 +92,7 @@ export function CoordinatorSpotlight() {
             </ul>
             <p className="coord-caps__closing">{c.capsClosing}</p>
             <div className="coord-caps__cta">
-              <p className="coord-caps__price">{veilPrices(c.priceLine)}</p>
+              <p className="coord-caps__price">{c.priceLine}</p>
               <div className="coord-caps__row">
                 <button type="button" className="btn btn--gold-line" onClick={() => open()}>
                   {c.cta}
