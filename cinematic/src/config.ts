@@ -11,7 +11,9 @@ export type PayLinkKey =
   | 'signature'
   | 'grande'
   | 'essentials-coordinator'
-  | 'signature-coordinator';
+  | 'signature-coordinator'
+  | 'essentials-coordinator-monthly'
+  | 'signature-coordinator-monthly';
 export const PAY_LINKS: Record<PayLinkKey, string> = {
   essentials: 'https://buy.stripe.com/aFa14g1g1219bHDdoY63K00',
   signature: 'https://buy.stripe.com/cNi8wI3o95dl9zvckU63K01',
@@ -19,10 +21,14 @@ export const PAY_LINKS: Record<PayLinkKey, string> = {
   /* Plan + AI Coordinator add-on ($79) in one checkout. Grande includes it. */
   'essentials-coordinator': 'https://buy.stripe.com/14AdR28It7ltaDzbgQ63K03',
   'signature-coordinator': 'https://buy.stripe.com/00w4gscYJ9tB7rn5Ww63K04',
+  /* Plan (one-time) + AI Coordinator $19/mo subscription in one checkout. */
+  'essentials-coordinator-monthly': 'https://buy.stripe.com/bJe7sE1g1bBJ9zvgBa63K05',
+  'signature-coordinator-monthly': 'https://buy.stripe.com/4gMcMY3o96hp12Z70A63K06',
 };
 
-/* One-time price of the AI Coordinator add-on, must match the Stripe price. */
+/* AI Coordinator add-on prices, must match the Stripe prices. */
 export const ADDON_PRICE = 79;
+export const ADDON_MONTHLY = 19;
 
 /* Receives order notifications via FormSubmit (same inbox as production). */
 export const ORDER_INBOX = 'nicolas@guest-ly.com';

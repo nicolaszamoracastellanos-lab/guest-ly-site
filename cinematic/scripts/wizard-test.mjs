@@ -67,7 +67,9 @@ for (const [lang, theme, vp] of [
   check(`[${tag}] step2 recommends Signature`, /Signature/.test(recommended || ''));
   const reason = await page.locator('.wiz__sub').textContent();
   check(`[${tag}] step2 reason mentions the range`, /(61|160)/.test(reason || ''));
-  await page.check('.wiz-addon input');
+  /* EN picks the $79 one-time add-on, ES the $19/mo subscription. */
+  const addonChoice = lang === 'es' ? 'monthly' : 'once';
+  await page.check(`.wiz-addon input[value="${addonChoice}"]`);
   await page.screenshot({ path: `${outDir}/wiz-step2-${tag}.png` });
   await page.click('.wiz__nav .btn--gold');
   await page.waitForTimeout(400);
@@ -91,13 +93,17 @@ for (const [lang, theme, vp] of [
   }
 
   /* Step 4: live Stripe checkout for plan + add-on, and the refund link. */
+  const expectLink = addonChoice === 'monthly' ? '4gMcMY3o96hp12Z70A63K06' : '00w4gscYJ9tB7rn5Ww63K04';
+  const expectTotal = addonChoice === 'monthly' ? '418' : '478';
   const payHref = (await page.locator('.wiz-pay .btn--gold').getAttribute('href')) || '';
   check(`[${tag}] step4 pay button opens Stripe`, /^https:\/\/buy\.stripe\.com\//.test(payHref));
-  check(`[${tag}] step4 uses the Signature + Coordinator bundle link`, /00w4gscYJ9tB7rn5Ww63K04/.test(payHref));
+  check(`[${tag}] step4 uses the Signature + Coordinator (${addonChoice}) link`, payHref.includes(expectLink));
   check(`[${tag}] step4 prefills the email`, /prefilled_email=demo%40example\.com/.test(payHref));
   const payText = await page.locator('.wiz-pay .btn--gold').textContent();
-  check(`[${tag}] step4 total is plan + add-on ($478)`, /\$478/.test(payText || ''));
-  if (payload) check(`[${tag}] payload price is the total`, /\$478/.test(payload.price || ''));
+  check(`[${tag}] step4 total is plan + add-on ($${expectTotal})`, (payText || '').includes(`$${expectTotal}`));
+  const priceRow = await page.locator('.wiz-summary dd').last().textContent();
+  if (addonChoice === 'monthly') check(`[${tag}] step4 price row says then $19/mo`, /\$19\/m/.test(priceRow || ''));
+  if (payload) check(`[${tag}] payload price is the total`, (payload.price || '').includes(`$${expectTotal}`));
   const refundHref = await page.locator('.wiz-pay__refund a').getAttribute('href');
   check(`[${tag}] step4 links the refund policy`, refundHref === '/refunds');
   await page.screenshot({ path: `${outDir}/wiz-step4-${tag}.png` });

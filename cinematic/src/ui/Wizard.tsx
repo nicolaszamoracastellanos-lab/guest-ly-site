@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useLang } from './LanguageContext';
 import type { PlanId } from './WizardContext';
-import { ADDON_PRICE, ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
+import { ADDON_MONTHLY, ADDON_PRICE, ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
 import type { PayLinkKey } from '../config';
+
+type AddonChoice = 'none' | 'once' | 'monthly';
 
 interface WizardProps {
   initialPlan: PlanId;
@@ -42,7 +44,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
      card. The clicked plan stays preselected until the range recommends. */
   const [range, setRange] = useState<GuestRange | null>(null);
   const [plan, setPlan] = useState<PlanId>(initialPlan);
-  const [addon, setAddon] = useState(false);
+  const [addon, setAddon] = useState<AddonChoice>('none');
   const [date, setDate] = useState('');
   const [location, setLocation] = useState('');
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
@@ -81,10 +83,19 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
 
   const couple = [fields.name, fields.partner].filter(Boolean).join(' & ') || '·';
   const addonIncluded = plan === 'grande';
-  /* What the couple actually pays: plan price, plus the add-on when picked. */
-  const addonCharged = addon && !addonIncluded;
-  const total = price + (addonCharged ? ADDON_PRICE : 0);
-  const addonLabel = addonIncluded ? w.step2.addon.includedNote : addon ? w.step4.addonYes : w.step4.addonNo;
+  /* What the couple pays today: plan price, plus the add-on when picked
+     ($79 once, or the first $19 month of the subscription). */
+  const addonMode: AddonChoice = addonIncluded ? 'none' : addon;
+  const addonCharged = addonMode !== 'none';
+  const total = price + (addonMode === 'once' ? ADDON_PRICE : addonMode === 'monthly' ? ADDON_MONTHLY : 0);
+  const addonLabel = addonIncluded
+    ? w.step2.addon.includedNote
+    : addonMode === 'once'
+      ? w.step4.addonOnce
+      : addonMode === 'monthly'
+        ? w.step4.addonMonthly
+        : w.step4.addonNo;
+  const priceLabel = addonMode === 'monthly' ? w.step4.priceMonthly.replace('{total}', `$${total}`) : `$${total}`;
 
   const reason =
     range === 'grande-plus'
@@ -101,14 +112,20 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
       location: location || '·',
       guest_range: rangeLabel,
       plan: `${selected.name} · ${selected.guests}`,
-      ai_coordinator: addonIncluded ? 'included (Grande)' : addon ? `yes ($${ADDON_PRICE} one-time)` : 'no',
-      price: `$${total} · one-time`,
+      ai_coordinator: addonIncluded
+        ? 'included (Grande)'
+        : addonMode === 'once'
+          ? `yes ($${ADDON_PRICE} one-time)`
+          : addonMode === 'monthly'
+            ? `yes ($${ADDON_MONTHLY}/mo subscription)`
+            : 'no',
+      price: addonMode === 'monthly' ? `$${total} today, then $${ADDON_MONTHLY}/mo` : `$${total} · one-time`,
       notes: fields.notes || '·',
       language: lang,
     }),
-    [couple, fields, date, location, rangeLabel, selected, addon, addonIncluded, total, lang],
+    [couple, fields, date, location, rangeLabel, selected, addonMode, addonIncluded, total, lang],
   );
-  const orderSubject = `New order: ${couple} · ${selected.name}${addonCharged ? ' + Coordinator' : ''} · $${total}`;
+  const orderSubject = `New order: ${couple} · ${selected.name}${addonCharged ? ` + Coordinator (${addonMode})` : ''} · $${total}`;
 
   const confirmOrder = () => {
     /* The lead is captured here, at the end of step 3, even if payment is
@@ -127,7 +144,12 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
   /* Stripe payment link for this plan ('' means the honest fallback).
      Payment Links accept prefilled_email and client_reference_id as query
      params; the reference ties the checkout back to the emailed order. */
-  const payKey: PayLinkKey = addonCharged ? (`${plan}-coordinator` as PayLinkKey) : plan;
+  const payKey: PayLinkKey =
+    addonMode === 'monthly'
+      ? (`${plan}-coordinator-monthly` as PayLinkKey)
+      : addonMode === 'once'
+        ? (`${plan}-coordinator` as PayLinkKey)
+        : plan;
   const payLink = PAY_LINKS[payKey] || PAY_LINKS[plan] || '';
   const payUrl = useMemo(() => {
     if (!payLink) return '';
@@ -241,18 +263,28 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
 
             <p className="wiz__note">{w.step2.sub}</p>
 
-            <label className={addonIncluded ? 'wiz-addon wiz-addon--included' : 'wiz-addon'}>
-              <input
-                type="checkbox"
-                checked={addonIncluded ? true : addon}
-                disabled={addonIncluded}
-                onChange={(e) => setAddon(e.target.checked)}
-              />
-              <span className="wiz-addon__txt">
+            <div className={addonIncluded ? 'wiz-addon wiz-addon--included' : 'wiz-addon'}>
+              <div className="wiz-addon__txt">
                 <strong>{w.step2.addon.title}</strong>
                 <span>{addonIncluded ? w.step2.addon.includedNote : w.step2.addon.pitch}</span>
-              </span>
-            </label>
+              </div>
+              {!addonIncluded && (
+                <div className="wiz-addon__opts" role="radiogroup" aria-label={w.step2.addon.title}>
+                  {(['none', 'once', 'monthly'] as const).map((opt) => (
+                    <label key={opt} className="wiz-addon__opt">
+                      <input
+                        type="radio"
+                        name="wiz-addon"
+                        value={opt}
+                        checked={addon === opt}
+                        onChange={() => setAddon(opt)}
+                      />
+                      <span>{w.step2.addon.options[opt]}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="wiz__nav">
               <button type="button" className="btn btn--ghost" onClick={() => setStep(1)}>
@@ -342,8 +374,8 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
                   <dd>{addonLabel}</dd>
                 </div>
                 <div>
-                  <dt>{w.step4.rows.price}</dt>
-                  <dd>${total}</dd>
+                  <dt>{addonMode === 'monthly' ? w.step4.rows.price.split(' · ')[0] : w.step4.rows.price}</dt>
+                  <dd>{priceLabel}</dd>
                 </div>
               </dl>
             </div>

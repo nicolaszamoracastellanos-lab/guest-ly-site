@@ -2115,21 +2115,53 @@ body.js-ready .reveal.is-visible {
 
 .wiz-addon {
   display: flex;
-  align-items: flex-start;
-  gap: 0.8rem;
+  flex-direction: column;
+  gap: 0.7rem;
   margin-top: 1.2rem;
   padding: 1rem 1.1rem;
   border: 1px solid var(--glass-border);
   border-radius: calc(var(--radius-card) - 6px);
   background: var(--glass-bg);
+}
+
+.wiz-addon__opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wiz-addon__opt {
+  position: relative;
   cursor: pointer;
 }
 
-.wiz-addon input {
-  margin-top: 0.2rem;
-  width: 1.05rem;
-  height: 1.05rem;
-  accent-color: var(--accent);
+.wiz-addon__opt input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.wiz-addon__opt span {
+  display: inline-block;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.wiz-addon__opt input:checked + span {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.wiz-addon__opt input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .wiz-addon--included {

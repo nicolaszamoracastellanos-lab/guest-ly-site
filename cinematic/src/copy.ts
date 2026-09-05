@@ -287,7 +287,12 @@ export interface SiteCopy {
       sub: string;
       reason: string;
       reasonPlus: string;
-      addon: { title: string; pitch: string; includedNote: string };
+      addon: {
+        title: string;
+        pitch: string;
+        includedNote: string;
+        options: { none: string; once: string; monthly: string };
+      };
       back: string;
       next: string;
     };
@@ -309,8 +314,10 @@ export interface SiteCopy {
       title: string;
       summaryTitle: string;
       rows: { plan: string; guests: string; couple: string; date: string; addon: string; price: string };
-      addonYes: string;
+      addonOnce: string;
+      addonMonthly: string;
       addonNo: string;
+      priceMonthly: string;
       nextTitle: string;
       next: { title: string; body: string }[];
       payCta: string;
@@ -1238,8 +1245,9 @@ const en: SiteCopy = {
       reasonPlus: 'For more than 300 guests, Grande is the fit. We will confirm capacity with you.',
       addon: {
         title: 'Add the AI Coordinator',
-        pitch: 'Run your wedding by chat: $79 one-time or $19/mo.',
+        pitch: 'Run your wedding by chat: $79 one-time or $19/mo, cancel any time.',
         includedNote: 'Included with Grande.',
+        options: { none: 'Not now', once: '$79 one-time', monthly: '$19 per month' },
       },
       back: '← Back',
       next: 'Continue →',
@@ -1269,8 +1277,10 @@ const en: SiteCopy = {
         addon: 'AI Coordinator',
         price: 'Price · one-time',
       },
-      addonYes: 'Yes',
+      addonOnce: 'Yes · $79 one-time',
+      addonMonthly: 'Yes · $19/mo, cancel any time',
       addonNo: 'No',
+      priceMonthly: '{total} today, then $19/mo',
       nextTitle: 'What happens next',
       next: [
         { title: 'Pay once to lock your build slot', body: 'Secure Stripe checkout. We confirm within 2 hours during business hours.' },
@@ -2260,8 +2270,9 @@ const es: SiteCopy = {
       reasonPlus: 'Para más de 300 invitados, Grande es el plan. Confirmamos la capacidad contigo.',
       addon: {
         title: 'Agregar el Coordinador IA',
-        pitch: 'Maneja tu boda por chat: $79 pago único o $19/mes.',
+        pitch: 'Maneja tu boda por chat: $79 pago único o $19/mes, cancela cuando quieras.',
         includedNote: 'Incluido en Grande.',
+        options: { none: 'Ahora no', once: '$79 pago único', monthly: '$19 al mes' },
       },
       back: '← Atrás',
       next: 'Continuar →',
@@ -2291,8 +2302,10 @@ const es: SiteCopy = {
         addon: 'Coordinador IA',
         price: 'Precio · pago único',
       },
-      addonYes: 'Sí',
+      addonOnce: 'Sí · $79 pago único',
+      addonMonthly: 'Sí · $19/mes, cancela cuando quieras',
       addonNo: 'No',
+      priceMonthly: '{total} hoy, luego $19/mes',
       nextTitle: 'Qué pasa después',
       next: [
         { title: 'Paga una sola vez para reservar tu lugar', body: 'Checkout seguro con Stripe. Confirmamos en menos de 2 horas en horario laboral.' },
