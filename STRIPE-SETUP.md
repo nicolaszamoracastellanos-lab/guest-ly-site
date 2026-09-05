@@ -5,6 +5,10 @@
 > (3 plans + Essentials/Signature bundled with the Coordinator), promo code
 > FOUNDING30 (30% off once, max 10). Links live in `cinematic/src/config.ts`
 > PAY_LINKS. Managed Payments is OFF on every link (it adds 3.5% per sale).
+> Sep 5 (later): Coordinator $19/mo price + 2 monthly bundle links (7 links total),
+> and the "Keep it live" $20/mo maintenance product + link
+> (https://buy.stripe.com/bJe9AMbUF8px8vrdoY63K07) used by the portal's
+> maintenance banner and emails after the 5 included months.
 > The rest of this file is the older manual guide and its prices are stale.
 
 The site is already wired for payments. The order flow now ends with a
