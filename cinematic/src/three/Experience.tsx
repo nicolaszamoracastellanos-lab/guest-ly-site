@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getProgress } from '../scroll/progress';
 import { getTheme, subscribeTheme } from '../theme/theme';
 import type { Theme } from '../theme/theme';
 import { FloralField } from './scenes/FloralField';
-import { BokehParticles } from './scenes/BokehParticles';
+import { BokehParticles, DayGlints } from './scenes/BokehParticles';
 import { SilkBackdrop } from './scenes/SilkBackdrop';
 
 /* Ambient backdrop only: content is king. A static camera with a whisper of
@@ -34,6 +34,20 @@ export interface SceneTheme {
   bokehBase: number;
   bokehGain: number;
   bokehAdditive: boolean;
+  /* Day mode: bokeh switches from additive glow to "gold foil": a
+     multiply-with-alpha blend so each disc deepens the ivory behind it the
+     way gold leaf or confetti reads against daylight. Per-particle tints. */
+  bokehFoil: boolean;
+  bokehPalette: string[];
+  bokehSize: number;
+  /* Day-only white glints (sunlit dust) layered under the foil. */
+  glintOpacity: number;
+  petalColors: string[];
+  petalRoughness: number;
+  /* Sunlit wash: a far gradient plane (top-left, top-right, bottom-left,
+     bottom-right) that gives the flat background depth. 0 opacity = off. */
+  washOpacity: number;
+  washColors: [string, string, string, string];
   silkTint: string;
   silkFallback: string;
 }
@@ -54,24 +68,41 @@ export const THEME_SCENE: Record<Theme, SceneTheme> = {
     bokehBase: 0.12,
     bokehGain: 0.55,
     bokehAdditive: true,
+    bokehFoil: false,
+    bokehPalette: ['#ffffff'],
+    bokehSize: 0.34,
+    glintOpacity: 0,
+    petalColors: ['#e8c9c4', '#f7f3ec', '#c9a96e', '#e2c892', '#fffdf9'],
+    petalRoughness: 0.65,
+    washOpacity: 0,
+    washColors: ['#0d1117', '#0d1117', '#0d1117', '#0d1117'],
     silkTint: '#211e19',
     silkFallback: '#161b22',
   },
   day: {
-    bg: '#f2ece1',
-    fog: '#f2ece1',
-    ambientIntensity: 1.25,
+    bg: '#f4eee4',
+    fog: '#f4eee4',
+    ambientIntensity: 1.0,
     ambientColor: '#fffdf9',
-    keyIntensity: 26,
+    keyIntensity: 46,
     keyBase: [1, 0.93, 0.8],
     keyWarmDrop: [0, 0.1, 0.22],
     exposure: 1.0,
-    petalOpacity: 0.55,
-    petalEmissive: 0.02,
-    bokehColor: '#b8965a',
-    bokehBase: 0.06,
-    bokehGain: 0.16,
+    petalOpacity: 0.92,
+    petalEmissive: 0.0,
+    bokehColor: '#ffffff',
+    bokehBase: 0.55,
+    bokehGain: 0.3,
     bokehAdditive: false,
+    bokehFoil: true,
+    /* Gold leaf, bronze, champagne, a little blush and one ink accent. */
+    bokehPalette: ['#c9a96e', '#b8965a', '#a17b3f', '#d9b56f', '#c9a96e', '#e0a99a', '#8a6d3e'],
+    bokehSize: 0.42,
+    glintOpacity: 0.95,
+    petalColors: ['#c9a96e', '#b8965a', '#e3b3a6', '#d9bf85', '#a17b3f'],
+    petalRoughness: 0.35,
+    washOpacity: 1,
+    washColors: ['#fffdf9', '#f0dec0', '#f5e2d8', '#ebdec6'],
     silkTint: '#d8cfbf',
     silkFallback: '#ece5d8',
   },
@@ -187,6 +218,44 @@ function Atmosphere() {
   );
 }
 
+/* Far gradient plane (fog off) painted with four corner colors: ivory light
+   from the top-left, a champagne glow top-right, a breath of blush bottom
+   left. Faded out entirely at night so the regression guard holds. */
+function DayWash() {
+  const scene = useSceneTheme();
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+  const geometry = useMemo(() => {
+    /* Sized to the visible frustum at z=-20 (camera at 6, fov 42) so the
+       four corners land at the viewport corners, with slack for drift. */
+    const geo = new THREE.PlaneGeometry(44, 26, 1, 1);
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(4 * 3), 3));
+    return geo;
+  }, []);
+  const scratch = useMemo(() => ({ target: new THREE.Color(), current: new THREE.Color() }), []);
+
+  useFrame((_, delta) => {
+    const k = Math.min(1, delta * 5);
+    const attr = geometry.getAttribute('color') as THREE.BufferAttribute;
+    /* PlaneGeometry vertex order: top-left, top-right, bottom-left, bottom-right. */
+    for (let i = 0; i < 4; i++) {
+      scratch.target.set(scene.washColors[i]);
+      scratch.current.setRGB(attr.getX(i), attr.getY(i), attr.getZ(i)).lerp(scratch.target, k);
+      attr.setXYZ(i, scratch.current.r, scratch.current.g, scratch.current.b);
+    }
+    attr.needsUpdate = true;
+    if (materialRef.current) {
+      materialRef.current.opacity += (scene.washOpacity - materialRef.current.opacity) * k;
+      materialRef.current.visible = materialRef.current.opacity > 0.01;
+    }
+  });
+
+  return (
+    <mesh geometry={geometry} position={[0, 0, -20]}>
+      <meshBasicMaterial ref={materialRef} vertexColors transparent opacity={0} fog={false} toneMapped={false} depthWrite={false} />
+    </mesh>
+  );
+}
+
 export function Experience() {
   const [stage, setStage] = useState<HTMLElement | null>(null);
   /* Phones keep the tighter pixel-ratio cap (Part 7.1). */
@@ -214,6 +283,10 @@ export function Experience() {
         <group position={[0, 0, -4]}>
           <BokehParticles />
         </group>
+        <group position={[0, 0, -5]}>
+          <DayGlints />
+        </group>
+        <DayWash />
         <group position={[0, 0, -22]}>
           <SilkBackdrop />
         </group>

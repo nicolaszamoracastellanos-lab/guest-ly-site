@@ -157,6 +157,13 @@ a:focus-visible {
   font-family: var(--font-display);
   font-style: italic;
   color: var(--accent-text);
+  background: var(--accent-display);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* Italic overhangs get clipped by background-clip without this. */
+  padding-inline: 0.06em;
+  margin-inline: -0.06em;
 }
 
 .card-title {

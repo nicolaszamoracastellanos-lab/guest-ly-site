@@ -91,10 +91,7 @@ html.theme-switching .overlay-page * {
   position: fixed;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(90% 60% at 70% 20%, var(--accent-12) 0%, transparent 60%),
-    radial-gradient(120% 80% at 30% 90%, var(--accent-08) 0%, transparent 55%),
-    var(--bg);
+  background: var(--stage-wash), var(--bg);
 }
 
 /* Scrolling DOM content above the canvas. */

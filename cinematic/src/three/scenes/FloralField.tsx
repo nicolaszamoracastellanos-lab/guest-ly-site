@@ -69,17 +69,20 @@ export function FloralField() {
     [],
   );
 
-  /* Per-instance colors, set once. */
+  /* Per-instance colors, re-applied on theme change: night keeps the
+     original pale palette; day swaps to gold, bronze and blush so the petals
+     read as objects on ivory instead of pale blobs. */
   useLayoutEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
+    const palette = sceneTheme.petalColors.length ? sceneTheme.petalColors : PETAL_COLORS;
     const color = new THREE.Color();
     for (let i = 0; i < PETAL_COUNT; i++) {
-      color.set(PETAL_COLORS[seeds[i].colorIndex]);
+      color.set(palette[seeds[i].colorIndex % palette.length]);
       mesh.setColorAt(i, color);
     }
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [seeds]);
+  }, [seeds, sceneTheme]);
 
   useFrame(({ clock }, delta) => {
     const t = clock.elapsedTime;
@@ -91,6 +94,7 @@ export function FloralField() {
     const k = Math.min(1, delta * 5);
     petalMaterial.opacity += (sceneTheme.petalOpacity - petalMaterial.opacity) * k;
     petalMaterial.emissiveIntensity += (sceneTheme.petalEmissive - petalMaterial.emissiveIntensity) * k;
+    petalMaterial.roughness += (sceneTheme.petalRoughness - petalMaterial.roughness) * k;
 
     for (let i = 0; i < PETAL_COUNT; i++) {
       const s = seeds[i];
