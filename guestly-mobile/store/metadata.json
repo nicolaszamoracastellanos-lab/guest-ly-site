@@ -1,0 +1,40 @@
+{
+  "name": "Guest-ly",
+  "bundle_id": "com.zcventures.guestly",
+  "subtitle": {
+    "en": "Wedding concierge for guests and couples",
+    "es": "Concierge de bodas para invitados y parejas"
+  },
+  "short_description": {
+    "en": "Your wedding concierge for guests, couples and planners.",
+    "es": "Su concierge de bodas para invitados, parejas y planners."
+  },
+  "categories": { "primary": "Lifestyle", "secondary": "Productivity" },
+  "age_rating": "4+",
+  "keywords": {
+    "en": "wedding,rsvp,guests,invitation,concierge,planner,seating,check-in",
+    "es": "boda,rsvp,invitados,invitación,concierge,planner,mesas,check-in"
+  },
+  "description": {
+    "en": "Guest-ly is the calm place for every guest and every question at a wedding.\n\nFOR GUESTS\nOpen your invitation with the code the couple sent you. Find your name, answer for each person and each event, and add everything to your calendar. Ask the concierge anything about the day: parking, hotels, the dress code, the shuttle. Questions only the couple can answer reach them, and their reply lands back in the app. On the wedding day the app tells you where to be right now.\n\nFOR COUPLES\nSee every RSVP as it arrives, the questions guests are asking, and the few things that need you today. Answer a guest from your phone. Record an RSVP you received in person. On the day, check guests in at the door with a scan, even without signal.\n\nFOR PLANNERS\nYour weddings in one place: guest lists, requests to the couple, tasks. Propose a change; the couple approves and it applies itself.\n\nGuest-ly is a companion to the wedding a couple set up at guest-ly.com. There is nothing to buy in the app.",
+    "es": "Guest-ly es el lugar en calma para cada invitado y cada pregunta de una boda.\n\nPARA INVITADOS\nAbra su invitación con el código que le envió la pareja. Encuentre su nombre, responda por cada persona y cada evento, y agregue todo a su calendario. Pregunte al concierge lo que quiera sobre el día: estacionamiento, hoteles, vestimenta, el transporte. Las preguntas que solo la pareja puede responder les llegan a ellos, y su respuesta vuelve a la app. El día de la boda, la app le dice dónde tiene que estar ahora mismo.\n\nPARA PAREJAS\nVea cada confirmación en cuanto llega, lo que preguntan los invitados y las pocas cosas que hoy requieren su atención. Responda a un invitado desde el teléfono. Registre una confirmación que recibió en persona. El día de la boda, registre a los invitados en la puerta con un escaneo, incluso sin señal.\n\nPARA PLANNERS\nSus bodas en un solo lugar: listas de invitados, solicitudes a la pareja, tareas. Proponga un cambio; la pareja lo aprueba y se aplica solo.\n\nGuest-ly es el complemento de la boda que una pareja configuró en guest-ly.com. No hay nada que comprar en la app."
+  },
+  "support_url": "https://guest-ly.com",
+  "marketing_url": "https://guest-ly.com",
+  "privacy_policy_url": "https://guest-ly.com/privacy",
+  "terms_url": "https://guest-ly.com/terms",
+  "contact_email": "hello@guest-ly.com",
+  "app_privacy": {
+    "tracking": false,
+    "third_party_ads": false,
+    "collected": [
+      { "type": "Contact Info: Name", "linked": true, "purpose": "App Functionality", "who": "couples, planners, guests (name on the guest list)" },
+      { "type": "Contact Info: Email Address", "linked": true, "purpose": "App Functionality", "who": "couples and planners (account)" },
+      { "type": "Contact Info: Phone Number", "linked": true, "purpose": "App Functionality", "who": "guests, entered by the couple on the web; shown to couples only" },
+      { "type": "Identifiers: Device ID", "linked": true, "purpose": "App Functionality", "who": "push token, every surface" },
+      { "type": "User Content: Other User Content", "linked": true, "purpose": "App Functionality", "who": "guest questions to the concierge" }
+    ],
+    "not_collected": ["Location (permission text present, no location is read in v1)", "Photos or Videos", "Health", "Financial", "Browsing", "Search history", "Crash data", "Analytics (only server-side counts)"]
+  },
+  "review_notes_en": "Guest-ly is the companion app to a wedding service couples set up on the web at guest-ly.com. Accounts for couples and planners are created there when the wedding is set up; the app itself has no purchase, subscription or pricing of any kind.\n\nDEMO WEDDING (fictional data): Camila & Andrés, 21 March 2027.\n\nGUEST FLOW: tap Open my invitation, enter the invite code CAMAND, type Sof and pick Sofía Rojas, then allow notifications (or Not now). You can answer the RSVP, read the schedule, ask the concierge (try: Is there parking at Campos de Solana?) and see the day-of screen.\n\nCOUPLE FLOW: from the entrance tap I'm the couple or the planner and sign in with email review@guest-ly.com and the password provided below. Guests, RSVPs, Messages, More, Check-in at the door (camera) and Settings (biometric unlock, delete account) are all reachable.\n\nPLANNER FLOW: sign in with planner-review@guest-ly.com and the password below. Planners see names and answers only, never guest contact details, and file requests the couple approves.\n\nSign in with Apple and Google are offered next to the emailed sign-in link. Account deletion is in Settings and emails our operator; the account is removed within 30 days.\n\nCredentials: review@guest-ly.com / [PASSWORD FROM create-demo-users.mjs]  and  planner-review@guest-ly.com / [PASSWORD FROM create-demo-users.mjs]."
+}
