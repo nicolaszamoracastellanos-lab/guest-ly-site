@@ -54,7 +54,7 @@
     "eas-cli": "^23.2.0",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
-    "typescript": "~6.0.3"
+    "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",
