@@ -83,3 +83,30 @@ Not verifiable locally
 Demo tenant restored to seed state after the run (smoke guest, check-in,
 planner request removed; Sofía and Diego reset). TestFlight internal group
 "Guest-ly team" created, Nicolas added as tester. Apple build 6 VALID.
+
+## Sep 7 2026, night: portal deployed, mobile API live
+
+- feat/mobile-v1 merged into portal main (8d16fb4). Main had gained two
+  Session fields since the branch (contactAccess, memberLang, wave 12);
+  the mobile resolver now fills them with the same wide/narrow tenant_users
+  select as getSession() (085ef06).
+- Netlify env set on guestly-portal: MOBILE_GUEST_TOKEN_SECRET (secret,
+  production + previews), MOBILE_MIN_VERSION=1.0.0, APPLE_TEAM_ID=3F998LXJ33.
+- Deploys 6a9f49c7 (API) and 6a9f4ac0 (invite redirect fix, dba3179).
+  Verified live: /login 200, apple-app-site-association and assetlinks.json
+  served, /i/CAMAND redirects to app.guest-ly.com/rsvp/demo-review (was the
+  unique Netlify deploy host before the fix), guest open/identify/session/
+  home/schedule, concierge, couple auth/me, home, planner guest scrub,
+  401 without auth, web portal and web bot unaffected.
+- Concierge root cause: the seeded demo-review wedding_facts row had no
+  generated prompts and the engine requires them (it answered with its
+  technical-problem fallback, on the web bot too). Republished the same
+  facts through the portal's publish_wedding_facts RPC (version 2). The
+  engine now answers from the demo facts. No engine code touched.
+- Undone: the local smoke had called /auth/delete-account as the demo
+  planner, which flagged the auth user and emailed the operator. Flag and
+  event removed. Ignore that email.
+- Still with Nicolas: Supabase Authentication, URL configuration, add
+  guestly://auth/callback to the redirect allow-list (magic link and Google
+  sign-in from the app; password sign-in works without it). The API change
+  was blocked by the session's permission classifier.

@@ -104,3 +104,14 @@ App Store review submission happens only after Nico types `SUBMIT IOS`. Google P
 - Xcode.app (only the Command Line Tools are installed): no iOS Simulator, so the screenshot script cannot run here until Xcode is installed from the App Store.
 - Android Studio / SDK: no emulator or `adb`. The APK can still be built in the cloud and sideloaded on a device.
 - CocoaPods: not needed for EAS cloud builds.
+
+## Status Sep 7 2026
+
+Done: portal main deployed with the mobile API; MOBILE_GUEST_TOKEN_SECRET,
+MOBILE_MIN_VERSION, APPLE_TEAM_ID set on Netlify; migration applied; demo
+users created; TestFlight internal group with Nicolas as tester.
+
+Open: guestly://auth/callback in the Supabase redirect allow-list;
+ANDROID_SHA256_FINGERPRINTS (after the Play upload key exists);
+MOBILE_IOS_STORE_URL and MOBILE_ANDROID_STORE_URL (after store approval);
+Apple Program License Agreement + EU trader status; Play Console account.
