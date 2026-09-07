@@ -25,7 +25,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     bundleIdentifier: "com.zcventures.guestly",
-    buildNumber: "1",
     supportsTablet: false,
     associatedDomains: ["applinks:app.guest-ly.com", "webcredentials:app.guest-ly.com"],
     usesAppleSignIn: true,
