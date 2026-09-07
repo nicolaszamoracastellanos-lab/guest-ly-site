@@ -40,7 +40,7 @@ export default function NewRequest() {
     try {
       const payload: Record<string, unknown> =
         kind === "plus_one"
-          ? { kind, add_seats: Math.max(1, parseInt(seats, 10) || 1) }
+          ? { kind, additional_seats: Math.min(5, Math.max(1, parseInt(seats, 10) || 1)) }
           : kind === "edit_guest"
             ? { kind, patch: { [field.trim()]: value.trim() } }
             : kind === "guest_help"
