@@ -34,7 +34,7 @@
     "production": {
       "ios": {
         "ascApiKeyPath": "./credentials/asc-api-key.p8",
-        "ascApiKeyId": "ZU8D4U79LL",
+        "ascApiKeyId": "NN6585S6RY",
         "ascApiKeyIssuerId": "8abf64f2-151d-4d4b-9954-a93a2d24f639"
       },
       "android": {
