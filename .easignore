@@ -1,0 +1,7 @@
+# EAS Build archives the git root. Only the app folder is needed for a build.
+*
+!guestly-mobile
+!guestly-mobile/**
+guestly-mobile/node_modules
+guestly-mobile/.expo
+guestly-mobile/credentials
