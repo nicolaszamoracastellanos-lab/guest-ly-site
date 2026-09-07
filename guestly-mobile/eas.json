@@ -35,7 +35,8 @@
       "ios": {
         "ascApiKeyPath": "./credentials/asc-api-key.p8",
         "ascApiKeyId": "NN6585S6RY",
-        "ascApiKeyIssuerId": "8abf64f2-151d-4d4b-9954-a93a2d24f639"
+        "ascApiKeyIssuerId": "8abf64f2-151d-4d4b-9954-a93a2d24f639",
+        "ascAppId": "6809618039"
       },
       "android": {
         "serviceAccountKeyPath": "./credentials/google-service-account.json",
