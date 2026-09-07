@@ -10,7 +10,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Guest-ly",
   slug: "guestly",
-  owner: process.env.EXPO_OWNER,
+  owner: "nzamoras-team",
   version: "1.0.0",
   orientation: "portrait",
   scheme: "guestly",
@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   backgroundColor: "#0d1117",
   runtimeVersion: { policy: "appVersion" },
   updates: {
-    url: process.env.EAS_UPDATE_URL,
+    url: "https://u.expo.dev/1c6ed3fa-7393-40e1-be3d-6fd64f0e1056",
     fallbackToCacheTimeout: 0,
   },
   ios: {
@@ -146,6 +146,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: { typedRoutes: true },
   extra: {
     apiBase: API_BASE,
-    eas: { projectId: process.env.EAS_PROJECT_ID },
+    eas: { projectId: "1c6ed3fa-7393-40e1-be3d-6fd64f0e1056" },
   },
 });
