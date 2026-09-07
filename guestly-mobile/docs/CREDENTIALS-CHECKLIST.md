@@ -4,19 +4,11 @@ Everything the app build and the store uploads need, in the order Nico does them
 
 ## 1. Expo account (blocks every EAS command)
 
-This Mac is not logged in to Expo. In the Claude Code prompt:
+Done 7 Sep 2026: logged in as `nzamoras-team`, project `@nzamoras-team/guestly` created (id `1c6ed3fa-7393-40e1-be3d-6fd64f0e1056`, pinned in `app.config.ts`). If a new Mac needs it:
 
 ```
 ! cd ~/Desktop/guest-ly/guestly-mobile && npx eas login
 ```
-
-Then, once:
-
-```
-! cd ~/Desktop/guest-ly/guestly-mobile && npx eas init
-```
-
-`eas init` creates the EAS project and prints the project id. Put it in `.env` as `EAS_PROJECT_ID` and set `EAS_UPDATE_URL=https://u.expo.dev/<project id>` and `EXPO_OWNER=<your expo username>`. Push and OTA updates use these.
 
 ## 2. Supabase public values (the app bundle)
 
@@ -63,7 +55,14 @@ cd ~/Desktop/guestly-mobile-api && node --env-file=.env.local scripts/create-dem
 ## 5. Apple
 
 - Apple Developer Program: enrolled (done).
-- App Store Connect API key: App Store Connect, Users and Access, Integrations, App Store Connect API, Team Keys, Generate. Role: App Manager. Download the `.p8` once.
+- Signing credentials (one interactive step, Apple ID login in the terminal). EAS creates the distribution certificate, the provisioning profile, the App ID with Sign in with Apple, and the APNs key:
+
+  ```
+  ! cd ~/Desktop/guest-ly/guestly-mobile && npx eas build -p ios --profile production
+  ```
+
+  Answer the prompts: log in with the Apple Developer account, let EAS generate everything. The build starts at the end.
+- App Store Connect API key (for `eas submit` without an Apple ID prompt): App Store Connect, Users and Access, Integrations, App Store Connect API, Team Keys, Generate. Role: App Manager. Download the `.p8` once.
   - Save it as `guestly-mobile/credentials/asc-api-key.p8`.
   - Put the Key ID and Issuer ID in `eas.json` under `submit.production.ios` (replace the two placeholders).
 - Sign in with Apple: enabled automatically by EAS when it creates the App ID (`usesAppleSignIn: true`).
