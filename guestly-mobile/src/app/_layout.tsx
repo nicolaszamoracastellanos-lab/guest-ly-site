@@ -3,7 +3,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
@@ -25,6 +25,7 @@ import { routeFor } from "@/lib/push";
 import { drainQueue } from "@/lib/queue";
 import { colors } from "@/ui/tokens";
 import { T, Button, Gem, Stack as VStack } from "@/ui";
+import AssistantBubble from "@/ui/AssistantBubble";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -62,8 +63,16 @@ function Gate() {
   const { state, locked, unlock, updateRequired, signOut } = useSession();
   const router = useRouter();
   const segments = useSegments();
+  const pathname = usePathname();
   const copy = useCopy();
   const routedOnce = useRef(false);
+
+  // The floating assistant: concierge for guests, Coordinator for couples and
+  // planners. Mounted once here so it rides above every signed-in screen and
+  // keeps its position; hidden on the chat screens themselves and behind the
+  // lock and update overlays.
+  const bubbleSurface = state.status === "guest" ? "guest" : state.status === "user" ? (state.me.surface === "planner" ? "planner" : "couple") : null;
+  const bubbleHidden = pathname === "/assistant" || pathname === "/guest/concierge" || pathname.startsWith("/web") || locked || updateRequired;
 
   // Route by session state. Entrance screens live at the root; each surface
   // owns a folder. A signed-in user who lands on an entrance screen is moved.
@@ -105,7 +114,11 @@ function Gate() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night }, animation: "fade" }} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night }, animation: "fade" }}>
+        <Stack.Screen name="assistant" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+        <Stack.Screen name="web" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+      </Stack>
+      {bubbleSurface ? <AssistantBubble surface={bubbleSurface} hidden={bubbleHidden} /> : null}
       {locked && state.status !== "none" && state.status !== "loading" ? (
         <LockOverlay
           onUnlock={async () => {

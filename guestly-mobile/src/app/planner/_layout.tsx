@@ -31,6 +31,10 @@ export default function PlannerTabs() {
       <Tabs.Screen name="budget" />
       <Tabs.Screen name="more" />
       <Tabs.Screen name="tasks" options={{ href: null }} />
+      <Tabs.Screen name="runsheet" options={{ href: null }} />
+      <Tabs.Screen name="seating" options={{ href: null }} />
+      <Tabs.Screen name="broadcasts" options={{ href: null }} />
+      <Tabs.Screen name="vendors" options={{ href: null }} />
     </Tabs>
   );
 }

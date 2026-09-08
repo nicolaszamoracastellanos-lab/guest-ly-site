@@ -1,7 +1,7 @@
 // Planner home: greeting, needs you, two tiles, the weddings list.
 
 import React from "react";
-import { View, Pressable, Linking } from "react-native";
+import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
@@ -72,9 +72,19 @@ export default function PlannerHome() {
   );
 
   function go(href: string) {
-    if (href.includes("requests")) return router.push("/planner/requests");
-    if (href.includes("guests")) return router.push("/planner/guests");
-    return Linking.openURL(`https://app.guest-ly.com${href}`);
+    const map: [string, string][] = [
+      ["requests", "/planner/requests"],
+      ["guests", "/planner/guests"],
+      ["tasks", "/planner/tasks"],
+      ["budget", "/planner/budget"],
+      ["runsheet", "/planner/runsheet"],
+      ["vendors", "/planner/vendors"],
+      ["broadcasts", "/planner/broadcasts"],
+      ["seating", "/planner/seating"],
+      ["assistant", "/assistant"],
+    ];
+    const hit = map.find(([web]) => href.includes(web));
+    router.push((hit ? hit[1] : "/planner/more") as never);
   }
 }
 

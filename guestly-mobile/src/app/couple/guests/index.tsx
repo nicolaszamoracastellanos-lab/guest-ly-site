@@ -4,10 +4,14 @@ import React, { useState } from "react";
 import { View, Pressable, StyleSheet, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { fmt, useCopy } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { ApiFailure } from "@/lib/api";
+import { COPY as TOOLS } from "@/features/exports/copy";
+import { exportGuests, type ExportPreset } from "@/features/exports/download";
 import { useCoupleGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, useTopInset } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset } from "@/ui";
 import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
 
 const FILTERS = ["all", "attending", "pending", "declined"] as const;
@@ -20,6 +24,11 @@ export default function CoupleGuests() {
   const top = useTopInset();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
+  const tools = useFeatureCopy(TOOLS);
+  const { lang } = useLang();
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [exporting, setExporting] = useState<ExportPreset | null>(null);
+  const [toolsError, setToolsError] = useState<string | null>(null);
   const { data, isLoading } = useCoupleGuests(q, filter);
   const items = data?.items ?? [];
   const totals = data?.totals;
@@ -27,7 +36,15 @@ export default function CoupleGuests() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar left={<Wordmark height={20} />} right={<IconButton name="bell" onPress={() => router.push("/couple/messages")} />} />
+      <TopBar
+        left={<Wordmark height={20} />}
+        right={
+          <Row gap={8}>
+            <IconButton name="more" label={tools.menu} onPress={() => { setToolsError(null); setToolsOpen(true); }} />
+            <IconButton name="bell" onPress={() => router.push("/couple/messages")} />
+          </Row>
+        }
+      />
       <View style={{ marginTop: 18 }}>
         <BigTitle title={copy.guests.title} sub={totals ? fmt(copy.guests.subtitle, { parties: totals.parties, people: totals.people_expected }) : ""} />
       </View>
@@ -81,6 +98,28 @@ export default function CoupleGuests() {
           )}
         />
       </Screen>
+      <Sheet visible={toolsOpen} onClose={() => (exporting ? null : setToolsOpen(false))} top={200}>
+        <View style={{ paddingHorizontal: 20 }}>
+          <T v="title26">{tools.menu}</T>
+          <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 14 }}>
+            {canEdit ? <ListRow leading={<Icon name="list" size={22} color={colors.goldLight} />} title={tools.import} sub={tools.importSub} onPress={() => { setToolsOpen(false); router.push("/couple/guests/import"); }} /> : null}
+            {canEdit ? <ListRow leading={<Icon name="edit" size={22} color={colors.goldLight} />} title={tools.questions} sub={tools.questionsSub} onPress={() => { setToolsOpen(false); router.push("/couple/rsvps/questions"); }} /> : null}
+            <ListRow leading={<Icon name="share" size={22} color={colors.goldLight} />} title={tools.export} sub={tools.exportSub} chevron={false} last />
+          </Card>
+          <View style={{ marginTop: 12 }}>
+            <ChipRow>
+              {(["full", "attending", "pending", "declined", "contacts", "per_person", "dietary", "seating"] as ExportPreset[]).map((p) => (
+                <Chip key={p} label={exporting === p ? tools.preparing : tools.presets[p]} on={exporting === p} onPress={() => void runExport(p)} />
+              ))}
+            </ChipRow>
+          </View>
+          {toolsError ? (
+            <T v="body15" color={colors.red} style={{ marginTop: 10 }}>
+              {toolsError}
+            </T>
+          ) : null}
+        </View>
+      </Sheet>
       {canEdit ? (
         <Pressable
           accessibilityRole="button"
@@ -93,6 +132,20 @@ export default function CoupleGuests() {
       ) : null}
     </View>
   );
+
+  async function runExport(preset: ExportPreset) {
+    if (exporting) return;
+    setExporting(preset);
+    setToolsError(null);
+    try {
+      await exportGuests({ preset, lang });
+      setToolsOpen(false);
+    } catch (err) {
+      setToolsError(err instanceof ApiFailure ? err.messages[lang] : tools.failed);
+    } finally {
+      setExporting(null);
+    }
+  }
 
   function statusLabel(s: string) {
     return s === "attending" ? copy.guests.filters.attending : s === "declined" ? copy.guests.filters.declined : copy.guests.filters.pending;

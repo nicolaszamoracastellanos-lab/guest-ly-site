@@ -33,6 +33,16 @@ export default function CoupleTabs() {
       <Tabs.Screen name="dayof" options={{ href: null }} />
       <Tabs.Screen name="checkin" options={{ href: null }} />
       <Tabs.Screen name="requests" options={{ href: null }} />
+      <Tabs.Screen name="tasks" options={{ href: null }} />
+      <Tabs.Screen name="seating" options={{ href: null }} />
+      <Tabs.Screen name="runsheet" options={{ href: null }} />
+      <Tabs.Screen name="brain" options={{ href: null }} />
+      <Tabs.Screen name="insights" options={{ href: null }} />
+      <Tabs.Screen name="broadcasts" options={{ href: null }} />
+      <Tabs.Screen name="budget" options={{ href: null }} />
+      <Tabs.Screen name="vendors" options={{ href: null }} />
+      <Tabs.Screen name="website" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

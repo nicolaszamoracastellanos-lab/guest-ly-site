@@ -1,7 +1,7 @@
 // Day-of mode for the couple: parties in, the runsheet, escalations.
 
 import React from "react";
-import { View, Pressable, Linking } from "react-native";
+import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { useCoupleDayOf } from "@/lib/hooks";
@@ -45,7 +45,7 @@ export default function CoupleDayOf() {
 
       <Row style={{ justifyContent: "space-between", marginTop: 28 }}>
         <SectionLabel>{copy.coupleDayOf.runsheet}</SectionLabel>
-        <Pressable onPress={() => Linking.openURL("https://app.guest-ly.com/runsheet")}>
+        <Pressable onPress={() => router.push("/couple/runsheet")}>
           <T v="meta13" color={colors.goldLight}>
             {copy.coupleDayOf.open}
           </T>

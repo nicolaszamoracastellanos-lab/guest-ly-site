@@ -99,6 +99,13 @@ export default function Settings() {
             <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.biometric} sub={copy.settings.biometricDetail} trailing={<Toggle value={biometricEnabled} onChange={toggleBio} />} chevron={false} last />
           ) : null}
         </Card>
+        {surface === "couple" ? (
+          <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
+            <ListRow leading={<Icon name="mail" size={22} color={colors.goldLight} />} title={copy.settings.emailNotifications} sub={copy.settings.emailNotificationsDetail} onPress={() => router.push("/couple/settings/notifications" as never)} />
+            <ListRow leading={<Icon name="clock" size={22} color={colors.goldLight} />} title={copy.settings.reminders} sub={copy.settings.remindersDetail} onPress={() => router.push("/couple/settings/reminders" as never)} />
+            <ListRow leading={<Icon name="qr" size={22} color={colors.goldLight} />} title={copy.settings.invite} sub={copy.settings.inviteDetail} onPress={() => router.push("/couple/settings/invite" as never)} last />
+          </Card>
+        ) : null}
         <T v="meta13" color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
           {fmt(copy.settings.plan, { tier: me?.tenant.tier ?? "" })}
         </T>

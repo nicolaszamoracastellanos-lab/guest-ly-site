@@ -1,7 +1,7 @@
-// Guest more: dress code, hotels, gifts, language, notifications, leave.
+// Guest more: the wedding site sections (all in the app), language, notifications, leave.
 
 import React, { useState } from "react";
-import { Alert, Linking } from "react-native";
+import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useCopy, useLang } from "@/i18n";
 import { useGuestSession, useSession } from "@/lib/session";
@@ -18,7 +18,6 @@ export default function GuestMore() {
   const { data: home } = useGuestHome();
   const { data: schedule } = useGuestSchedule();
   const [notif, setNotif] = useState(!!pushToken);
-  const site = session ? `https://app.guest-ly.com/${session.tenant.site_slug}` : null;
 
   return (
     <Screen>
@@ -26,9 +25,12 @@ export default function GuestMore() {
       <Stack gap={12} style={{ marginTop: 22 }}>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           <ListRow leading={<Icon name="hanger" size={22} color={colors.goldLight} />} title={copy.guestMore.dressCode} sub={home?.dress_code ?? schedule?.events.find((e) => e.dress_code)?.dress_code ?? null} chevron={false} />
-          <ListRow leading={<Icon name="pin" size={22} color={colors.goldLight} />} title={copy.guestMore.hotels} onPress={() => site && Linking.openURL(`${site}#travel`)} />
-          <ListRow leading={<Icon name="star" size={22} color={colors.goldLight} />} title={copy.guestMore.gifts} onPress={() => site && Linking.openURL(`${site}/registry`)} />
-          <ListRow leading={<Icon name="globe" size={22} color={colors.goldLight} />} title={copy.guestMore.aboutWedding} onPress={() => site && Linking.openURL(site)} last />
+          <ListRow leading={<Icon name="pin" size={22} color={colors.goldLight} />} title={copy.guestMore.hotels} onPress={() => router.push("/guest/site/hotels" as never)} />
+          <ListRow leading={<Icon name="star" size={22} color={colors.goldLight} />} title={copy.guestMore.gifts} onPress={() => router.push("/guest/site/gifts" as never)} />
+          <ListRow leading={<Icon name="book" size={22} color={colors.goldLight} />} title={copy.guestMore.story} onPress={() => router.push("/guest/site/story" as never)} />
+          <ListRow leading={<Icon name="photo" size={22} color={colors.goldLight} />} title={copy.guestMore.gallery} onPress={() => router.push("/guest/site/gallery" as never)} />
+          <ListRow leading={<Icon name="info" size={22} color={colors.goldLight} />} title={copy.guestMore.faq} onPress={() => router.push("/guest/site/faq" as never)} />
+          <ListRow leading={<Icon name="globe" size={22} color={colors.goldLight} />} title={copy.guestMore.aboutWedding} onPress={() => router.push("/guest/site" as never)} last />
         </Card>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           <ListRow leading={<Icon name="globe" size={22} color={colors.goldLight} />} title={copy.guestMore.language} trailing={<LangToggle value={lang} onChange={setLang} />} chevron={false} />

@@ -178,6 +178,9 @@ export const en = {
     waiting: "Waiting for the couple",
   },
   guestMore: {
+    story: "Our story",
+    faq: "Questions and answers",
+    gallery: "Photos",
     title: "More",
     dressCode: "Dress code",
     hotels: "Hotels",
@@ -269,6 +272,8 @@ export const en = {
     communication: "Communication",
     eventDay: "Event day and setup",
     items: {
+      insights: "Concierge insights",
+      runsheet: "Runsheet",
       tasks: "Tasks",
       seating: "Seating",
       budget: "Budget",
@@ -284,6 +289,9 @@ export const en = {
       settings: "Settings",
     },
     subs: {
+      inApp: "In the app",
+      insights: "Gaps, escalations, top questions",
+      runsheet: "The day, minute by minute",
       tasksOpen: "{n} open",
       seatingPlans: "{n} plans",
       budgetPaid: "{n}% paid",
@@ -328,6 +336,12 @@ export const en = {
     notFound: "That pass does not belong to this wedding.",
   },
   settings: {
+    emailNotifications: "Email notifications",
+    emailNotificationsDetail: "RSVP emails and the Monday digest",
+    reminders: "Automatic reminders",
+    remindersDetail: "WhatsApp reminders before the RSVP deadline",
+    invite: "Invitation code",
+    inviteDetail: "Share the code guests use to open the app",
     title: "Settings",
     owner: "Owner",
     admin: "Admin",

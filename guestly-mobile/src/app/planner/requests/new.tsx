@@ -3,7 +3,7 @@
 
 import React, { useState } from "react";
 import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -12,7 +12,7 @@ import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Chip, ChipRow, Input, Card, ListRow, Avatar, Button, Row, Stack, T } from "@/ui";
 import { colors } from "@/ui/tokens";
 
-type Kind = "plus_one" | "edit_guest" | "guest_help" | "custom";
+type Kind = "plus_one" | "edit_guest" | "guest_help" | "custom" | "send_reminders";
 
 export default function NewRequest() {
   const copy = useCopy();
@@ -21,7 +21,8 @@ export default function NewRequest() {
   const qc = useQueryClient();
   const user = useUserSession();
   const { data } = usePlannerGuests(user?.me.tenant.slug ?? "");
-  const [kind, setKind] = useState<Kind>("plus_one");
+  const params = useLocalSearchParams<{ kind?: string }>();
+  const [kind, setKind] = useState<Kind>((["plus_one", "edit_guest", "guest_help", "custom", "send_reminders"].includes(params.kind ?? "") ? params.kind : "plus_one") as Kind);
   const [q, setQ] = useState("");
   const [guestId, setGuestId] = useState<string | null>(null);
   const [seats, setSeats] = useState("1");
@@ -33,7 +34,7 @@ export default function NewRequest() {
   const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const guests = (data?.guests ?? []).filter((g) => (q ? fold(g.name).includes(fold(q)) : true)).slice(0, 6);
   const guest = data?.guests.find((g) => g.id === guestId) ?? null;
-  const needsGuest = kind !== "custom";
+  const needsGuest = kind !== "custom" && kind !== "send_reminders";
 
   async function submit() {
     setBusy(true);
@@ -65,7 +66,7 @@ export default function NewRequest() {
         <BigTitle title={copy.planner.newRequest} sub={copy.planner.footer} size={34} />
         <View style={{ marginTop: 18 }}>
           <ChipRow>
-            {(["plus_one", "edit_guest", "guest_help", "custom"] as Kind[]).map((k) => (
+            {(["plus_one", "edit_guest", "guest_help", "send_reminders", "custom"] as Kind[]).map((k) => (
               <Chip key={k} label={copy.planner.kinds[k]} on={kind === k} onPress={() => setKind(k)} />
             ))}
           </ChipRow>

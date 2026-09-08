@@ -29,6 +29,7 @@ export default function GuestTabs() {
       <Tabs.Screen name="more" />
       <Tabs.Screen name="dayof" options={{ href: null }} />
       <Tabs.Screen name="messages" options={{ href: null }} />
+      <Tabs.Screen name="site" options={{ href: null }} />
     </Tabs>
   );
 }

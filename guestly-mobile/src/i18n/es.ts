@@ -180,6 +180,9 @@ export const es: Copy = {
     waiting: "Esperando a la pareja",
   },
   guestMore: {
+    story: "Nuestra historia",
+    faq: "Preguntas y respuestas",
+    gallery: "Fotos",
     title: "Más",
     dressCode: "Vestimenta",
     hotels: "Hoteles",
@@ -271,6 +274,8 @@ export const es: Copy = {
     communication: "Comunicación",
     eventDay: "Día del evento y configuración",
     items: {
+      insights: "Estadísticas del concierge",
+      runsheet: "Guion del día",
       tasks: "Tareas",
       seating: "Mesas",
       budget: "Presupuesto",
@@ -286,6 +291,9 @@ export const es: Copy = {
       settings: "Ajustes",
     },
     subs: {
+      inApp: "En la app",
+      insights: "Vacíos, escalaciones, preguntas frecuentes",
+      runsheet: "El día, minuto a minuto",
       tasksOpen: "{n} abiertas",
       seatingPlans: "{n} planos",
       budgetPaid: "{n}% pagado",
@@ -330,6 +338,12 @@ export const es: Copy = {
     notFound: "Ese pase no pertenece a esta boda.",
   },
   settings: {
+    emailNotifications: "Notificaciones por correo",
+    emailNotificationsDetail: "Correos de RSVP y el resumen del lunes",
+    reminders: "Recordatorios automáticos",
+    remindersDetail: "Recordatorios por WhatsApp antes de la fecha límite",
+    invite: "Código de invitación",
+    inviteDetail: "Comparta el código con el que los invitados abren la app",
     title: "Ajustes",
     owner: "Titular",
     admin: "Administrador",

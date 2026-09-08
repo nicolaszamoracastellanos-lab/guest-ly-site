@@ -1,7 +1,7 @@
 // Couple home: photo header, today's briefing, three stat tiles, the brain.
 
 import React from "react";
-import { View, StyleSheet, Image, Linking, Pressable } from "react-native";
+import { View, StyleSheet, Image, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -89,7 +89,7 @@ export default function CoupleHome() {
       </Row>
 
       <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-        <Pressable onPress={() => user && Linking.openURL(`https://app.guest-ly.com/brain`)} accessibilityRole="button">
+        <Pressable onPress={() => router.push("/assistant" as never)} accessibilityRole="button">
           <Card kind="glass" padding={0} radiusKey="pill" style={{ height: 52, justifyContent: "center", paddingHorizontal: 18 }}>
             <Row gap={10}>
               <Icon name="sparkle" size={20} color={colors.goldLight} />
@@ -104,12 +104,24 @@ export default function CoupleHome() {
   );
 
   function go(href: string) {
-    if (href.startsWith("/rsvps")) return router.push("/couple/rsvps");
-    if (href.startsWith("/conversations")) return router.push("/couple/messages");
-    if (href.startsWith("/requests")) return router.push("/couple/requests");
-    if (href.startsWith("/guests")) return router.push("/couple/guests");
-    if (href.startsWith("/checkin")) return router.push("/couple/checkin");
-    return Linking.openURL(`https://app.guest-ly.com${href}`);
+    const map: [string, string][] = [
+      ["/rsvps", "/couple/rsvps"],
+      ["/conversations", "/couple/messages"],
+      ["/requests", "/couple/requests"],
+      ["/guests", "/couple/guests"],
+      ["/checkin", "/couple/checkin"],
+      ["/tasks", "/couple/tasks"],
+      ["/budget", "/couple/budget"],
+      ["/vendors", "/couple/vendors"],
+      ["/seating", "/couple/seating"],
+      ["/runsheet", "/couple/runsheet"],
+      ["/broadcasts", "/couple/broadcasts"],
+      ["/brain", "/couple/brain"],
+      ["/website", "/couple/website"],
+      ["/dashboard", "/couple/insights"],
+    ];
+    const hit = map.find(([web]) => href.startsWith(web));
+    router.push((hit ? hit[1] : "/couple/more") as never);
   }
 }
 
