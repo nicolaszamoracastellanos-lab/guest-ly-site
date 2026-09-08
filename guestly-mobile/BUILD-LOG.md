@@ -110,3 +110,43 @@ planner request removed; Sofía and Diego reset). TestFlight internal group
   guestly://auth/callback to the redirect allow-list (magic link and Google
   sign-in from the app; password sign-in works without it). The API change
   was blocked by the session's permission classifier.
+
+## Sep 7 2026, late night: web parity wave
+
+Nicolas: "make sure that all the capabilities that the website has are
+available inside the app ... nothing redirects to the website", plus a
+draggable bubble that opens the Coordinator (couple, planner) or the
+concierge (guest) from any screen.
+
+Built by eight parallel builders under one brief (each owned a feature and
+smoke-tested its routes against demo-review), wired by the lead:
+
+- Assistant: `/assistant` streaming Coordinator chat (SSE over XHR), action
+  cards with typed SEND/ENVIAR, sessions drawer; `AssistantBubble` mounted
+  once in the root layout, hidden on the chat screens and the web view.
+- Couple: tasks (own list, shared board, checklists, collaborators,
+  reminders), budget (categories, lines, payments, comments, AI import from
+  paste or photo), vendors, seating (tables, unseated parties, auto-assign,
+  floor plan reading), runsheet, brain (facts editor, publish, rollback,
+  preview), inbox across WhatsApp, web and app with transcripts, insights
+  (gaps, escalations, top questions), website builder (sections, images,
+  theme, slug, password, publish) with a signed-in in-app preview, settings
+  (email notifications, automatic reminders, invite code), broadcasts
+  (dry-run preview, typed confirmation), guest export (share sheet), guest
+  import (paste or file), RSVP questions.
+- Planner: tasks, budget (write), vendors, runsheet, seating (read), broadcasts
+  (read), Coordinator, guide in the web view, insights route.
+- Guest: the couple's wedding site rendered natively (`/guest/site` and
+  section entry points: hotels, gifts, story, gallery, faq).
+- In-app web view (`/web`) exists only for the guide and the site preview and
+  refuses any origin except the portal; it signs in through a one-time
+  magic-link token minted by `POST auth/bridge`.
+
+Portal API: about ninety new routes under /api/mobile/v1 (see
+docs/mobile-api/*.md in the portal repo). App: 128 files, commit 718c15f.
+Portal: feat/mobile-v1 merged into main, deploying.
+
+Known follow-ups: bubble badge for a waiting Coordinator card; planner
+insights screen (route exists); photo accents editor in the website builder;
+client-side image resize before upload; native Google sign-in so the consent
+page names Guest-ly instead of the Supabase host.
