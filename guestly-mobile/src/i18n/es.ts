@@ -32,7 +32,7 @@ export const es: Copy = {
     updateTitle: "Actualice Guest-ly",
     updateBody: "Esta versión ya no es compatible. Actualice desde la tienda para continuar.",
     footerVersion: "Guest-ly 1.0",
-    footerTrademark: "Guest-ly es una marca de Nicolas Zamora.",
+    footerTrademark: "Guest-ly es una marca de ZC Ventures LLC.",
     pendingDb: "Esta parte se está configurando. Inténtelo de nuevo más tarde.",
     comingSoon: "Próximamente",
     error: "Algo salió mal. Inténtelo de nuevo.",

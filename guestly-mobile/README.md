@@ -71,4 +71,4 @@ Runtime version follows `appVersion`; native changes (new modules, permissions) 
 - At most one ivory (paper) card per screen. Gold is never text on ivory.
 - The wordmark is a raster asset. The gold diamond is drawn in code and is the only place a glyph like it appears.
 - Copy: formal, plain, EN and ES, no emojis, no em dashes. "Biometric unlock", never a vendor name.
-- Footer: `Guest-ly 1.0` and `Guest-ly is a trademark of Nicolas Zamora.`
+- Footer: `Guest-ly 1.0` and `Guest-ly is a trademark of ZC Ventures LLC.` (changed from Nicolas Zamora on Sep 7 2026 at his request)

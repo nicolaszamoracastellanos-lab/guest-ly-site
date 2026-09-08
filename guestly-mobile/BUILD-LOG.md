@@ -5,7 +5,7 @@ Started 5 Sep 2026 from the master execution prompt. Portal work lives on branch
 ## Decisions and conflicts (document vs design artifact vs portal code)
 
 1. **Fonts and colours.** The prompt named Playfair Display + Inter and navy `#0D1B2A`, ivory `#FAF6F0`, gold `#B8965A`. The design artifact and the portal's `globals.css` use Cormorant Garamond + Jost and night `#0d1117`, ivory `#f7f3ec`, gold `#c9a96e`. Nico confirmed the artifact look on 5 Sep 2026 and the web product ships those exact values, so the app uses them. Deliberate deviation from "document wins". One file to flip: `src/ui/tokens.ts`.
-2. **Trademark line.** `Guest-ly is a trademark of Nicolas Zamora.` (document). The artifact said ZC Ventures LLC; not used.
+2. **Trademark line.** Shipped as `Guest-ly is a trademark of ZC Ventures LLC.` Nicolas switched it from his own name to the LLC on the first device test (Sep 7 2026).
 3. **Biometric label.** `Biometric unlock` everywhere in copy (document). The only "Face ID" strings are Apple's own Info.plist key name and the config plugin option, which must keep their names.
 4. **NFC tap-in.** Out of scope for v1 (document). The artifact screen is not built. Door check-in is camera QR plus name search.
 5. **Planner scrubbing.** Mobile planner payloads never carry phone or email and free text is scrubbed (document). The web widened planner read scope on Aug 12 2026 (`authz.ts`); the app is stricter on purpose.
