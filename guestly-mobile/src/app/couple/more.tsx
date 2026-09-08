@@ -57,7 +57,7 @@ export default function MoreSheet() {
             <T v="body15">{it.label}</T>
             {it.available ? (
               it.sub ? (
-                <T v="meta13" size={12} color={colors.ivory55} numberOfLines={1}>
+                <T v="meta13" color={colors.ivory55} numberOfLines={1}>
                   {it.sub}
                 </T>
               ) : null

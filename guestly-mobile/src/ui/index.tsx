@@ -16,6 +16,7 @@ import {
   type TextInputProps,
   Modal,
   Platform,
+  type TextStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -133,7 +134,7 @@ export function Wordmark({ height = 22, style }: { height?: number; style?: Styl
   return <Image source={wordmark} resizeMode="contain" style={[{ height, width: height * 4.15 }, style]} accessibilityLabel="Guest-ly" />;
 }
 
-export function SectionLabel({ children, color = colors.ivory55, style }: { children: ReactNode; color?: string; style?: StyleProp<ViewStyle> }) {
+export function SectionLabel({ children, color = colors.ivory55, style }: { children: ReactNode; color?: string; style?: StyleProp<TextStyle> }) {
   return (
     <T v="label11" color={color} style={style}>
       {children}
@@ -157,7 +158,7 @@ export function Card({ kind = "solid", children, style, padding = 16, radiusKey 
   if (kind === "glass" && blur) {
     return (
       <View style={[{ borderRadius: r, overflow: "hidden", borderWidth: 1, borderColor: border ?? colors.ivory14 }, style]}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} experimentalBlurMethod="dimezisBlurView" />
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} blurMethod="dimezisBlurView" />
         <View style={[{ backgroundColor: colors.glassFill, padding }]}>{children}</View>
       </View>
     );
@@ -398,7 +399,7 @@ export function LangToggle({ value, onChange, dark = true }: { value: "en" | "es
   );
 }
 
-export function Input({ icon, style, right, ...props }: TextInputProps & { icon?: IconName; right?: ReactNode }) {
+export function Input({ icon, style, right, ...props }: Omit<TextInputProps, "style"> & { icon?: IconName; right?: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.input, style]}>
       {icon ? <Icon name={icon} size={20} color={colors.ivory55} /> : null}
@@ -468,7 +469,7 @@ export function ActionTile({ icon, label, onPress }: { icon: IconName; label: st
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.75 }]}>
       <Icon name={icon} size={20} color={colors.goldLight} />
-      <T v="meta13" size={11} color={colors.ivory} style={{ fontFamily: "Jost_400Regular" }}>
+      <T v="meta13" color={colors.ivory} style={{ fontFamily: "Jost_400Regular" }}>
         {label}
       </T>
     </Pressable>
@@ -571,7 +572,7 @@ export function Sheet({ visible, onClose, children, top = 150 }: { visible: bool
 
 export function Footer({ version, trademark }: { version: string; trademark: string }) {
   return (
-    <T v="meta13" size={12} color={colors.ivory40} center style={{ marginTop: 24 }}>
+    <T v="meta13" color={colors.ivory40} center style={{ marginTop: 24 }}>
       {version} · {trademark}
     </T>
   );

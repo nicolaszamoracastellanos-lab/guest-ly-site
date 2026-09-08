@@ -129,7 +129,7 @@ function Tile({ label, n, unit, color = colors.ivory, highlight }: { label: stri
       <T v="title34" color={color}>
         {n ?? "·"}
       </T>
-      <T v="meta13" size={12} color={colors.ivory55}>
+      <T v="meta13" color={colors.ivory55}>
         {unit}
       </T>
     </Card>

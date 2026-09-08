@@ -44,7 +44,7 @@ export default function Entrance() {
           <Button label={copy.entrance.coupleOrPlanner} kind="glass" onPress={() => router.push("/sign-in")} />
           <Row style={{ justifyContent: "space-between", marginTop: 6 }}>
             <LangToggle value={lang} onChange={setLang} />
-            <T v="meta13" size={11} color={colors.ivory40}>
+            <T v="meta13" color={colors.ivory40}>
               {copy.common.footerTrademark}
             </T>
           </Row>

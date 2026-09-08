@@ -61,7 +61,7 @@ export default function Inbox() {
               sub={m.preview}
               trailing={
                 <View style={{ alignItems: "flex-end", gap: 6 }}>
-                  <T v="meta13" size={12} color={colors.ivory40}>
+                  <T v="meta13" color={colors.ivory40}>
                     {relTime(m.last_at, lang)}
                   </T>
                   <Row gap={6}>
