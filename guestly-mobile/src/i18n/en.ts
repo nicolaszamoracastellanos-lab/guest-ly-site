@@ -30,7 +30,7 @@ export const en = {
     updateTitle: "Please update Guest-ly",
     updateBody: "This version is no longer supported. Update from the store to continue.",
     footerVersion: "Guest-ly 1.0",
-    footerTrademark: "Guest-ly is a trademark of Nicolas Zamora.",
+    footerTrademark: "Guest-ly is a trademark of ZC Ventures LLC.",
     pendingDb: "This part is being set up. Please try again later.",
     comingSoon: "Coming soon",
     error: "Something went wrong. Please try again.",
