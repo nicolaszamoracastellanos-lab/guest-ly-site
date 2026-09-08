@@ -10,7 +10,7 @@ import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { Screen, T, Row, Gem, Wordmark, IconButton, Badge, Hairline, Icon, StatTile, Card, Banner, Skeleton, SectionLabel } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/hands.jpg");
 
@@ -30,8 +30,8 @@ export default function CoupleHome() {
   return (
     <Screen padded={false}>
       <View style={styles.hero}>
-        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.7, 1]} style={StyleSheet.absoluteFill} />
+        <Image source={photo} style={FILL} resizeMode="cover" />
+        <LinearGradient colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.7, 1]} style={FILL} />
         <Row style={[styles.top, { top }]}>
           <Wordmark height={20} />
           <IconButton name="bell" badge={(data?.needs_you ?? 0) > 0} onPress={() => router.push("/couple/messages")} />
@@ -114,7 +114,7 @@ export default function CoupleHome() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 330 },
+  hero: { overflow: "hidden", height: 330 },
   top: { position: "absolute", left: 24, right: 20, justifyContent: "space-between" },
   headline: { position: "absolute", left: 24, right: 24, top: 196 },
   briefRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 },

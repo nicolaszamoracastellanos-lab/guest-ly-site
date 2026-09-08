@@ -7,7 +7,7 @@ import { useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import type { TenantSummary } from "@/lib/session";
 import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel } from "@/ui";
-import { colors, radius } from "@/ui/tokens";
+import { colors, radius, FILL } from "@/ui/tokens";
 
 const suite = require("../../assets/photos/suite.jpg");
 const LEN = 6;
@@ -46,7 +46,7 @@ export default function InviteCode() {
     <Screen header={<TopBar onBack={() => router.back()} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} keyboard>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.card}>
-          <Image source={suite} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={suite} style={FILL} resizeMode="cover" />
         </View>
         <Stack gap={8} style={{ marginTop: 28 }}>
           <SectionLabel color={colors.goldLight}>{copy.invite.label}</SectionLabel>

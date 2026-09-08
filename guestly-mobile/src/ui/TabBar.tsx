@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Icon, type IconName } from "./Icon";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "./tokens";
+import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, FILL } from "./tokens";
 
 type TabsProps = React.ComponentProps<typeof Tabs>;
 type TabBarFn = NonNullable<TabsProps["tabBar"]>;
@@ -40,7 +40,7 @@ export function GlassTabBar({
         <BlurView
           intensity={45}
           tint="dark"
-          style={StyleSheet.absoluteFill}
+          style={FILL}
           blurMethod="dimezisBlurView"
         />
         <View style={styles.fill} />

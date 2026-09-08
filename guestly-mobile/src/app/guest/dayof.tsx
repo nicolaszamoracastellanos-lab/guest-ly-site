@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy } from "@/i18n";
 import { useGuestDayOf } from "@/lib/hooks";
 import { Screen, T, Row, Gem, IconButton, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 import { clockLabel } from "./schedule";
 
 const photo = require("../../../assets/photos/courtyard.jpg");
@@ -31,8 +31,8 @@ export default function GuestDayOf() {
   return (
     <Screen padded={false}>
       <View style={styles.hero}>
-        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={StyleSheet.absoluteFill} />
+        <Image source={photo} style={FILL} resizeMode="cover" />
+        <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={FILL} />
         <Row style={styles.top}>
           <Row gap={8}>
             <Gem />
@@ -128,7 +128,7 @@ export default function GuestDayOf() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 400 },
+  hero: { overflow: "hidden", height: 400 },
   top: { position: "absolute", left: 24, right: 20, top: 54, justifyContent: "space-between" },
   headline: { position: "absolute", left: 24, right: 24, top: 150 },
   runRow: { minHeight: 46, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 6 },

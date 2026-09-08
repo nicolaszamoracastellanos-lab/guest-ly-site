@@ -24,13 +24,13 @@ export const colors = {
   amber: "#f3c66b",
   red: "#f0a2a2",
   ivory90: "rgba(247,243,236,0.9)",
-  ivory70: "rgba(247,243,236,0.7)",
-  ivory55: "rgba(247,243,236,0.55)",
-  ivory40: "rgba(247,243,236,0.4)",
+  ivory70: "rgba(247,243,236,0.86)",
+  ivory55: "rgba(247,243,236,0.74)",
+  ivory40: "rgba(247,243,236,0.6)",
   ivory25: "rgba(247,243,236,0.25)",
   ivory14: "rgba(247,243,236,0.14)",
   ivory09: "rgba(247,243,236,0.09)",
-  glassFill: "rgba(13,17,23,0.42)",
+  glassFill: "rgba(13,17,23,0.66)",
   glassSolidFill: "rgba(247,243,236,0.055)",
   goldBorder: "rgba(201,169,110,0.35)",
   scrim: "rgba(8,11,16,0.62)",
@@ -68,26 +68,34 @@ export const fonts = {
   bodySemibold: "Jost_600SemiBold",
 } as const;
 
-/** Type scale. Body copy never renders below 15, captions never below 13. */
+/** Type scale. Body copy never renders below 16, captions never below 14.
+ *  Sep 7 2026 device pass: Cormorant and Jost both have a small x-height,
+ *  so the whole scale sits two points above the artboards and the muted
+ *  ivories run brighter than the web values. Names keep their old numbers. */
 export const type = {
-  display60: { fontFamily: fonts.display, fontSize: 60, lineHeight: 56 },
-  display44: { fontFamily: fonts.display, fontSize: 44, lineHeight: 44 },
-  title42: { fontFamily: fonts.display, fontSize: 42, lineHeight: 44 },
-  title34: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36 },
-  title30: { fontFamily: fonts.display, fontSize: 30, lineHeight: 32 },
-  title26: { fontFamily: fonts.display, fontSize: 26, lineHeight: 28 },
-  name24: { fontFamily: fonts.display, fontSize: 24, lineHeight: 26 },
-  button17: { fontFamily: fonts.bodyMedium, fontSize: 17, lineHeight: 22 },
-  body16: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
-  body15: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
-  meta13: { fontFamily: fonts.body, fontSize: 13, lineHeight: 17 },
-  label11: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 14, letterSpacing: 1.8, textTransform: "uppercase" as const },
+  display60: { fontFamily: fonts.display, fontSize: 64, lineHeight: 62 },
+  display44: { fontFamily: fonts.display, fontSize: 48, lineHeight: 50 },
+  title42: { fontFamily: fonts.display, fontSize: 46, lineHeight: 48 },
+  title34: { fontFamily: fonts.display, fontSize: 38, lineHeight: 40 },
+  title30: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36 },
+  title26: { fontFamily: fonts.display, fontSize: 30, lineHeight: 32 },
+  name24: { fontFamily: fonts.display, fontSize: 27, lineHeight: 30 },
+  button17: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 24 },
+  body16: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25 },
+  body15: { fontFamily: fonts.body, fontSize: 17, lineHeight: 24 },
+  meta13: { fontFamily: fonts.body, fontSize: 15, lineHeight: 20 },
+  label11: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 1.6, textTransform: "uppercase" as const },
 } as const;
 
-export const MIN_BODY = 15;
-export const MIN_CAPTION = 13;
+export const MIN_BODY = 16;
+export const MIN_CAPTION = 14;
 export const HIT_TARGET = 44;
 export const BUTTON_HEIGHT = 58;
 export const TAB_BAR_HEIGHT = 62;
 export const TAB_BAR_BOTTOM = 24;
 export const TOP_SAFE_MIN = 54;
+
+/** StyleSheet.absoluteFill is typed but not exported at runtime by this
+ *  React Native (0.86); an undefined style let photos render at their
+ *  intrinsic size and cover whole screens. Use this instead. */
+export const FILL = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;

@@ -9,7 +9,7 @@ import { fmt, useCopy } from "@/i18n";
 import { useSession } from "@/lib/session";
 import { ensureAndroidChannels, registerPush, requestPushToken } from "@/lib/push";
 import { Screen, T, Button, Card, Toggle, Stack, Icon, Row } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../assets/photos/bluehour.jpg");
 
@@ -56,8 +56,8 @@ export default function NotifyAsk() {
   return (
     <Screen bottomInset={24} padded={false}>
       <View style={styles.hero}>
-        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <LinearGradient colors={["rgba(13,17,23,0.2)", "rgba(13,17,23,0.7)", colors.night]} style={StyleSheet.absoluteFill} />
+        <Image source={photo} style={FILL} resizeMode="cover" />
+        <LinearGradient colors={["rgba(13,17,23,0.2)", "rgba(13,17,23,0.7)", colors.night]} style={FILL} />
       </View>
       <View style={{ paddingHorizontal: 28, marginTop: -170 }}>
         <View style={styles.bellWrap}>
@@ -98,7 +98,7 @@ export default function NotifyAsk() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 300, opacity: 0.85 },
+  hero: { overflow: "hidden", height: 300, opacity: 0.85 },
   bellWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
   prefRow: { minHeight: 64, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.ivory09, gap: 12 },
 });

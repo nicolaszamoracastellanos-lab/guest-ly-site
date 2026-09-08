@@ -13,7 +13,7 @@ import * as Crypto from "expo-crypto";
 import { useCopy, useLang } from "@/i18n";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 WebBrowser.maybeCompleteAuthSession();
 const suite = require("../../assets/photos/suite.jpg");
@@ -107,8 +107,8 @@ export default function SignIn() {
     <Screen header={<TopBar onBack={() => router.back()} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.hero}>
-          <Image source={suite} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          <LinearGradient colors={["rgba(13,17,23,0.1)", "rgba(13,17,23,0.6)", colors.night]} style={StyleSheet.absoluteFill} />
+          <Image source={suite} style={FILL} resizeMode="cover" />
+          <LinearGradient colors={["rgba(13,17,23,0.1)", "rgba(13,17,23,0.6)", colors.night]} style={FILL} />
         </View>
         <View style={{ paddingHorizontal: 28, marginTop: -180 }}>
           <Wordmark height={34} />
@@ -162,5 +162,5 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 420, opacity: 0.55 },
+  hero: { overflow: "hidden", height: 420, opacity: 0.55 },
 });

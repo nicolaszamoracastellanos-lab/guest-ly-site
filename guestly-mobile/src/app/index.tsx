@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCopy, useLang } from "@/i18n";
 import { T, Button, Wordmark, LangToggle, Row, Stack } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 const hero = require("../../assets/photos/walk.jpg");
 
@@ -22,7 +22,7 @@ export default function Entrance() {
       <LinearGradient
         colors={["rgba(8,11,16,0.05)", "rgba(8,11,16,0.05)", "rgba(8,11,16,0.62)", "rgba(13,17,23,0.98)"]}
         locations={[0, 0.38, 0.62, 1]}
-        style={StyleSheet.absoluteFill}
+        style={FILL}
       />
       <View style={[styles.top, { top: Math.max(insets.top, 54) + 12 }]}>
         <Wordmark height={22} />

@@ -97,9 +97,9 @@ export default function FindName() {
         </T>
       ) : null}
       <View style={{ marginTop: 18 }}>
-        <T v="meta13" size={14} color={colors.ivory55}>
+        <T v="meta13" color={colors.ivory55}>
           {copy.find.notYou}{" "}
-          <T v="meta13" size={14} color={colors.goldLight}>
+          <T v="meta13" color={colors.goldLight}>
             {copy.find.tellCouple}
           </T>{" "}
           {copy.find.tellCoupleTail}

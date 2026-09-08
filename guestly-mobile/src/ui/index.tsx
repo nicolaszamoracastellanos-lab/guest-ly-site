@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
-import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "./tokens";
+import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, FILL } from "./tokens";
 
 export { T } from "./Text";
 export { Icon } from "./Icon";
@@ -67,13 +67,13 @@ export function Screen({
         locations={[0, 0.42, 1]}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFill}
+        style={FILL}
       />
       <LinearGradient
         colors={["rgba(201,169,110,0.13)", "rgba(201,169,110,0)"]}
         start={{ x: 1, y: 0 }}
         end={{ x: 0.3, y: 0.55 }}
-        style={StyleSheet.absoluteFill}
+        style={FILL}
       />
       {header ? <View style={{ paddingTop: top }}>{header}</View> : null}
       {scroll ? (
@@ -158,7 +158,7 @@ export function Card({ kind = "solid", children, style, padding = 16, radiusKey 
   if (kind === "glass" && blur) {
     return (
       <View style={[{ borderRadius: r, overflow: "hidden", borderWidth: 1, borderColor: border ?? colors.ivory14 }, style]}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} blurMethod="dimezisBlurView" />
+        <BlurView intensity={40} tint="dark" style={FILL} blurMethod="dimezisBlurView" />
         <View style={[{ backgroundColor: colors.glassFill, padding }]}>{children}</View>
       </View>
     );

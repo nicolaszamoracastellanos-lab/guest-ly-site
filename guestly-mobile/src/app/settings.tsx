@@ -73,7 +73,7 @@ export default function Settings() {
             leading={<Icon name="star" size={22} color={colors.goldLight} />}
             title={copy.settings.wedding}
             sub={me?.tenant.couple_names}
-            trailing={(me?.tenants.length ?? 0) > 1 ? <T v="meta13" size={14} color={colors.goldLight}>{copy.settings.switchWedding}</T> : undefined}
+            trailing={(me?.tenants.length ?? 0) > 1 ? <T v="meta13" color={colors.goldLight}>{copy.settings.switchWedding}</T> : undefined}
             chevron={false}
             onPress={(me?.tenants.length ?? 0) > 1 ? () => setSwitching(true) : undefined}
           />
@@ -99,7 +99,7 @@ export default function Settings() {
             <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.biometric} sub={copy.settings.biometricDetail} trailing={<Toggle value={biometricEnabled} onChange={toggleBio} />} chevron={false} last />
           ) : null}
         </Card>
-        <T v="meta13" size={14} color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
+        <T v="meta13" color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
           {fmt(copy.settings.plan, { tier: me?.tenant.tier ?? "" })}
         </T>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>

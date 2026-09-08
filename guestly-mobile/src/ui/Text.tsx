@@ -22,7 +22,7 @@ const CAPTION_VARIANTS: Variant[] = ["meta13", "label11"];
 export function T({ v = "body15", color = colors.ivory, center, size, italic, style, children, ...rest }: Props) {
   const base = type[v] as TextStyle;
   let fontSize = size ?? base.fontSize ?? MIN_BODY;
-  const floor = v === "label11" ? 11 : CAPTION_VARIANTS.includes(v) ? MIN_CAPTION : MIN_BODY;
+  const floor = v === "label11" ? 12 : CAPTION_VARIANTS.includes(v) ? MIN_CAPTION : MIN_BODY;
   if (fontSize < floor) {
     if (__DEV__) console.warn(`[Text] ${fontSize}px is below the ${floor}px floor for ${v}; clamped.`);
     fontSize = floor;

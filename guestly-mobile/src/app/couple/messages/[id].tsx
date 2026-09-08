@@ -61,7 +61,7 @@ export default function ReplyScreen() {
           </T>
         </Card>
         {channel === "whatsapp" ? (
-          <T v="meta13" size={14} color={colors.ivory55} style={{ marginTop: 10 }}>
+          <T v="meta13" color={colors.ivory55} style={{ marginTop: 10 }}>
             {copy.inbox.whatsappHint}
           </T>
         ) : null}

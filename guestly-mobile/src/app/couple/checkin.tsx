@@ -14,7 +14,7 @@ import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Stack, Icon } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 const PASS_RE = /^GL1:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
@@ -98,11 +98,11 @@ export default function DoorCheckin() {
   return (
     <View style={styles.root}>
       {permission?.granted ? (
-        <CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={typing ? undefined : onScan} />
+        <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={typing ? undefined : onScan} />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.night }]} />
+        <View style={[FILL, { backgroundColor: colors.night }]} />
       )}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,11,16,0.35)" }]} />
+      <View style={[FILL, { backgroundColor: "rgba(8,11,16,0.35)" }]} />
       <View style={{ paddingTop: top }}>
         <TopBar onBack={() => router.back()} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
       </View>
@@ -166,14 +166,14 @@ export default function DoorCheckin() {
             <T v="title26" size={22}>
               {dayof?.parties_in ?? "·"}
             </T>
-            <T v="meta13" size={14} color={colors.ivory70}>
+            <T v="meta13" color={colors.ivory70}>
               {fmt(copy.checkin.partiesIn, { n: "", total: dayof?.parties_total ?? "·" }).replace(/^\s*of\s*/i, "of ").replace(/^\s*de\s*/i, "de ")}
             </T>
           </Row>
           <Pressable onPress={() => setTyping((v) => !v)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: "center" }}>
             <Row gap={6}>
               <Icon name={typing ? "camera" : "search"} size={16} color={colors.ivory70} />
-              <T v="meta13" size={14} color={colors.ivory70}>
+              <T v="meta13" color={colors.ivory70}>
                 {typing ? copy.checkin.title : copy.checkin.typeName}
               </T>
             </Row>

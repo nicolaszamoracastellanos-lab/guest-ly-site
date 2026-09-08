@@ -11,7 +11,7 @@ import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { T, Card, Button, Badge, Countdown, ActionTile, Row, Gem, IconButton, Banner, Skeleton, Stack, SectionLabel } from "@/ui";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
+import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, FILL } from "@/ui/tokens";
 
 const fallback = require("../../../assets/photos/bluehour.jpg");
 
@@ -46,11 +46,11 @@ export default function GuestHome() {
     <View style={styles.root}>
       <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 16 }} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Image source={hero ? { uri: hero } : fallback} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={hero ? { uri: hero } : fallback} style={FILL} resizeMode="cover" />
           <LinearGradient
             colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.08)", "rgba(13,17,23,0.55)", colors.night]}
             locations={[0, 0.26, 0.5, 1]}
-            style={StyleSheet.absoluteFill}
+            style={FILL}
           />
           <Row style={[styles.topRow, { top }]}>
             <Row gap={8}>
@@ -142,7 +142,7 @@ export function splitNames(names: string): [string, string] {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.night },
-  hero: { height: 560 },
+  hero: { overflow: "hidden", height: 560 },
   topRow: { position: "absolute", left: 24, right: 20, justifyContent: "space-between" },
   names: { position: "absolute", left: 24, right: 24, top: 246 },
 });

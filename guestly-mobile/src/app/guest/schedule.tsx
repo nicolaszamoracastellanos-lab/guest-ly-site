@@ -8,7 +8,7 @@ import { useCopy, useLang, longDate } from "@/i18n";
 import { useGuestSchedule } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { Screen, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/ceremony.jpg");
 
@@ -22,8 +22,8 @@ export default function GuestSchedule() {
   return (
     <Screen padded={false}>
       <View style={styles.hero}>
-        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.6)", colors.night]} locations={[0, 0.3, 0.7, 1]} style={StyleSheet.absoluteFill} />
+        <Image source={photo} style={FILL} resizeMode="cover" />
+        <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.6)", colors.night]} locations={[0, 0.3, 0.7, 1]} style={FILL} />
         <Row style={styles.top}>
           <Row gap={8}>
             <Gem />
@@ -71,21 +71,21 @@ export default function GuestSchedule() {
                 </T>
               ) : null}
               {e.notes || e.address_note ? (
-                <T v="meta13" size={14} color={colors.ivory70} style={{ marginTop: 4 }}>
+                <T v="meta13" color={colors.ivory70} style={{ marginTop: 4 }}>
                   {e.notes ?? e.address_note}
                 </T>
               ) : null}
               {e.dress_code ? (
-                <T v="meta13" size={14} color={colors.ivory70}>
+                <T v="meta13" color={colors.ivory70}>
                   {e.dress_code}
                 </T>
               ) : null}
               <Row gap={16} style={{ marginTop: 8 }}>
-                <T v="meta13" size={14} color={colors.goldLight} onPress={() => Linking.openURL(e.ics_url)}>
+                <T v="meta13" color={colors.goldLight} onPress={() => Linking.openURL(e.ics_url)}>
                   {copy.rsvp.addCalendar}
                 </T>
                 {e.maps_url ? (
-                  <T v="meta13" size={14} color={colors.goldLight} onPress={() => Linking.openURL(e.maps_url!)}>
+                  <T v="meta13" color={colors.goldLight} onPress={() => Linking.openURL(e.maps_url!)}>
                     {copy.dayof.openMaps}
                   </T>
                 ) : null}
@@ -115,7 +115,7 @@ export function clockLabel(time: string | null): string {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 330 },
+  hero: { overflow: "hidden", height: 330 },
   top: { position: "absolute", left: 24, right: 20, top: 54, justifyContent: "space-between" },
   title: { position: "absolute", left: 24, right: 24, top: 196, gap: 6 },
 });

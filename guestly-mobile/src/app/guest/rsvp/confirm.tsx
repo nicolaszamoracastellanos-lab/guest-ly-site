@@ -8,7 +8,7 @@ import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestSession } from "@/lib/session";
 import { useGuestRsvp, useGuestSchedule } from "@/lib/hooks";
 import { Screen, TopBar, T, Card, Button, Row, Stack, Icon, SectionLabel } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../../../assets/photos/toast.jpg");
 
@@ -33,8 +33,8 @@ export default function RsvpConfirm() {
   return (
     <Screen padded={false} bottomInset={40} header={<TopBar onBack={() => router.replace("/guest")} title={copy.guestHome.tabs.rsvp} />}>
       <View style={styles.hero}>
-        <Image source={photo} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={StyleSheet.absoluteFill} />
+        <Image source={photo} style={FILL} resizeMode="cover" />
+        <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={FILL} />
         <View style={styles.headline}>
           <View style={styles.check}>
             <Icon name="check" size={26} color={colors.night} strokeWidth={2} />
@@ -75,7 +75,7 @@ export default function RsvpConfirm() {
           })}
           {dietary ? (
             <Row style={{ minHeight: 48, justifyContent: "space-between" }}>
-              <T v="meta13" size={14} color={colors.muted}>
+              <T v="meta13" color={colors.muted}>
                 {copy.rsvp.dietary}
               </T>
               <T v="body15" color={colors.ink}>
@@ -107,7 +107,7 @@ export default function RsvpConfirm() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 430 },
+  hero: { overflow: "hidden", height: 430 },
   headline: { position: "absolute", left: 24, right: 24, top: 60 },
   check: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
   paperRow: { minHeight: 52, justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 },
