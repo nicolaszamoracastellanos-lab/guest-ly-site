@@ -56,7 +56,7 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const top = Math.max(insets.top, TOP_SAFE_MIN);
   const inner = (
-    <View style={[padded && styles.padded, { paddingTop: header ? 0 : top, paddingBottom: bottomInset + insets.bottom }, contentStyle]}>
+    <View style={[padded && styles.padded, !scroll && styles.fill, { paddingTop: header ? 0 : top, paddingBottom: bottomInset + insets.bottom }, contentStyle]}>
       {children}
     </View>
   );

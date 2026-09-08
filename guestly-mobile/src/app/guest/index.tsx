@@ -63,10 +63,14 @@ export default function GuestHome() {
           </Row>
           <View style={styles.names}>
             <SectionLabel color={colors.goldLight}>{copy.guestHome.invited}</SectionLabel>
-            <T v="display60" style={{ marginTop: 10 }}>
+            <T v="display60" size={n1.length > 14 ? 48 : 60} numberOfLines={2} adjustsFontSizeToFit style={{ marginTop: 10 }}>
               {n1}
             </T>
-            {n2 ? <T v="display60">{n2}</T> : null}
+            {n2 ? (
+              <T v="display60" size={n2.length > 14 ? 48 : 60} numberOfLines={2} adjustsFontSizeToFit>
+                {n2}
+              </T>
+            ) : null}
             <T v="body15" color="rgba(247,243,236,0.8)" style={{ marginTop: 10 }}>
               {longDate(data?.wedding_date ?? session?.tenant.wedding_date, lang)}
               {data?.next_event?.location ? ` · ${data.next_event.location}` : ""}
@@ -142,7 +146,7 @@ export function splitNames(names: string): [string, string] {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.night },
-  hero: { overflow: "hidden", height: 560 },
+  hero: { overflow: "hidden", minHeight: 560, justifyContent: "flex-end", paddingBottom: 84 },
   topRow: { position: "absolute", left: 24, right: 20, justifyContent: "space-between" },
-  names: { position: "absolute", left: 24, right: 24, top: 246 },
+  names: { paddingHorizontal: 24 },
 });

@@ -95,7 +95,9 @@ export const TAB_BAR_HEIGHT = 62;
 export const TAB_BAR_BOTTOM = 24;
 export const TOP_SAFE_MIN = 54;
 
-/** StyleSheet.absoluteFill is typed but not exported at runtime by this
- *  React Native (0.86); an undefined style let photos render at their
- *  intrinsic size and cover whole screens. Use this instead. */
-export const FILL = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;
+/** Fill the parent. Not StyleSheet.absoluteFill: a local require() image
+ *  carries its intrinsic width and height as default style, and Yoga lets an
+ *  explicit width win over left+right insets, so absoluteFill left the photos
+ *  at their pixel size, spilling over whole screens. Percent sizes override
+ *  the intrinsic ones. */
+export const FILL = { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" } as const;
