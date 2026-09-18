@@ -242,7 +242,30 @@ email; a never-click rule covers sign out, leave, delete, send, remind, approve,
 sign-in per role per run; tracing, video and HAR are off. The guest surface works on web because
 of `src/lib/secure.web.ts` (localStorage, web only, never in a native bundle).
 
-WEB_RIG_EVIDENCE
+### Evidence from this step
+
+The signed-out set ran at 360 in ES (entrance, invite, sign-in link mode, the link-sent state with
+the OTP call answered locally, password mode). Guest, couple and planner each ran end to end at
+360 and 1440 in ES: 89 screenshots in 6 minutes (guest 13 per width: five tabs, the RSVP form
+scrolled to its end, the six site pages and messages; couple 17 to 20 per width: five tabs and
+every More tile; planner 12 per width). Never-click notes recorded "Salir de esta boda" and
+"Recordar a 16 pendientes" as skipped. `tab-budget is not visible` for the planner is correct: the
+demo planner has four tabs (the same four the simulator shows).
+
+**Artifact found and fixed:** that first full run resized one live page from width to width. The
+virtualized lists did not lay out again, the tab bar lost its icons at 1440, and the draggable
+assistant bubble kept its old x position, which read as 16 px of horizontal overflow on EVERY
+screen at 360. The rig now reloads at the root after every width change (`sizeSignedIn`). Proof:
+planner, 360 and 1440, ES, 24 screenshots, 0 with overflow, layouts correct (both widths opened
+and looked at). The misleading first-run shots were deleted; `.part9/web-shots/` holds only the
+run with the reload. The full six-width, two-language run belongs to pass A9 of the audit step.
+
+The signed-out set was run again at 360 and 1440 in ES into `.part9/web-shots-none/` (10
+screenshots). One REAL overflow: the entrance at 360 is 420 px wider than the window, which is
+exactly the 780 px photo minus 360 (plan H12, `ImageBackground` keeps the intrinsic width).
+
+Real leads already visible at 1440: every surface stretches edge to edge (search field, rows, tab
+bar, buttons), as plan H12 predicted.
 
 ## 11. Demo content: `seed-demo.mjs` (NOT applied in this step)
 

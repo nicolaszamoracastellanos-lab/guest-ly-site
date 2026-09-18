@@ -45,7 +45,8 @@ committing:
    the invite screen opens by itself on the sixth character (the rig and `invite-ui.yaml` tapped a
    button that was already gone, and would have called `/auth/guest/open` twice); `/notify` never
    shows on web; the More walk tried to click buttons of tab screens that stay mounted but
-   covered, so the couple walk crawled. All three fixed; the language toggle on guest More is
+   covered, so the couple walk crawled; and one live page was resized from width to width, which
+   produced false overflow numbers (see Evidence). All fixed; the language toggle on guest More is
    excluded so a walk cannot flip its own language.
 3. `signin-ui.yaml` timed out behind the iOS Save Password sheet. It now declines first.
 4. `sheet.mjs` left an empty band under every contact sheet; default is now 3 per row as planned.
@@ -74,7 +75,11 @@ committing:
   (`.part9/probe/px-*.png`). Metro is back on the direct base.
 - Seed: `--dry-run` clean (tenant fence ok for both accounts, task reminders off, every target list
   empty). Portal routes it calls all exist; shared board task creation sends nothing.
-- Web rig: WEB_RIG_LOG
+- Web rig: guest, couple and planner each walked end to end at 360 and 1440 in ES by clicking
+  (89 screenshots, 6 min), signed-out set at 360. That run exposed a RIG artifact: resizing one live
+  page left the assistant bubble at its old x, which read as 16 px of horizontal overflow on every
+  screen at 360. The rig now reloads after each width change; the planner rerun gave 24 screenshots
+  and 0 overflow. The misleading shots were deleted. Full six-width run = audit pass A9.
 
 ### Leads handed to the audit step (seen while proving the harness, not yet filed)
 
@@ -90,7 +95,9 @@ committing:
 - `/couple/guests/[id]` prints `[object Object]: attending` for per-event answers (S, ES, C03).
 - Raw ISO date `2027-03-21` on find, planner home and guest home header (H10).
 - The assistant bubble covers status badges on list rows and sits beside the guests FAB (H22).
-- Web rig at 1440: every surface stretches edge to edge (H12 family).
+- Web rig at 1440: every surface stretches edge to edge (H12 family). Web rig at 360: the entrance
+  is 420 px wider than the window (the 780 px photo keeps its intrinsic width), the only real
+  horizontal overflow seen so far.
 - S06 `guestly:///web?path=//example.com` rendered a portal page inside the web view rather than
   the refused state; S07 (`?url=`) was refused. Not a foreign origin, but the audit should decide
   whether `//host` paths must be refused outright (H25).
