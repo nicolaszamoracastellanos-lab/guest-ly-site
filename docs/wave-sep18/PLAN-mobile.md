@@ -1,7 +1,7 @@
 # PLAN: Guest-ly mobile app, Part 9 audit on simulators, UI fixes, store readiness
 
 Wave: Sep 18 2026. Branch: `mobile/part9-audit`. Repo root: `/Users/nicolas_z/Desktop/guest-ly`. App: `guestly-mobile/`.
-Author: planner agent. Executed by four fresh agents in order: **harness**, **audit**, **fix**, **store**. Each agent has only this file, so everything needed is here.
+Author: planner agent. Amended by the plan critic on Sep 18 2026 (section 15 lists every change; where an older sentence and section 15 disagree, section 15 wins). Executed by four fresh agents in order: **harness**, **audit**, **fix**, **store**. Each agent has only this file, so everything needed is here.
 
 Copy rules for every file you write in this wave: no em dashes, brand is written Guest-ly, user-facing copy in EN and ES, never a raw error on screen. Secrets never go in a committed file, a report, or terminal output.
 
@@ -12,11 +12,11 @@ Copy rules for every file you write in this wave: no em dashes, brand is written
 | # | Decision | Short reason |
 |---|---|---|
 | D1 | Simulator binary = EAS cloud build, profile `sim-dev` (dev client, `ios.simulator: true`), JS served by local Metro. A second profile `sim-release` is built once at the end of the fix step for final verification and store captures. Local `expo run:ios` is the fallback only. | Lowest disk (no `ios/`, no Pods, no DerivedData). JS fixes need no rebuild. No Apple credentials needed for simulator builds. |
-| D2 | Login automation = session injection, not UI typing. Couple and planner: write a Supabase session into the app's AsyncStorage files inside the simulator container. Guest: the existing deep link `guestly:///i/CAMAND?g=<guestId>`. Language: write `gl.lang` the same way. Maestro is installed for everything that needs a real tap, typing, scroll or hierarchy dump. | Deterministic, zero product code, no password ever typed into a UI or stored in the bundle. Verified in code: `src/lib/supabase.ts` persists to AsyncStorage, `src/app/i/[code].tsx` mints a guest session from the link. |
+| D2 | Login automation = session injection, not UI typing. Couple and planner: write a Supabase session into the app's AsyncStorage files inside the simulator container. Guest: the existing deep link `guestly:///i/CAMAND?g=<guestId>`. Language: write `gl.lang` the same way. Maestro is installed for everything that needs a real tap, typing, scroll or hierarchy dump. One password grant per simulator and role; a session is never copied to a second simulator (C6). | Deterministic, zero product code, no password ever typed into a UI or stored in the bundle. Verified in code: `src/lib/supabase.ts` persists to AsyncStorage, `src/app/i/[code].tsx` mints a guest session from the link. |
 | D3 | Loading, error, offline, session-expired and update-required states are forced with a tiny local pass-through proxy (`scripts/part9/proxy.mjs`) that Metro points the app at. | The live API cannot be made to fail on demand, and we must never break production to test. |
 | D4 | **iPad: lock to phone for 1.0** (`ios.supportsTablet` stays `false`). The iPad column of the audit is the iPhone compatibility mode that App Review also sees. Separately, the layout is made large-screen safe (max content width) because Android tablets and foldables get no such lock. | Shipping as universal is a one-way door on the App Store, iPadOS 26 windowing requires all orientations and free resizing, the design canvas has no tablet artboards, and the app is a phone companion (door check-in, RSVP). Full justification in section 2.4. |
 | D5 | Marketing version stays `1.0.0`. Build numbers are remote (`appVersionSource: remote`): next iOS build is 8, next Android versionCode is 5, both auto. No new native modules in this wave. | 1.0.0 was never released; ASC already has version 1.0 in Prepare for Submission. Same runtime version keeps OTA compatibility with TestFlight build 7. |
-| D6 | The demo-review tenant gets display content seeded **through the mobile API as the demo couple** (tasks, budget, vendors, seating tables, run sheet, one RSVP question, one open planner request). Empty states are captured first. The seed stays in place for App Review; a ledger allows removal. | Verified today: those lists are all empty on demo-review, so populated states, store screenshots and App Review would otherwise show empty screens. No SQL, no service role, demo tenant only. |
+| D6 | The demo-review tenant gets display content seeded **through the mobile API as the demo couple** (tasks, budget, vendors, seating tables, run sheet, one RSVP question, one open planner request). Empty states are captured first. The seed stays in place for App Review; a ledger allows removal. The seed obeys the side-effect rules in section 2.6 (C1): the planner request is created once, reminders stay off, no collaborator, no contact details. | Verified today: those lists are all empty on demo-review, so populated states, store screenshots and App Review would otherwise show empty screens. No SQL, no service role, demo tenant only. |
 | D7 | Raw audit screenshots live in gitignored `guestly-mobile/.part9/`. Only defect evidence (downscaled JPEG) and the final store set are committed. | About 550 full-resolution PNGs would add close to 1 GB to git. |
 
 ---
@@ -38,7 +38,7 @@ Copy rules for every file you write in this wave: no em dashes, brand is written
 
 ### 1.2 App structure
 
-- 87 route files under `src/app` (full inventory in section 8.2). Root `src/app/_layout.tsx` holds providers, the session gate (redirects by role), the biometric lock overlay, the update overlay and the floating `AssistantBubble`.
+- 103 `.tsx` files under `src/app`: 93 screens plus 10 layouts (counted Sep 18; full inventory in section 8.2). Root `src/app/_layout.tsx` holds providers, the session gate (redirects by role), the biometric lock overlay, the update overlay and the floating `AssistantBubble`.
 - Three tab layouts use the custom `GlassTabBar` (`src/ui/TabBar.tsx`): `guest/_layout.tsx`, `couple/_layout.tsx`, `planner/_layout.tsx`.
 - Component kit in `src/ui/index.tsx` (Screen, TopBar, Button, IconButton, Chip, Segmented, Toggle, LangToggle, Input, ListRow, Sheet, EmptyState, Banner, Skeleton...). Tokens in `src/ui/tokens.ts`. One text component `src/ui/Text.tsx` (`maxFontSizeMultiplier={1.3}`).
 - i18n: `src/i18n/en.ts`, `es.ts` (typed against EN), per-feature `src/features/*/copy.ts`. Ladder in `src/i18n/index.tsx`: stored choice `gl.lang`, else device locale, and `applyTenantDefault` overrides the device locale whenever the user has not chosen explicitly.
@@ -49,6 +49,8 @@ Copy rules for every file you write in this wave: no em dashes, brand is written
 
 - Demo logins work: `review@guest-ly.com` (owner) and `planner-review@guest-ly.com` (planner) both returned HTTP 200 from the Supabase password grant. **Do not reset them.** The passwords currently live only in `~/.claude/jobs/8bc32a88/tmp/PARITY-BRIEF.md` (section "Verification you must run", item 4). The harness step copies them to a durable gitignored file (section 7.2).
 - Guest: invite code `CAMAND`, query `Sof` returns exactly one candidate (Sofía Rojas).
+- demo-review `locale_default` is `en` (seed in `guestly-portal-deploy/docs/migrations/mobile-v1.sql`), so an English review phone stays English; H14 is a product question, not an App Review blocker.
+- Both demo logins are on the `guest-ly.com` domain, which the portal treats as staff (`src/lib/ops.ts` `STAFF_DOMAINS`): `tenantCoupleEmails` and `tenantTeamEmails` filter them out, so portal notification emails for demo-review have no member recipient. The ops contact of the tenant (if one is set) is NOT filtered. This is why section 2.6 and 8.4 restrict which writes are allowed.
 - demo-review has: 40 guests, 24 RSVPs, 3 conversations, 2 events, brain facts published, website config, 4 broadcast templates, 2 top questions in insights.
 - demo-review is **empty** for: tasks, budget, vendors, seating tables, run sheet, requests, broadcast history, RSVP questions, Coordinator sessions, planner tasks.
 
@@ -81,6 +83,11 @@ These are leads, not findings. The audit confirms or clears each one with a scre
 | H21 | `src/app/_layout.tsx` | `Notifications.getLastNotificationResponseAsync()` rejects on web (seen in the web rig console) and re-runs on every session state change. Guard with `Platform.OS`. |
 | H22 | `src/ui/AssistantBubble.tsx` vs FAB in `couple/guests/index.tsx` | Both sit bottom right; possible overlap, and the bubble may cover row badges. |
 | H23 | `assets/photos/*.jpg` | 780 px wide sources are upscaled about 1.7x on a 3x Pro Max. Heroes may look soft in store screenshots. |
+| H24 | `src/app/_layout.tsx` `UpdateOverlay` | Critic, verified in code: the update-required overlay has a title and a body but no button. The user is stuck on a dead end. Needs a store button (fix in 9.1). |
+| H25 | `src/app/web.tsx`, `src/features/webview/bridge.ts` | Critic, verified in code: `/web?path=` is reachable by deep link and signs the web view in as the current user. Probe once, read-only: `guestly:///web?path=//example.com` and `guestly:///web?url=https://example.com` must both end on the refused state, never on a foreign page. File as P0 if a foreign origin renders. |
+| H26 | `app.config.ts` `expo-camera` plugin | Critic, verified in `node_modules/expo-camera/plugin/build/withCamera.js`: the plugin injects an English default `NSMicrophoneUsageDescription` ("Allow Guest-ly to access your microphone") and the Android `RECORD_AUDIO` permission. The app never records audio (`mediaTypes: ["images"]` everywhere, no `recordAsync`). Untranslated purpose string on iOS, an undeclared sensitive permission on Play. Fix in section 9.1 item 4. |
+| H27 | `src/app/find.tsx:100` | Critic, verified in code: "tell the couple" is gold text styled like a link but has no `onPress`. It is a dead affordance, not a small tap target. Either make it do something that exists or restyle it as plain text. |
+| H28 | `src/lib/session.tsx` boot | Critic, verified in code: a guest token in SecureStore wins over a Supabase session at boot, and `expo-secure-store` on web is an empty object, so every SecureStore call throws there. Matters for the harness (C5, C6), not for users. |
 
 ---
 
@@ -98,6 +105,7 @@ Chosen: two new EAS profiles in `eas.json`.
 - `sim-dev` is built once in the harness step. The audit and the fix loop run on it with JS from Metro. Screenshot passes start Metro with `--no-dev --minify` so there is no LogBox toast and `__DEV__` is false; fix iterations can use normal dev mode for fast refresh.
 - `sim-release` is built once at the end of the fix step from the fixed commit (embedded JS, release configuration, its own `simulator` update channel so it never pulls an OTA). It is the binary for the final regression walk and the store captures.
 - Neither profile has `autoIncrement`, so the remote build number stays at 7 for the lead's production build.
+- **Build budget (C9): agents may start at most three simulator builds in this wave** (one `sim-dev`, one `sim-release`, one retry). The month already has seven builds and the lead still needs two production builds. A fourth build needs the lead's yes.
 
 Rejected:
 - **Local `npx expo run:ios`**: needs CocoaPods plus 4 to 6 GB of `ios/`, Pods and DerivedData on a tight disk, and 15 to 25 minutes per native build. Kept as the documented fallback if the EAS queue exceeds 90 minutes or the build fails twice (section 7.9).
@@ -134,7 +142,12 @@ Rejected:
 | `expired` | HTTP 401 for everything except `/auth/*` | session-expired handling |
 | `update` | HTTP 426 with code `update_required` | update overlay |
 
-Switch with `curl -s "http://127.0.0.1:8787/__part9/mode?set=fail"`. Metro is started with `EXPO_PUBLIC_API_BASE=http://127.0.0.1:8787` for these passes (the shell value wins over `.env`, and `app.config.ts` feeds it into `extra.apiBase`). The proxy never logs headers or bodies. It only works with `sim-dev` (the release build has the real base compiled in), which is fine.
+| `fail-html` | HTTP 502 with a short HTML body and no JSON envelope, same exclusions as `fail` | what a real Netlify outage looks like; proves no raw text or blank screen (C8) |
+| `hang` | accept the request and never answer | the 20 s client timeout; run on three screens only (one per role) |
+
+Switch with `curl -s "http://127.0.0.1:8787/__part9/mode?set=fail"`.
+
+Proxy rules added by the critic (C8): send `Host: app.guest-ly.com` and the matching TLS server name upstream (Netlify routes by host); never add or forward an `x-forwarded-for` header; refuse any request whose path does not start with `/api/mobile/v1/` while a failure mode is on; keep no request log on disk. Start Metro with `--clear` every time `EXPO_PUBLIC_API_BASE` changes (the value is inlined into the bundle and Metro can serve a cached transform), and confirm the switch by seeing hits in the proxy console before capturing. The `/web` screens are NOT audited through the proxy: `portalOrigin()` derives from the API base, so the web view would load the portal over plain http on 127.0.0.1 and its cookies would not stick. Audit `/web` on the direct base only. After every proxy pass, relaunch on the direct base and confirm one real data screen before continuing. Metro is started with `EXPO_PUBLIC_API_BASE=http://127.0.0.1:8787` for these passes (the shell value wins over `.env`, and `app.config.ts` feeds it into `extra.apiBase`). The proxy never logs headers or bodies. It only works with `sim-dev` (the release build has the real base compiled in), which is fine.
 
 Rejected: mocking the API (would drift from the real payloads), changing product code to add a debug switch.
 
@@ -173,6 +186,17 @@ Rejected: shipping universal now with a centered 560 pt column. It would pass re
 - As planner: 1 open `plus_one` request with a note, left **open** (approving executes a guest change).
 - 1 short Coordinator question per language during the audit, never confirming any action card.
 
+**Side-effect rules (C1), verified in the portal code on Sep 18:**
+
+- `createRequest` (`guestly-portal-deploy/src/app/planner/requests/actions.ts`) rings the couple's bell and emails every owner or admin whose address is not on a staff domain. For demo-review the only members are `@guest-ly.com`, so no email goes out today. The seed therefore creates the planner request **exactly once per wave** (never delete and recreate it per language; its note is written in English and the ES store capture for slot 08 uses `/planner` home instead). The script reads the `emailSent` flag of the response: if it is ever `true`, stop all seeding and tell the lead, because it means a non-staff member exists on demo-review.
+- Task reminder emails (`src/lib/task-reminders.ts`, hourly cron) go out only when the tenant has `tasks.reminders_enabled`; the default is off. The seed reads `/couple/tasks/reminders` first and aborts the task seed if reminders are on. No agent ever turns them on.
+- No collaborators, no assignees with an email address. Tasks stay unassigned.
+- Vendors and run sheet rows carry no real contact details: no phone numbers, emails only of the form `name@test.guest-ly.com` or empty, fictional business names that are not real companies in Bolivia, Mexico or the US.
+- The RSVP question is optional (not required), so the 24 existing RSVPs stay valid.
+- Seating uses the API as the couple; it never triggers a guest message.
+- Language retitling edits rows in place through the update routes. It never deletes and recreates. The wrap-up (10.5) re-reads every seeded list through the API and asserts the EN titles are back.
+- Other workstreams of this wave may be using demo-review through the portal at the same time. The first line of the harness report and of the final report states the time the seed was applied, so the lead can explain a changed count to another agent.
+
 Rules: payload shapes come from `guestly-portal-deploy/docs/mobile-api/*.md`. Content table is bilingual; `--lang en|es` retitles the seeded rows so the EN store set shows English content and the ES set Spanish. Final state is EN. Every created id goes to `guestly-mobile/.part9/seed-ledger.json`; `--remove` deletes them. The script refuses to run unless `/auth/me` reports tenant slug `demo-review`.
 
 ---
@@ -187,7 +211,8 @@ All paths relative to `/Users/nicolas_z/Desktop/guest-ly`.
 |---|---|---|
 | change | `guestly-mobile/eas.json` | add `sim-dev` and `sim-release` profiles (section 2.1) |
 | change | `.easignore` (repo root) | add `guestly-mobile/.part9`, `guestly-mobile/docs/part9`, `guestly-mobile/store/screenshots`, `guestly-mobile/.maestro` so EAS uploads stay small |
-| change | `guestly-mobile/.gitignore` | add `.part9/` |
+| change | `guestly-mobile/.gitignore` | add `.part9/` (goes into the FIRST commit of 7.1 together with `eas.json` and `.easignore`, before anything is written to `.part9/`) |
+| add | `guestly-mobile/src/lib/secure.ts`, `guestly-mobile/src/lib/secure.web.ts` | C5: `secure.ts` re-exports `getItemAsync`, `setItemAsync`, `deleteItemAsync` from `expo-secure-store` unchanged (native behaviour identical). `secure.web.ts` is a `localStorage` version that Metro resolves only for the web platform, which is never shipped; its header comment says so. `src/lib/session.tsx` and `src/lib/query.tsx` import from `@/lib/secure`. This is what lets the guest surface be checked at 360 px on the web rig. |
 | add | `guestly-mobile/scripts/part9/env.sh` | JAVA_HOME, PATH for Maestro, UDIDs, ports, `MAESTRO_CLI_NO_ANALYTICS=1`; sourced by every command because shell state does not persist between tool calls |
 | add | `guestly-mobile/scripts/part9/sim.sh` | subcommands: `create`, `boot`, `install <app>`, `open <udid> <route>`, `shot <udid> <name>`, `statusbar`, `lang`, `dyn <size>`, `appearance`, `erase`, `teardown` |
 | add | `guestly-mobile/scripts/part9/inject-session.mjs` | session and language injection (section 7.6) |
@@ -242,7 +267,6 @@ No product code changes in the audit step.
 | add | `guestly-mobile/store/icon-512.png`, `store/feature-graphic.png` | Play assets referenced by `docs/PLAY-CONSOLE-SETUP.md` but missing today |
 | add | `guestly-mobile/scripts/part9/frame.mjs`, `scripts/part9/frame.html` | HTML plus Playwright compositor for the framed sets and the feature graphic |
 | change | `guestly-mobile/store/metadata.json` | final copy, privacy, review notes EN and ES, credential placeholders |
-| add (optional) | `guestly-mobile/store.config.json` | EAS Metadata format, linted only, never pushed by an agent |
 | add | `guestly-mobile/docs/ANDROID-READINESS.md` | section 10.4 |
 | change | `guestly-mobile/scripts/screenshots.sh` | replace the stale device names or make it a thin wrapper over `scripts/part9` |
 | change | `guestly-mobile/app.config.ts` | comment on remote version source only |
@@ -269,6 +293,10 @@ No product code changes in the audit step.
 - **Privacy declarations** must become true (H16, H17): purpose strings describe real use in EN and ES, the unused location string goes away, Photos or Videos and Phone Number are declared, tracking stays false.
 - **AI disclosure** (H18): the concierge and the Coordinator screens state, in both languages, that answers come from an AI assistant and that the couple sees escalated questions.
 - **Published repo.** Everything committed may end up public through GitHub Pages. No secrets, no real guest data, no screenshots of real tenants.
+- **No push by agents (C12).** Agents commit locally on `mobile/part9-audit` and never run `git push`. EAS builds upload the working tree and do not need a push. The lead decides when and where the branch goes.
+- **Tokens and passwords on disk (C6, C7).** `inject-session.mjs` never prints or saves a token; on failure it prints the HTTP status only. Nothing under `.part9/` may contain an access token, a refresh token or a password (the gate in 9.3 greps for `eyJ` and for the two password values read from the env file at run time). Maestro writes the resolved text of every `inputText` into `~/.maestro/tests/<run>/`; delete that run folder right after any flow that typed a password, never point `--debug-output` or `--format junit` into the repo, and never attach a Maestro report to a doc. Playwright runs with tracing, video and HAR recording off.
+- **One session per simulator (C6).** Supabase refresh tokens rotate and reuse is detected: the same session JSON written into two simulators makes the second refresh revoke the whole family and both apps bounce to the entrance. Do one password grant per simulator and role, space grants at least two seconds apart, and use `--role keep` (language change only) whenever the role does not change.
+- **Live API rate limits.** `/auth/guest/open` allows 10 calls a minute per IP and `/auth/guest/session` 20. The walker waits seven seconds between guest deep links and never retries a 429 in a loop.
 
 ---
 
@@ -330,7 +358,7 @@ Work from `/Users/nicolas_z/Desktop/guest-ly/guestly-mobile`. Always use absolut
 ### 7.1 Start the cloud build first (it queues while you do the rest)
 
 1. Read `AGENTS.md`, `BUILD-LOG.md`, this plan. Edit `eas.json` (section 2.1) and the root `.easignore`, then commit just those two files so the build has a clean tree:
-   `git add guestly-mobile/eas.json .easignore && git commit -m "mobile: simulator build profiles for the Part 9 audit" -- guestly-mobile/eas.json .easignore`
+   `git add guestly-mobile/eas.json guestly-mobile/.gitignore .easignore && git commit -m "mobile: simulator build profiles for the Part 9 audit" -- guestly-mobile/eas.json guestly-mobile/.gitignore .easignore` (the `.gitignore` line for `.part9/` rides in this commit, C10)
 2. `cd /Users/nicolas_z/Desktop/guest-ly/guestly-mobile && npx eas build -p ios --profile sim-dev --non-interactive --no-wait --json > .part9/build-sim-dev.json` (create `.part9/` first). Record the build id.
 3. Poll without sleeping in the foreground: use the Monitor tool with an until-loop on `npx eas build:view <id> --json | python3 -c "import json,sys; print(json.load(sys.stdin)['status'])"` until `FINISHED` or `ERRORED`. If `ERRORED`, read `npx eas build:view <id>` logs, fix, retry once, then go to the fallback (7.9).
 
@@ -375,12 +403,12 @@ maestro --version
 - Never `brew install maestro` (unrelated package). The alternative install is `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro`.
 - Target a device with `maestro --device <udid> test <flow>`; check `maestro --help`, the flag was renamed between major versions.
 - In flows do **not** use `launchApp` with the dev client (it lands on the launcher). Start with `openLink` to the dev client URL, then `openLink: guestly:///...`. With `sim-release`, `launchApp` is fine. Keep the launch step in one included subflow chosen by an env var.
-- Proof of life: one flow that opens the entrance, taps `entrance-couple`, types the demo email into `signin-email`, taps `signin-use-password`, types the password passed with `-e PW=...` sourced from the env file, taps `signin-submit`, asserts the couple home. Do not screenshot while the password field is populated.
+- Proof of life: one flow that opens the entrance, taps `entrance-couple`, types the demo email into `signin-email`, taps `signin-use-password`, types the password passed with `-e PW="$PART9_COUPLE_PASSWORD"` where the variable comes from sourcing `credentials/demo-accounts.env` in the same shell command (never a literal on the command line), taps `signin-submit`, asserts the couple home. Do not screenshot while the password field is populated. Delete the `~/.maestro/tests/<run>` folder of that run straight after (C7). Never tap "email me a link" with a real address, and never complete Apple or Google sign-in (C2).
 - If Maestro cannot attach to iOS 26.5 after both install routes and one version pin attempt: record the exact error in `PART9-HARNESS.md`, continue with simctl plus injection (which covers every route), and mark interaction states (sheets, keyboard, scroll) as "needs Maestro or a person" so the audit reports them honestly. `idb` (`brew tap facebook/fb && brew install idb-companion`, `pipx install fb-idb`) is the optional second try.
 
 ### 7.6 Session and language injection (`inject-session.mjs`)
 
-Usage: `node scripts/part9/inject-session.mjs --udid <udid> --role couple|planner|guest|none --lang en|es`.
+Usage: `node scripts/part9/inject-session.mjs --udid <udid> --role couple|planner|guest|none|keep --lang en|es`. `keep` changes only `gl.lang` and clears `gl.query.cache`; it does no grant and leaves the session files alone (C6).
 
 1. `xcrun simctl terminate <udid> com.zcventures.guestly` (ignore failure).
 2. `DATA=$(xcrun simctl get_app_container <udid> com.zcventures.guestly data)`; storage dir = `$DATA/Library/Application Support/com.zcventures.guestly/RCTAsyncLocalStorage_V1`. Create it if missing.
@@ -405,7 +433,7 @@ npx expo export -p web --output-dir .part9/web
 cd .part9/web && python3 -m http.server 8793
 ```
 
-Playwright script (`scripts/part9/web-rig.mjs`) imports `/Users/nicolas_z/Desktop/guest-ly/guestly-portal/node_modules/playwright/index.mjs`, launches Chromium with `--disable-web-security` (the live API has no CORS for localhost; this flag is for this local rig only), and for each viewport 360x740, 390x844, 430x932, 768x1024, 1024x1366, 1440x900: opens `/`, **clicks** "Open my invitation" and back, clicks "I'm the couple or the planner", types the demo credentials from the env file, submits, then clicks through the five couple tabs and More tiles; same for planner. The static server has no SPA fallback, so navigate by clicking, not by `goto` on deep paths. Screenshot each. The guest surface cannot sign in on web (SecureStore has no web implementation); that is acceptable, the guest screens share the kit. This was proven feasible today: the export builds (3.5 MB bundle) and renders the entrance. Delete `.part9/web` when the wave ends.
+Playwright script (`scripts/part9/web-rig.mjs`) imports `/Users/nicolas_z/Desktop/guest-ly/guestly-portal/node_modules/playwright/index.mjs`, launches Chromium with `--disable-web-security` (the live API has no CORS for localhost; this flag is for this local rig only), and for each viewport 360x740, 390x844, 430x932, 768x1024, 1024x1366, 1440x900: opens `/`, **clicks** "Open my invitation" and back, clicks "I'm the couple or the planner", types the demo credentials from the env file, submits, then clicks through the five couple tabs and More tiles; same for planner. The static server has no SPA fallback, so navigate by clicking, not by `goto` on deep paths. Screenshot each. The guest surface is walked too (C5): with `src/lib/secure.web.ts` in place the rig clicks "Open my invitation", types `CAMAND`, searches `Sof`, taps Sofía Rojas, skips the notification step and walks the five guest tabs, the RSVP flow up to (not including) the final submit, and the site pages, at all six widths in EN and ES. The guest surface is the one most people will open on a 360 dp Android phone, so it is not optional. The "link sent" state of `/sign-in` is captured ONLY here, with `page.route('**/auth/v1/otp*')` fulfilled locally with HTTP 200 and `{}` so that no email is ever sent (C2). Tracing, video and HAR stay off. This was proven feasible today: the export builds (3.5 MB bundle) and renders the entrance. Delete `.part9/web` when the wave ends.
 
 ### 7.9 Fallback: local build
 
@@ -440,14 +468,17 @@ Devices S, L, T. Languages EN, ES. Roles guest, couple, planner, plus the signed
 | A8 | `maestro hierarchy` on each screen (S) | script flags elements whose bounds are under 44 in either axis; cross-check `hitSlop` in code before filing | tap targets |
 | A9 | web rig | 360, 768, 1024, 1440 | small Android and large-screen layout |
 | A10 | iPad Pro 13 spot check | 10 screens | compatibility mode sanity |
+| A11 | iPhone 17e `30398ECB-3A6B-4A34-BC77-B9FB8B4EF25F` (390 pt), ES | the 15 busiest screens (three homes, guest RSVP, guests list, budget, tasks, seating, requests, the three More menus, sign-in, invite, find) | the 390 width of the brief on a real simulator, not only on the web rig (C4) |
 
 Reset `content_size large` and `appearance dark` after A5 and A6.
+
+**How to read about 550 screenshots without losing findings (C11).** One agent context cannot hold them all. Work in batches of at most 20 screenshots; after each batch append the findings to `docs/PART9-AUDIT.md` on disk before reading the next batch, so nothing lives only in context. S-EN and S-ES (the tightest device) are read one image at a time. For L, T, A10, A11 and every regression walk, `scripts/part9/sheet.mjs` (Playwright, same compositor approach as `frame.mjs`) builds contact sheets of three screenshots side by side at 1800 px wide, each labelled with its route id; read the sheets, and open the single full image for anything that looks off or has dense text. A cell is `pass` only if its image or its sheet was actually read.
 
 **Read every screenshot with the Read tool.** Downscale first so reading is cheap: `sips -Z 1400 <png> --out <jpg> -s format jpeg -s formatOptions 80`. Do not judge from file names or from the walk log. A screenshot that shows the dev launcher, a redirect, a system dialog or a spinner is a harness miss: recapture it, do not mark it pass.
 
 ### 8.2 Route inventory (the rows of the table)
 
-Signed out: `/`, `/invite`, `/invite` with a wrong code (error), `/find` (empty, results, too many matches), `/notify?surface=guest|couple|planner`, `/sign-in` (link mode, password mode, error, link sent), `/auth/callback` with no code (expired link screen), `/i/XXXXXX` bad code.
+Signed out: `/`, `/invite`, `/invite` with a wrong code (error), `/find` (empty, results, too many matches), `/notify?surface=guest|couple|planner`, `/sign-in` (link mode, password mode, error; the link-sent state only on the web rig with the OTP call intercepted, C2), `/auth/callback` with no code (expired link screen), `/i/XXXXXX` bad code.
 
 Guest: `/guest`, `/guest/rsvp`, `/guest/rsvp/confirm`, `/guest/schedule`, `/guest/concierge` (empty, after one question), `/guest/dayof`, `/guest/messages`, `/guest/more`, `/guest/site`, `/guest/site/hotels`, `/guest/site/gifts`, `/guest/site/story`, `/guest/site/gallery`, `/guest/site/faq`.
 
@@ -479,7 +510,7 @@ Dynamic routes resolve through `.part9/ids.json`. If a route redirects (the gate
 
 ### 8.4 Writes allowed during the audit
 
-Only on demo-review, and each one reverted or logged in the audit doc: one guest RSVP edit as Sofía Rojas (note the original answers first, restore them), one concierge question per language, one Coordinator question per language, one reply on an **app** thread only if needed (then note it), creating and deleting a throwaway task, vendor, budget line, table and run sheet block to see the forms' success states. Never: send, remind, approve, decline, publish brain or website, rotate the invite code, change the site slug or password, delete account.
+Only on demo-review, and each one reverted or logged in the audit doc: one guest RSVP edit as Sofía Rojas (note the original answers first, restore them), one concierge question per language, one Coordinator question per language, one reply on an **app** thread only if needed (then note it), creating and deleting a throwaway task, vendor, budget line, table and run sheet block to see the forms' success states. Never: send, remind, approve, decline, publish brain or website, rotate the invite code, change the site slug or password, delete account. Also never (C2, verified against the portal code): save anything on `/couple/settings/reminders` or `/couple/tasks/reminders` (turning either on starts hourly cron sends), add a collaborator or a team member, finish a guest import or a budget AI import (open the screen, pick nothing, leave), run auto-seat past its preview unless the seed script is the one doing it, request an emailed sign-in link on a simulator, complete Apple or Google sign-in, create a second planner request. The concierge question must be one the published facts answer (parking, dress code or ceremony time): a question the bot cannot answer is escalated by email to the wedding team and to the tenant's ops contact, and joins the daily open-questions roundup. If the concierge answers with its fallback, stop asking and report it; do not try a second question.
 
 ### 8.5 `docs/PART9-AUDIT.md` format
 
@@ -511,15 +542,17 @@ Commit: `docs/PART9-AUDIT.md`, `docs/part9/evidence`, `scripts/part9/routes.json
 1. **Kit and systemic fixes first** (`src/ui/*`, `src/lib/nav.ts`, i18n commons): content width helper, `Screen` keyboard handling, `Sheet`, touch sizes, `Button` fitting, `TabBar`, `Input`, `TopBar` back and labels, `QueryError`. After each kit change, re-walk ten representative screens on S in ES before moving on, because a kit change can shift every screen.
 2. **Shared flows**: entrance, invite, find, notify, sign-in (bilingual error mapping: invalid credentials, rate limit, network, unknown), auth callback, settings, assistant, web view, lock and update overlays.
 3. **Per-surface defects** in register order: P0, P1, P2, then P3. Every P0 and P1 must be fixed. P2 and P3 are fixed unless the fix needs a new native module, a portal change or a design decision by Nicolas; those are listed as deferred with the reason.
-4. **Native config**: purpose strings EN, `locales/es.json` and `locales/en.json` (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSFaceIDUsageDescription`, `NSUserNotificationsUsageDescription`), remove `NSLocationWhenInUseUsageDescription`, privacy manifest additions (`NSPrivacyCollectedDataTypePhotosorVideos`, `NSPrivacyCollectedDataTypePhoneNumber`, both linked, not tracking, app functionality), keep camera and expo-local-authentication plugin strings in sync. Check with `npx expo config --type prebuild --json | python3 -c ...` (or `--type public`) that the keys resolve; no prebuild folder is left behind.
+4. **Native config**: purpose strings EN, `locales/es.json` and `locales/en.json` (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSFaceIDUsageDescription`, `NSUserNotificationsUsageDescription`), remove `NSLocationWhenInUseUsageDescription`, privacy manifest additions (`NSPrivacyCollectedDataTypePhotosorVideos`, `NSPrivacyCollectedDataTypePhoneNumber`, both linked, not tracking, app functionality), keep camera and expo-local-authentication plugin strings in sync. **Microphone (H26, C3):** set `recordAudioAndroid: false` on the `expo-camera` plugin (drops `RECORD_AUDIO` from the Android manifest) and set `microphonePermission` to a truthful bilingual string instead of the injected English default ("Guest-ly does not record audio. iOS shows this text only if a video with sound is ever captured, which the app does not do." plus the ES twin in `locales/es.json`); do not set it to `false`: the camera library very likely still links the audio capture API, and App Store Connect can refuse an upload that references it without a purpose string (ITMS-90683). Keeping a truthful string is the choice that cannot break the lead's upload. **Location (C3):** before removing `NSLocationWhenInUseUsageDescription`, run `strings` over the main binary and every framework inside the downloaded `sim-dev` `.app` and count `CLLocationManager`. Zero hits: remove the key. Any hit: keep the key with truthful bilingual wording ("Guest-ly does not read your location.") and say so in the audit doc. **The authority for purpose strings is the built app, not the config:** after `sim-release` is downloaded run `plutil -p <App>.app/Info.plist | grep -i usage` and check `es.lproj/InfoPlist.strings` exists; paste both outputs into the audit doc. `NSUserNotificationsUsageDescription` is not a real iOS key: leave it alone and do not localize it. Check with `npx expo config --type prebuild --json | python3 -c ...` (or `--type public`) that the keys resolve; no prebuild folder is left behind.
 5. **Docs**: BUILD-LOG decisions 14 (iPad, section 2.4 text) and 15 (large-screen rule), wave log.
 
 Constraints: no new dependencies, no SDK change, no change to `src/lib/api.ts` contracts or to any portal file, no change to API payloads. New copy goes into `en.ts` and `es.ts` (or the feature `copy.ts`) with identical key shapes. Match the file's existing style (long single-line JSX props are the house style here).
 
 Guidance for the known systemic items:
-- `useSafeBack(fallback)`: `router.canGoBack() ? router.back() : router.replace(fallback)`; `TopBar` takes `onBack` as today, and screens pass `useSafeBack("/couple")` and the like. Replace all 89 call sites mechanically, fallback by folder.
+- `useSafeBack(fallback?)`: `router.canGoBack() ? router.back() : router.replace(fallback ?? home)` where `home` comes from the session (`/guest`, `/couple`, `/planner`, or `/` when signed out), so shared screens (`settings`, `assistant`, `web`) never bounce a planner through `/couple` and the gate. `TopBar` takes `onBack` as today. Replace all 89 call sites, fallback by folder, then verify ONE deep-linked screen per folder on the simulator: inside the tab navigators `canGoBack()` can be true because of tab history and send the user to the first tab instead of the parent list; where that happens pass an explicit parent and use `router.replace` (C13).
 - `Screen`: wrap header and body content in the width helper; on iOS set `automaticallyAdjustKeyboardInsets` when `keyboard` is true and pass `keyboard` on every screen that contains an input; remove the inner `KeyboardAvoidingView`s that sit inside the ScrollView, keep the root-level ones on non-scroll chat screens and verify them.
 - `Sheet`: `top` prop becomes a hint for minimum height only; real layout is `maxHeight` plus internal `ScrollView` plus `KeyboardAvoidingView`, `SHEET_MAX_WIDTH` when wide.
+- `Button` label fitting: `numberOfLines={2}` with `adjustsFontSizeToFit` and `minimumFontScale={0.85}` (the shrink only works on iOS when `numberOfLines` is set), `minHeight` instead of a fixed height so a two-line Spanish label grows the button. On web there is no shrink, only the wrap; check it on the rig at 360 (C13).
+- `UpdateOverlay` (H24): the API sends no store URL (verified: `MOBILE_IOS_STORE_URL` is only read by portal pages) and the portal is read-only in this wave, so the button uses public constants in the app: iOS `https://apps.apple.com/app/id6809618039`, Android `https://play.google.com/store/apps/details?id=com.zcventures.guestly`, opened with `Linking.openURL` inside a try and catch that falls back to the calm copy. The overlay can only appear after a newer version is in the store, so the link is live whenever a user can see it. No new dependency.
 - Touch sizes: grow the pressable box, not the visual. For `Chip` and `Segmented` keep the 36 pt visual pill centered inside a 44 pt pressable. `Toggle` keeps its 44x26 visual inside a 52x44 pressable.
 - Entrance photo: replace `ImageBackground` by a `View` plus `Image` with `FILL`.
 - Language ladder (if confirmed): apply the tenant default only when the device language is neither EN nor ES, keep the stored explicit choice on top. Guest `language` from the guest record may seed the default for guests. Put the final ladder in the file header comment and in BUILD-LOG.
@@ -546,7 +579,8 @@ grep -rn "$EMDASH" $SCAN 2>/dev/null
 grep -rn "$MIDDOT_BRAND" $SCAN 2>/dev/null
 grep -rniE "stripe|checkout|upgrade|pricing" src
 grep -rnE "Face ID|FaceID" src                       # app.config.ts key names are exempt
-grep -rniE "Alexandra|alexnico" src store docs scripts .maestro
+grep -rniE "Alexandra|alexnico" src store .maestro scripts/part9   # C14: shipped, seeded and captured content only; docs may state the rule
+grep -rnE "eyJ[A-Za-z0-9_-]{20,}" .part9 docs store scripts .maestro 2>/dev/null   # C7: no token on disk or in git (the anon key lives only in .env, which is not scanned)
 npx expo-doctor                      # report, fix only what this wave caused
 ```
 
@@ -586,6 +620,8 @@ Captions are proposals; keep them short, no em dashes, no claims the app cannot 
 - `store/screenshots/play-phone/en-US` and `es-419`: the same composition at 1080x1920 (Play rejects images whose long side is more than twice the short side, so raw 1320x2868 captures cannot be used there).
 - `store/icon-512.png` (`sips -Z 512 assets/brand/icon.png`), `store/feature-graphic.png` 1024x500 from the same compositor.
 
+Priority inside this step (C15): iOS raw set, iOS framed set, `metadata.json`, `ANDROID-READINESS.md`, version notes, and only then the Play phone set, `icon-512.png` and the feature graphic. If time or disk runs short the Play assets are the part that is dropped, and `ANDROID-READINESS.md` lists them as open.
+
 Checks: `sips -g pixelWidth -g pixelHeight -g hasAlpha` on every file; Read every image; no real tenant data (search the screenshots visually for Alexandra, Nicolas, real phone numbers or emails); text legible at thumbnail size; each file under 700 KB. iPad screenshots are not needed (phone-only, D4).
 
 ### 10.2 `store/metadata.json`
@@ -596,7 +632,7 @@ Checks: `sips -g pixelWidth -g pixelHeight -g hasAlpha` on every file; Read ever
 - Review notes: keep the three flows, add: what the AI concierge and Coordinator are and that they are disclosed in the app; camera is used for door check-in and for photographing a floor plan or a receipt; notifications are optional; account deletion path; the app runs on iPad in iPhone compatibility mode; Sign in with Apple is offered; demo data is fictional.
 - **Credentials placeholders, never values:**
   `review@guest-ly.com / [COUPLE PASSWORD: guestly-mobile/credentials/demo-accounts.env, key PART9_COUPLE_PASSWORD]` and the same for `PART9_PLANNER_PASSWORD`. Add a `credentials_location` field that says: the file is gitignored and exists only on Nicolas's Mac; the values go into App Store Connect, App Review Information (user name and password fields take the couple account; the planner account and the guest code go in Notes) and into Play Console, App access.
-- Optional: `store.config.json` in EAS Metadata format generated from `metadata.json`, validated with `npx eas metadata:lint` if available. **Never run `eas metadata:push`.**
+- No `store.config.json` in this wave (C15). An EAS Metadata file next to a logged-in CLI is one command away from overwriting the App Store Connect listing. **Never run `eas metadata:push` or `eas metadata:pull`.** Nicolas pastes the listing by hand from `metadata.json`.
 
 ### 10.3 Version and build
 
@@ -611,7 +647,9 @@ Sections: (1) what is done (AAB versionCode 4 built, package id, adaptive icon, 
 ### 10.5 Wrap up
 
 - `sim.sh teardown`: shut down simulators, `xcrun simctl erase` the ones used, delete the created SE device, stop Metro, the proxy and the static server, delete `.part9/web`, `.part9/sim-*`, large raw shot folders (keep `index.json` files), and the local `ios/` and DerivedData if the fallback was used. Report free disk before and after.
-- Final gates (9.3), final commit with explicit paths.
+- Demo tenant end state (C1): re-read tasks, budget, vendors, seating, run sheet, RSVP questions and requests through the API; assert the titles are the EN set, exactly one open planner request exists, Sofía Rojas's RSVP equals the values noted before the audit, task reminders and RSVP reminders are still off, the invite code is still `CAMAND`. Write the result into the audit doc.
+- Delete `~/.maestro/tests/*` created in this wave and confirm the token and password greps of 9.3 are empty.
+- Final gates (9.3), final commit with explicit paths. No push (C12).
 - Final report: commits, test counts, screenshot paths, what was not verifiable, the list in section 13.
 
 ---
@@ -656,14 +694,16 @@ Rollback: every change is a normal commit on `mobile/part9-audit`; undo with `gi
 
 1. Confirm the iPad decision (phone-only for 1.0). If he wants a universal app, that is a separate design wave before the production build, because it cannot be reversed after release.
 2. Keep the demo passwords somewhere durable (password manager) and paste them into App Store Connect, App Review Information, and later Play Console, App access.
-3. Upload the screenshots and listing text in App Store Connect (or approve the lead running EAS Metadata), answer the App Privacy questionnaire per the updated `metadata.json` (now including Photos), age rating, export compliance; check that build 8 is selectable under ASC version 1.0 (if not, rename the ASC version to 1.0.0).
+3. Upload the screenshots and listing text in App Store Connect by hand (no EAS Metadata push in this wave, C15), answer the App Privacy questionnaire per the updated `metadata.json` (now including Photos), age rating, export compliance; check that build 8 is selectable under ASC version 1.0 (if not, rename the ASC version to 1.0.0).
 4. Device pass on the new TestFlight build: camera QR check-in, push received, biometric unlock, Sign in with Apple and Google, the permission prompts in Spanish.
 5. Type SUBMIT IOS when satisfied (and run `eas submit` himself if the permission system blocks the agent, as it did before).
 6. Google: Play Console organization account (D-U-N-S, fee, verification), service account JSON, Firebase project and `google-services.json`, FCM key upload, then SUBMIT ANDROID later.
 7. Real venue photography or approval to upscale the 780 px placeholders (H23); any paid image service is his call.
-8. Decide whether the seeded demo content stays on demo-review (recommended: yes, App Review sees a living wedding).
+8. Decide whether the seeded demo content stays on demo-review (recommended: yes, App Review sees a living wedding). Default taken: it stays, in English (section 15).
 9. Pick raw or framed screenshots, and approve the captions.
 10. If EAS queues are slow or the monthly build allowance runs out, decide on a paid EAS plan or accept the local build fallback.
+11. Tell the lead whether `review@guest-ly.com` and `planner-review@guest-ly.com` are real mailboxes and whether demo-review has an ops contact email. The plan assumes unknown and never triggers an email to them (section 15).
+12. Decide when `mobile/part9-audit` is pushed and merged; agents do not push (C12).
 
 ---
 
@@ -676,8 +716,42 @@ Rollback: every change is a normal commit on `mobile/part9-audit`; undo with `gi
 - **Kit changes ripple.** A 44 pt chip or a width helper shifts many screens. Mitigation: kit first, ten-screen re-walk after each kit change, full regression walk at the end.
 - **Token cost and time of reading about 550 screenshots.** Mitigation: downscale to 1400 px JPEG, systemic defects filed once, passes ordered so the tightest device and language (S-ES) is read first.
 - **Disk.** Four simulators plus shots plus Java can reach 8 to 10 GB. Mitigation: two simulators booted at a time, teardown at the end, no `ios/` unless the fallback is used.
-- **Live production API.** Everything runs against app.guest-ly.com. Mitigation: demo tenant assertion in every script, the forbidden-actions list in 8.4, one AI question per language.
+- **Live production API.** Everything runs against app.guest-ly.com. Mitigation: demo tenant assertion in every script, the forbidden-actions list in 8.4, one AI question per language, the side-effect rules in 2.6.
+- **Hidden email side effects.** Some portal writes send email (planner request created, concierge escalation, task and RSVP reminders once switched on, magic link). Mitigation: C1 and C2; the `emailSent` check; the magic link state is captured only with the OTP call intercepted.
 - **Public repo root.** Merging to main publishes committed files on guest-ly.com. Mitigation: no secrets in git, lead decides on the merge; consider excluding `guestly-mobile/` and `docs/` from the Pages artifact in a later wave.
 - **Compatibility-mode surprises on iPad.** If something is broken there, it is a P0 because App Review will see it.
 - **Permission system fences.** `eas submit`, management API writes and key signing were blocked before. If `eas build` for a simulator profile is ever refused, stop and report rather than work around it.
 - **ASC version string 1.0 vs 1.0.0.** Probably equivalent for Apple; verify when selecting build 8.
+
+---
+
+## 15. Critic amendments (Sep 18 2026)
+
+The critic read the plan, then checked its claims against `guestly-mobile/` and, read-only, against `guestly-portal-deploy/`. What held up: the simulator route (D1), session injection against AsyncStorage 2.2.0 (D2), the phone-only iPad decision with compatibility-mode audit (D4), version 1.0.0 with remote build numbers (D5), no migration, the SE (3rd generation) and 13 mini device types exist on the iOS 26.5 runtime, 89 `router.back()` sites, 22 `KeyboardAvoidingView` files, 18 sheet or modal files, zero `testID`s, all grep gates clean at baseline, the brief file with the demo passwords still exists. Where this section and an older sentence disagree, this section wins.
+
+| # | Change | Why (evidence) |
+|---|---|---|
+| C1 | Seed side-effect rules added to 2.6, D6 and the wrap-up: planner request created exactly once and never recreated per language, `emailSent` must be `false` or seeding stops, task reminders checked off before the task seed, no collaborators or assignees, no real contact details on vendors, RSVP question optional, retitling edits in place, end-state assertion in 10.5. | The plan said "no real messages" but its own seed calls `createRequest`, which emails every non-staff owner or admin (`guestly-portal-deploy/src/app/planner/requests/actions.ts`). It is harmless today only because both demo members are on the staff domain (`src/lib/ops.ts`). Overdue seeded tasks would start a daily email the moment anyone enabled task reminders (`src/lib/task-reminders.ts`). The plan did not know either fact. |
+| C2 | Forbidden-writes list in 8.4 widened; "link sent" sign-in state moved to the web rig with the Supabase OTP call intercepted; concierge question restricted to one the published facts answer. | `sign-in.tsx` calls `signInWithOtp` with `shouldCreateUser: false`, so the state can only be reached by sending a real email to a real account. Reminder settings screens start hourly cron sends when saved. An unanswered concierge question is escalated by email to the team and the ops contact, which is not staff-filtered (`src/lib/notify.ts` `tenantTeamEmails`). |
+| C3 | Native config fixes made safe: microphone string replaced and `RECORD_AUDIO` dropped (H26), location key removed only after a `strings` check of the built binary, the built `Info.plist` is the authority, `NSUserNotificationsUsageDescription` left alone. | `expo-camera`'s plugin injects an English microphone purpose string and an Android audio permission the app never uses; the plan missed both. Removing a purpose string that a linked framework still references can get the lead's upload refused, so removal is conditional. `expo config` output is not proof of what ships. |
+| C4 | New pass A11: 15 screens on iPhone 17e (390 pt) in ES. | The brief names 360, 390 and 430. The matrix had 375 and 440 on simulators and 390 only on the web rig, where at that point the guest surface could not even sign in. |
+| C5 | Guest surface added to the web rig through `src/lib/secure.ts` plus `secure.web.ts`; native behaviour unchanged. | `expo-secure-store` on web is an empty object (`node_modules/expo-secure-store/build/ExpoSecureStore.web.js`), so the plan's rig skipped every guest screen at 360 px and at tablet widths and called that acceptable. Guests are the largest audience and the most likely to hold a small Android phone. A `.web.ts` file never enters an iOS or Android bundle. |
+| C6 | One password grant per simulator and role, `--role keep` for language changes, spacing between grants, guest deep links paced to the rate limit. | Supabase rotates refresh tokens and revokes the family on reuse; a session shared across simulators would log both out mid-walk and look like an app bug. `/auth/guest/open` is limited to 10 a minute per IP. |
+| C7 | Secret hygiene: Maestro run folders deleted after any typed password, no Maestro or Playwright recordings, no token under `.part9/`, new `eyJ` gate. | Maestro stores the resolved `inputText` value in `~/.maestro/tests/`. The plan only covered the YAML and the command line. |
+| C8 | Proxy: `fail-html` and `hang` modes, Host and SNI rule, no forwarded-for header, path fence, `--clear` on base change, `/web` excluded from proxy passes, return-to-direct check. | A real outage is an HTML 502, not a tidy JSON envelope, and that is the case that shows raw text. `EXPO_PUBLIC_*` values are inlined and Metro can serve a stale transform. `portalOrigin()` follows the API base, so the web view cannot work through the proxy. |
+| C9 | Build budget: at most three simulator builds by agents. | Seven builds already this month and the lead needs two production builds. |
+| C10 | `.gitignore` entry for `.part9/` moved into the first commit. | Step 7.1 wrote `.part9/build-sim-dev.json` before the ignore rule existed. |
+| C11 | Batching and contact sheets for reading screenshots; findings written to disk after every batch. | About 550 images do not fit in one agent context; without this rule findings are lost at compaction or cells get marked pass unread. S-EN and S-ES are still read one by one. |
+| C12 | Agents never `git push`. | The repo root is published by GitHub Pages from `main`, and the remote may be public. Nothing in this wave needs a push. |
+| C13 | `useSafeBack` derives the home from the session and is verified per folder for the tab-history case; `Button` fitting spelled out (`numberOfLines={2}`, `minHeight`); `UpdateOverlay` gets a store button from public constants. | A fixed `"/couple"` fallback bounces planners through the gate. `adjustsFontSizeToFit` does nothing on iOS without `numberOfLines`. The update overlay is a dead end today (verified in `_layout.tsx`) and the API sends no store URL. |
+| C14 | The "Alexandra or alexnico" gate now scans shipped, seeded and captured content only, not docs. New hypotheses H24 to H28. Route file count corrected (103 files, 93 screens). | The old gate fails at baseline on `scripts/screenshots.sh` and would fail on any doc that states the rule. H27: "tell the couple" is not a small link, it is not pressable at all. |
+| C15 | `store.config.json` removed from the wave; Play graphics made the lowest priority of the store step. | Scope: the brief asks for iOS screenshots, metadata, an Android readiness doc and a version bump. An EAS Metadata file is a foot-gun next to a logged-in CLI. |
+
+Defaults chosen where only Nicolas could decide (safest option taken, recorded here and in section 13):
+
+1. iPad: phone-only for 1.0 (D4). Reversible later; the opposite is not.
+2. Seeded demo content stays on demo-review after the wave, in English, with the ledger kept in `.part9/seed-ledger.json` AND copied (ids only, no tokens) into `docs/PART9-AUDIT.md`, because `.part9/` is deleted at teardown.
+3. Language ladder (H14): fix the code to match its own header comment (explicit choice, then device language when it is EN or ES, then the guest's language, then the wedding default). The header comment is the recorded intent; demo-review is `en`, so App Review is unaffected either way.
+4. Whether `review@guest-ly.com` and `planner-review@guest-ly.com` are real mailboxes is unknown from this Mac. The plan assumes they are not and therefore never causes an email to them.
+
+What the critic could not verify from this Mac and the plan must treat as unproven until the harness step proves it: that `simctl openurl` opens `guestly:///` links on iOS 26.5 without a system confirmation sheet (if one appears, dismiss it with Maestro and record it as a harness note, never as an app defect); that Maestro 2.x attaches to the iOS 26.5 runtime; that ASC accepts build 8 of `1.0.0` under the version named `1.0`; that the EAS account still has build allowance this month.
