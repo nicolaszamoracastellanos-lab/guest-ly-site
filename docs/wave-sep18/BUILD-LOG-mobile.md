@@ -5,7 +5,7 @@ Agents commit locally and never push (plan C12).
 
 ---
 
-## Step 1, harness (Sep 18 2026, finished 18:45 CDT after one interruption)
+## Step 1, harness (Sep 18 2026, finished 18:33 CDT after one interruption)
 
 **Seed applied at: NOT YET.** The demo seed was built and dry-run only; pass A1 (empty states) must
 be captured first. demo-review was not written to by this step, except the reads and the sign-ins
