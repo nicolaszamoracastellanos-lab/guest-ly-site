@@ -1,0 +1,1100 @@
+{
+ "version": 1,
+ "generated_for": "Part 9 audit, wave Sep 18 2026",
+ "placeholders": "{couple.x} and {planner.x} resolve from .part9/ids.json; {item} iterates the list named in each",
+ "routes": [
+  {
+   "id": "E01",
+   "role": "none",
+   "route": "/",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "E02",
+   "role": "none",
+   "route": "/invite",
+   "states": [
+    "default",
+    "error-wrong-code"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "error state: type a wrong code with Maestro (keyboard.yaml or a manual flow); never a real tenant code"
+  },
+  {
+   "id": "E03",
+   "role": "none",
+   "route": "/i/CAMAND",
+   "states": [
+    "results-empty",
+    "results",
+    "too-many"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "wait_ms": 6000,
+   "note": "lands on /find with the demo tenant; results states need typing (invite-ui.yaml types Sof)"
+  },
+  {
+   "id": "E04",
+   "role": "none",
+   "route": "/notify?surface=guest",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "E05",
+   "role": "none",
+   "route": "/notify?surface=couple",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "E06",
+   "role": "none",
+   "route": "/notify?surface=planner",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "E07",
+   "role": "none",
+   "route": "/sign-in",
+   "states": [
+    "link-mode",
+    "password-mode",
+    "error"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "link-sent state ONLY on the web rig with the OTP call intercepted (C2). Never tap submit in link mode on a simulator."
+  },
+  {
+   "id": "E08",
+   "role": "none",
+   "route": "/auth/callback",
+   "states": [
+    "expired-link"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "E09",
+   "role": "none",
+   "route": "/i/XXXXXX",
+   "states": [
+    "bad-code"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "wait_ms": 6000
+  },
+  {
+   "id": "G01",
+   "role": "guest",
+   "route": "/guest",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G02",
+   "role": "guest",
+   "route": "/guest/rsvp",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G03",
+   "role": "guest",
+   "route": "/guest/rsvp/confirm",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G04",
+   "role": "guest",
+   "route": "/guest/schedule",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G05",
+   "role": "guest",
+   "route": "/guest/concierge",
+   "states": [
+    "empty",
+    "after-question"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G06",
+   "role": "guest",
+   "route": "/guest/dayof",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G07",
+   "role": "guest",
+   "route": "/guest/messages",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G08",
+   "role": "guest",
+   "route": "/guest/more",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G09",
+   "role": "guest",
+   "route": "/guest/site",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G10",
+   "role": "guest",
+   "route": "/guest/site/hotels",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G11",
+   "role": "guest",
+   "route": "/guest/site/gifts",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G12",
+   "role": "guest",
+   "route": "/guest/site/story",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G13",
+   "role": "guest",
+   "route": "/guest/site/gallery",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "G14",
+   "role": "guest",
+   "route": "/guest/site/faq",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C01",
+   "role": "couple",
+   "route": "/couple",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C02",
+   "role": "couple",
+   "route": "/couple/guests",
+   "states": [
+    "default",
+    "filter-sheet"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C03",
+   "role": "couple",
+   "route": "/couple/guests/{couple.guest}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "modal": true
+  },
+  {
+   "id": "C04",
+   "role": "couple",
+   "route": "/couple/guests/new",
+   "states": [
+    "default",
+    "keyboard"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "modal": true
+  },
+  {
+   "id": "C05",
+   "role": "couple",
+   "route": "/couple/guests/import",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "open, pick nothing, leave"
+  },
+  {
+   "id": "C06",
+   "role": "couple",
+   "route": "/couple/rsvps",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C07",
+   "role": "couple",
+   "route": "/couple/rsvps/record",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "modal": true
+  },
+  {
+   "id": "C08",
+   "role": "couple",
+   "route": "/couple/rsvps/questions",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C09",
+   "role": "couple",
+   "route": "/couple/messages",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C10",
+   "role": "couple",
+   "route": "/couple/messages/{couple.conversation}",
+   "states": [
+    "default",
+    "keyboard"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C11",
+   "role": "couple",
+   "route": "/couple/more",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C12",
+   "role": "couple",
+   "route": "/couple/dayof",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C13",
+   "role": "couple",
+   "route": "/couple/checkin",
+   "states": [
+    "camera-granted",
+    "camera-denied",
+    "name-search"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C14",
+   "role": "couple",
+   "route": "/couple/requests",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C15",
+   "role": "couple",
+   "route": "/couple/requests/{couple.request}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink",
+   "modal": true
+  },
+  {
+   "id": "C16",
+   "role": "couple",
+   "route": "/couple/tasks",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C17",
+   "role": "couple",
+   "route": "/couple/tasks/{couple.task}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C18",
+   "role": "couple",
+   "route": "/couple/tasks/new",
+   "states": [
+    "default",
+    "keyboard"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C19",
+   "role": "couple",
+   "route": "/couple/tasks/board/{couple.board_task}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C20",
+   "role": "couple",
+   "route": "/couple/tasks/board/new",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C21",
+   "role": "couple",
+   "route": "/couple/tasks/checklists",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C22",
+   "role": "couple",
+   "route": "/couple/tasks/collaborators",
+   "states": [
+    "empty"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "never add a collaborator"
+  },
+  {
+   "id": "C23",
+   "role": "couple",
+   "route": "/couple/tasks/reminders",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "open and look, never save (starts an hourly cron)"
+  },
+  {
+   "id": "C24",
+   "role": "couple",
+   "route": "/couple/budget",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C25",
+   "role": "couple",
+   "route": "/couple/budget/category/{couple.budget_category}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C26",
+   "role": "couple",
+   "route": "/couple/budget/item/{couple.budget_item}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C27",
+   "role": "couple",
+   "route": "/couple/budget/import",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "open, pick nothing, leave"
+  },
+  {
+   "id": "C28",
+   "role": "couple",
+   "route": "/couple/vendors",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C29",
+   "role": "couple",
+   "route": "/couple/vendors/{couple.vendor}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C30",
+   "role": "couple",
+   "route": "/couple/vendors/new",
+   "states": [
+    "default",
+    "keyboard"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C31",
+   "role": "couple",
+   "route": "/couple/seating",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C32",
+   "role": "couple",
+   "route": "/couple/seating/table/{couple.table}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C33",
+   "role": "couple",
+   "route": "/couple/seating/auto",
+   "states": [
+    "preview"
+   ],
+   "needs_seed": true,
+   "via": "deeplink",
+   "note": "preview only, never apply"
+  },
+  {
+   "id": "C34",
+   "role": "couple",
+   "route": "/couple/seating/plan",
+   "states": [
+    "default",
+    "photos-denied"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C35",
+   "role": "couple",
+   "route": "/couple/runsheet",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C36",
+   "role": "couple",
+   "route": "/couple/runsheet/{couple.runsheet_block}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "C37",
+   "role": "couple",
+   "route": "/couple/runsheet/new",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C38",
+   "role": "couple",
+   "route": "/couple/brain",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C39",
+   "role": "couple",
+   "route": "/couple/brain/section/{item}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "each": "couple.brain_sections"
+  },
+  {
+   "id": "C40",
+   "role": "couple",
+   "route": "/couple/brain/preview",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C41",
+   "role": "couple",
+   "route": "/couple/brain/versions",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C42",
+   "role": "couple",
+   "route": "/couple/insights",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C43",
+   "role": "couple",
+   "route": "/couple/broadcasts",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C44",
+   "role": "couple",
+   "route": "/couple/broadcasts/new",
+   "states": [
+    "default",
+    "dry-run-preview"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "up to the dry-run preview, NEVER the typed SEND or ENVIAR"
+  },
+  {
+   "id": "C45",
+   "role": "couple",
+   "route": "/couple/broadcasts/{couple.broadcast}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "only if history exists; demo-review has none, expect skipped: no id"
+  },
+  {
+   "id": "C46",
+   "role": "couple",
+   "route": "/couple/website",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C47",
+   "role": "couple",
+   "route": "/couple/website/section/{item}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "each": "couple.website_sections"
+  },
+  {
+   "id": "C48",
+   "role": "couple",
+   "route": "/couple/website/theme",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C49",
+   "role": "couple",
+   "route": "/couple/settings/invite",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C50",
+   "role": "couple",
+   "route": "/couple/settings/notifications",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "C51",
+   "role": "couple",
+   "route": "/couple/settings/reminders",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "open and look, never save (starts an hourly cron)"
+  },
+  {
+   "id": "P01",
+   "role": "planner",
+   "route": "/planner",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "P02",
+   "role": "planner",
+   "route": "/planner/guests",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "P03",
+   "role": "planner",
+   "route": "/planner/requests",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P04",
+   "role": "planner",
+   "route": "/planner/requests/{planner.request}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink",
+   "modal": true
+  },
+  {
+   "id": "P05",
+   "role": "planner",
+   "route": "/planner/requests/new",
+   "states": [
+    "default",
+    "keyboard"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "open the form only. Exactly ONE planner request exists per wave and the seed script creates it; never submit here.",
+   "modal": true
+  },
+  {
+   "id": "P06",
+   "role": "planner",
+   "route": "/planner/tasks",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P07",
+   "role": "planner",
+   "route": "/planner/tasks/{planner.task}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P08",
+   "role": "planner",
+   "route": "/planner/tasks/new",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "P09",
+   "role": "planner",
+   "route": "/planner/budget",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P10",
+   "role": "planner",
+   "route": "/planner/budget/category/{planner.budget_category}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P11",
+   "role": "planner",
+   "route": "/planner/budget/item/{planner.budget_item}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P12",
+   "role": "planner",
+   "route": "/planner/budget/import",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "P13",
+   "role": "planner",
+   "route": "/planner/vendors",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P14",
+   "role": "planner",
+   "route": "/planner/vendors/{planner.vendor}",
+   "states": [
+    "default"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P15",
+   "role": "planner",
+   "route": "/planner/runsheet",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P16",
+   "role": "planner",
+   "route": "/planner/seating",
+   "states": [
+    "empty",
+    "populated"
+   ],
+   "needs_seed": true,
+   "via": "deeplink"
+  },
+  {
+   "id": "P17",
+   "role": "planner",
+   "route": "/planner/broadcasts",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "P18",
+   "role": "planner",
+   "route": "/planner/more",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "S01",
+   "role": "couple",
+   "route": "/settings",
+   "states": [
+    "default",
+    "wedding-switcher",
+    "delete-alert-cancelled"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "delete alert: open and CANCEL only"
+  },
+  {
+   "id": "S02",
+   "role": "planner",
+   "route": "/settings",
+   "states": [
+    "default",
+    "wedding-switcher"
+   ],
+   "needs_seed": false,
+   "via": "deeplink"
+  },
+  {
+   "id": "S03",
+   "role": "couple",
+   "route": "/assistant",
+   "states": [
+    "empty",
+    "after-question",
+    "sessions-drawer"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "one short question per language, never confirm an action card",
+   "modal": true
+  },
+  {
+   "id": "S04",
+   "role": "planner",
+   "route": "/assistant",
+   "states": [
+    "empty"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "modal": true
+  },
+  {
+   "id": "S05",
+   "role": "couple",
+   "route": "/web?path=/guide",
+   "states": [
+    "default"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "wait_ms": 9000,
+   "note": "direct API base only, never through the proxy (C8). Read content for H19.",
+   "modal": true
+  },
+  {
+   "id": "S06",
+   "role": "couple",
+   "route": "/web?path=//example.com",
+   "states": [
+    "refused"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "H25 probe: must end on the refused state, never a foreign page",
+   "modal": true
+  },
+  {
+   "id": "S07",
+   "role": "couple",
+   "route": "/web?url=https://example.com",
+   "states": [
+    "refused"
+   ],
+   "needs_seed": false,
+   "via": "deeplink",
+   "note": "H25 probe",
+   "modal": true
+  },
+  {
+   "id": "S08",
+   "role": "couple",
+   "route": "(overlay) biometric lock",
+   "states": [
+    "locked"
+   ],
+   "needs_seed": false,
+   "via": "manual",
+   "note": "enable in settings with simulator Face ID enrolled, plan 8.2"
+  },
+  {
+   "id": "S09",
+   "role": "couple",
+   "route": "(overlay) update required",
+   "states": [
+    "update"
+   ],
+   "needs_seed": false,
+   "via": "proxy",
+   "note": "proxy mode update"
+  },
+  {
+   "id": "S10",
+   "role": "couple",
+   "route": "(bubble) /couple/guests",
+   "states": [
+    "rest",
+    "dragged-left",
+    "keyboard-open"
+   ],
+   "needs_seed": false,
+   "via": "maestro",
+   "note": "assistant bubble at rest on a list, dragged, with keyboard"
+  }
+ ],
+ "modal_note": "modal: true means the screen is presented as a modal. A deep link opened while a modal is up lands UNDERNEATH it, so walk.mjs relaunches the app after capturing a modal route."
+}

@@ -40,8 +40,8 @@ export default function Entrance() {
               {third}
             </T>
           </View>
-          <Button label={copy.entrance.openInvitation} onPress={() => router.push("/invite")} />
-          <Button label={copy.entrance.coupleOrPlanner} kind="glass" onPress={() => router.push("/sign-in")} />
+          <Button testID="entrance-guest" label={copy.entrance.openInvitation} onPress={() => router.push("/invite")} />
+          <Button testID="entrance-couple" label={copy.entrance.coupleOrPlanner} kind="glass" onPress={() => router.push("/sign-in")} />
           <Row style={{ justifyContent: "space-between", marginTop: 6 }}>
             <LangToggle value={lang} onChange={setLang} />
             <T v="meta13" color={colors.ivory40}>

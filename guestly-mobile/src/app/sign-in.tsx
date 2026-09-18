@@ -123,21 +123,21 @@ export default function SignIn() {
           </T>
         </View>
         <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 26 }}>
-          {Platform.OS === "ios" ? <Button label={copy.signIn.apple} kind="glass" icon="apple" onPress={() => withBusy("apple", apple)} loading={busy === "apple"} /> : null}
-          <Button label={copy.signIn.google} kind="glass" icon="google" onPress={() => withBusy("google", google)} loading={busy === "google"} />
+          {Platform.OS === "ios" ? <Button testID="signin-apple" label={copy.signIn.apple} kind="glass" icon="apple" onPress={() => withBusy("apple", apple)} loading={busy === "apple"} /> : null}
+          <Button testID="signin-google" label={copy.signIn.google} kind="glass" icon="google" onPress={() => withBusy("google", google)} loading={busy === "google"} />
           <Row gap={12} style={{ marginVertical: 8 }}>
             <Hairline style={{ flex: 1 }} />
             <SectionLabel color={colors.ivory40}>{copy.signIn.orEmail}</SectionLabel>
             <Hairline style={{ flex: 1 }} />
           </Row>
-          <Input icon="mail" value={email} onChangeText={setEmail} placeholder={copy.signIn.emailPlaceholder} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" />
+          <Input testID="signin-email" icon="mail" value={email} onChangeText={setEmail} placeholder={copy.signIn.emailPlaceholder} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" />
           {usePassword ? (
-            <Input icon="lock" value={password} onChangeText={setPassword} placeholder={copy.signIn.passwordPlaceholder} secureTextEntry textContentType="password" />
+            <Input testID="signin-password" icon="lock" value={password} onChangeText={setPassword} placeholder={copy.signIn.passwordPlaceholder} secureTextEntry textContentType="password" />
           ) : null}
           {usePassword ? (
-            <Button label={copy.signIn.signInPassword} onPress={() => withBusy("pw", passwordSignIn)} loading={busy === "pw"} />
+            <Button testID="signin-submit" label={copy.signIn.signInPassword} onPress={() => withBusy("pw", passwordSignIn)} loading={busy === "pw"} />
           ) : (
-            <Button label={copy.signIn.sendLink} onPress={() => withBusy("link", magicLink)} loading={busy === "link"} />
+            <Button testID="signin-submit" label={copy.signIn.sendLink} onPress={() => withBusy("link", magicLink)} loading={busy === "link"} />
           )}
           {note ? (
             <T v="body15" color={colors.greenText} center>
@@ -151,7 +151,7 @@ export default function SignIn() {
           ) : null}
           <T v="meta13" color={colors.ivory55} center style={{ marginTop: 4 }}>
             {usePassword ? "" : `${copy.signIn.noPassword} `}
-            <T v="meta13" color={colors.goldLight} onPress={() => setUsePassword((v) => !v)}>
+            <T testID="signin-use-password" v="meta13" color={colors.goldLight} onPress={() => setUsePassword((v) => !v)}>
               {usePassword ? copy.signIn.sendLink : copy.signIn.usePassword}
             </T>
           </T>

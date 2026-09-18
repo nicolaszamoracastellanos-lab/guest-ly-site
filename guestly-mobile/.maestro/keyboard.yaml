@@ -1,0 +1,25 @@
+# Focuses one field so the keyboard opens, captures it. The keyboard is left
+# open (hideKeyboard is unreliable on iOS 26.5 and can tap a stray control);
+# the next deep link or relaunch clears it.
+#   node scripts/part9/flow.mjs --device S --flow keyboard.yaml --to <dir> --env TARGET_TEXT="Buscar invitados" --env NAME=C02-keyboard
+#   node scripts/part9/flow.mjs --device S --flow keyboard.yaml --to <dir> --env TARGET_ID=signin-email --env NAME=E07-keyboard
+# Never use it on a field that holds a password.
+appId: com.zcventures.guestly
+env:
+  TARGET_ID: ${TARGET_ID || ''}
+  TARGET_TEXT: ${TARGET_TEXT || ''}
+---
+- runFlow:
+    when:
+      true: ${TARGET_ID != ''}
+    commands:
+      - tapOn:
+          id: ${TARGET_ID}
+- runFlow:
+    when:
+      true: ${TARGET_TEXT != ''}
+    commands:
+      - tapOn: ${TARGET_TEXT}
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ${NAME}

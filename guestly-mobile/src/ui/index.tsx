@@ -196,6 +196,7 @@ export function Button({
   style,
   full = true,
   haptic = true,
+  testID,
 }: {
   label: string;
   onPress?: () => void;
@@ -207,6 +208,7 @@ export function Button({
   style?: StyleProp<ViewStyle>;
   full?: boolean;
   haptic?: boolean;
+  testID?: string;
 }) {
   const h = small ? 48 : BUTTON_HEIGHT;
   const fg = kind === "primary" || kind === "paper" ? colors.night : kind === "text" ? colors.goldLight : colors.ivory;
@@ -215,6 +217,7 @@ export function Button({
   const border = kind === "glass" ? colors.ivory14 : kind === "ghost" ? "rgba(247,243,236,0.18)" : kind === "primary" ? colors.gold : "transparent";
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled || loading}
@@ -248,9 +251,10 @@ export function Button({
   );
 }
 
-export function IconButton({ name, onPress, badge, style, label }: { name: IconName; onPress?: () => void; badge?: boolean; style?: StyleProp<ViewStyle>; label?: string }) {
+export function IconButton({ name, onPress, badge, style, label, testID }: { name: IconName; onPress?: () => void; badge?: boolean; style?: StyleProp<ViewStyle>; label?: string; testID?: string }) {
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={label ?? name}
       onPress={onPress}
@@ -267,7 +271,7 @@ export function TopBar({ title, onBack, right, left }: { title?: string; onBack?
   return (
     <View style={styles.topBar}>
       <Row gap={12}>
-        {onBack ? <IconButton name="back" onPress={onBack} label="Back" /> : left}
+        {onBack ? <IconButton name="back" onPress={onBack} label="Back" testID="topbar-back" /> : left}
         {title ? (
           <T v="body15" color={colors.ivory70}>
             {title}
@@ -316,9 +320,10 @@ export function Badge({ label, kind = "mute", dot }: { label: string; kind?: Bad
   );
 }
 
-export function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress?: () => void }) {
+export function Chip({ label, on, onPress, testID }: { label: string; on?: boolean; onPress?: () => void; testID?: string }) {
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!on }}
@@ -389,7 +394,7 @@ export function LangToggle({ value, onChange, dark = true }: { value: "en" | "es
   return (
     <Row gap={14}>
       {(["en", "es"] as const).map((l) => (
-        <Pressable key={l} onPress={() => onChange(l)} hitSlop={10} accessibilityRole="button" accessibilityState={{ selected: value === l }}>
+        <Pressable key={l} testID={`lang-${l}`} onPress={() => onChange(l)} hitSlop={10} accessibilityRole="button" accessibilityState={{ selected: value === l }}>
           <T v="label11" color={value === l ? on : off} style={{ letterSpacing: 2 }}>
             {l.toUpperCase()}
           </T>
@@ -426,7 +431,7 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
   );
 }
 
-export function ListRow({ leading, title, sub, trailing, onPress, chevron = true, last }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; onPress?: () => void; chevron?: boolean; last?: boolean }) {
+export function ListRow({ leading, title, sub, trailing, onPress, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; onPress?: () => void; chevron?: boolean; last?: boolean; testID?: string }) {
   const inner = (
     <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
       {leading}
@@ -446,7 +451,7 @@ export function ListRow({ leading, title, sub, trailing, onPress, chevron = true
   );
   if (!onPress) return inner;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => pressed && { opacity: 0.7 }}>
+    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" style={({ pressed }) => pressed && { opacity: 0.7 }}>
       {inner}
     </Pressable>
   );
@@ -561,7 +566,7 @@ export function Sheet({ visible, onClose, children, top = 150 }: { visible: bool
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
+      <Pressable testID="sheet-scrim" style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
       <View style={[styles.sheet, { top }]}>
         <View style={styles.grabber} />
         <View style={{ flex: 1, paddingBottom: insets.bottom + 16 }}>{children}</View>

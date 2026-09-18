@@ -68,6 +68,7 @@ export default function FindName() {
     <Screen header={<TopBar onBack={() => router.back()} title={copy.guestHome.tabs.rsvp} />} bottomInset={24} keyboard>
       <BigTitle label={copy.find.step} title={copy.find.title} sub={copy.find.intro} size={38} />
       <Input
+        testID="find-input"
         icon="search"
         value={q}
         onChangeText={setQ}
@@ -81,6 +82,7 @@ export default function FindName() {
         <Card kind="solid" padding={4} style={{ marginTop: 14, paddingHorizontal: 18 }}>
           {candidates.map((c, i) => (
             <ListRow
+              testID={`find-row-${i}`}
               key={c.id + c.name}
               leading={<Avatar initials={initials(c.name)} />}
               title={c.name}

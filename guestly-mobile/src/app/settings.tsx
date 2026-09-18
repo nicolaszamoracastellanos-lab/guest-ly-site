@@ -112,8 +112,8 @@ export default function Settings() {
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.privacy} onPress={() => Linking.openURL("https://guest-ly.com/privacy")} />
           <ListRow leading={<Icon name="book" size={22} color={colors.goldLight} />} title={copy.settings.terms} onPress={() => Linking.openURL("https://guest-ly.com/terms")} />
-          <ListRow leading={<Icon name="warning" size={22} color={colors.goldLight} />} title={copy.settings.deleteAccount} onPress={deleteAccount} chevron={false} />
-          <ListRow leading={<Icon name="signout" size={22} color={colors.goldLight} />} title={copy.settings.signOut} onPress={() => void signOut()} chevron={false} last />
+          <ListRow testID="settings-delete" leading={<Icon name="warning" size={22} color={colors.goldLight} />} title={copy.settings.deleteAccount} onPress={deleteAccount} chevron={false} />
+          <ListRow testID="settings-signout" leading={<Icon name="signout" size={22} color={colors.goldLight} />} title={copy.settings.signOut} onPress={() => void signOut()} chevron={false} last />
         </Card>
       </Stack>
       <Footer version={copy.common.footerVersion} trademark={copy.common.footerTrademark} />

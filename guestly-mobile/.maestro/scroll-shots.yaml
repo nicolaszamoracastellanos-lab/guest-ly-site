@@ -1,0 +1,16 @@
+# Screenshots of the current screen scrolled to the end, up to 4 pages.
+# The app must already show the screen (walk.mjs deep links to it first).
+#   node scripts/part9/flow.mjs --device S --flow scroll-shots.yaml --to .part9/shots/S/es/couple/A4 --env NAME=C11-more
+# Writes <NAME>-p1.png ... <NAME>-p4.png into the --to folder. Maestro 2.10 only
+# allows takeScreenshot inside its own run folder, so NAME is relative and
+# flow.mjs moves the files (walk.mjs --scroll does the same).
+appId: com.zcventures.guestly
+---
+- evalScript: ${output.page = 1}
+- takeScreenshot: ${NAME + '-p1'}
+- repeat:
+    times: 3
+    commands:
+      - scroll
+      - evalScript: ${output.page = output.page + 1}
+      - takeScreenshot: ${NAME + '-p' + output.page}

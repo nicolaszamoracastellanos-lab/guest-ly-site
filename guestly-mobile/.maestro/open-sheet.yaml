@@ -1,0 +1,40 @@
+# Opens a sheet, modal or menu by tapping one control, captures it, closes it.
+#   node scripts/part9/flow.mjs --device S --flow open-sheet.yaml --to <dir> --env TARGET_ID=fab-add --env CLOSE=back --env NAME=C02-add
+#   node scripts/part9/flow.mjs --device S --flow open-sheet.yaml --to <dir> --env TARGET_TEXT="Herramientas de la lista" --env NAME=C02-tools
+# CLOSE=scrim (default) taps the sheet scrim, CLOSE=back taps the top bar back
+# control, CLOSE=none leaves the screen as it is.
+appId: com.zcventures.guestly
+env:
+  TARGET_ID: ${TARGET_ID || ''}
+  TARGET_TEXT: ${TARGET_TEXT || ''}
+  CLOSE: ${CLOSE || 'scrim'}
+---
+- runFlow:
+    when:
+      true: ${TARGET_ID != ''}
+    commands:
+      - tapOn:
+          id: ${TARGET_ID}
+- runFlow:
+    when:
+      true: ${TARGET_TEXT != ''}
+    commands:
+      - tapOn: ${TARGET_TEXT}
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ${NAME}
+- runFlow:
+    when:
+      true: ${CLOSE == 'scrim'}
+    commands:
+      # The scrim fills the screen and the sheet sits on top of its centre, so a
+      # tap on the scrim ELEMENT lands on a sheet row. Tap the strip above the sheet.
+      - tapOn:
+          point: "50%,10%"
+- runFlow:
+    when:
+      true: ${CLOSE == 'back'}
+    commands:
+      - tapOn:
+          id: "topbar-back"
+          optional: true

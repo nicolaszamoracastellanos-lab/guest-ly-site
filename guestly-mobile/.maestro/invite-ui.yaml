@@ -1,0 +1,43 @@
+# Real guest entry through the UI: code, name search, pick, skip notifications.
+#   maestro --device "$GL_UDID_S" test -e DEVCLIENT_URL="$GL_DEVCLIENT_URL" .maestro/invite-ui.yaml
+# Only the demo-review code. /auth/guest/open allows 10 calls a minute per IP.
+appId: com.zcventures.guestly
+env:
+  CODE: ${CODE || 'CAMAND'}
+  QUERY: ${QUERY || 'Sof'}
+---
+- runFlow: launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: "entrance-guest"
+    timeout: 120000
+- tapOn:
+    id: "entrance-guest"
+- extendedWaitUntil:
+    visible:
+      id: "invite-open"
+    timeout: 15000
+- inputText: ${CODE}
+- tapOn:
+    id: "invite-open"
+- extendedWaitUntil:
+    visible:
+      id: "find-input"
+    timeout: 30000
+- inputText: ${QUERY}
+- extendedWaitUntil:
+    visible:
+      id: "find-row-0"
+    timeout: 30000
+- tapOn:
+    id: "find-row-0"
+- extendedWaitUntil:
+    visible:
+      id: "notify-skip"
+    timeout: 30000
+- tapOn:
+    id: "notify-skip"
+- extendedWaitUntil:
+    visible:
+      id: "tab-rsvp"
+    timeout: 30000

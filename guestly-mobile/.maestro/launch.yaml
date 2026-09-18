@@ -1,0 +1,23 @@
+# Included by every flow that must start the app itself.
+#   sim-dev (default): the dev client must load its bundle from Metro, so the
+#     flow opens the dev client link. launchApp would land on the launcher.
+#   sim-release: pass -e GL_BINARY=release and launchApp is used.
+# Pass -e DEVCLIENT_URL="$GL_DEVCLIENT_URL" (from scripts/part9/env.sh).
+appId: com.zcventures.guestly
+env:
+  GL_BINARY: ${GL_BINARY || 'dev'}
+  DEVCLIENT_URL: ${DEVCLIENT_URL || 'exp+guestly://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8097'}
+---
+- runFlow:
+    when:
+      true: ${GL_BINARY == 'release'}
+    commands:
+      - launchApp:
+          stopApp: true
+- runFlow:
+    when:
+      true: ${GL_BINARY != 'release'}
+    commands:
+      - stopApp
+      - openLink: ${DEVCLIENT_URL}
+- runFlow: prep.yaml

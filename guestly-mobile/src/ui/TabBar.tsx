@@ -52,6 +52,7 @@ export function GlassTabBar({
           return (
             <Pressable
               key={route.key}
+              testID={`tab-${route.name}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={spec.label}

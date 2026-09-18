@@ -122,6 +122,7 @@ export default function CoupleGuests() {
       </Sheet>
       {canEdit ? (
         <Pressable
+          testID="fab-add"
           accessibilityRole="button"
           accessibilityLabel={copy.guests.add}
           onPress={() => router.push("/couple/guests/new")}

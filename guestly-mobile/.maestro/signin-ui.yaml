@@ -1,0 +1,71 @@
+# Real sign-in through the UI, once per language, as the proof that the true
+# flow works and to calibrate session injection.
+#
+#   source scripts/part9/env.sh; set -a; source credentials/demo-accounts.env; set +a
+#   maestro --device "$GL_UDID_S" test -e EMAIL="$PART9_COUPLE_EMAIL" -e PW="$PART9_COUPLE_PASSWORD" \
+#     -e HOME_TAB=tab-rsvps -e DEVCLIENT_URL="$GL_DEVCLIENT_URL" .maestro/signin-ui.yaml
+#   rm -rf ~/.maestro/tests/*        (Maestro stores the typed text of every inputText, C7)
+#
+# HOME_TAB: tab-rsvps for the couple, tab-requests for the planner.
+# SAFETY: in link mode the submit button would email a real sign-in link. The
+# flow therefore asserts that the password field is on screen BEFORE it taps
+# submit, and fails otherwise. Never screenshot while the password is typed.
+# hideKeyboard is unreliable on iOS 26.5 with Maestro 2.10; Enter blurs the
+# single-line fields instead (neither field has a submit handler).
+appId: com.zcventures.guestly
+env:
+  HOME_TAB: ${HOME_TAB || 'tab-rsvps'}
+---
+- runFlow: launch.yaml
+- extendedWaitUntil:
+    visible:
+      id: "entrance-couple"
+    timeout: 120000
+- tapOn:
+    id: "entrance-couple"
+- extendedWaitUntil:
+    visible:
+      id: "signin-apple"
+    timeout: 15000
+# On the 667 pt phone the email field starts below the fold, and iOS only
+# reports what is on screen.
+- scrollUntilVisible:
+    element:
+      id: "signin-email"
+    direction: DOWN
+- tapOn:
+    id: "signin-email"
+- inputText: ${EMAIL}
+- pressKey: Enter
+- scrollUntilVisible:
+    element:
+      text: "Use a password instead|Usar una contraseña"
+    direction: DOWN
+- tapOn:
+    text: "Use a password instead|Usar una contraseña"
+- scrollUntilVisible:
+    element:
+      id: "signin-password"
+    direction: DOWN
+- tapOn:
+    id: "signin-password"
+- inputText: ${PW}
+- pressKey: Enter
+- scrollUntilVisible:
+    element:
+      id: "signin-submit"
+    direction: DOWN
+# Guard against emailing a real link: only submit in password mode.
+- assertVisible:
+    id: "signin-password"
+- tapOn:
+    id: "signin-submit"
+- extendedWaitUntil:
+    visible:
+      id: ${HOME_TAB}
+    timeout: 45000
+# iOS offers to save the password. Always decline: a demo password must not
+# end up in the simulator keychain.
+- tapOn:
+    text: "Not Now|Ahora no"
+    optional: true

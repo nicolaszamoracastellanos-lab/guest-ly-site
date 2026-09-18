@@ -66,6 +66,7 @@ export default function InviteCode() {
             </View>
           ))}
           <TextInput
+            testID="invite-input"
             ref={input}
             value={code}
             onChangeText={(t) => setCode(t.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, LEN))}
@@ -85,7 +86,7 @@ export default function InviteCode() {
           </T>
         ) : null}
         <Stack gap={14} style={{ marginTop: 28 }}>
-          <Button label={copy.invite.open} onPress={() => open(code)} disabled={code.length !== LEN} loading={busy} />
+          <Button testID="invite-open" label={copy.invite.open} onPress={() => open(code)} disabled={code.length !== LEN} loading={busy} />
           <T v="meta13" color={colors.ivory55} center>
             {copy.invite.noCode}
           </T>

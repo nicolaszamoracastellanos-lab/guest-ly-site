@@ -90,8 +90,8 @@ export default function NotifyAsk() {
         </Card>
       </View>
       <Stack gap={14} style={{ paddingHorizontal: 24, marginTop: 40 }}>
-        <Button label={copy.notify.allow} onPress={allow} loading={busy} />
-        <Button label={copy.notify.notNow} kind="text" onPress={() => router.replace(dest as never)} />
+        <Button testID="notify-allow" label={copy.notify.allow} onPress={allow} loading={busy} />
+        <Button testID="notify-skip" label={copy.notify.notNow} kind="text" onPress={() => router.replace(dest as never)} />
       </Stack>
     </Screen>
   );

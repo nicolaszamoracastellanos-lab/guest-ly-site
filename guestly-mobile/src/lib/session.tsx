@@ -7,7 +7,7 @@
 // Sign out clears everything and deletes the push token server-side.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/secure";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState, type AppStateStatus } from "react-native";
 import { api, del, get, setAuthHandlers, setCredential } from "@/lib/api";

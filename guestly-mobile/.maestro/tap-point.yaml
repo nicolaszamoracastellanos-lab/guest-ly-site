@@ -1,0 +1,6 @@
+# One tap at a relative point, for system alerts that Maestro cannot see.
+#   maestro --device <udid> test -e POINT="32%,58%" .maestro/tap-point.yaml
+appId: com.zcventures.guestly
+---
+- tapOn:
+    point: ${POINT}

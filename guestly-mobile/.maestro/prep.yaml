@@ -1,0 +1,22 @@
+# Clears the first-run obstacles on a fresh simulator. Safe to run any time.
+#   1. iOS 26.5 asks "Open in Guest-ly?" the first time simctl openurl is used
+#      for a URL scheme (once for exp+guestly, once for guestly).
+#   2. The dev client opens its developer menu on the first launch.
+# Run:  maestro --device <udid> test .maestro/prep.yaml
+appId: com.zcventures.guestly
+---
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- runFlow:
+    when:
+      visible:
+        id: "xmark"
+    commands:
+      - tapOn:
+          id: "xmark"
+# Not handled here: the system alert "Sign in to your Apple Account" (left
+# behind by a stray tap on Continue with Apple) is invisible to Maestro's
+# hierarchy. Close it with tap-point.yaml and POINT="32%,58%" on the SE.

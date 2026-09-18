@@ -166,7 +166,7 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
               </T>
             </Animated.View>
           ) : null}
-          <Pressable accessibilityRole="button" accessibilityLabel={text} style={styles.button} onPress={open} onLongPress={showLabel}>
+          <Pressable testID="assistant-bubble" accessibilityRole="button" accessibilityLabel={text} style={styles.button} onPress={open} onLongPress={showLabel}>
             <View style={styles.ring} />
             <Icon name="sparkle" size={26} color={colors.night} strokeWidth={1.8} />
             {badge ? <View style={styles.badge} /> : null}
