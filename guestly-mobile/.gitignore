@@ -46,3 +46,6 @@ example
 .env
 .env.local
 credentials/
+
+# Part 9 audit scratch (raw screenshots, simulator builds, web export)
+.part9/

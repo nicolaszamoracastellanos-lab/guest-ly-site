@@ -22,6 +22,19 @@
         "EXPO_PUBLIC_API_BASE": "https://app.guest-ly.com"
       }
     },
+    "sim-dev": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "sim-release": {
+      "extends": "preview",
+      "channel": "simulator",
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",
