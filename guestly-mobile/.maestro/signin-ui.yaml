@@ -60,12 +60,18 @@ env:
     id: "signin-password"
 - tapOn:
     id: "signin-submit"
+# iOS offers to save the password, and while that system sheet is up Maestro
+# cannot see the app (the home tab assertion timed out behind it on Sep 18).
+# Always decline first: a demo password must not end up in the simulator keychain.
+- extendedWaitUntil:
+    visible:
+      text: "Not Now|Ahora no"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Not Now|Ahora no"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: ${HOME_TAB}
     timeout: 45000
-# iOS offers to save the password. Always decline: a demo password must not
-# end up in the simulator keychain.
-- tapOn:
-    text: "Not Now|Ahora no"
-    optional: true

@@ -1,7 +1,7 @@
 // Contact sheets: several screenshots side by side, each labelled with its
 // route id, so a whole walk can be read in a few images (plan C11).
 //
-//   node scripts/part9/sheet.mjs --dir .part9/shots/L/es/planner [--per 4] [--width 1800]
+//   node scripts/part9/sheet.mjs --dir .part9/shots/L/es/planner [--per 3] [--width 1800]
 //
 // Reads <dir>/jpg/*.jpg (written by walk.mjs), writes <dir>/sheets/sheet-NN.jpg.
 // Rule: S-EN and S-ES are read one image at a time; sheets are for L, T, P, M
@@ -17,11 +17,11 @@ import { ROOT, parseArgs } from "./lib.mjs";
 const PLAYWRIGHT = "/Users/nicolas_z/Desktop/guest-ly/guestly-portal/node_modules/playwright/index.mjs";
 const args = parseArgs(process.argv.slice(2));
 const dir = path.resolve(ROOT, String(args.dir ?? ""));
-const per = Number(args.per ?? 4);
+const per = Number(args.per ?? 3);
 const width = Number(args.width ?? 1800);
 const jpgDir = path.join(dir, "jpg");
 if (!args.dir || !fs.existsSync(jpgDir)) {
-  console.error("usage: sheet.mjs --dir <walk output folder that has a jpg/ sub folder> [--per 4] [--width 1800]");
+  console.error("usage: sheet.mjs --dir <walk output folder that has a jpg/ sub folder> [--per 3] [--width 1800]");
   process.exit(2);
 }
 
@@ -31,7 +31,8 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const { chromium } = await import(PLAYWRIGHT);
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width, height: 1200 }, deviceScaleFactor: 1 });
+// A short viewport: the full page screenshot then ends where the images end, with no empty band below.
+const page = await browser.newPage({ viewport: { width, height: 200 }, deviceScaleFactor: 1 });
 let n = 0;
 for (let i = 0; i < files.length; i += per) {
   const group = files.slice(i, i + per);

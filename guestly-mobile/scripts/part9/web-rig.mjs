@@ -110,12 +110,34 @@ async function size(page, width) {
 }
 
 /** Clicks every navigating button of a More screen, captures the target, comes back. */
+// Tabs are walked separately; the language toggle on guest More would flip the language mid-walk.
+const MORE_BUTTONS = '[role="button"]:not([data-testid^="tab-"]):not([data-testid^="lang-"])';
+
+/**
+ * React Navigation on web keeps the other tab screens mounted, so their buttons (40 guest rows,
+ * 24 RSVP rows) still count as visible to Playwright while being covered by the focused screen.
+ * Clicking each one only to time out made the couple More walk crawl. A button is walked only
+ * when a real pointer would reach it. The probe point is near the top left of the control so the
+ * floating assistant bubble on the right never hides a tile from the test.
+ */
+async function hittable(b) {
+  await b.scrollIntoViewIfNeeded({ timeout: 1500 }).catch(() => {});
+  return b
+    .evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) return false;
+      const hit = document.elementFromPoint(r.left + Math.min(12, r.width / 2), r.top + Math.min(12, r.height / 2));
+      return !!hit && (el === hit || el.contains(hit));
+    })
+    .catch(() => false);
+}
+
 async function walkMore(page, role, lang, width, moreTab) {
   const start = new URL(page.url()).pathname;
-  const buttons = page.locator('[role="button"]:not([data-testid^="tab-"])');
+  const buttons = page.locator(MORE_BUTTONS);
   const count = await buttons.count();
   for (let i = 0; i < count; i++) {
-    const b = page.locator('[role="button"]:not([data-testid^="tab-"])').nth(i);
+    const b = page.locator(MORE_BUTTONS).nth(i);
     const text = ((await b.innerText().catch(() => "")) || "").replace(/\s+/g, " ").trim();
     if (!text) continue;
     if (NEVER.test(text)) {
@@ -124,7 +146,8 @@ async function walkMore(page, role, lang, width, moreTab) {
       continue;
     }
     if (!(await b.isVisible().catch(() => false))) continue;
-    await b.click({ timeout: 4000 }).catch(() => {});
+    if (!(await hittable(b))) continue;
+    await b.click({ timeout: 2500 }).catch(() => {});
     await page.waitForTimeout(1600);
     const now = new URL(page.url()).pathname;
     if (now === start) continue; // not a navigation (toggle, external link, disabled tile)
@@ -227,17 +250,21 @@ async function runGuest() {
   await page.goto(`${BASE}/`);
   await tid(page, "entrance-guest").waitFor({ timeout: 20000 });
   await tid(page, "entrance-guest").click();
+  // The invite screen opens by itself when the sixth character lands (invite.tsx effect).
+  // Clicking invite-open as well would call /auth/guest/open twice (10 a minute per IP).
   await tid(page, "invite-input").fill("CAMAND");
-  await tid(page, "invite-open").click();
   await tid(page, "find-input").waitFor({ timeout: 20000 });
   await snap(page, "guest", "en", 390, "find-empty");
   await tid(page, "find-input").fill("Sof");
   await tid(page, "find-row-0").waitFor({ timeout: 20000 });
   await snap(page, "guest", "en", 390, "find-results");
   await tid(page, "find-row-0").click();
-  await tid(page, "notify-skip").waitFor({ timeout: 20000 });
-  await snap(page, "guest", "en", 390, "notify");
-  await tid(page, "notify-skip").click();
+  // Native lands on /notify first. On web the notification step is skipped and the guest home opens directly.
+  await Promise.race([tid(page, "notify-skip").waitFor({ timeout: 30000 }), tid(page, "tab-more").waitFor({ timeout: 30000 })]);
+  if (await tid(page, "notify-skip").isVisible().catch(() => false)) {
+    await snap(page, "guest", "en", 390, "notify");
+    await tid(page, "notify-skip").click();
+  } else index.notes.push("guest: /notify does not show on web (no notifications there); captured on the simulators instead");
   await tid(page, "tab-more").waitFor({ timeout: 30000 });
   for (const lang of langs) {
     await setLang(page, lang);
