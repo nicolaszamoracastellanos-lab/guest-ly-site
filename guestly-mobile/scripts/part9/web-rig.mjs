@@ -6,7 +6,7 @@
 //
 //   cd guestly-mobile && npx expo export -p web --output-dir .part9/web
 //   node scripts/part9/web-rig.mjs                       everything
-//   node scripts/part9/web-rig.mjs --roles none,guest --widths 360,1440 --langs es
+//   node scripts/part9/web-rig.mjs --roles none,guest --widths 360,1440 --langs es [--out .part9/web-shots-fix1]
 //
 // Output: .part9/web-shots/<role>/<lang>/<width>/NN-name.png and index.json
 // (with overflow_px per screen; anything above 0 is a horizontal scroll bug).
@@ -36,7 +36,7 @@ const PLAYWRIGHT = "/Users/nicolas_z/Desktop/guest-ly/guestly-portal/node_module
 const args = parseArgs(process.argv.slice(2));
 const PORT = Number(process.env.GL_WEB_PORT ?? 8793);
 const WEB_DIR = path.join(PART9, "web");
-const OUT = path.join(PART9, "web-shots");
+const OUT = args.out ? path.resolve(ROOT, String(args.out)) : path.join(PART9, "web-shots");
 const VIEWPORTS = { 360: 740, 390: 844, 430: 932, 768: 1024, 1024: 1366, 1440: 900 };
 const widths = (args.widths ? String(args.widths).split(",").map(Number) : Object.keys(VIEWPORTS).map(Number)).filter((w) => VIEWPORTS[w]);
 const langs = args.langs ? String(args.langs).split(",") : ["en", "es"];
@@ -107,6 +107,18 @@ async function setLang(page, lang) {
 async function size(page, width) {
   await page.setViewportSize({ width, height: VIEWPORTS[width] });
   await page.waitForTimeout(500);
+}
+
+/**
+ * Signed-in surfaces: resize, then reload at the root (the gate moves the user home). Without the
+ * reload the draggable assistant bubble keeps the x position it took at the previous width and
+ * hangs off the right edge, which reads as 16 px of horizontal overflow that no real device has.
+ */
+async function sizeSignedIn(page, width) {
+  await size(page, width);
+  await page.goto(`${BASE}/`);
+  await tid(page, "tab-more").waitFor({ timeout: 30000 });
+  await page.waitForTimeout(1200);
 }
 
 /** Clicks every navigating button of a More screen, captures the target, comes back. */
@@ -236,7 +248,7 @@ async function runUser(role) {
     await setLang(page, lang);
     await tid(page, "tab-more").waitFor({ timeout: 30000 });
     for (const width of widths) {
-      await size(page, width);
+      await sizeSignedIn(page, width);
       await walkTabs(page, role, lang, width, tabs);
     }
   }
@@ -270,7 +282,7 @@ async function runGuest() {
     await setLang(page, lang);
     await tid(page, "tab-more").waitFor({ timeout: 30000 });
     for (const width of widths) {
-      await size(page, width);
+      await sizeSignedIn(page, width);
       await walkTabs(page, "guest", lang, width, ["index", "rsvp", "schedule", "concierge", "more"]);
     }
   }
