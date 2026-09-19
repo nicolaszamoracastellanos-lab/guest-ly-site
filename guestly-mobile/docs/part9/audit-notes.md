@@ -132,3 +132,41 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 - L guest: G01 to G07 are good on the Pro Max (RSVP button visible, day-of text fits, schedule header fits). G01 raw ISO date in the header (H10). G05 no AI wording (H18). G07 fallback message in the demo thread. G09 to G14 "Not published yet" (demo data).
 - L G08 More: the assistant bubble sits exactly on the language toggle (the ES half is hidden). P1, H22 family.
 - L signed out: E01 to E09 good. E02 code boxes visible above the keyboard on L (so E02 is an S and iPad problem). E03 raw ISO date. E07 whole form visible on L.
+
+## Batch 11: A2 S couple ES after the seed (17 changed screens, six-up; everything else equals batch 1)
+
+- C01: briefing row "1 solicitud del planner espera tu respuesta" uses "tu" while the app speaks usted everywhere else. Check the copy file.
+- C14 ES: row title breaks mid word and is cut: "Agreg / ar lu...". P1.
+- C15 ES: meta line "16m . planner-review@g" runs off the edge; CHANGES label empty. The planner's note stays English by design of the seed.
+- C16 ES: "1 de 8 listas". Floating "Agregar una tarea" covers the first overdue task.
+- C24 ES: "USD / 5.890 / ,00" and "USD / 28,4 / K" on three lines each. P1.
+- C28 ES: stat labels break mid word ("Proveedore / s", "Contratado / s . USD 15,7K"); vendor row name cut to "Flor de..." by the PRESELECCIONADO badge. P1.
+- C29 ES: "+ Vincular una linea del" runs off the right edge (no wrap, no ellipsis). P1.
+- C31 ES "Sugerir distri..."; C35 ES "09:0 / 0"; C36 ES placeholder cut "Un nombre, por ejemplo el padrino o la...".
+- C17, C19, C25, C26, C32: render, same findings as EN.
+
+## Batch 12: A2 L couple ES, all 79 shots read seven-up (12 sheets)
+
+- L-ES still truncates: C06 "Registrar una resp..." and "Recordar a 16 pen..."; C11 "Pregunte lo que...", "El dia, minuto a...", "Vacios, escalacio..."; C16 "Lista de la bo...", "Recordatorio..."; C24 "Importar desde ar..." and "USD 5.890,0 / 0"; C46 "Cambiar direcci...".
+- L-ES runs off the right edge (no wrap, no ellipsis): C15 meta "16m . planner-review@guest-ly.com"; C29 "+ Vincular una linea del presupuest".
+- L-ES C44: the three-way language control has no padding left ("El de cada invitado|Espanol para todos|Ingles para todos" touch each other). Preview shows "Hi QA! ... wedding of Alexandra Schuab & Nicolas Zamora" (a guest called QA with a phone now exists on demo-review; not ours).
+- L-ES C47-registry: three-way control wraps to two lines per segment. C36, C37: Save behind the tab bar. C35: "09:0 / 0", "16:0 / 0".
+- C39 sections, C47 sections, C48, C49 (one line on L), C50, C51, S01, S03, S05 (English guide inside the Spanish app), S06, S07: render; findings as on S.
+- demo-review count drift seen again: 42 parties / 76 people in this walk.
+
+## Batch 13: A2 S planner ES after the seed (12 changed screens, six-up)
+
+- P01 ES: "Buenos noches," (and "Buenos tardes," earlier): the greeting uses "Buenos" for every part of the day; tardes and noches need "Buenas". P1 copy. The briefing rows speak in tu form ("1 de tus solicitudes...", "asignada a ti") while the rest of the app uses usted. "1 bodas".
+- P03 ES: rows squeezed: "Otra / cosa", "Agreg / ar lu...", "Adriana Tejerin...". NOTE: a SECOND planner request ("Otra cosa", 2 minutes old at 19:14 CDT) exists. This step did not create it; the seed created exactly one at 18:50. Someone else is writing to demo-review as the demo planner.
+- P04, P06 (floating button over the second task), P07, P09 to P11 (number wrapping), P13 ("Proveedore / s", "Flor de..."), P14, P15 ("09:0 / 0"), P16: as EN.
+
+## Batch 14: A2 L planner ES (20 shots, seven-up)
+
+- Renders well. Known items repeat on L-ES: greeting "Buenos noches", tu form rows, "1 bodas", "1 invitados con telefono", P05 primary behind the tab bar, P09 "USD 5.890,0 / 0" and "Importar desde ar...", P15 "09:0 / 0", S04 junk session with a live Confirm card and the list overlapping the header.
+
+## Batch 15: A2 L guest ES (14, seven-up), L signed out ES (9, nine-up), S guest ES after the seed (sheet 1; sheet 2 equals batch 5)
+
+- L-ES G03: both buttons truncated: "Agregar al calenda..." and "Cambiar resp...". P1.
+- L-ES G01, G02 ("Actualizar mi respuesta" visible), G04 (header fits on L), G05, G06, G07, G08 (bubble on the language toggle), G09 to G14 (not published): as EN.
+- L-ES signed out: E01 four-line headline fits; E02 boxes visible; E03 raw ISO date; E04 dangling "Reciba noticias de"; E05 to E09 good.
+- S-ES guest after the seed: identical to batch 5 (the optional RSVP question shows only in step 3, which is never submitted in this audit).
