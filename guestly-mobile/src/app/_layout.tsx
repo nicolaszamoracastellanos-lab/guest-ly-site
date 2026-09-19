@@ -2,7 +2,7 @@
 // gate, push tap routing. Every screen below inherits the night background.
 
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Platform, Linking } from "react-native";
 import { Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -83,7 +83,10 @@ function Gate() {
     const inSurface = head === "guest" || head === "couple" || head === "planner";
     const onEntrance = head === "" || head === "sign-in" || head === "invite" || head === "find";
     if (state.status === "none" && (inSurface || head === "settings")) router.replace("/");
-    if (state.status === "guest" && (onEntrance || head === "couple" || head === "planner")) router.replace("/guest");
+    // "find" is left alone for guests: it has just created the session and is
+    // about to show the notification step. Moving the guest to /guest first
+    // meant people who typed their code were never asked (Part 9 audit, D-030).
+    if (state.status === "guest" && ((onEntrance && head !== "find") || head === "couple" || head === "planner")) router.replace("/guest");
     if (state.status === "user") {
       const want = state.me.surface === "planner" ? "planner" : "couple";
       const wrongSurface = inSurface && head !== want;
@@ -99,12 +102,17 @@ function Gate() {
       const data = res.notification.request.content.data as Record<string, unknown> | undefined;
       router.push(routeFor(data, surface) as never);
     });
-    Notifications.getLastNotificationResponseAsync().then((res) => {
-      if (res && state.status !== "loading") {
-        const data = res.notification.request.content.data as Record<string, unknown> | undefined;
-        router.push(routeFor(data, surface) as never);
-      }
-    });
+    // Not available on web (it rejects there), and a rejection must never surface.
+    if (Platform.OS !== "web") {
+      Notifications.getLastNotificationResponseAsync()
+        .then((res) => {
+          if (res && state.status !== "loading") {
+            const data = res.notification.request.content.data as Record<string, unknown> | undefined;
+            router.push(routeFor(data, surface) as never);
+          }
+        })
+        .catch(() => {});
+    }
     return () => sub.remove();
   }, [state, router]);
 
@@ -142,13 +150,13 @@ function LockOverlay({ onUnlock, onSignOut }: { onUnlock: () => void; onSignOut:
   }, []);
   return (
     <View style={styles.overlay}>
-      <VStack gap={18} style={{ alignItems: "center", paddingHorizontal: 32 }}>
+      <VStack gap={18} style={{ alignItems: "center", paddingHorizontal: 32, width: "100%", maxWidth: 480 }}>
         <Gem size={26} />
         <T v="title30" center>
           {copy.settings.biometric}
         </T>
         <Button label={copy.settings.biometric} onPress={onUnlock} icon="lock" />
-        <Pressable onPress={onSignOut} hitSlop={10}>
+        <Pressable onPress={onSignOut} accessibilityRole="button" style={{ minHeight: 44, minWidth: 44, justifyContent: "center", paddingHorizontal: 12 }}>
           <T v="body15" color={colors.ivory55}>
             {copy.settings.signOut}
           </T>
@@ -158,11 +166,15 @@ function LockOverlay({ onUnlock, onSignOut }: { onUnlock: () => void; onSignOut:
   );
 }
 
+// Public store pages. The API sends no store URL, and the overlay can only show
+// once a newer version is in the store, so these are live whenever it is seen.
+const STORE_URL = Platform.OS === "android" ? "https://play.google.com/store/apps/details?id=com.zcventures.guestly" : "https://apps.apple.com/app/id6809618039";
+
 function UpdateOverlay() {
   const copy = useCopy();
   return (
     <View style={styles.overlay}>
-      <VStack gap={14} style={{ alignItems: "center", paddingHorizontal: 32 }}>
+      <VStack gap={14} style={{ alignItems: "center", paddingHorizontal: 32, width: "100%", maxWidth: 480 }}>
         <Gem size={26} />
         <T v="title30" center>
           {copy.common.updateTitle}
@@ -170,6 +182,8 @@ function UpdateOverlay() {
         <T v="body15" color={colors.ivory55} center>
           {copy.common.updateBody}
         </T>
+        {/* Without a button this screen was a dead end (Part 9 audit, D-029). */}
+        <Button label={copy.common.updateAction} onPress={() => void Linking.openURL(STORE_URL).catch(() => {})} style={{ marginTop: 8 }} />
       </VStack>
     </View>
   );

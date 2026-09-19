@@ -4,7 +4,7 @@
 // nothing until Confirm, and broadcasts need the typed word.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,7 +13,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, KeyboardFill } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
@@ -248,16 +248,21 @@ export default function AssistantScreen() {
         />
       }
     >
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
-        <Row gap={12} style={{ paddingHorizontal: 24, marginTop: 8 }}>
+      <KeyboardFill>
+        {/* The intro block sits above a hairline, and the message list is clipped
+            under that line, so messages never run into the sentence (D-017). */}
+        <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
           <Avatar gem size={44} />
           <View style={{ flex: 1, gap: 2 }}>
-            <T v="title26">{copy.title}</T>
-            <T v="meta13" color={colors.ivory55}>
+            <T v="meta13" color={colors.ivory70}>
               {surface === "planner" ? copy.subtitlePlanner : copy.subtitleCouple}
+            </T>
+            <T v="meta13" color={colors.ivory55}>
+              {copy.aiNotice}
             </T>
           </View>
         </Row>
+        <Hairline />
 
         {notEnabledText ? (
           <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
@@ -270,7 +275,7 @@ export default function AssistantScreen() {
           </View>
         ) : (
           <>
-            <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 }} keyboardShouldPersistTaps="handled">
+            <ScrollView ref={scroll} style={{ flex: 1, overflow: "hidden" }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 }} keyboardShouldPersistTaps="handled">
               {sessionId && !detailQ.data && detailQ.isLoading ? (
                 <Stack gap={10}>
                   <Skeleton h={48} r={18} />
@@ -332,7 +337,7 @@ export default function AssistantScreen() {
                   editable={!busy}
                   style={{ paddingRight: 6 }}
                   right={
-                    <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.send} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
+                    <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.send} hitSlop={4} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
                       <Icon name="chev" size={20} color={colors.night} strokeWidth={2} />
                     </Pressable>
                   }
@@ -345,7 +350,7 @@ export default function AssistantScreen() {
             </View>
           </>
         )}
-      </KeyboardAvoidingView>
+      </KeyboardFill>
 
       <Sheet visible={drawer} onClose={() => setDrawer(false)} top={140} scroll={false}>
         <Row style={{ justifyContent: "space-between", marginBottom: 8 }}>

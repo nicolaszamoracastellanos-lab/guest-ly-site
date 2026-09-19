@@ -23,6 +23,31 @@ export function isPortalUrl(url: string): boolean {
   }
 }
 
+/** Signed-in portal pages the app may open. Everything else is refused, so a
+ *  deep link can never walk the web view into the rest of the portal, where
+ *  there are billing pages the app must not show (Part 9 audit, D-019). */
+export const SIGNED_IN_PATHS = ["/guide", "/planner/guide"] as const;
+
+/** A clean, allow-listed signed-in path, or null. "//host" and friends are refused. */
+export function allowedSignedInPath(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const path = raw.startsWith("/") ? raw : `/${raw}`;
+  if (path.startsWith("//") || path.includes("\\") || path.includes("://")) return null;
+  const clean = path.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+  return (SIGNED_IN_PATHS as readonly string[]).includes(clean) ? clean : null;
+}
+
+/** True when `url` is a portal page under one of `prefixes` (path prefixes). */
+export function isWithin(url: string, prefixes: string[]): boolean {
+  if (!isPortalUrl(url)) return false;
+  try {
+    const path = new URL(url).pathname;
+    return prefixes.some((p) => path === p || path.startsWith(p.endsWith("/") ? p : `${p}/`));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Builds the URL to load for a signed-in page at `path` (a portal path such
  * as /guide). Throws ApiFailure when the portal refuses (signed out).

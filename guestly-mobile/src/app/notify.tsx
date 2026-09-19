@@ -2,7 +2,7 @@
 // preferences chosen here become the push prefs on the server.
 
 import React, { useState } from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet, Image, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy } from "@/i18n";
@@ -53,26 +53,33 @@ export default function NotifyAsk() {
     }
   }
 
+  // Photo as a share of the window: on a 667 pt phone Allow and Not now are both
+  // on screen without scrolling (Part 9 audit, D-035).
+  const { height } = useWindowDimensions();
+  const heroH = height < 700 ? 170 : Math.min(300, Math.round(height * 0.32));
+  const overlap = Math.round(heroH * 0.57);
+  const compact = height < 700;
+
   return (
-    <Screen bottomInset={24} padded={false}>
-      <View style={styles.hero}>
+    <Screen bottomInset={16} padded={false} topInset={false}>
+      <View style={[styles.hero, { height: heroH }]}>
         <Image source={photo} style={FILL} resizeMode="cover" />
         <LinearGradient colors={["rgba(13,17,23,0.2)", "rgba(13,17,23,0.7)", colors.night]} style={FILL} />
       </View>
-      <View style={{ paddingHorizontal: 28, marginTop: -170 }}>
+      <View style={{ paddingHorizontal: 28, marginTop: -overlap }}>
         <View style={styles.bellWrap}>
           <Icon name="bell" size={26} color={colors.night} />
         </View>
-        <Stack gap={8} style={{ marginTop: 20 }}>
-          <T v="title42" size={38}>
-            {surface === "guest" ? fmt(copy.notify.title, { couple }) : copy.notify.coupleTitle}
+        <Stack gap={8} style={{ marginTop: compact ? 14 : 20 }}>
+          <T v="title42" size={compact ? 32 : 38}>
+            {surface === "guest" && couple ? fmt(copy.notify.title, { couple }) : copy.notify.coupleTitle}
           </T>
           <T v="body15" color={colors.ivory55}>
             {surface === "guest" ? copy.notify.intro : copy.notify.coupleIntro}
           </T>
         </Stack>
       </View>
-      <View style={{ paddingHorizontal: 20, marginTop: 28 }}>
+      <View style={{ paddingHorizontal: 20, marginTop: compact ? 18 : 28 }}>
         <Card kind="solid" padding={4} style={{ paddingHorizontal: 18 }}>
           {keys.map((k, i) => (
             <Row key={k} style={[styles.prefRow, i === keys.length - 1 && { borderBottomWidth: 0 }]}>
@@ -89,7 +96,7 @@ export default function NotifyAsk() {
           ))}
         </Card>
       </View>
-      <Stack gap={14} style={{ paddingHorizontal: 24, marginTop: 40 }}>
+      <Stack gap={compact ? 6 : 14} style={{ paddingHorizontal: 24, marginTop: compact ? 18 : 40 }}>
         <Button testID="notify-allow" label={copy.notify.allow} onPress={allow} loading={busy} />
         <Button testID="notify-skip" label={copy.notify.notNow} kind="text" onPress={() => router.replace(dest as never)} />
       </Stack>
@@ -98,7 +105,7 @@ export default function NotifyAsk() {
 }
 
 const styles = StyleSheet.create({
-  hero: { overflow: "hidden", height: 300, opacity: 0.85 },
+  hero: { overflow: "hidden", opacity: 0.85 },
   bellWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
-  prefRow: { minHeight: 64, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.ivory09, gap: 12 },
+  prefRow: { minHeight: 60, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory09, gap: 12 },
 });

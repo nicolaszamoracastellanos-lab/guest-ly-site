@@ -3,15 +3,14 @@
 // WhatsApp with the text; web threads have no return channel.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, KeyboardAvoidingView, Platform, Linking, Alert, ScrollView } from "react-native";
+import { View, Linking, Alert, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, ApiFailure } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card, KeyboardFill, useKeyboardOpen, useBottomClearance } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { useConversation, type TranscriptLine } from "@/features/inbox/hooks";
@@ -23,7 +22,6 @@ export default function Conversation() {
   const router = useRouter();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const insets = useSafeAreaInsets();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -79,11 +77,14 @@ export default function Conversation() {
     }
   }
 
+  // The reply box clears the tab bar at rest and sits on the keyboard while typing (D-003).
+  const keyboardOpen = useKeyboardOpen();
+  const { clearance } = useBottomClearance();
   const channelLabel = data ? (c.channel[data.channel] ?? data.channel) : "";
 
   return (
-    <Screen query={mainQuery} scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+    <Screen query={mainQuery} scroll={false} padded={false} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
+      <KeyboardFill>
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled">
           {isLoading && !data ? (
             <Stack gap={10}>
@@ -108,7 +109,7 @@ export default function Conversation() {
             </Row>
           ) : null}
           {data ? (
-            <Row gap={8} style={{ marginBottom: 6 }}>
+            <Row gap={8} style={{ marginBottom: 6, flexWrap: "wrap" }}>
               {data.guest_id ? (
                 <Button label={c.viewGuest} kind="glass" small full={false} icon="guests" onPress={() => router.push({ pathname: "/couple/guests/[id]", params: { id: data.guest_id! } })} />
               ) : null}
@@ -125,7 +126,7 @@ export default function Conversation() {
           ) : null}
         </ScrollView>
         {data ? (
-          <View style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 12) + 8, gap: 8 }}>
+          <View style={{ paddingHorizontal: 20, paddingBottom: keyboardOpen ? 10 : clearance - 4, gap: 8 }}>
             {!canEdit ? (
               <T v="meta13" color={colors.ivory55}>
                 {c.readOnly}
@@ -157,7 +158,7 @@ export default function Conversation() {
             )}
           </View>
         ) : null}
-      </KeyboardAvoidingView>
+      </KeyboardFill>
     </Screen>
   );
 }

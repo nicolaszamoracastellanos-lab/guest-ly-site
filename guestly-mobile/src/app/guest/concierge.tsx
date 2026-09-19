@@ -2,15 +2,14 @@
 // typing indicator, escalation bubble. Drafts survive an app restart.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Pressable, ActivityIndicator } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useGuestSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton } from "@/ui";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
+import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton, KeyboardFill, Hairline, ChipRow, useKeyboardOpen, useBottomClearance } from "@/ui";
+import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
 type Turn = { role: "user" | "assistant"; content: string; escalated?: boolean };
@@ -23,7 +22,6 @@ export default function Concierge() {
   const router = useRouter();
   const back = useSafeBack();
   const session = useGuestSession();
-  const insets = useSafeAreaInsets();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -69,7 +67,11 @@ export default function Concierge() {
   }
 
   const chips = [copy.concierge.chips.dressCode, copy.concierge.chips.hotels, copy.concierge.chips.gifts];
-  const bottomPad = TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 12;
+  // Clear of the tab bar at rest; right on top of the keyboard while typing
+  // (the tab bar is behind the keyboard then).
+  const keyboardOpen = useKeyboardOpen();
+  const { clearance } = useBottomClearance();
+  const bottomPad = keyboardOpen ? 10 : clearance - 4;
 
   return (
     <Screen
@@ -78,8 +80,8 @@ export default function Concierge() {
       bottomInset={0}
       header={<TopBar onBack={back} right={<IconButton name="chat" onPress={() => router.push("/guest/messages")} label={copy.messages.title} />} />}
     >
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
-        <Row gap={12} style={{ paddingHorizontal: 24, marginTop: 12 }}>
+      <KeyboardFill>
+        <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
           <Avatar gem size={44} />
           <View style={{ flex: 1, gap: 2 }}>
             <T v="title26">{copy.concierge.title}</T>
@@ -88,6 +90,7 @@ export default function Concierge() {
             </T>
           </View>
         </Row>
+        <Hairline />
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, gap: 10 }} keyboardShouldPersistTaps="handled">
           <Bubble role="assistant" text={fmt(copy.concierge.hello, { name })} />
           {turns.map((t, i) => (
@@ -106,11 +109,11 @@ export default function Concierge() {
           ) : null}
         </ScrollView>
         <View style={{ paddingHorizontal: 20, paddingBottom: bottomPad, gap: 8 }}>
-          <Row gap={8}>
+          <ChipRow>
             {chips.map((c) => (
               <Chip key={c} label={c} onPress={() => send(c)} />
             ))}
-          </Row>
+          </ChipRow>
           <Input
             value={draft}
             onChangeText={setDraft}
@@ -120,13 +123,13 @@ export default function Concierge() {
             onSubmitEditing={() => send(draft)}
             style={{ paddingRight: 6 }}
             right={
-              <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.concierge.placeholder} style={styles.send} disabled={busy || !draft.trim()}>
+              <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.concierge.send} hitSlop={4} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
                 <Icon name="chev" size={20} color={colors.night} strokeWidth={2} />
               </Pressable>
             }
           />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardFill>
     </Screen>
   );
 }

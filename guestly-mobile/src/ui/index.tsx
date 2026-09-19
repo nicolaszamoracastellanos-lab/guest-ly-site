@@ -1,7 +1,7 @@
 // Guest-ly component kit. Direction A: night background, ivory type, gold
 // accents, glass surfaces, one paper (ivory) card per screen at most.
 
-import React, { type ReactNode } from "react";
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   View,
   Pressable,
@@ -16,6 +16,7 @@ import {
   type TextInputProps,
   Modal,
   Platform,
+  Keyboard,
   KeyboardAvoidingView,
   useWindowDimensions,
   type TextStyle,
@@ -154,6 +155,45 @@ function queryMessage(query: QueryLike | null | undefined, lang: "en" | "es"): s
 export function useTopInset(): number {
   const insets = useSafeAreaInsets();
   return insets.top >= 40 ? Math.max(insets.top, TOP_SAFE_MIN) : insets.top + 16;
+}
+
+/** True while the software keyboard is up. */
+export function useKeyboardOpen(): boolean {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", () => setOpen(true));
+    const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () => setOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return open;
+}
+
+/** Root wrapper for the non-scrolling chat screens: the composer at the bottom
+ *  rides exactly on top of the keyboard.
+ *
+ *  KeyboardAvoidingView works from its position inside its parent, not on the
+ *  screen. Under a header, and above all inside a modal sheet that starts below
+ *  the top of the window, that is off by the distance to the top, and on a
+ *  667 pt phone the composer ended up under the keyboard (Part 9 audit, D-032).
+ *  This wrapper measures its real place in the window and passes it on. */
+export function KeyboardFill({ children }: { children: ReactNode }) {
+  const ref = useRef<View>(null);
+  const [offset, setOffset] = useState(0);
+  const measure = () => ref.current?.measureInWindow((_x, y) => setOffset(Math.max(0, Math.round(y || 0))));
+  useEffect(() => {
+    const sub = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", measure);
+    return () => sub.remove();
+  }, []);
+  return (
+    <View ref={ref} style={styles.fill} onLayout={measure} collapsable={false}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.fill} keyboardVerticalOffset={offset}>
+        {children}
+      </KeyboardAvoidingView>
+    </View>
+  );
 }
 
 export function Row({ children, gap = space.md, style, align = "center" }: { children: ReactNode; gap?: number; style?: StyleProp<ViewStyle>; align?: ViewStyle["alignItems"] }) {
@@ -800,7 +840,7 @@ export function QueryState({ query, message }: { query: { isError: boolean; data
  *  `dockedListPadding` so its last row scrolls clear. */
 export function DockedActions({ children, onHeight }: { children: ReactNode; onHeight?: (h: number) => void }) {
   const tabTop = useTabBarTop();
-  const [h, setH] = React.useState(0);
+  const [h, setH] = useState(0);
   // The bubble rests above the dock while this screen is focused.
   useBubbleLift(h);
   return (

@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { fmt, useCopy, useLang } from "@/i18n";
+import { useCopy, useLang, mediumDate } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useSession, type TenantSummary, type GuestIdentity } from "@/lib/session";
 import { Screen, TopBar, T, Input, Card, ListRow, Avatar, Stack, BigTitle } from "@/ui";
@@ -102,16 +102,14 @@ export default function FindName() {
       ) : null}
       <View style={{ marginTop: 18 }}>
         <T v="meta13" color={colors.ivory55}>
-          {copy.find.notYou}{" "}
-          <T v="meta13" color={colors.goldLight}>
-            {copy.find.tellCouple}
-          </T>{" "}
-          {copy.find.tellCoupleTail}
+          {/* Plain text: there is no in-app way to reach the couple from here, so it
+              must not look like a link (Part 9 audit, D-037). */}
+          {copy.find.notYou} {copy.find.tellCouple} {copy.find.tellCoupleTail}
         </T>
       </View>
       <Stack gap={4} style={{ marginTop: 24 }}>
         <T v="meta13" color={colors.ivory40}>
-          {fmt("{couple} · {date}", { couple: tenant.couple_names, date: tenant.wedding_date ?? "" })}
+          {[tenant.couple_names, mediumDate(tenant.wedding_date, lang)].filter(Boolean).join(" · ")}
         </T>
       </Stack>
     </Screen>
