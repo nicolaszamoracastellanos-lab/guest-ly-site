@@ -4,7 +4,7 @@
 import React from "react";
 import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, useCopy } from "@/i18n";
+import { plural, useCopy } from "@/i18n";
 import { useMore } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, Wordmark, IconButton, BigTitle, T, Icon, SectionLabel, Badge, Stack, Footer, type IconName } from "@/ui";
@@ -19,20 +19,22 @@ export default function MoreSheet() {
   const mainQuery = useMore();
   const { data } = mainQuery;
   const e = data?.entries ?? {};
-  const n = (k: string) => e[k]?.count ?? 0;
+  // A count shows only when the server sent one. With the API failing the tile
+  // keeps its plain label instead of claiming "0" (Part 9 audit, D-023).
+  const count = (k: string, forms: { one: string; other: string }) => (typeof e[k]?.count === "number" ? plural(e[k]!.count, forms) : copy.more.subs.inApp);
 
   const planning: Item[] = [
-    { key: "tasks", icon: "tasks", label: copy.more.items.tasks, sub: fmt(copy.more.subs.tasksOpen, { n: n("tasks") }), route: "/couple/tasks", available: true },
-    { key: "seating", icon: "grid", label: copy.more.items.seating, sub: fmt(copy.more.subs.seatingPlans, { n: n("seating") }), route: "/couple/seating", available: true },
+    { key: "tasks", icon: "tasks", label: copy.more.items.tasks, sub: count("tasks", copy.more.subs.tasksOpen), route: "/couple/tasks", available: true },
+    { key: "seating", icon: "grid", label: copy.more.items.seating, sub: count("seating", copy.more.subs.seatingPlans), route: "/couple/seating", available: true },
     { key: "budget", icon: "coins", label: copy.more.items.budget, sub: copy.more.subs.inApp, route: "/couple/budget", available: true },
     { key: "brain", icon: "sparkle", label: copy.more.items.brain, sub: copy.more.subs.brainAsk, route: "/couple/brain", available: true },
-    { key: "vendors", icon: "store", label: copy.more.items.vendors, sub: fmt(copy.more.subs.vendors, { n: n("vendors") }), route: "/couple/vendors", available: true },
+    { key: "vendors", icon: "store", label: copy.more.items.vendors, sub: count("vendors", copy.more.subs.vendors), route: "/couple/vendors", available: true },
     { key: "runsheet", icon: "list", label: copy.more.items.runsheet, sub: copy.more.subs.runsheet, route: "/couple/runsheet", available: true },
     { key: "dayof", icon: "clock", label: copy.more.items.dayof, sub: copy.more.subs.dayof, route: "/couple/dayof", available: true },
   ];
   const communication: Item[] = [
-    { key: "broadcasts", icon: "megaphone", label: copy.more.items.broadcasts, sub: fmt(copy.more.subs.broadcasts, { n: n("broadcasts") }), route: "/couple/broadcasts", available: true },
-    { key: "requests", icon: "tasks", label: copy.more.items.requests, sub: fmt(copy.more.subs.requests, { n: n("requests") }), route: "/couple/requests", available: true },
+    { key: "broadcasts", icon: "megaphone", label: copy.more.items.broadcasts, sub: count("broadcasts", copy.more.subs.broadcasts), route: "/couple/broadcasts", available: true },
+    { key: "requests", icon: "tasks", label: copy.more.items.requests, sub: count("requests", copy.more.subs.requests), route: "/couple/requests", available: true },
     { key: "insights", icon: "star", label: copy.more.items.insights, sub: copy.more.subs.insights, route: "/couple/insights", available: true },
     { key: "coordinator", icon: "chat", label: copy.more.items.coordinator, sub: copy.more.subs.coordinator, route: "/assistant", available: true },
   ];
@@ -52,13 +54,15 @@ export default function MoreSheet() {
   const grid = (items: Item[]) => (
     <View style={styles.grid}>
       {items.map((it) => (
-        <Pressable key={it.key} onPress={() => open(it)} disabled={!it.available} accessibilityRole="button" style={({ pressed }) => [styles.tile, pressed && { opacity: 0.75 }, !it.available && { opacity: 0.55 }]}>
+        <Pressable key={it.key} onPress={() => open(it)} disabled={!it.available} accessibilityRole="button" accessibilityLabel={it.sub ? `${it.label}, ${it.sub}` : it.label} style={({ pressed }) => [styles.tile, pressed && { opacity: 0.75 }, !it.available && { opacity: 0.55 }]}>
           <Icon name={it.icon} size={22} color={colors.goldLight} />
           <View style={{ flex: 1, gap: 1 }}>
-            <T v="body15">{it.label}</T>
+            <T v="body15" numberOfLines={2}>
+              {it.label}
+            </T>
             {it.available ? (
               it.sub ? (
-                <T v="meta13" color={colors.ivory55} numberOfLines={1}>
+                <T v="meta13" color={colors.ivory55} numberOfLines={2}>
                   {it.sub}
                 </T>
               ) : null
@@ -72,7 +76,7 @@ export default function MoreSheet() {
   );
 
   return (
-    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="gear" onPress={() => router.push("/settings")} />} />}>
+    <Screen header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="gear" label={copy.more.items.settings} onPress={() => router.push("/settings")} />} />}>
       <View style={{ marginTop: 18 }}>
         <BigTitle title={copy.more.title} sub={user?.me.tenant.couple_names} />
       </View>
@@ -90,6 +94,6 @@ export default function MoreSheet() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tile: { width: "48.5%", minHeight: 60, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "stretch" },
+  tile: { width: "48.5%", minHeight: 64, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 10 },
 });

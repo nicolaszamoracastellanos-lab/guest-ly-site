@@ -56,9 +56,12 @@ export default function NotifyAsk() {
   // Photo as a share of the window: on a 667 pt phone Allow and Not now are both
   // on screen without scrolling (Part 9 audit, D-035).
   const { height } = useWindowDimensions();
-  const heroH = height < 700 ? 170 : Math.min(300, Math.round(height * 0.32));
-  const overlap = Math.round(heroH * 0.57);
   const compact = height < 700;
+  // The photo fades into the night colour, and the screen background only
+  // reaches that colour about half way down, so the photo must end there or its
+  // lower edge shows as a band. The text simply starts higher on the photo.
+  const heroH = Math.max(300, Math.round(height * 0.5));
+  const overlap = heroH - (compact ? 96 : 130);
 
   return (
     <Screen bottomInset={16} padded={false} topInset={false}>

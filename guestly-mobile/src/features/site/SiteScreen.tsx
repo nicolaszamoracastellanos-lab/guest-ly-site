@@ -6,7 +6,7 @@ import React from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFeatureCopy } from "@/i18n/feature";
-import { useLang } from "@/i18n";
+import { useCopy, useLang } from "@/i18n";
 import { ApiFailure } from "@/lib/api";
 import { useGuestSession } from "@/lib/session";
 import { Screen, TopBar, EmptyState, Button, Skeleton, Stack, BigTitle } from "@/ui";
@@ -27,6 +27,7 @@ const ENTRY_SECTIONS: Record<Entry, SectionType[]> = {
 
 export function SiteScreen({ entry }: { entry?: Entry }) {
   const copy = useFeatureCopy(COPY);
+  const common = useCopy().common;
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -51,7 +52,8 @@ export function SiteScreen({ entry }: { entry?: Entry }) {
   } else if (notPublished) {
     content = (
       <View style={{ marginTop: 48 }}>
-        <EmptyState title={copy.notPublishedTitle} body={copy.notPublishedBody} action={<Button label={copy.retry} small kind="glass" full={false} onPress={() => refetch()} />} />
+        {/* Trying again cannot publish the site; going back is the useful action (D-037). */}
+        <EmptyState title={copy.notPublishedTitle} body={copy.notPublishedBody} action={<Button label={common.back} small kind="glass" full={false} icon="back" onPress={back} />} />
       </View>
     );
   } else if (error || !data) {

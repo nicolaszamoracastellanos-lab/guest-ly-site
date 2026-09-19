@@ -562,8 +562,10 @@ export function LangToggle({ value, onChange, dark = true }: { value: "en" | "es
   const on = colors.goldLight;
   const off = dark ? colors.ivory40 : colors.muted;
   const names = { en: "English", es: "Español" } as const;
+  // The 44 pt hit boxes are wider than the two letters; the negative margin
+  // keeps the letters aligned with the edge of the content they sit in.
   return (
-    <Row gap={0}>
+    <Row gap={0} style={{ marginHorizontal: -13 }}>
       {(["en", "es"] as const).map((l) => (
         <Pressable key={l} testID={`lang-${l}`} onPress={() => onChange(l)} accessibilityRole="button" accessibilityLabel={names[l]} accessibilityState={{ selected: value === l }} style={styles.langHit}>
           <T v="label11" color={value === l ? on : off} style={{ letterSpacing: 2 }}>
@@ -623,11 +625,14 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
   );
 }
 
-export function ListRow({ leading, title, sub, trailing, onPress, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; onPress?: () => void; chevron?: boolean; last?: boolean; testID?: string }) {
+/** `below` puts a badge (or anything) under the title instead of beside it:
+ *  a wide status badge in `trailing` squeezed long titles to one word per line
+ *  on a 375 pt phone (Part 9 audit, D-012). */
+export function ListRow({ leading, title, sub, trailing, below, onPress, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; chevron?: boolean; last?: boolean; testID?: string }) {
   const inner = (
     <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
       {leading}
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <T v="body16" color={colors.ivory90} numberOfLines={2}>
           {title}
         </T>
@@ -636,6 +641,7 @@ export function ListRow({ leading, title, sub, trailing, onPress, chevron = true
             {sub}
           </T>
         ) : null}
+        {below ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>{below}</View> : null}
       </View>
       {trailing}
       {chevron && onPress ? <Icon name="chev" size={18} color={colors.ivory40} /> : null}
@@ -643,7 +649,7 @@ export function ListRow({ leading, title, sub, trailing, onPress, chevron = true
   );
   if (!onPress) return inner;
   return (
-    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" style={({ pressed }) => pressed && { opacity: 0.7 }}>
+    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={sub ? `${title}, ${sub}` : title} style={({ pressed }) => pressed && { opacity: 0.7 }}>
       {inner}
     </Pressable>
   );

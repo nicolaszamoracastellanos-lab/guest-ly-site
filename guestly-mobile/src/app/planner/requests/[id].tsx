@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { usePlannerRequests } from "@/lib/hooks";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel } from "@/ui";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "@/app/couple/requests/index";
 import { describeChanges } from "@/app/couple/requests/[id]";
@@ -54,14 +54,14 @@ export default function PlannerRequestDetail() {
     }
   }
 
-  const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? []) : [];
+  const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? [], copy.requests.changeWords, copy.requests.changeFields) : [];
 
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
       <>
         {r ? (
           <>
-            <Row style={{ justifyContent: "space-between" }}>
+            <Row gap={8} style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
               <Badge label={r.status === "open" ? copy.planner.awaiting : r.status === "approved" ? copy.planner.approved : r.status === "declined" ? copy.planner.declined : copy.planner.cancelled} kind={r.status === "open" ? "amber" : r.status === "approved" ? "green" : "mute"} />
               <T v="meta13" color={colors.ivory55}>
                 {fmt(copy.planner.filed, { when: relTime(r.created_at, lang) })}
@@ -80,7 +80,7 @@ export default function PlannerRequestDetail() {
                 <SectionLabel style={{ marginTop: 22 }}>{copy.planner.changes}</SectionLabel>
                 <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 8 }}>
                   {changes.map((c, i) => (
-                    <Row key={i} style={{ minHeight: 52, justifyContent: "space-between", borderBottomWidth: i === changes.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
+                    <Row key={i} gap={12} style={{ minHeight: 52, paddingVertical: 8, justifyContent: "space-between", borderBottomWidth: i === changes.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
                       <T v="body16" style={{ flex: 1 }}>
                         {c.label}
                       </T>
@@ -104,17 +104,13 @@ export default function PlannerRequestDetail() {
                 </Row>
               ))}
               <Input value={text} onChangeText={setText} placeholder={copy.planner.replyToCouple} onSubmitEditing={reply} returnKeyType="send" />
-              <Button label={copy.planner.replyToCouple} small kind="glass" onPress={reply} loading={busy === "reply"} disabled={!text.trim()} />
+              <Button label={copy.planner.sendReply} small kind="glass" onPress={reply} loading={busy === "reply"} disabled={!text.trim()} />
             </Stack>
             {r.status === "open" ? (
-              <Row gap={8} style={{ marginTop: 22 }}>
-                <View style={{ flex: 1 }}>
-                  <Button label={copy.planner.withdraw} kind="ghost" onPress={withdraw} loading={busy === "cancel"} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button label={copy.planner.editRequest} onPress={() => router.push({ pathname: "/planner/requests/new", params: { from: r.id } })} />
-                </View>
-              </Row>
+              <ButtonRow style={{ marginTop: 22 }}>
+                <Button label={copy.planner.withdraw} kind="ghost" onPress={withdraw} loading={busy === "cancel"} />
+                <Button label={copy.planner.editRequest} onPress={() => router.push({ pathname: "/planner/requests/new", params: { from: r.id } })} />
+              </ButtonRow>
             ) : null}
             <T v="meta13" color={colors.ivory40} center style={{ marginTop: 14 }}>
               {copy.planner.footer}

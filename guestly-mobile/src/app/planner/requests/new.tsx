@@ -9,8 +9,7 @@ import { fmt, useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { usePlannerGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Chip, ChipRow, Input, Card, ListRow, Avatar, Button, Stack, T } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { Screen, TopBar, BigTitle, Chip, ChipRow, Input, Card, ListRow, Avatar, Button, Stack, Field } from "@/ui";
 import { useSafeBack } from "@/lib/nav";
 
 type Kind = "plus_one" | "edit_guest" | "guest_help" | "custom" | "send_reminders";
@@ -89,20 +88,37 @@ export default function NewRequest() {
               </>
             )
           ) : null}
-          {kind === "plus_one" ? <Input value={seats} onChangeText={(v) => setSeats(v.replace(/\D/g, ""))} placeholder={copy.guests.partySize} keyboardType="number-pad" /> : null}
+          {kind === "plus_one" ? (
+            <Field label={copy.planner.extraSeats}>
+              <Input value={seats} onChangeText={(v) => setSeats(v.replace(/\D/g, ""))} keyboardType="number-pad" />
+            </Field>
+          ) : null}
           {kind === "edit_guest" ? (
             <>
-              <Input value={field} onChangeText={setField} placeholder="name | party_size | tags | notes | language" autoCapitalize="none" />
-              <Input value={value} onChangeText={setValue} placeholder={copy.rsvp.answerPlaceholder} />
+              {/* The detail is picked from a list: the field used to show the raw
+                  keys as its placeholder and wanted one typed in. */}
+              <Field label={copy.planner.fieldToChange}>
+                <ChipRow>
+                  {(["name", "party_size", "tags", "notes", "language"] as const).map((k) => (
+                    <Chip key={k} label={copy.requests.changeFields[k]} on={field === k} onPress={() => setField(k)} />
+                  ))}
+                </ChipRow>
+              </Field>
+              <Field label={copy.planner.newValue}>
+                <Input value={value} onChangeText={setValue} />
+              </Field>
             </>
           ) : null}
-          {kind === "guest_help" || kind === "custom" ? <Input value={title} onChangeText={setTitle} placeholder={kind === "custom" ? copy.planner.kinds.custom : copy.planner.kinds.guest_help} /> : null}
-          <Input value={note} onChangeText={setNote} placeholder={copy.guests.notes} multiline style={{ borderRadius: 18 }} />
+          {kind === "guest_help" || kind === "custom" ? (
+            <Field label={kind === "custom" ? copy.planner.kinds.custom : copy.planner.kinds.guest_help}>
+              <Input value={title} onChangeText={setTitle} />
+            </Field>
+          ) : null}
+          <Field label={copy.planner.noteForCouple}>
+            <Input value={note} onChangeText={setNote} multiline />
+          </Field>
         </Stack>
         <Button label={copy.planner.newRequest} onPress={submit} loading={busy} disabled={!ready} style={{ marginTop: 22 }} />
-        <T v="meta13" color={colors.ivory40} center style={{ marginTop: 12 }}>
-          {copy.planner.footer}
-        </T>
       </>
     </Screen>
   );

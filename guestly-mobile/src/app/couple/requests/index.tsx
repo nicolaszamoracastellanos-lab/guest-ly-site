@@ -37,7 +37,7 @@ export default function CoupleRequests() {
                 key={r.id}
                 title={requestTitle(r, copy.planner.kinds)}
                 sub={`${r.created_by_email} · ${relTime(r.created_at, lang)}`}
-                trailing={<Badge label={label(r.status)} kind={kind(r.status)} />}
+                below={<Badge label={label(r.status)} kind={kind(r.status)} />}
                 onPress={() => router.push({ pathname: "/couple/requests/[id]", params: { id: r.id } })}
                 last={i === rows.length - 1}
               />

@@ -118,8 +118,11 @@ export default function SignIn() {
   const { height } = useWindowDimensions();
   // The photo is a share of the window, so on a 667 pt phone the email field
   // and the button are on screen without scrolling (Part 9 audit, D-035).
-  const heroH = height < 700 ? 210 : Math.min(420, Math.round(height * 0.44));
-  const overlap = Math.round(heroH * 0.44);
+  // The photo has to end about half way down the window, where the background
+  // reaches the night colour it fades into; the text starts higher on it.
+  const compact = height < 700;
+  const heroH = compact ? Math.max(210, Math.round(height * 0.52) - 86) : 420;
+  const overlap = heroH - (compact ? 118 : 240);
 
   return (
     <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>

@@ -5,12 +5,13 @@ import React, { useState } from "react";
 import { View, Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCopy, useLang, relTime } from "@/i18n";
+import { fmt, useCopy, useLang, relTime } from "@/i18n";
+import type { Copy } from "@/i18n/en";
 import { post, ApiFailure } from "@/lib/api";
-import { useCoupleRequests } from "@/lib/hooks";
+import { useCoupleGuests, useCoupleRequests } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricPrompt } from "@/lib/biometric";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, Icon } from "@/ui";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, IconButton } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "./index";
 import { useSafeBack } from "@/lib/nav";
@@ -66,16 +67,19 @@ export default function RequestDetail() {
     }
   }
 
-  const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? []) : [];
+  // The couple's payload has guest ids only; names come from the guest list.
+  const guestList = useCoupleGuests("", "all");
+  const names = r ? (r.guest_names?.length ? r.guest_names : r.guest_ids.map((g) => guestList.data?.items.find((x) => x.id === g)?.name ?? "").filter(Boolean)) : [];
+  const changes = r ? describeChanges(r.payload as Record<string, unknown>, names, copy.requests.changeWords, copy.requests.changeFields) : [];
 
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.requests.title} />} bottomInset={40} keyboard>
       <>
         {r ? (
           <>
-            <Row style={{ justifyContent: "space-between" }}>
+            <Row gap={8} style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
               <Badge label={r.status === "open" ? copy.planner.awaiting : r.status === "approved" ? copy.planner.approved : r.status === "declined" ? copy.planner.declined : copy.planner.cancelled} kind={r.status === "open" ? "amber" : r.status === "approved" ? "green" : "mute"} />
-              <T v="meta13" color={colors.ivory55}>
+              <T v="meta13" color={colors.ivory55} numberOfLines={2} style={{ flexShrink: 1 }}>
                 {relTime(r.created_at, lang)} · {r.created_by_email}
               </T>
             </Row>
@@ -92,7 +96,7 @@ export default function RequestDetail() {
                 <SectionLabel style={{ marginTop: 22 }}>{copy.planner.changes}</SectionLabel>
                 <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 8 }}>
                   {changes.map((c, i) => (
-                    <Row key={i} style={{ minHeight: 52, justifyContent: "space-between", borderBottomWidth: i === changes.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
+                    <Row key={i} gap={12} style={{ minHeight: 52, paddingVertical: 8, justifyContent: "space-between", borderBottomWidth: i === changes.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
                       <T v="body16" style={{ flex: 1 }}>
                         {c.label}
                       </T>
@@ -115,18 +119,14 @@ export default function RequestDetail() {
                   </View>
                 </Row>
               ))}
-              <Input value={note} onChangeText={setNote} placeholder={copy.requests.askQuestion} right={<Icon name="chev" size={18} color={colors.goldLight} />} onSubmitEditing={comment} returnKeyType="send" />
+              <Input value={note} onChangeText={setNote} placeholder={copy.requests.askQuestion} right={<IconButton name="chev" label={copy.concierge.send} onPress={comment} />} onSubmitEditing={comment} returnKeyType="send" />
             </Stack>
             {needsTyped && r.status === "open" ? <Input value={confirm} onChangeText={setConfirm} placeholder={copy.rsvps.remindTyped} autoCapitalize="characters" style={{ marginTop: 10 }} /> : null}
             {canEdit && r.status === "open" ? (
-              <Row gap={8} style={{ marginTop: 22 }}>
-                <View style={{ flex: 1 }}>
-                  <Button label={copy.requests.decline} kind="ghost" onPress={() => act("decline")} loading={busy === "decline"} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button label={copy.requests.approve} onPress={() => act("approve")} loading={busy === "approve"} icon={biometricEnabled ? "lock" : undefined} />
-                </View>
-              </Row>
+              <ButtonRow style={{ marginTop: 22 }}>
+                <Button label={copy.requests.decline} kind="ghost" onPress={() => act("decline")} loading={busy === "decline"} />
+                <Button label={copy.requests.approve} onPress={() => act("approve")} loading={busy === "approve"} icon={biometricEnabled ? "lock" : undefined} />
+              </ButtonRow>
             ) : null}
             <T v="meta13" color={colors.ivory40} center style={{ marginTop: 14 }}>
               {copy.requests.always}
@@ -138,17 +138,20 @@ export default function RequestDetail() {
   );
 }
 
-/** Human lines for a request payload without inventing fields. */
-export function describeChanges(p: Record<string, unknown>, names: string[]): { label: string; value: string }[] {
+/** Human lines for a request payload without inventing fields. Every word on
+ *  screen comes from the copy: no raw enum, no English inside the Spanish app,
+ *  and never an empty label (Part 9 audit, D-012 and D-020). */
+export function describeChanges(p: Record<string, unknown>, names: string[], words: Copy["requests"]["changeWords"], fields: Copy["requests"]["changeFields"]): { label: string; value: string }[] {
   const out: { label: string; value: string }[] = [];
-  const who = names.join(", ");
+  const who = names.filter(Boolean).join(", ") || words.guest;
+  const field = (k: string) => (fields as Record<string, string>)[k] ?? k.replace(/_/g, " ");
   if (p.kind === "plus_one") out.push({ label: who, value: `+${typeof p.add_seats === "number" ? p.add_seats : typeof p.seats === "number" ? p.seats : 1}` });
   if (p.kind === "edit_guest" && p.patch && typeof p.patch === "object") {
-    for (const [k, v] of Object.entries(p.patch as Record<string, unknown>)) out.push({ label: `${who} · ${k}`, value: String(v) });
+    for (const [k, v] of Object.entries(p.patch as Record<string, unknown>)) out.push({ label: `${who} · ${field(k)}`, value: String(v) });
   }
-  if (p.kind === "record_rsvp") out.push({ label: who, value: p.decline_all ? "declined" : "RSVP" });
-  if (p.kind === "send_reminders") out.push({ label: who || "pending", value: "reminder" });
+  if (p.kind === "record_rsvp") out.push({ label: who, value: p.decline_all ? words.declined : words.rsvp });
+  if (p.kind === "send_reminders") out.push({ label: names.filter(Boolean).join(", ") || words.pending, value: words.reminder });
   if (p.kind === "guest_help") out.push({ label: who, value: String(p.topic ?? "") });
-  if (p.kind === "batch_edit" && Array.isArray(p.changes)) out.push({ label: who, value: `${p.changes.length}` });
+  if (p.kind === "batch_edit" && Array.isArray(p.changes)) out.push({ label: who, value: fmt(words.edits, { n: p.changes.length }) });
   return out;
 }

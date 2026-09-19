@@ -34,7 +34,7 @@ export function RunsheetList({
             padding={2}
             style={{ marginTop: 8, paddingHorizontal: 18 }}
           >
-            {d.blocks.map((b, i) => (
+            {[...d.blocks].sort((a, b) => nightOrder(a.starts_at) - nightOrder(b.starts_at)).map((b, i) => (
               <Pressable
                 key={b.id}
                 onPress={onOpen ? () => onOpen(b) : undefined}
@@ -49,9 +49,14 @@ export function RunsheetList({
                   borderBottomColor: colors.ivory09,
                 }}
               >
-                <View style={{ width: 58 }}>
+                {/* Wide enough for "09:00" in the display face, and one line always:
+                    the time used to break into "09:0 / 0" (Part 9 audit, D-009). */}
+                <View style={{ width: 76 }}>
                   <T
                     v="title26"
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                     color={
                       b.status === "done" ? colors.ivory40 : colors.goldLight
                     }
@@ -83,20 +88,21 @@ export function RunsheetList({
                         .join(" · ")}
                     </T>
                   ) : null}
+                  {/* The status sits under the title, so a long badge no longer
+                      squeezes the title into one word per line. 44 pt target. */}
+                  <Pressable
+                    onPress={canEdit && onStatus ? () => onStatus(b) : undefined}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${c.status}: ${c.statuses[b.status]}`}
+                    disabled={!canEdit || !onStatus}
+                    style={{ minHeight: 44, justifyContent: "center", alignSelf: "flex-start" }}
+                  >
+                    <Badge
+                      label={c.statuses[b.status]}
+                      kind={statusKind(b.status)}
+                    />
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={canEdit && onStatus ? () => onStatus(b) : undefined}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel={c.status}
-                  disabled={!canEdit || !onStatus}
-                  style={{ paddingTop: 2 }}
-                >
-                  <Badge
-                    label={c.statuses[b.status]}
-                    kind={statusKind(b.status)}
-                  />
-                </Pressable>
               </Pressable>
             ))}
           </Card>
@@ -104,4 +110,12 @@ export function RunsheetList({
       ))}
     </Stack>
   );
+}
+
+/** Minutes since 05:00, so a block at 01:30 sorts after 23:00: the wedding
+ *  night runs past midnight and its last song is not the first thing of the day. */
+export function nightOrder(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map((n) => parseInt(n, 10) || 0);
+  const mins = h * 60 + m;
+  return mins < 5 * 60 ? mins + 24 * 60 : mins;
 }

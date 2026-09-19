@@ -14,6 +14,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { previewBroadcast, sendBroadcast, useBroadcasts, type AudienceFilter, type Composition, type Preview, type SendResult } from "@/features/broadcasts/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { useUserSession } from "@/lib/session";
 
 type Mode = "template" | "custom";
 type LangMode = "auto" | "es" | "en";
@@ -23,6 +24,7 @@ export default function NewBroadcast() {
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
+  const user = useUserSession();
   const qc = useQueryClient();
   const mainQuery = useBroadcasts();
   const { data, isLoading } = mainQuery;
@@ -66,6 +68,20 @@ export default function NewBroadcast() {
       template_vars: vars,
     };
   }, [audience, mode, template, custom, langMode, vars]);
+
+  // Part 9 audit, D-001 (P0). The approved template bodies live in the portal
+  // and were written for one wedding. Until they are per wedding, a template
+  // preview that does not name THIS couple is never shown and never sent: it
+  // would put a stranger's names, date and links in front of the person, and
+  // send them to their guests. The portal fix is the lead's; this is the fence.
+  const coupleNames = user?.me.tenant.couple_names ?? "";
+  const templateMismatch = useMemo(() => {
+    if (mode !== "template" || !preview) return false;
+    const fold = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const names = coupleNames.split(/\s*(?:&|\sy\s|\sand\s)\s*/i).map((n) => fold(n.trim().split(/\s+/)[0] ?? "")).filter((n) => n.length > 1);
+    if (!names.length) return true;
+    return Object.values(preview.sample).some((body) => !names.every((n) => fold(body ?? "").includes(n)));
+  }, [mode, preview, coupleNames]);
 
   const compositionKey = JSON.stringify(composition);
   useEffect(() => {
@@ -169,7 +185,7 @@ export default function NewBroadcast() {
               <View style={{ marginTop: 12 }}>
                 <ChipRow>
                   {templates.map((t) => (
-                    <Chip key={t.key} label={t.label} on={template?.key === t.key} onPress={() => setTemplateKey(t.key)} />
+                    <Chip key={t.key} label={(c.templateNames as Record<string, string>)[t.key] ?? t.label} on={template?.key === t.key} onPress={() => setTemplateKey(t.key)} />
                   ))}
                 </ChipRow>
                 {template?.vars.length ? (
@@ -195,7 +211,12 @@ export default function NewBroadcast() {
 
             <SectionLabel color={colors.goldLight} style={{ marginTop: 28 }}>{c.stepReview}</SectionLabel>
             {previewError ? <Banner icon="warning" title={previewError} kind="red" /> : null}
-            {preview ? (
+            {templateMismatch ? (
+              <View style={{ marginTop: 10 }}>
+                <Banner icon="info" title={c.templateNotYours} kind="gold" />
+              </View>
+            ) : null}
+            {preview && !templateMismatch ? (
               <Card kind="glass" padding={16} style={{ marginTop: 10 }}>
                 <T v="meta13" color={colors.ivory55}>
                   {fmt(c.perLang, { es: preview.by_lang.es, en: preview.by_lang.en })}
@@ -211,7 +232,7 @@ export default function NewBroadcast() {
               </Card>
             ) : null}
             {preview && preview.recipients_count === 0 ? <Banner icon="phone" title={c.noRecipients} /> : null}
-            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : c.review} onPress={() => { setTyped(""); setSendError(null); setConfirmOpen(true); }} disabled={!canReview} style={{ marginTop: 20 }} />
+            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : c.review} onPress={() => { setTyped(""); setSendError(null); setConfirmOpen(true); }} disabled={!canReview || templateMismatch} style={{ marginTop: 20 }} />
           </>
         ) : null}
       </>

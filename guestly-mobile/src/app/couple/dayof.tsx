@@ -1,22 +1,31 @@
 // Day-of mode for the couple: parties in, the runsheet, escalations.
 
 import React from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { useCoupleDayOf } from "@/lib/hooks";
 import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { nightOrder } from "@/features/runsheet/list";
 
 export default function CoupleDayOf() {
   const copy = useCopy();
   const router = useRouter();
   const mainQuery = useCoupleDayOf();
   const { data, isLoading } = mainQuery;
+  // Part 9 audit, D-038. The server marks a block done by the clock alone, so
+  // six months before the wedding every block read DONE with a line through it.
+  // Progress only means something on the day itself. And a block after midnight
+  // ("01:30 last song") belongs at the END of the night, not first in the list.
+  const live = !!data?.day_of;
+  const blocks = [...(data?.runsheet ?? [])]
+    .sort((a, b) => nightOrder(a.starts_at) - nightOrder(b.starts_at))
+    .map((b) => ({ ...b, state: live ? b.state : ("later" as const) }));
   const pct = data && data.parties_total ? Math.min(100, Math.round((data.parties_in / data.parties_total) * 100)) : 0;
 
   return (
-    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" onPress={() => router.push("/couple/messages")} /></Row>} />}>
+    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
       <Row gap={24} align="flex-end" style={{ marginTop: 16 }}>
         <View>
           <SectionLabel color={colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>
@@ -46,11 +55,7 @@ export default function CoupleDayOf() {
 
       <Row style={{ justifyContent: "space-between", marginTop: 28 }}>
         <SectionLabel>{copy.coupleDayOf.runsheet}</SectionLabel>
-        <Pressable onPress={() => router.push("/couple/runsheet")}>
-          <T v="meta13" color={colors.goldLight}>
-            {copy.coupleDayOf.open}
-          </T>
-        </Pressable>
+        <Button label={copy.coupleDayOf.open} kind="text" small full={false} haptic={false} onPress={() => router.push("/couple/runsheet")} />
       </Row>
       <Card kind="solid" padding={2} style={{ marginTop: 8, paddingHorizontal: 18 }}>
         {isLoading && !data ? (
@@ -60,13 +65,16 @@ export default function CoupleDayOf() {
           </Stack>
         ) : null}
         {data && !data.runsheet.length ? (
-          <T v="body15" color={colors.ivory55} style={{ paddingVertical: 14 }}>
-            {copy.coupleDayOf.noRunsheet}
-          </T>
+          <View style={{ paddingVertical: 14, gap: 10 }}>
+            <T v="body15" color={colors.ivory55}>
+              {copy.coupleDayOf.noRunsheet}
+            </T>
+            <Button label={copy.coupleDayOf.buildRunsheet} kind="glass" small onPress={() => router.push("/couple/runsheet")} />
+          </View>
         ) : null}
-        {(data?.runsheet ?? []).map((b, i, arr) => (
+        {blocks.map((b, i, arr) => (
           <Row key={b.id} gap={14} style={{ minHeight: 48, paddingVertical: 6, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
-            <T v="title26" size={19} color={b.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 58 }}>
+            <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 62 }}>
               {b.starts_at.slice(0, 5)}
             </T>
             <View style={{ flex: 1 }}>
@@ -88,11 +96,7 @@ export default function CoupleDayOf() {
         <Card kind="solid" padding={14} style={{ marginTop: 14 }} border="rgba(245,158,11,0.35)">
           <Row style={{ justifyContent: "space-between" }}>
             <Badge label={fmt(copy.coupleDayOf.escalated, { n: data.escalations.length })} kind="amber" />
-            <Pressable onPress={() => router.push("/couple/messages")}>
-              <T v="meta13" color={colors.goldLight}>
-                {copy.coupleDayOf.answerBoth}
-              </T>
-            </Pressable>
+            <Button label={copy.coupleDayOf.answerBoth} kind="text" small full={false} haptic={false} onPress={() => router.push("/couple/messages")} />
           </Row>
           <T v="body15" color={colors.ivory90} style={{ marginTop: 8 }}>
             {data.escalations.map((e) => e.text).join(" ")}
