@@ -245,3 +245,22 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 - G05 concierge with the keyboard open: the composer rides above the keyboard, chips stay visible. Pass.
 - E05 notify: the screen scrolls; "Permitir notificaciones" and "Ahora no" are reachable after one scroll. P2 (primary action below the fold on the SE).
 - E07 email field: flow failed to find the field without scrolling (known G9). Not captured.
+
+## Batch 25: A6 light appearance, A7 permissions (S, ES), T couple EN (79 shots, ten-up, 8 sheets)
+
+- A6, system in LIGHT mode: E01, E02 (keyboard up), E07, C01, C04 (keyboard up), C18 (keyboard up), S05 web view, and the delete-account alert. The keyboard is DARK, the alert is dark, the status bar stays light on dark, the web view paints night while loading. `userInterfaceStyle: "dark"` forces the whole window, so the H2 worry about a light keyboard is cleared on iOS. Pass. (The picker and the share sheet were not captured.)
+- A7 camera: with permissions reset, door check-in raises the iOS prompt with the purpose string "Guest-ly uses the camera to scan guest passes at the door." (English, simulator language is English; there is no Spanish variant in the binary, H16). After "Don't Allow" the screen says "El acceso a la camara esta desactivado. Escriba los nombres o permita la camara en Ajustes." which is good copy, BUT the name field it points to is the one hidden behind the tab bar (D on C13), and there is no button that opens Settings. On the SE and in the iPad window a user who denies the camera is stuck. Raises C13 to P0 for the iPad review path. Camera and photos were granted again afterwards.
+- A7 photos: the app uses the system picker (no permission prompt). Notification pre-prompt: E04 to E06 (batch 2).
+- T couple EN: all 79 render in the window; equal to S couple EN (batches 3 and 6). demo-review read 40 parties / 73 people again during this walk.
+
+## Batch 26: T planner EN (20, ten-up), T guest EN (14, seven-up); A8 tap targets, first run (S, ES)
+
+- T planner EN and T guest EN: all render in the window; equal to S EN (G02 button behind the tab bar, G03 card cut, G06 buttons on the fifth text line, G09 to G14 not published). The junk Coordinator sessions are gone in this walk (S04 shows the empty state) and P17 reads "0 guests with a phone": whoever was testing on demo-review cleaned up around 19:40 CDT.
+- A8, measured with `maestro hierarchy` (points). Under 44 pt: TopBar back 40x40 (every pushed screen); IconButton 40x40 ("bell", "Herramientas de la lista", "Nuevo chat", "Sus chats", "Mensajes", "Nueva solicitud", "Agregar todo al calendario"); Chip 40 high (guest filters, board filters, concierge and assistant suggestion chips); RSVP answer segments 85x38; send buttons 42x42; language toggle 21x16 and 18x16 (the component adds hitSlop 10, which still gives only about 41x36). Code check: `IconButton` 40, `Chip` minHeight 36 plus padding, `Segmented` 36, `LangToggle` hitSlop 10 (H3 confirmed).
+- A8 also proves H9: the accessibility labels read "Back" and "bell" inside the Spanish app.
+- Harness miss in this run: C03 is a modal, so every couple deep link after it landed underneath and the tool measured the modal again. Couple screens are measured again in batch 27.
+
+## Batch 27: A8 tap targets, couple rerun (S, ES, 13 screens, each opened from a clean stack)
+
+- Under 44 pt, new in this run: `Segmented` segments 160x38 (C16, C32); task filter chips 40 high; "Agregar una mesa" text link 139x20 (C31); "Quitar de la mesa" text links 113x20 and the group remove icon 18x18 (C32, the smallest target in the app); "Copiar enlace" 289x30 (C46); day chips 39 to 49 x 40 (C51); `Toggle` 44x26 (S01; code shows hitSlop 8, so about 42 high); header IconButtons 40x40 (budget settings, rename category, add block, add to calendar, edit vendor).
+- Not reachable by this tool (no accessibility label of their own, measured by eye on the 2x screenshots): reorder arrows on budget lines about 24 pt (C25), the two round icon buttons on an RSVP question row about 32 pt (C08), "+ Vincular una linea del presupuesto" and "+ Agregar categoria" text links about 20 pt high, "Seleccionar todas / Limpiar" (C21), "Usar una contrasena" on sign-in, "Mas opciones" on task forms.
