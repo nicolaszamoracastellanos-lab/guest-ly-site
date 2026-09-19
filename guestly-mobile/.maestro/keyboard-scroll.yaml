@@ -1,0 +1,16 @@
+# Scrolls until a field is on screen, focuses it, and captures with the keyboard up.
+# For fields low in a long form: proves the focused field stays above the keyboard.
+#   node scripts/part9/flow.mjs --device S --flow keyboard-scroll.yaml --to <dir> --env TARGET_ID=guest-notes --env NAME=C04-notes-keyboard
+# Never use it on a field that holds a password. Types nothing.
+appId: com.zcventures.guestly
+---
+- scrollUntilVisible:
+    element:
+      id: ${TARGET_ID}
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: ${TARGET_ID}
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ${NAME}

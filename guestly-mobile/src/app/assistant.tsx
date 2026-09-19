@@ -248,7 +248,7 @@ export default function AssistantScreen() {
         />
       }
     >
-      <KeyboardFill>
+      <KeyboardFill modal>
         {/* The intro block sits above a hairline, and the message list is clipped
             under that line, so messages never run into the sentence (D-017). */}
         <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>

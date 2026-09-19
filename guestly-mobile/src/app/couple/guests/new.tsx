@@ -57,13 +57,13 @@ export default function NewGuest() {
             <Input value={form.members} onChangeText={(v) => setForm({ ...form, members: v })} multiline accessibilityLabel={copy.guests.members} />
           </Field>
           <Field label={copy.guests.phone}>
-            <Input value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} keyboardType="phone-pad" accessibilityLabel={copy.guests.phone} />
+            <Input value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} keyboardType="phone-pad" accessibilityLabel={copy.guests.phone} testID="guest-phone" />
           </Field>
           <Field label={copy.guests.email}>
             <Input value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} keyboardType="email-address" autoCapitalize="none" accessibilityLabel={copy.guests.email} />
           </Field>
           <Field label={copy.guests.notes}>
-            <Input value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} multiline accessibilityLabel={copy.guests.notes} />
+            <Input value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} multiline accessibilityLabel={copy.guests.notes} testID="guest-notes" />
           </Field>
           <Field label={copy.guests.language}>
             <View style={{ width: 176 }}>

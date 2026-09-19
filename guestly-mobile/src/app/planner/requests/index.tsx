@@ -32,7 +32,7 @@ export default function PlannerRequests() {
               <ListRow
                 key={r.id}
                 title={requestTitle(r, copy.planner.kinds)}
-                sub={`${(r.guest_names ?? []).slice(0, 2).join(", ")}${(r.guest_names?.length ?? 0) > 2 ? "…" : ""} · ${relTime(r.created_at, lang)}`}
+                sub={[`${(r.guest_names ?? []).slice(0, 2).join(", ")}${(r.guest_names?.length ?? 0) > 2 ? "…" : ""}`, relTime(r.created_at, lang)].filter(Boolean).join(" · ")}
                 below={<Badge label={label(r.status)} kind={r.status === "open" ? "amber" : r.status === "approved" ? "green" : "mute"} />}
                 onPress={() => router.push({ pathname: "/planner/requests/[id]", params: { id: r.id } })}
                 last={i === rows.length - 1}

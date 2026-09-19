@@ -46,7 +46,8 @@ export default function InviteCode() {
   // The keyboard opens by itself here. The photo card only shows when the window
   // is tall enough for the card, the title and the six boxes to sit above it;
   // otherwise the guest typed the code blind (Part 9 audit, D-002: every phone
-  // up to 844 pt tall and both iPad windows).
+  // up to 844 pt tall and both iPad windows). The card is small enough that the
+  // Open button also clears the keyboard on a 956 pt Pro Max.
   const { height } = useWindowDimensions();
   const showCard = height >= 900;
   const cells = Array.from({ length: LEN }, (_, i) => code[i] ?? "");
@@ -58,7 +59,7 @@ export default function InviteCode() {
             <Image source={suite} style={FILL} resizeMode="cover" />
           </View>
         ) : null}
-        <Stack gap={8} style={{ marginTop: showCard ? 28 : 8 }}>
+        <Stack gap={8} style={{ marginTop: showCard ? 20 : 8 }}>
           <SectionLabel color={colors.goldLight}>{copy.invite.label}</SectionLabel>
           <T v="title42" size={height < 700 ? 32 : 38}>
             {copy.invite.title}
@@ -109,7 +110,7 @@ export default function InviteCode() {
 }
 
 const styles = StyleSheet.create({
-  card: { alignSelf: "center", width: 150, height: 186, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: colors.goldBorder, transform: [{ rotate: "-3deg" }], marginTop: 12 },
+  card: { alignSelf: "center", width: 112, height: 138, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: colors.goldBorder, transform: [{ rotate: "-3deg" }], marginTop: 12 },
   cells: { flexDirection: "row", gap: 8, marginTop: 22 },
   cell: { flex: 1, height: 64, borderRadius: radius.chip, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", alignItems: "center", justifyContent: "center" },
   cellActive: { borderColor: "rgba(201,169,110,0.6)" },

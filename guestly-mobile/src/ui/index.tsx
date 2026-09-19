@@ -179,10 +179,16 @@ export function useKeyboardOpen(): boolean {
  *  the top of the window, that is off by the distance to the top, and on a
  *  667 pt phone the composer ended up under the keyboard (Part 9 audit, D-032).
  *  This wrapper measures its real place in the window and passes it on. */
-export function KeyboardFill({ children }: { children: ReactNode }) {
+export function KeyboardFill({ children, modal = false }: { children: ReactNode; modal?: boolean }) {
   const ref = useRef<View>(null);
+  const insets = useSafeAreaInsets();
   const [offset, setOffset] = useState(0);
-  const measure = () => ref.current?.measureInWindow((_x, y) => setOffset(Math.max(0, Math.round(y || 0))));
+  // Inside an iOS modal sheet the measure is relative to the sheet, not to the
+  // screen: it misses the gap the system leaves above the sheet (status bar or
+  // Dynamic Island plus about 10 pt). Without it the composer of the Coordinator
+  // sat half under the keyboard on the 667 pt phone.
+  const sheetGap = modal && Platform.OS === "ios" ? insets.top + 10 : 0;
+  const measure = () => ref.current?.measureInWindow((_x, y) => setOffset(Math.max(0, Math.round(y || 0)) + sheetGap));
   useEffect(() => {
     const sub = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", measure);
     return () => sub.remove();
