@@ -122,3 +122,89 @@ committing:
   first non-2xx and saves its ledger after every row.
 - Not testable on this Mac: Sign in with Apple and Google end to end, real push delivery, QR
   scanning with a real camera, biometric hardware, Android on any device, a real iPad.
+
+---
+
+## Step 2, audit (Sep 18 2026, 18:35 to 20:35 CDT)
+
+**Seed applied at 2026-09-18T23:50:52Z (18:50 CDT)**, after pass A1. Retitled to ES at 19:05 and back
+to EN at 19:30 CDT. `seed-demo.mjs --verify` at the end: English seed, one open request, reminders
+off. `emailSent=false`. The seed payloads are now proven by a real write (no non-2xx).
+
+No product code was changed (the step is find, not fix). No resume work was found: the tree was
+clean and `docs/PART9-AUDIT.md` did not exist, so the step started from zero.
+
+### What exists now
+
+- `guestly-mobile/docs/PART9-AUDIT.md`: header, the matrix (102 rows x S, L, T x EN, ES), the other
+  passes, the defect register (43 defects: 4 P0, 28 P1, 10 P2, 1 P3), the hypotheses table (H1 to
+  H29), the writes made on demo-review, the seed ledger ids, notes for the fix step.
+- `guestly-mobile/docs/part9/audit-notes.md`: the raw reading notes, 30 batches, written to disk
+  and committed batch by batch (plan C11).
+- `guestly-mobile/docs/part9/evidence/`: 47 JPEG at 1000 px, 3.7 MB. The capture that shows a real
+  tenant (D-001) is deliberately NOT in git, and the real names were removed from the notes.
+- `guestly-mobile/.maestro/alert-cancel.yaml`: opens an alert by testID and taps cancel; used for
+  the delete-account confirmation so that nothing ever taps by the destructive words.
+- `guestly-mobile/scripts/part9/routes.json`: four audit notes (C13, C34, S01, S02).
+
+### The four P0s
+
+1. D-001: the broadcast template preview shows another, REAL couple's wedding on demo-review
+   (hard-coded template bodies in the portal). App side fix plus a portal fix by the lead.
+2. D-002: on `/invite` the keyboard hides the six code boxes on the SE, on the iPhone 17e (390x844),
+   and in both iPad windows. Only the Pro Max is clean.
+3. D-003: primary actions behind the floating tab bar. The guest RSVP button cannot be reached on
+   the SE or in the iPad mini window (the screen does not scroll); the door check-in name field is
+   hidden on every device, which strands a user who denies the camera.
+4. D-004 (data, not code): demo-review is not review-ready: site unpublished (six empty guest
+   pages), fallback message in the demo thread, QA leftovers from other work. Agents may not publish.
+
+### Decisions
+
+- Reading method: S four or five per contact sheet at about 1x instead of one image at a time
+  (plan C11), so that all findings fit one agent context; single images opened whenever a sheet
+  raised a doubt. T read nine or ten per sheet because the iPad mini window IS the SE layout.
+- A matrix cell is FAIL for any defect of any severity on that screen, so 382 of 612 cells fail.
+  Most of them flip with ten kit fixes in `src/ui` (listed in section 8 of the audit).
+- No AI question, no RSVP edit and no throwaway rows: the allowed writes of plan 8.4 were not used,
+  because the tenant was busy with someone else's QA and nothing was worth the email risk. The cost:
+  no success states and no after-question states were seen. Said in the audit.
+- A3 ran on a SECOND Metro (port 8098) pointed at the proxy, so the direct Metro on 8097 never
+  stopped. Both the proxy and the second Metro are stopped again; S was relaunched on the direct
+  base and a real data screen was confirmed.
+- Full-size PNGs were deleted at the end (2.1 GB to 168 MB); the 1400 px JPEG twins stay for the
+  fix step's before and after comparison. The 523 MB of web rig PNGs were deleted after reading.
+
+### Evidence
+
+- Walks: A1 218 captures, A2 714 (S, L, T x EN, ES x couple 79, planner 20, guest 14, signed out 9),
+  A3 61, A5 27, A6 9, A10 13, A11 21, plus 46 Maestro captures and 581 web rig screenshots with
+  overflow numbers (8 overflows, all on the entrance). Proxy log: 54 forced 500 or 502 answers.
+- Tap targets measured with `maestro hierarchy` on 28 screens. Contrast computed for 20 token pairs.
+- Gates: `bash guestly-mobile/scripts/part9/gates.sh` exit 0: tsc 0 errors, eslint 0 errors and the
+  same 9 baseline warnings, all grep gates empty (em dash, brand spelling, purchase wording, Face ID,
+  real tenant names, tokens, demo passwords), copy parity 16 files 0 problems. expo-doctor: the same
+  2 pre-existing failures as in step 1 (eas-cli in dependencies, 34 packages behind the SDK 57 patch
+  set), untouched because the wave forbids dependency changes. The project has no unit test script.
+- Production JS export: `npx expo export -p ios` and `-p android` both exit 0; output deleted.
+- `~/.maestro/tests` is empty. No password was typed into any UI in this step (sessions by
+  injection only). Simulator build budget unchanged: 1 of 3 used.
+
+### Not done, and why
+
+- Secondary states (wrong code, find results, password mode and sign-in error on a simulator,
+  after-question states, filter applied, dry-run preview, success states), the biometric lock
+  overlay, the bubble dragged, 17 of the 18 sheet and modal files: not captured. Listed in the audit.
+- A4 on L in EN was not run; four Maestro flows missed their field (P05, C10, C30, E07).
+- A3 covered 18 couple, 6 planner and 8 guest screens in `fail`, a sample in `slow` and `offline`.
+- Not testable on this Mac: Sign in with Apple and Google, real push, QR with a real camera,
+  biometric hardware, Android, a real iPad, VoiceOver by ear, cold-start deep links.
+
+### For the lead
+
+- demo-review was being used by someone else all evening (party count 40 to 54, a QA guest with a
+  phone number, a second planner request, junk Coordinator sessions on the demo planner). Freeze it
+  before App Review and before the store captures.
+- State left: S booted (couple session, EN, dark, text size large), L, M, T, P shut down with the
+  dev client installed. Metro runs on 8097 on the direct base. Disk: 15 GB free;
+  `~/Library/Developer/CoreSimulator/Devices` holds 16 GB and shrinks at teardown.

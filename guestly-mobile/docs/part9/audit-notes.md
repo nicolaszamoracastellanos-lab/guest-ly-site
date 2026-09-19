@@ -30,7 +30,7 @@ agent's context. The clean result is `docs/PART9-AUDIT.md`. Shot paths are under
 - C37 new block: raw ISO date in the day field, time fields are free text "HH:MM" (no picker); placeholder "Un nombre, por ejemplo el padrino o la..." truncated.
 - C39 brain sections: date as free text "(AAAA-MM-DD)"; empty multi-line fields have no placeholder; hotels: the bubble sits exactly on the "Recomendado" toggle (P1, control covered).
 - C42 insights: stat cards of uneven height, "4 mensajes de invitados" wraps to three lines; bubble covers "conversaciones tensas".
-- C44 new broadcast: P0 for store and review: the preview text reads "Alexandra Schuab y Nicolas Zamora para organizar tu asistencia" on demo-review (real couple's names inside the approved template). Template names are English ("Invitation", "RSVP reminder") inside ES. The three-way language segmented control wraps to two lines and the selected pill clips its text. "Mensaje personalizado" touches the pill edge.
+- C44 new broadcast: P0 for store and review: the preview text names a REAL couple (another tenant) inside the approved template on demo-review; the names are left out of this file on purpose. Template names are English ("Invitation", "RSVP reminder") inside ES. The three-way language segmented control wraps to two lines and the selected pill clips its text. "Mensaje personalizado" touches the pill edge.
 - C46 website: heading "app.guest-ly.com/demo-r..." truncated; button "Cambiar di..." truncated and covered by the bubble.
 - C49 invite code: "CAMAND" wraps to "CAMAN / D" on 375 pt. P1. Button "Copiar . Codi..." truncated.
 - C50 email notifications: bubble covers the second toggle completely. P1.
@@ -106,7 +106,7 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 
 - The Pro Max cures most SE problems: keyboards leave the fields visible, RSVP stat labels fit, "Remind 24 pending" fits, the thread composer (C10) sits ABOVE the tab bar, C49 "CAMAND" fits on one line, C15 meta line fits.
 - Still broken on L: C03 "[object Object]"; C11 sublabels "The day, minute...", "Gaps, escalations...", "guest-ly.com/de..."; C13 helper text under the tab bar; C16 tiles "Wedding ch...", "Reminders a..." and the floating "Add a task" on top of a task row; C24 "$5,890. / 00" still wraps; C35 "09:0 / 0" and "16:0 / 0" still wrap; C36 and C37 Save button hidden behind the tab bar (gold edge peeks out); C17 Save overlaps the "Category: Vendors" footnote; C15 CHANGES row has an empty label; C33 shows a toggle with NO label at all (there is room on L, so the label is missing, not hidden); C47-registry three-way segmented control ("Link to a registry | A page on this site | Only the note") is crammed and wraps.
-- C44 on L shows the whole approved template: the real couple's names, their real date ("Viernes 27 de noviembre de 2026"), their programme and `https://app.guest-ly.com/alexnico`, inside demo-review. P0 confirmed at full size. Evidence is kept out of git on purpose.
+- C44 on L shows the whole approved template: the real couple's names, their real date (left out here), their programme and `their real site link`, inside demo-review. P0 confirmed at full size. Evidence is kept out of git on purpose.
 - C12: run sheet order and DONE state as on S. C42: fine on L.
 - S05, S06: the web view modal shows a thin brown sliver of the screen behind it at both top corners. Portal chrome inside the web view as on S.
 - Bubble (H22) on L still covers: C02 badge, C06 badge, C10 message text, C11 tile, C12 badge, C16 HIGH badge, C24 amount, C32 "Remove from table", C47-schedule toggle, S01 chevron.
@@ -149,7 +149,7 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 
 - L-ES still truncates: C06 "Registrar una resp..." and "Recordar a 16 pen..."; C11 "Pregunte lo que...", "El dia, minuto a...", "Vacios, escalacio..."; C16 "Lista de la bo...", "Recordatorio..."; C24 "Importar desde ar..." and "USD 5.890,0 / 0"; C46 "Cambiar direcci...".
 - L-ES runs off the right edge (no wrap, no ellipsis): C15 meta "16m . planner-review@guest-ly.com"; C29 "+ Vincular una linea del presupuest".
-- L-ES C44: the three-way language control has no padding left ("El de cada invitado|Espanol para todos|Ingles para todos" touch each other). Preview shows "Hi QA! ... wedding of Alexandra Schuab & Nicolas Zamora" (a guest called QA with a phone now exists on demo-review; not ours).
+- L-ES C44: the three-way language control has no padding left ("El de cada invitado|Espanol para todos|Ingles para todos" touch each other). Preview shows "Hi QA! ... wedding of [the real couple]" (a guest called QA with a phone now exists on demo-review; not ours).
 - L-ES C47-registry: three-way control wraps to two lines per segment. C36, C37: Save behind the tab bar. C35: "09:0 / 0", "16:0 / 0".
 - C39 sections, C47 sections, C48, C49 (one line on L), C50, C51, S01, S03, S05 (English guide inside the Spanish app), S06, S07: render; findings as on S.
 - demo-review count drift seen again: 42 parties / 76 people in this walk.
@@ -264,3 +264,34 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 
 - Under 44 pt, new in this run: `Segmented` segments 160x38 (C16, C32); task filter chips 40 high; "Agregar una mesa" text link 139x20 (C31); "Quitar de la mesa" text links 113x20 and the group remove icon 18x18 (C32, the smallest target in the app); "Copiar enlace" 289x30 (C46); day chips 39 to 49 x 40 (C51); `Toggle` 44x26 (S01; code shows hitSlop 8, so about 42 high); header IconButtons 40x40 (budget settings, rename category, add block, add to calendar, edit vendor).
 - Not reachable by this tool (no accessibility label of their own, measured by eye on the 2x screenshots): reorder arrows on budget lines about 24 pt (C25), the two round icon buttons on an RSVP question row about 32 pt (C08), "+ Vincular una linea del presupuesto" and "+ Agregar categoria" text links about 20 pt high, "Seleccionar todas / Limpiar" (C21), "Usar una contrasena" on sign-in, "Mas opciones" on task forms.
+
+## Batch 28: A3 forced states through the proxy (second Metro on 8098), S, ES, couple (37 captures read six and seven-up)
+
+Proxy log: 54 responses with 500 or 502 were served during these walks, so the failures did reach the app.
+
+- `fail` with NO cache (18 screens). The app almost never says that something failed (H11 confirmed, worse than expected):
+  - FALSE EMPTY states: C02 guests shows "Empiece por las personas sin las que no imagina su dia" with "Agregar invitado" to a couple that has 40 parties; C09 "Nada esperando por usted"; C16 "Todavia no hay tareas"; C11 tiles say 0 abiertas, 0 planos, 0 contratados; C06 "0 grupos todavia sin responder" with dots for numbers; C01 stat cards with no numbers; C12 "* / ." fragments.
+  - C38 wedding brain: "Todavia no hay nada publicado. Los invitados no reciben respuestas hasta que publique." with an ENABLED "Publicar al concierge en vivo" button, while version 2 is live. A false alarm plus a dangerous button during a partial outage. P1, top of the error list.
+  - BLANK screens (title and nothing else, no retry): C14, C24, C28, C31, C42 (section headings only), C43 (enabled "Nuevo mensaje").
+  - Only C35 run sheet shows an error sentence ("Algo salio mal. Intentelo de nuevo."), as plain text with no Retry button. C46 shows the calm pending copy ("El sitio se esta preparando..."). S01 and S03 are local and fine.
+- `fail-html` (502 with an HTML body): same false empty (C02) and blank (C24). No raw HTML or status text reaches the screen. Good on that point.
+- `fail` WITH cache and `offline` WITH cache (C01, C02, C16, C24): cached data stays on screen. Good. But there is NO offline or stale banner on any of the four screens, so the user cannot tell the data is old (plan 6.4 offline row). True airplane mode cannot be produced on the simulator; this is request-level failure only.
+- `slow` (4 s): C02, C16, C24, C35 show skeleton blocks in the shape of the content, header and chips drawn at once. Pass.
+
+## Batch 29: A3 hang, update, expired (S, ES); A11 iPhone 17e 390x844, ES, 21 screens (seven-up, second run after accepting the system Open-in sheet twice)
+
+- `hang` (24 s wait, C02): still three skeleton rows after the client timeout window; no timeout message was seen in the capture. Listed with the error-state defect.
+- `update`: C01 kept its cached home; C02 raised the overlay "Actualice Guest-ly. Esta version ya no es compatible. Actualice desde la tienda para continuar." with NO button (H24 confirmed).
+- `expired` (401): both screens land on the entrance, in Spanish, with no flash of broken content in the capture and no raw error. Pass. (There is no sentence telling the user why they were signed out; P3.)
+- A11, 390 pt: **E02: the keyboard covers the six code boxes on the iPhone 17e as well.** D-002 is therefore not an SE-only problem: it hits the 390x844 class, the most common iPhone size. Only the Pro Max shows the boxes.
+- A11 also repeats at 390: C06 truncated buttons and "PENDIENTE / S", C14 squeezed rows, C16 truncated tiles and floating button over a row, C24 "USD / 5.890, / 00", C31 "Sugerir distrib...", C35 "09:0 / 0", C49 "CAMAN / D", G03 "Agregar al cale..." and "Cambiar r..." plus the card cut by the tab bar, P03 squeezed rows, greeting "Buenos noches".
+- Fine at 390: E01, E03, E07 (whole form visible), G01, G02 (button visible above the tab bar), G04 (header fits), C01, C02, C11 layout, P01, P18.
+- First A11 and A10 runs were harness misses (every capture carried the iOS "Open in Guest-ly?" sheet because `prep.yaml` had only accepted one of the two URL schemes on the fresh simulators). They were discarded and rerun.
+
+## Batch 30: A10 iPad Pro 13 spot check (13 screens, EN, seven-up); A3 guest and planner failures (14, seven-up); return to the direct base
+
+- A10: on the iPad Pro the compatibility window is a TALL phone (about the 17e proportions), not the 375x667 window of the iPad mini. E01, E03, E07, G01, G02 (button visible), G03, G04, C01, C02, C11, C13, S05 render cleanly, no crash, no clipped modal. **E02: the keyboard hides the code boxes here as well.** So D-002 hits the SE, the 17e, the iPad mini and the iPad Pro; only the Pro Max is clean.
+- A3 guest, `fail` with no cache: G01 tells a guest who HAS answered that the RSVP is PENDIENTE with a "Responder ahora" button (false state, P1); G02 shows an RSVP form with no people and a disabled "Enviar mi respuesta"; G04 an empty schedule with no message; G06 "El modo del dia se activa a las 5:00 del dia de la boda" (false); G07 the true-looking empty state "Todavia no hay mensajes"; G08 fine (local). G09 is the ONLY screen in the app with a real error state: "No se pudo cargar el sitio. Algo salio mal. Intentelo de nuevo." plus a retry button.
+- A3 planner, `fail`: P01 "1 bodas . 0 asuntos le necesitan" with empty stat cards; P02, P03, P09, P13 blank under their titles; P06 "Nada en el tablero" (false empty).
+- Guest `slow` with cache: cached content stays (pass).
+- Proxy and the second Metro were stopped (ports 8098 and 8787 free). S was relaunched from Metro 8097 on the direct base and `/couple/guests` loaded real data (capture `S/en/couple/A3-direct-check/C02`). That capture reads **54 parties / 100 people**: somebody is adding guests to demo-review tonight. Not this step.

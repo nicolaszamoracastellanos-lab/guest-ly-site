@@ -382,7 +382,8 @@
     "name-search"
    ],
    "needs_seed": false,
-   "via": "deeplink"
+   "via": "deeplink",
+   "note": "audit: camera-denied is reached with `xcrun simctl privacy <udid> reset all` plus a tap on Don't Allow (grant again after). name-search is NOT reachable on 375x667: the field sits behind the tab bar (D-003)."
   },
   {
    "id": "C14",
@@ -605,7 +606,8 @@
     "photos-denied"
    ],
    "needs_seed": false,
-   "via": "deeplink"
+   "via": "deeplink",
+   "note": "audit: photos-denied does not exist. The app uses the system photo picker, which needs no permission, so there is no prompt to deny."
   },
   {
    "id": "C35",
@@ -985,7 +987,7 @@
    ],
    "needs_seed": false,
    "via": "deeplink",
-   "note": "delete alert: open and CANCEL only"
+   "note": "delete alert: open and CANCEL only (flow .maestro/alert-cancel.yaml taps by testID and cancels). audit: wedding-switcher does not open for an account with one wedding (both demo accounts), so that state is n/a on demo-review."
   },
   {
    "id": "S02",
@@ -996,7 +998,8 @@
     "wedding-switcher"
    ],
    "needs_seed": false,
-   "via": "deeplink"
+   "via": "deeplink",
+   "note": "audit: wedding-switcher is n/a on demo-review (one wedding)."
   },
   {
    "id": "S03",
