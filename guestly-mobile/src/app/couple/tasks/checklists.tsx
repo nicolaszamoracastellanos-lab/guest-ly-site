@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, shortDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -13,11 +12,12 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskCategory } from "@/features/tasks/hooks";
 import { errorText, priorityKind } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 export default function Checklists() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const { data: board, isLoading } = useTasksBoard();
@@ -45,7 +45,7 @@ export default function Checklists() {
       for (const k of TASK_INVALIDATE) await qc.invalidateQueries({ queryKey: [k] });
       setSelected(new Set());
       Alert.alert(fmt(copy.checklistAddedToast, { n: r.created }));
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, ""));
     } finally {
@@ -54,7 +54,7 @@ export default function Checklists() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} />} bottomInset={120}>
+    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={120}>
       <BigTitle title={copy.checklist} sub={copy.checklistIntro} size={34} />
       {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <View style={{ marginTop: 16 }}>

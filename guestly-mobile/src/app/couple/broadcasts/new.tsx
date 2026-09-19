@@ -2,7 +2,7 @@
 // Phones never reach the app; the server resolves the audience.
 
 import React, { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -13,6 +13,7 @@ import { Screen, TopBar, BigTitle, Card, Chip, ChipRow, Segmented, Input, Button
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { previewBroadcast, sendBroadcast, useBroadcasts, type AudienceFilter, type Composition, type Preview, type SendResult } from "@/features/broadcasts/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 type Mode = "template" | "custom";
 type LangMode = "auto" | "es" | "en";
@@ -21,6 +22,7 @@ export default function NewBroadcast() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { data, isLoading } = useBroadcasts();
 
@@ -116,7 +118,7 @@ export default function NewBroadcast() {
 
   if (result) {
     return (
-      <Screen header={<TopBar onBack={() => router.back()} title={c.title} />}>
+      <Screen header={<TopBar onBack={back} title={c.title} />}>
         <BigTitle label={c.sentTitle} title={fmt(c.sentOf, { sent: result.summary.sent, total: result.summary.total })} sub={fmt(c.sentBody, { sent: result.summary.sent, total: result.summary.total, failed: result.summary.failed })} size={38} />
         {result.failed_batches.length ? (
           <Stack gap={8} style={{ marginTop: 16 }}>
@@ -131,8 +133,8 @@ export default function NewBroadcast() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.newBroadcast} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={c.newBroadcast} />} bottomInset={40} keyboard>
+      <>
         {isLoading && !data ? (
           <Stack gap={12}>
             <Skeleton h={120} r={18} />
@@ -211,9 +213,9 @@ export default function NewBroadcast() {
             <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : c.review} onPress={() => { setTyped(""); setSendError(null); setConfirmOpen(true); }} disabled={!canReview} style={{ marginTop: 20 }} />
           </>
         ) : null}
-      </KeyboardAvoidingView>
+      </>
 
-      <Sheet visible={pickOpen} onClose={() => setPickOpen(false)} top={90}>
+      <Sheet visible={pickOpen} onClose={() => setPickOpen(false)} top={90} scroll={false}>
         <View style={{ paddingHorizontal: 20, flex: 1 }}>
           <Input icon="search" value={pickQuery} onChangeText={setPickQuery} placeholder={c.searchGuests} autoCorrect={false} />
           <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>

@@ -14,11 +14,13 @@ import { COPY } from "@/features/brain/copy";
 import { useBrain, BRAIN_KEY } from "@/features/brain/hooks";
 import { initDraft, useDraft, isDirty, saveNow, setSavedListener } from "@/features/brain/draft";
 import { SECTIONS, sectionFill } from "@/features/brain/sections";
+import { useSafeBack } from "@/lib/nav";
 
 export default function BrainHome() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
@@ -57,7 +59,7 @@ export default function BrainHome() {
   const facts = draft.facts as Record<string, unknown>;
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
 
       <Card kind="glass" padding={16} style={{ marginTop: 20 }}>

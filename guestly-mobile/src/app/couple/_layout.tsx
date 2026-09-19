@@ -18,6 +18,9 @@ export default function CoupleTabs() {
   ];
   return (
     <Tabs
+      // Back means the screen the person came from (More, then Tasks, then back
+      // lands on More). The default, firstRoute, jumped to the home tab.
+      backBehavior="history"
       tabBar={(props) => <GlassTabBar {...props} specs={specs} />}
       screenOptions={{
         headerShown: false,

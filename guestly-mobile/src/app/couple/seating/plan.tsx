@@ -3,7 +3,6 @@
 
 import React, { useState } from "react";
 import { View, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -30,11 +29,12 @@ import {
   SEATING_KEY,
   type SeatingSurface,
 } from "@/features/seating/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function SeatingPlan() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { data } = useCoupleSeating();
   const image = useQuery({
@@ -114,7 +114,7 @@ export default function SeatingPlan() {
 
   return (
     <Screen
-      header={<TopBar onBack={() => router.back()} title={c.floorPlan} />}
+      header={<TopBar onBack={back} title={c.floorPlan} />}
       bottomInset={40}
     >
       <BigTitle title={c.floorPlan} sub={c.floorPlanIntro} size={34} />

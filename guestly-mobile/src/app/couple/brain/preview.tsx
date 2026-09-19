@@ -1,8 +1,7 @@
 // Ask the live concierge, or preview how it would answer with unpublished edits.
 
 import React, { useState } from "react";
-import { View, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { View } from "react-native";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -11,13 +10,14 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
 import { useDraft } from "@/features/brain/draft";
 import { useBrain } from "@/features/brain/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 type Mode = "live" | "draft";
 
 export default function BrainPreview() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const draft = useDraft();
   const { data } = useBrain();
   const [mode, setMode] = useState<Mode>("live");
@@ -45,8 +45,8 @@ export default function BrainPreview() {
   const options = [{ value: "live" as Mode, label: c.modeLive }, ...(data?.preview_available === false ? [] : [{ value: "draft" as Mode, label: c.modeDraft }])];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40} keyboard>
+      <>
         <BigTitle title={c.askTitle} size={36} />
         <View style={{ marginTop: 16 }}>
           <Segmented<Mode> value={mode} options={options} onChange={setMode} />
@@ -83,7 +83,7 @@ export default function BrainPreview() {
             </Card>
           ))}
         </Stack>
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

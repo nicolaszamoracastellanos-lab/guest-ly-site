@@ -3,8 +3,7 @@
 // this screen produces; everything else comes from /auth/me.
 
 import React, { useState } from "react";
-import { View, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { View, StyleSheet, Image, Platform, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as WebBrowser from "expo-web-browser";
@@ -14,6 +13,7 @@ import { useCopy, useLang } from "@/i18n";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 WebBrowser.maybeCompleteAuthSession();
 const suite = require("../../assets/photos/suite.jpg");
@@ -21,7 +21,7 @@ const suite = require("../../assets/photos/suite.jpg");
 export default function SignIn() {
   const copy = useCopy();
   const { lang, setLang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(false);
@@ -104,8 +104,8 @@ export default function SignIn() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>
+      <>
         <View style={styles.hero}>
           <Image source={suite} style={FILL} resizeMode="cover" />
           <LinearGradient colors={["rgba(13,17,23,0.1)", "rgba(13,17,23,0.6)", colors.night]} style={FILL} />
@@ -156,7 +156,7 @@ export default function SignIn() {
             </T>
           </T>
         </Stack>
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

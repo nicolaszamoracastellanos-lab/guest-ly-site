@@ -9,6 +9,7 @@ import { post, ApiFailure } from "@/lib/api";
 import { useSession, type TenantSummary, type GuestIdentity } from "@/lib/session";
 import { Screen, TopBar, T, Input, Card, ListRow, Avatar, Stack, BigTitle } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 type Candidate = { id: string; name: string; party_of: string | null };
 
@@ -16,6 +17,7 @@ export default function FindName() {
   const copy = useCopy();
   const { lang, applyTenantDefault } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const { signInGuest } = useSession();
   const params = useLocalSearchParams<{ code: string; tenant: string }>();
   const tenant = JSON.parse(params.tenant) as TenantSummary;
@@ -65,7 +67,7 @@ export default function FindName() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.guestHome.tabs.rsvp} />} bottomInset={24} keyboard>
+    <Screen header={<TopBar onBack={back} title={copy.guestHome.tabs.rsvp} />} bottomInset={24} keyboard>
       <BigTitle label={copy.find.step} title={copy.find.title} sub={copy.find.intro} size={38} />
       <Input
         testID="find-input"

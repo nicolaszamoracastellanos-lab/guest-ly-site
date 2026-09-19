@@ -4,7 +4,7 @@
 
 import React, { useState } from "react";
 import { View, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useLang } from "@/i18n";
 import { ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -13,13 +13,14 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useConfigDraft, updateSection, imageUri, pickAndUpload, slugId, type Section, type SectionType, type WebsiteConfig, type Bilingual, type TravelItem, type PartyMember, type RegistryItem, type EventOverride } from "@/features/website/hooks";
 import { BiField, TextField, PhotoField, RowControls, SwitchRow, move } from "@/features/website/fields";
+import { useSafeBack } from "@/lib/nav";
 
 const EMPTY: Bilingual = { en: null, es: null };
 
 export default function SectionEditor() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const { type } = useLocalSearchParams<{ type: string }>();
   const { surface, isLoading, draft, update, state, error, rememberSigned } = useConfigDraft();
   const signed = surface?.signed;
@@ -38,7 +39,7 @@ export default function SectionEditor() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={title} right={<T v="meta13" color={state === "error" ? colors.red : state === "saved" ? colors.green : colors.ivory40}>{status}</T>} />} bottomInset={60} keyboard>
+    <Screen header={<TopBar onBack={back} title={title} right={<T v="meta13" color={state === "error" ? colors.red : state === "saved" ? colors.green : colors.ivory40}>{status}</T>} />} bottomInset={60} keyboard>
       <BigTitle title={title} size={36} />
       {isLoading && !draft ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

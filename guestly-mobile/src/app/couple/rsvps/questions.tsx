@@ -2,8 +2,7 @@
 // whole list through the portal's sanitizer each time.
 
 import React, { useState } from "react";
-import { View, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { View, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -13,6 +12,7 @@ import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Button, Banner, EmptySt
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/rsvp-questions/copy";
 import { saveRsvpQuestions, slug, useRsvpQuestions, type RsvpQuestion } from "@/features/rsvp-questions/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 type Draft = RsvpQuestion;
 
@@ -23,7 +23,7 @@ function blank(): Draft {
 export default function RsvpQuestions() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
@@ -101,7 +101,7 @@ export default function RsvpQuestions() {
   const setD = (patch: Partial<Draft>) => setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
+    <Screen header={<TopBar onBack={back} title={c.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {error && !editing ? <Banner icon="warning" title={error} kind="red" /> : null}
       <Stack gap={10} style={{ marginTop: 18 }}>
@@ -131,9 +131,9 @@ export default function RsvpQuestions() {
         {canEdit ? <Button label={c.add} icon="plus" kind="glass" onPress={() => { setError(null); setEditing({ index: null, draft: blank() }); }} disabled={busy || questions.length >= 20} /> : null}
       </Stack>
 
-      <Sheet visible={!!editing} onClose={() => (busy ? null : setEditing(null))} top={70}>
+      <Sheet visible={!!editing} onClose={() => (busy ? null : setEditing(null))} top={70} scroll={false}>
         {d ? (
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
               <T v="title26">{c.edit}</T>
               <Stack gap={10} style={{ marginTop: 14 }}>
@@ -183,7 +183,7 @@ export default function RsvpQuestions() {
               <Button label={busy ? c.saving : c.save} onPress={saveDraft} loading={busy} disabled={busy} style={{ marginTop: 18 }} />
               {editing?.index !== null ? <Button label={c.delete} kind="text" onPress={remove} disabled={busy} style={{ marginTop: 6 }} /> : null}
             </ScrollView>
-          </KeyboardAvoidingView>
+          </View>
         ) : null}
       </Sheet>
     </Screen>

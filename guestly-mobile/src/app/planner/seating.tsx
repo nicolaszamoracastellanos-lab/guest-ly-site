@@ -3,7 +3,6 @@
 
 import React from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
@@ -25,11 +24,12 @@ import {
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
 import { usePlannerSeating, initialsOf } from "@/features/seating/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerSeating() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const { data, isLoading, error } = usePlannerSeating();
   const unseated =
     data?.parties.filter((p) => p.confirmed && p.unseated > 0) ?? [];
@@ -38,7 +38,7 @@ export default function PlannerSeating() {
 
   return (
     <Screen
-      header={<TopBar onBack={() => router.back()} title={c.title} />}
+      header={<TopBar onBack={back} title={c.title} />}
       bottomInset={40}
     >
       <BigTitle title={c.title} sub={c.readOnly} size={38} />

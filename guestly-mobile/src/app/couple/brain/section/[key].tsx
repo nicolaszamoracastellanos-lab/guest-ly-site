@@ -1,8 +1,8 @@
 // One brain section. Edits land in the shared draft and auto-save.
 
 import React, { useState } from "react";
-import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Alert } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner } from "@/ui";
@@ -11,10 +11,11 @@ import { COPY } from "@/features/brain/copy";
 import { useDraft, setPath, getPath, replaceFacts } from "@/features/brain/draft";
 import { SECTIONS, EVENT_FIELDS, type Field } from "@/features/brain/sections";
 import type { ItineraryEvent, WeddingFacts } from "@/features/brain/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function BrainSection() {
   const c = useFeatureCopy(COPY);
-  const router = useRouter();
+  const back = useSafeBack();
   const { key, gap } = useLocalSearchParams<{ key: string; gap?: string }>();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
@@ -24,8 +25,8 @@ export default function BrainSection() {
   const status = draft.status === "saving" ? c.saving : draft.status === "saved" ? c.saved : draft.status === "error" ? c.saveFailed : null;
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={60} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={60} keyboard>
+      <>
         <BigTitle title={title} size={36} />
         {!canEdit ? (
           <T v="meta13" color={colors.ivory55} style={{ marginTop: 8 }}>
@@ -46,7 +47,7 @@ export default function BrainSection() {
             {status}
           </T>
         ) : null}
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

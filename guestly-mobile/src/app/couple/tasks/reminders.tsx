@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Alert, View } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { useLang } from "@/i18n";
@@ -15,11 +14,12 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
 import { errorText, ConfirmSheet } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 export default function Reminders() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const user = useUserSession();
@@ -66,7 +66,7 @@ export default function Reminders() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} />} bottomInset={60}>
+    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
       <BigTitle title={copy.reminders} size={34} />
       {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <Stack gap={16} style={{ marginTop: 20 }}>

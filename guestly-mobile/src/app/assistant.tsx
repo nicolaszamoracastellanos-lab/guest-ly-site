@@ -5,7 +5,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Pressable, ActivityIndicator, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,11 +18,12 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
 import { coordinatorBase, useAssistantSession, useAssistantSessions, type AssistantSurface, type TimelineItem } from "@/features/assistant/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function AssistantScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const online = useOnline();
@@ -237,7 +237,7 @@ export default function AssistantScreen() {
       bottomInset={0}
       header={
         <TopBar
-          onBack={() => router.back()}
+          onBack={back}
           title={copy.title}
           right={
             <Row gap={8}>
@@ -347,7 +347,7 @@ export default function AssistantScreen() {
         )}
       </KeyboardAvoidingView>
 
-      <Sheet visible={drawer} onClose={() => setDrawer(false)} top={140}>
+      <Sheet visible={drawer} onClose={() => setDrawer(false)} top={140} scroll={false}>
         <Row style={{ justifyContent: "space-between", marginBottom: 8 }}>
           <T v="title26">{copy.chats}</T>
           <Button label={copy.newChat} small kind="glass" full={false} icon="plus" onPress={newChat} />

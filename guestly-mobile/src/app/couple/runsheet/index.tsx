@@ -31,11 +31,13 @@ import {
   type RunsheetSurface,
 } from "@/features/runsheet/hooks";
 import { RunsheetList } from "@/features/runsheet/list";
+import { useSafeBack } from "@/lib/nav";
 
 export default function CoupleRunsheet() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const { data, isLoading, error } = useCoupleRunsheet();
@@ -83,7 +85,7 @@ export default function CoupleRunsheet() {
     <Screen
       header={
         <TopBar
-          onBack={() => router.back()}
+          onBack={back}
           title={c.title}
           right={
             <Row gap={8}>

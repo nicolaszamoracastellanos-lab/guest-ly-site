@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Alert, Pressable } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
@@ -37,11 +37,12 @@ import {
   useSavePlan,
   initialsOf,
 } from "@/features/seating/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function SeatingTable() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = useCoupleSeating();
@@ -135,7 +136,7 @@ export default function SeatingTable() {
         style: "destructive",
         onPress: () => {
           draftActions.removeTable(table.id);
-          router.back();
+          back();
         },
       },
     ]);
@@ -148,7 +149,7 @@ export default function SeatingTable() {
     <Screen
       header={
         <TopBar
-          onBack={() => router.back()}
+          onBack={back}
           title={table?.label ?? c.title}
           right={
             draft.dirty ? (
@@ -356,7 +357,7 @@ export default function SeatingTable() {
         </>
       )}
 
-      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} top={140}>
+      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} top={140} scroll={false}>
         <Stack gap={10} style={{ paddingHorizontal: 20, flex: 1 }}>
           <T v="title26">{c.unseated}</T>
           <Input

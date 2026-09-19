@@ -1,8 +1,6 @@
 // Add a runsheet block. The day defaults to the wedding date.
 
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -20,11 +18,12 @@ import {
   RUNSHEET_KEY,
   type BlockForm,
 } from "@/features/runsheet/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function NewBlock() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const { data } = useCoupleRunsheet();
@@ -42,7 +41,7 @@ export default function NewBlock() {
     try {
       await post("/couple/runsheet", toBody(current));
       await qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
-      router.back();
+      back();
     } catch (err) {
       setError(err instanceof ApiFailure ? err.messages[lang] : c.error);
     } finally {
@@ -52,13 +51,11 @@ export default function NewBlock() {
 
   return (
     <Screen
-      header={<TopBar onBack={() => router.back()} title={c.newBlock} />}
+      header={<TopBar onBack={back} title={c.newBlock} />}
       bottomInset={40}
       keyboard
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <>
         <BigTitle title={c.newBlock} size={34} />
         <BlockFormFields
           form={current}
@@ -77,7 +74,7 @@ export default function NewBlock() {
           disabled={!online}
           style={{ marginTop: 22 }}
         />
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

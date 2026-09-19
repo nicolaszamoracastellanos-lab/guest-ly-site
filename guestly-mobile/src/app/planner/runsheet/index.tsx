@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Linking } from "react-native";
-import { useRouter } from "expo-router";
 import { useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
@@ -20,17 +19,18 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/runsheet/copy";
 import { usePlannerRunsheet } from "@/features/runsheet/hooks";
 import { RunsheetList } from "@/features/runsheet/list";
+import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerRunsheet() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const { data, isLoading, error } = usePlannerRunsheet();
   return (
     <Screen
       header={
         <TopBar
-          onBack={() => router.back()}
+          onBack={back}
           title={c.title}
           right={
             data?.blocks_total ? (

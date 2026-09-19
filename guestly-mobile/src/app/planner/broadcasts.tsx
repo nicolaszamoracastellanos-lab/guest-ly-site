@@ -11,16 +11,18 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { usePlannerBroadcasts } from "@/features/broadcasts/hooks";
 import { deliveryLine, groupTitle } from "@/app/couple/broadcasts/index";
+import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerBroadcasts() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const { data, isLoading } = usePlannerBroadcasts();
   const history = data?.history ?? [];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} />}>
+    <Screen header={<TopBar onBack={back} />}>
       <BigTitle title={c.plannerTitle} sub={c.plannerSubtitle} />
       <Button label={c.plannerRequest} icon="megaphone" onPress={() => router.push({ pathname: "/planner/requests/new", params: { kind: "send_reminders" } })} style={{ marginTop: 18 }} />
       {data ? (

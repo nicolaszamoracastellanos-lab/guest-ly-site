@@ -1,17 +1,17 @@
 // Add a guest (through saveGuest on the portal).
 
 import React, { useState } from "react";
-import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented } from "@/ui";
+import { useSafeBack } from "@/lib/nav";
 
 export default function NewGuest() {
   const copy = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const [form, setForm] = useState({ name: "", party_size: "1", members: "", phone: "", email: "", notes: "", language: lang as "en" | "es" });
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export default function NewGuest() {
       });
       await qc.invalidateQueries({ queryKey: ["couple-guests"] });
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
@@ -41,8 +41,8 @@ export default function NewGuest() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.guests.title} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.guests.title} />} bottomInset={40} keyboard>
+      <>
         <BigTitle title={copy.guests.add} size={38} />
         <Stack gap={10} style={{ marginTop: 20 }}>
           <Input value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholder={copy.guests.name} autoFocus autoCapitalize="words" />
@@ -57,13 +57,13 @@ export default function NewGuest() {
         </Stack>
         <Row gap={8} style={{ marginTop: 24 }}>
           <View style={{ flex: 1 }}>
-            <Button label={copy.common.cancel} kind="ghost" onPress={() => router.back()} />
+            <Button label={copy.common.cancel} kind="ghost" onPress={() => back()} />
           </View>
           <View style={{ flex: 1 }}>
             <Button label={copy.common.save} onPress={save} loading={busy} disabled={!form.name.trim()} />
           </View>
         </Row>
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

@@ -38,6 +38,11 @@ export const es: Copy = {
     error: "Algo salió mal. Inténtelo de nuevo.",
     yes: "Sí",
     no: "No",
+    button: "Botón",
+    errorTitle: "No pudimos cargar esto",
+    errorBody: "Revise su conexión e inténtelo de nuevo. No se perdió nada.",
+    updateAction: "Abrir la tienda",
+    icons: { back: "Atrás", x: "Cerrar", bell: "Notificaciones", gear: "Ajustes", more: "Más opciones", plus: "Agregar", edit: "Editar", share: "Compartir", search: "Buscar", filter: "Filtrar", undo: "Intentar de nuevo", calendar: "Calendario", "calendar-plus": "Agregar al calendario", camera: "Cámara", photo: "Foto", down: "Expandir", chev: "Abrir", check: "Listo", info: "Información", phone: "Llamar", map: "Mapa", list: "Lista", signout: "Cerrar sesión" },
   },
   entrance: {
     tagline: "Cada invitado, cada pregunta, un solo lugar en calma.",

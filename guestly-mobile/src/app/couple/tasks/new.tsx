@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -12,11 +11,12 @@ import { Screen, TopBar, Button, Stack, Banner } from "@/ui";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
 import { TaskForm, emptyForm, errorText, type TaskFormValue } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 export default function NewTask() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const { data: board } = useTasksBoard();
@@ -33,7 +33,7 @@ export default function NewTask() {
     try {
       await post("/couple/tasks", value);
       for (const k of TASK_INVALIDATE) await qc.invalidateQueries({ queryKey: [k] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, ""));
     } finally {
@@ -42,7 +42,7 @@ export default function NewTask() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.newTask} />} bottomInset={40} keyboard>
+    <Screen header={<TopBar onBack={back} title={copy.newTask} />} bottomInset={40} keyboard>
       <Stack gap={18}>
         {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
         <TaskForm board={board} value={value} onChange={setForm} />

@@ -15,11 +15,13 @@ import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, 
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { useConversation, type TranscriptLine } from "@/features/inbox/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function Conversation() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const user = useUserSession();
@@ -79,7 +81,7 @@ export default function Conversation() {
   const channelLabel = data ? (c.channel[data.channel] ?? data.channel) : "";
 
   return (
-    <Screen scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={() => router.back()} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
+    <Screen scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled">
           {isLoading && !data ? (

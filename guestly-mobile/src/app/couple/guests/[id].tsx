@@ -11,11 +11,13 @@ import { useGuestDetail } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Footer } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 export default function GuestDetailScreen() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const user = useUserSession();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -80,7 +82,7 @@ export default function GuestDetailScreen() {
   }
 
   return (
-    <Screen scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={() => router.back()} title={copy.guests.title} />}>
+    <Screen scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={back} title={copy.guests.title} />}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           {isLoading && !d ? (

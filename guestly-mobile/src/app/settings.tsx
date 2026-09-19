@@ -10,11 +10,13 @@ import { useSession, useUserSession } from "@/lib/session";
 import { biometricAvailable, biometricPrompt } from "@/lib/biometric";
 import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 export default function Settings() {
   const copy = useCopy();
   const { lang, setLang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const user = useUserSession();
   const { signOut, switchTenant, biometricEnabled, setBiometricEnabled, dayOfManual, setDayOfManual, pushToken } = useSession();
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -55,7 +57,7 @@ export default function Settings() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.settings.title} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={copy.settings.title} />} bottomInset={40}>
       <Row gap={14} style={{ marginTop: 8 }}>
         <Avatar initials={initials} size={56} />
         <View style={{ flex: 1, gap: 3 }}>

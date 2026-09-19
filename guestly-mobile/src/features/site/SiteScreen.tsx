@@ -13,6 +13,7 @@ import { Screen, TopBar, EmptyState, Button, Skeleton, Stack, BigTitle } from "@
 import { COPY } from "./copy";
 import { useGuestSite, type SectionType } from "./hooks";
 import { SiteBody } from "./sections";
+import { useSafeBack } from "@/lib/nav";
 
 type Entry = "hotels" | "gifts" | "faq" | "gallery" | "story";
 
@@ -28,6 +29,7 @@ export function SiteScreen({ entry }: { entry?: Entry }) {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const session = useGuestSession();
   const { data, isLoading, error, refetch } = useGuestSite();
   const only = entry ? ENTRY_SECTIONS[entry] : undefined;
@@ -35,7 +37,7 @@ export function SiteScreen({ entry }: { entry?: Entry }) {
   const title = entry ? copy.screens[entry] : copy.title;
 
   // The full site draws its own hero with a back button; entry screens use the TopBar.
-  const header = entry || !data?.sections.some((s) => s.type === "hero") ? <TopBar onBack={() => router.back()} title={entry ? title : session?.tenant.couple_names} /> : undefined;
+  const header = entry || !data?.sections.some((s) => s.type === "hero") ? <TopBar onBack={back} title={entry ? title : session?.tenant.couple_names} /> : undefined;
 
   let content: React.ReactNode;
   if (isLoading && !data) {

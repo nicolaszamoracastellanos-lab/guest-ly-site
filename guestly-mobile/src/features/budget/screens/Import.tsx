@@ -3,8 +3,8 @@
 // review step.
 
 import React, { useState } from "react";
-import { View, Pressable, KeyboardAvoidingView, Platform, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Pressable, Alert } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { readAsStringAsync } from "expo-file-system/legacy";
@@ -17,6 +17,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, type ExtractedBudget, type ExtractedItem } from "../hooks";
 import { formatMoney, parseAmount } from "../money";
+import { useSafeBack } from "@/lib/nav";
 
 function lineTotal(it: ExtractedItem): number | null {
   if (it.amount_override !== null && it.amount_override !== undefined) return it.amount_override;
@@ -27,7 +28,7 @@ function lineTotal(it: ExtractedItem): number | null {
 export function BudgetImportScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const params = useLocalSearchParams<{ b?: string }>();
   const { data } = useBudgetSurface(params.b ?? null);
@@ -99,7 +100,7 @@ export function BudgetImportScreen() {
     try {
       const r = await writes.commit(extracted, target);
       Alert.alert(fmt(copy.imported, { items: r.items, payments: r.payments }));
-      router.back();
+      back();
     } catch (err) {
       fail(err);
     } finally {
@@ -111,8 +112,8 @@ export function BudgetImportScreen() {
   const budgets = data?.budgets ?? [];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} />} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.title} />} keyboard>
+      <>
         <BigTitle title={extracted ? copy.previewTitle : copy.importTitle} sub={extracted ? copy.previewBody : copy.importIntro} size={34} />
         {!online ? (
           <View style={{ marginTop: 14 }}>
@@ -200,7 +201,7 @@ export function BudgetImportScreen() {
             </Row>
           </Stack>
         )}
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

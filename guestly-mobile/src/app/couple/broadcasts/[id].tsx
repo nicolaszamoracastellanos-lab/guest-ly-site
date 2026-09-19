@@ -2,24 +2,25 @@
 
 import React from "react";
 import { View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { fmt, longDate, relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, ListRow, Badge, StatTile, Row, Skeleton, SectionLabel, T, EmptyState } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { useBroadcast } from "@/features/broadcasts/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function BroadcastDetail() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading } = useBroadcast(id);
   const g = data?.group;
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.detail} />}>
+    <Screen header={<TopBar onBack={back} title={c.detail} />}>
       {isLoading && !data ? <Skeleton h={160} r={18} /> : null}
       {g && g.groupKind === "campaign" ? (
         <>

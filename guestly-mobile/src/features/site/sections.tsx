@@ -17,6 +17,7 @@ import { T, Row, Stack, Card, Button, Badge, Gem, Hairline, Countdown, Avatar, I
 import { colors, FILL, radius } from "@/ui/tokens";
 import { COPY } from "./copy";
 import type { GuestSite, SiteSection, SectionType } from "./hooks";
+import { useSafeBack } from "@/lib/nav";
 
 type Viewer = { images: { url: string; caption: string | null }[]; index: number } | null;
 
@@ -143,14 +144,14 @@ function openExternal(url: string) {
 
 function Hero({ s }: { s: Extract<SiteSection, { type: "hero" }> }) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const back = useSafeBack();
   const top = Math.max(insets.top, 54);
   return (
     <View style={styles.hero}>
       {s.image_url ? <Image source={{ uri: s.image_url }} style={FILL} contentFit="cover" transition={300} /> : null}
       <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.15)", "rgba(13,17,23,0.75)", colors.night]} locations={[0, 0.35, 0.78, 1]} style={FILL} />
       <View style={[styles.heroTop, { top }]}>
-        <IconButton name="back" onPress={() => router.back()} />
+        <IconButton name="back" onPress={() => back()} />
       </View>
       <View style={styles.heroText}>
         {s.tagline ? (

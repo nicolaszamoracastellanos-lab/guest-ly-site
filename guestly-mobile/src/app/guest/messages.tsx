@@ -8,17 +8,19 @@ import { useGuestMessages } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, T, Avatar, Row, Badge, EmptyState, Button, Skeleton, Stack } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 export default function GuestMessages() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const session = useGuestSession();
   const { data, isLoading } = useGuestMessages();
   const messages = data?.messages ?? [];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} />} bottomInset={40}>
       <BigTitle title={copy.messages.title} sub={copy.messages.guestSubtitle} />
       <Stack gap={10} style={{ marginTop: 20 }}>
         {isLoading && !data ? (

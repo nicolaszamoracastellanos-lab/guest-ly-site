@@ -15,6 +15,7 @@ import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useSharedBoard, TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
 import { SharedTaskRow, EmptyList, errorText } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 const NEXT: Record<BoardStatus, BoardStatus> = { open: "in_progress", in_progress: "done", done: "open" };
 
@@ -22,6 +23,7 @@ export default function PlannerTasks() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const top = useTopInset();
@@ -45,7 +47,7 @@ export default function PlannerTasks() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar onBack={() => router.back()} right={<Pressable onPress={() => router.push("/planner/tasks/new")} accessibilityRole="button" accessibilityLabel={copy.addBoard} hitSlop={8} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable>} />
+      <TopBar onBack={back} right={<Pressable onPress={() => router.push("/planner/tasks/new")} accessibilityRole="button" accessibilityLabel={copy.addBoard} hitSlop={8} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable>} />
       <View style={{ marginTop: 10 }}>
         <BigTitle title={copy.planner.title} sub={copy.planner.subtitle} />
       </View>

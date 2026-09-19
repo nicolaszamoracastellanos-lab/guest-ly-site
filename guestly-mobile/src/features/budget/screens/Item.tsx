@@ -1,7 +1,7 @@
 // One budget line: fields, status, sub-lines, payments, comments, delete.
 
 import React, { useState } from "react";
-import { View, Pressable, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -12,6 +12,7 @@ import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, findComputedItem, type ItemStatus, type PaymentKind, type ItemRow } from "../hooks";
 import { formatMoney, formatDay, parseAmount, numText, todayIso, isIsoDate } from "../money";
 import { StatusBadge, TextField, Options, ConfirmSheet, KeyValue, useAction } from "../ui";
+import { useSafeBack } from "@/lib/nav";
 
 const STATUSES: ItemStatus[] = ["quoted", "confirmed", "pending", "cancelled"];
 const KINDS: PaymentKind[] = ["paid", "planned"];
@@ -34,6 +35,7 @@ export function BudgetItemScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
@@ -136,8 +138,8 @@ export function BudgetItemScreen() {
   const comments = row?.comments ?? [];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={found?.group.category?.name ?? copy.uncategorized} />} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={found?.group.category?.name ?? copy.uncategorized} />} keyboard>
+      <>
         {isLoading && !data ? (
           <Stack gap={10} style={{ marginTop: 8 }}>
             <Skeleton h={60} r={18} />
@@ -294,7 +296,7 @@ export function BudgetItemScreen() {
             ) : null}
           </>
         ) : null}
-      </KeyboardAvoidingView>
+      </>
 
       <Sheet visible={payOpen} onClose={() => setPayOpen(false)} top={90}>
         <View style={{ paddingHorizontal: 24, gap: 12 }}>
@@ -346,7 +348,7 @@ export function BudgetItemScreen() {
         </View>
       </Sheet>
 
-      <ConfirmSheet visible={deleteOpen} title={copy.deleteItem} body={copy.deleteItemBody} confirmLabel={copy.delete} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => row && act(() => writes.deleteItem(row.id), () => router.back())} />
+      <ConfirmSheet visible={deleteOpen} title={copy.deleteItem} body={copy.deleteItemBody} confirmLabel={copy.delete} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => row && act(() => writes.deleteItem(row.id), () => back())} />
     </Screen>
   );
 }

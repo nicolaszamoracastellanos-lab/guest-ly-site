@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { View, Pressable, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -11,11 +10,12 @@ import { Screen, TopBar, BigTitle, T, Badge, Stack, Skeleton, Icon } from "@/ui"
 import { colors, radius } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useWebsite, WEBSITE_KEY, type WebsiteSurface, type WebsiteTheme } from "@/features/website/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function WebsiteThemeScreen() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { data, isLoading } = useWebsite();
   const [busy, setBusy] = useState<WebsiteTheme | null>(null);
@@ -34,7 +34,7 @@ export default function WebsiteThemeScreen() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.theme} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={c.theme} />} bottomInset={40}>
       <BigTitle title={c.theme} sub={c.subtitle} size={38} />
       <Stack gap={12} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={140} r={18} /> : null}

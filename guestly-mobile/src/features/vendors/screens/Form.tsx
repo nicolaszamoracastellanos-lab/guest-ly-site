@@ -1,8 +1,8 @@
 // Add or edit a vendor (couple only). With ?id=... it edits that vendor.
 
 import React, { useState } from "react";
-import { View, KeyboardAvoidingView, Platform, Pressable } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Pressable } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, T, Row, Stack, Button } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -10,6 +10,7 @@ import { COPY } from "../copy";
 import { useVendors, useVendorWrites, type VendorCategory, type VendorStatus, type VendorRow } from "../hooks";
 import { TextField, Options, useAction } from "../../budget/ui";
 import { parseAmount, numText } from "../../budget/money";
+import { useSafeBack } from "@/lib/nav";
 
 const CATEGORIES: VendorCategory[] = ["venue", "catering", "photo", "video", "music", "flowers", "decor", "beauty", "attire", "cake", "transport", "stationery", "planner", "rentals", "other"];
 const STATUSES: VendorStatus[] = ["shortlist", "contacted", "quoted", "booked", "done", "cancelled"];
@@ -38,7 +39,7 @@ function fromRow(v: VendorRow): Form {
 
 export function VendorFormScreen() {
   const copy = useFeatureCopy(COPY);
-  const router = useRouter();
+  const back = useSafeBack();
   const params = useLocalSearchParams<{ id?: string }>();
   const { data } = useVendors();
   const writes = useVendorWrites();
@@ -70,13 +71,13 @@ export function VendorFormScreen() {
     };
     await act(
       () => (editing ? writes.update(editing.id, body) : writes.create(body)),
-      () => router.back()
+      () => back()
     );
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={40} keyboard>
+      <>
         <BigTitle title={editing ? copy.edit : copy.add} size={36} />
         <Stack gap={12} style={{ marginTop: 18 }}>
           <TextField label={copy.name} value={form.name} onChange={(v) => setForm({ ...form, name: v })} autoCapitalize="words" />
@@ -124,13 +125,13 @@ export function VendorFormScreen() {
         </Stack>
         <Row gap={8} style={{ marginTop: 24 }}>
           <View style={{ flex: 1 }}>
-            <Button label={copy.cancel} kind="ghost" onPress={() => router.back()} />
+            <Button label={copy.cancel} kind="ghost" onPress={() => back()} />
           </View>
           <View style={{ flex: 1 }}>
             <Button label={copy.save} onPress={save} loading={busy} disabled={!form.name.trim()} />
           </View>
         </Row>
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

@@ -26,6 +26,7 @@ import { drainQueue } from "@/lib/queue";
 import { colors } from "@/ui/tokens";
 import { T, Button, Gem, Stack as VStack } from "@/ui";
 import AssistantBubble from "@/ui/AssistantBubble";
+import { pathShowsBubble } from "@/ui/chrome";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -72,7 +73,7 @@ function Gate() {
   // keeps its position; hidden on the chat screens themselves and behind the
   // lock and update overlays.
   const bubbleSurface = state.status === "guest" ? "guest" : state.status === "user" ? (state.me.surface === "planner" ? "planner" : "couple") : null;
-  const bubbleHidden = pathname === "/assistant" || pathname === "/guest/concierge" || pathname.startsWith("/web") || locked || updateRequired;
+  const bubbleHidden = !pathShowsBubble(pathname) || locked || updateRequired;
 
   // Route by session state. Entrance screens live at the root; each surface
   // owns a folder. A signed-in user who lands on an entrance screen is moved.

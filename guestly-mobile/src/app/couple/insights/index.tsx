@@ -13,11 +13,13 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/insights/copy";
 import { useInsights, INSIGHTS_KEY } from "@/features/insights/hooks";
 import { BRAIN_KEY } from "@/features/brain/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function Insights() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
@@ -76,7 +78,7 @@ export default function Insights() {
   const maxCount = Math.max(1, ...(data?.top_questions.map((q) => q.count) ?? [1]));
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={36} />
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

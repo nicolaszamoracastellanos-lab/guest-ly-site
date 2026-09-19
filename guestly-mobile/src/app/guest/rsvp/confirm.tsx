@@ -9,6 +9,7 @@ import { useGuestSession } from "@/lib/session";
 import { useGuestRsvp, useGuestSchedule } from "@/lib/hooks";
 import { Screen, TopBar, T, Card, Button, Row, Stack, Icon, SectionLabel } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 const photo = require("../../../../assets/photos/toast.jpg");
 
@@ -16,6 +17,7 @@ export default function RsvpConfirm() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const session = useGuestSession();
   const { status, hasContact } = useLocalSearchParams<{ status?: string; hasContact?: string }>();
   const { data } = useGuestRsvp();
@@ -94,7 +96,7 @@ export default function RsvpConfirm() {
               <Button label={copy.rsvp.addCalendar} small icon="calendar-plus" onPress={() => ics && Linking.openURL(ics)} disabled={!ics} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label={copy.guestHome.changeAnswer} small kind="ghost" onPress={() => router.back()} />
+              <Button label={copy.guestHome.changeAnswer} small kind="ghost" onPress={() => back()} />
             </View>
           </Row>
         </Card>

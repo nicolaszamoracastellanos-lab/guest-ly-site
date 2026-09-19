@@ -3,7 +3,6 @@
 
 import React, { useState } from "react";
 import { Alert, View, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -15,6 +14,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type Collaborator } from "@/features/tasks/hooks";
 import { errorText, initials, Field, ConfirmSheet } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 type Form = { name: string; role_label: string; email: string; phone: string; language: "en" | "es"; notifications_enabled: boolean };
 const blank: Form = { name: "", role_label: "", email: "", phone: "", language: "es", notifications_enabled: true };
@@ -22,7 +22,7 @@ const blank: Form = { name: "", role_label: "", email: "", phone: "", language: 
 export default function Collaborators() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const user = useUserSession();
@@ -70,7 +70,7 @@ export default function Collaborators() {
   const setF = <K extends keyof Form>(k: K, v: Form[K]) => setEditing((e) => (e ? { ...e, form: { ...e.form, [k]: v } } : e));
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} />} bottomInset={60}>
+    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
       <BigTitle title={copy.collaborators} sub={copy.collaboratorsIntro} size={34} />
       {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <Stack gap={18} style={{ marginTop: 20 }}>
@@ -110,7 +110,7 @@ export default function Collaborators() {
         {canEdit ? <Button label={copy.addHelper} icon="plus" onPress={() => setEditing({ id: null, form: blank })} disabled={!online} /> : null}
       </Stack>
 
-      <Sheet visible={!!editing} onClose={() => setEditing(null)} top={90}>
+      <Sheet visible={!!editing} onClose={() => setEditing(null)} top={90} scroll={false}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
           <T v="title26">{editing?.id ? copy.editHelper : copy.addHelper}</T>
           <Field label={copy.helperFields.name}>

@@ -13,6 +13,7 @@ import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, type ComputedItem, type ItemStatus } from "../hooks";
 import { formatMoney, parseAmount } from "../money";
 import { StatusBadge, TextField, Options, ConfirmSheet, useAction } from "../ui";
+import { useSafeBack } from "@/lib/nav";
 
 const STATUSES: ItemStatus[] = ["quoted", "confirmed", "pending", "cancelled"];
 
@@ -20,6 +21,7 @@ export function BudgetCategoryScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
@@ -80,7 +82,7 @@ export function BudgetCategoryScreen() {
     <Screen
       header={
         <TopBar
-          onBack={() => router.back()}
+          onBack={back}
           title={active?.budget.name ?? copy.title}
           right={
             canEdit && category ? (
@@ -215,7 +217,7 @@ export function BudgetCategoryScreen() {
         </View>
       </Sheet>
 
-      <ConfirmSheet visible={deleteOpen} title={copy.deleteCategory} body={copy.deleteCategoryBody} confirmLabel={copy.delete} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => category && act(() => writes.deleteCategory(category.id), () => router.back())} />
+      <ConfirmSheet visible={deleteOpen} title={copy.deleteCategory} body={copy.deleteCategoryBody} confirmLabel={copy.delete} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => category && act(() => writes.deleteCategory(category.id), () => back())} />
     </Screen>
   );
 }

@@ -1,13 +1,14 @@
 // Invite code entry: six boxes, auto-advance, paste, uppercase.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, TextInput, Pressable, StyleSheet, Image, KeyboardAvoidingView, Platform } from "react-native";
+import { View, TextInput, Pressable, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import type { TenantSummary } from "@/lib/session";
 import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel } from "@/ui";
 import { colors, radius, FILL } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 const suite = require("../../assets/photos/suite.jpg");
 const LEN = 6;
@@ -16,6 +17,7 @@ export default function InviteCode() {
   const copy = useCopy();
   const { lang, setLang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const params = useLocalSearchParams<{ code?: string }>();
   const [code, setCode] = useState((params.code ?? "").toUpperCase().slice(0, LEN));
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +45,8 @@ export default function InviteCode() {
 
   const cells = Array.from({ length: LEN }, (_, i) => code[i] ?? "");
   return (
-    <Screen header={<TopBar onBack={() => router.back()} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} keyboard>
+      <>
         <View style={styles.card}>
           <Image source={suite} style={FILL} resizeMode="cover" />
         </View>
@@ -91,7 +93,7 @@ export default function InviteCode() {
             {copy.invite.noCode}
           </T>
         </Stack>
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

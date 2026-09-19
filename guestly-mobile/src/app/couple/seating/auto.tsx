@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { View, Pressable, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -30,13 +29,14 @@ import {
   type AutoAssignResult,
   type SeatingCriterion,
 } from "@/features/seating/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 const ALL: SeatingCriterion[] = ["party", "relationship", "tags", "surname"];
 
 export default function SeatingAuto() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { data } = useCoupleSeating();
   const [criteria, setCriteria] = useState<SeatingCriterion[]>(ALL);
@@ -73,7 +73,7 @@ export default function SeatingAuto() {
       if (apply && r.surface) {
         qc.setQueryData(SEATING_KEY, r.surface);
         seedDraft(r.surface, true);
-        router.back();
+        back();
         return;
       }
       setPreview(r);
@@ -86,7 +86,7 @@ export default function SeatingAuto() {
 
   return (
     <Screen
-      header={<TopBar onBack={() => router.back()} title={c.suggest} />}
+      header={<TopBar onBack={back} title={c.suggest} />}
       bottomInset={40}
     >
       <BigTitle title={c.suggest} sub={c.suggestIntro} size={34} />

@@ -16,6 +16,7 @@ import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, useSharedBoard, TASK_INVALIDATE, type TaskGroup, type TaskView, type BoardTask } from "@/features/tasks/hooks";
 import { TaskRowItem, SharedTaskRow, EmptyList, errorText } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 type Segment = "ours" | "board";
 type Row_ = { kind: "header"; key: string; label: string; count: number } | { kind: "task"; key: string; task: TaskView; last: boolean } | { kind: "shared"; key: string; task: BoardTask; last: boolean };
@@ -24,6 +25,7 @@ export default function CoupleTasks() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const top = useTopInset();
@@ -72,7 +74,7 @@ export default function CoupleTasks() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar onBack={() => router.back()} right={canEdit ? <Pressable onPress={() => router.push(segment === "ours" ? "/couple/tasks/new" : "/couple/tasks/board/new")} accessibilityRole="button" accessibilityLabel={copy.add} hitSlop={8} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
+      <TopBar onBack={back} right={canEdit ? <Pressable onPress={() => router.push(segment === "ours" ? "/couple/tasks/new" : "/couple/tasks/board/new")} accessibilityRole="button" accessibilityLabel={copy.add} hitSlop={8} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
       <View style={{ marginTop: 10 }}>
         <BigTitle title={copy.title} sub={progress ? fmt(copy.progress, { done: progress.done, total: progress.total }) : copy.subtitle} />
       </View>

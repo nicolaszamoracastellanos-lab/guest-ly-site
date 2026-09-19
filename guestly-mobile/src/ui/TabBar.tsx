@@ -2,6 +2,12 @@
 // tabBar so every root tab shares it. Labels stay at 10px by design; they
 // are the one exception to the caption floor and carry an icon above them.
 //
+// Dynamic Type (Part 9 audit, D-031): the bar has a fixed height and five
+// slots, so its labels do not scale with the system text size, the same way
+// the system tab bar behaves. Each tab has a full accessibility label, and a
+// long Spanish label shrinks a little instead of running into its neighbour.
+// On wide windows the bar is a centered 520 pt pill, not a full-width strip.
+//
 // Tabs' tabBar prop is a render function that the navigator CALLS (it is not
 // mounted as a component), so hooks cannot live in that function. The
 // layouts pass `(props) => <GlassTabBar {...props} specs={...} />` and this
@@ -14,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Icon, type IconName } from "./Icon";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, FILL } from "./tokens";
+import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, TAB_BAR_MAX_WIDTH, FILL } from "./tokens";
 
 type TabsProps = React.ComponentProps<typeof Tabs>;
 type TabBarFn = NonNullable<TabsProps["tabBar"]>;
@@ -72,13 +78,15 @@ export function GlassTabBar({
                 <Icon name={spec.icon} size={22} color={color} />
                 {spec.badge ? (
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
+                    <Text allowFontScaling={false} style={styles.badgeText}>
                       {spec.badge > 99 ? "99" : spec.badge}
                     </Text>
                   </View>
                 ) : null}
               </View>
-              <Text style={[styles.label, { color }]}>{spec.label}</Text>
+              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.label, { color }]}>
+                {spec.label}
+              </Text>
             </Pressable>
           );
         })}
@@ -88,14 +96,16 @@ export function GlassTabBar({
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: 20, right: 20 },
+  wrap: { position: "absolute", left: 20, right: 20, alignItems: "center" },
   bar: {
+    width: "100%",
+    maxWidth: TAB_BAR_MAX_WIDTH,
     height: TAB_BAR_HEIGHT,
     borderRadius: 999,
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     borderWidth: 1,
     borderColor: colors.ivory14,
     shadowColor: "#000",
@@ -114,8 +124,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 3,
     minHeight: 48,
+    paddingHorizontal: 2,
   },
-  label: { fontFamily: "Jost_500Medium", fontSize: 10, letterSpacing: 0.4 },
+  label: { fontFamily: "Jost_500Medium", fontSize: 10, letterSpacing: 0.4, alignSelf: "stretch", textAlign: "center" },
   badge: {
     position: "absolute",
     top: -4,

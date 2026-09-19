@@ -11,6 +11,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useVendors, useVendorsBase, type VendorStatus } from "../hooks";
 import { formatMoneyShort, formatMoney } from "../../budget/money";
+import { useSafeBack } from "@/lib/nav";
 
 const STATUS_ORDER: VendorStatus[] = ["shortlist", "contacted", "quoted", "booked", "done", "cancelled"];
 
@@ -26,6 +27,7 @@ export function VendorsListScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const base = useVendorsBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/vendors" : "/couple/vendors";
@@ -47,7 +49,7 @@ export function VendorsListScreen() {
   const bookedTotal = booked.reduce((s, v) => s + (v.price_quoted ?? 0), 0);
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} right={canEdit ? <IconButton name="plus" label={copy.add} onPress={() => router.push({ pathname: "/couple/vendors/new" as never })} /> : undefined} />}>
+    <Screen header={<TopBar onBack={back} title={copy.title} right={canEdit ? <IconButton name="plus" label={copy.add} onPress={() => router.push({ pathname: "/couple/vendors/new" as never })} /> : undefined} />}>
       <BigTitle title={copy.title} sub={copy.subtitle} size={38} />
       {!online ? (
         <View style={{ marginTop: 14 }}>

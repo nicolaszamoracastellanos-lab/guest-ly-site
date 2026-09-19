@@ -3,7 +3,6 @@
 
 import React, { useMemo, useState } from "react";
 import { View, Pressable, StyleSheet, Alert, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, relTime, shortDate, useLang } from "@/i18n";
@@ -16,6 +15,7 @@ import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Inp
 import { colors, HIT_TARGET } from "@/ui/tokens";
 import { COPY } from "./copy";
 import { addDays, addMonths, ISO_DAY, TASK_INVALIDATE, useSharedTask, type Board, type BoardStatus, type BoardTask, type TaskCategory, type TaskPriority, type TaskRecurrence, type TaskStatus, type TaskView } from "./hooks";
+import { useSafeBack } from "@/lib/nav";
 
 type Lang = "en" | "es";
 
@@ -176,7 +176,7 @@ export function AssigneePicker({ board, value, onChange }: { board: Board | unde
         </T>
         <Icon name="down" size={18} color={colors.ivory40} />
       </Pressable>
-      <Sheet visible={open} onClose={() => setOpen(false)} top={120}>
+      <Sheet visible={open} onClose={() => setOpen(false)} top={120} scroll={false}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
           <T v="title26" style={{ marginBottom: 12 }}>
             {copy.fields.owner}
@@ -383,7 +383,7 @@ export function SharedTaskRow({ task, onPress, last }: { task: BoardTask; onPres
 export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner"; id: string }) {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const user = useUserSession();
@@ -436,7 +436,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
       await del(`${base}/${id}`);
       await invalidate();
       setConfirm(false);
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, ""));
     } finally {
@@ -447,7 +447,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
   const dirty = (title !== null && title !== task?.title) || (detail !== null && detail !== task?.detail);
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.segments.board} />} bottomInset={40} keyboard>
+    <Screen header={<TopBar onBack={back} title={copy.segments.board} />} bottomInset={40} keyboard>
       {isLoading && !task ? <Skeleton h={160} r={18} /> : null}
       {task ? (
         <Stack gap={18}>
@@ -542,7 +542,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
 export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner" }) {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const user = useUserSession();
@@ -571,7 +571,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
     try {
       await post(boardBase(surface), { title: title.trim(), detail: detail.trim(), assigned_to: assignedTo, guest_ids: guestIds });
       for (const k of TASK_INVALIDATE) await qc.invalidateQueries({ queryKey: [k] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, ""));
     } finally {
@@ -580,7 +580,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.newBoardTask} />} bottomInset={40} keyboard>
+    <Screen header={<TopBar onBack={back} title={copy.newBoardTask} />} bottomInset={40} keyboard>
       <Stack gap={18}>
         {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
         <Field label={copy.fields.title}>

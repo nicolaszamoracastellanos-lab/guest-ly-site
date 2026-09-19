@@ -8,7 +8,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { WebView, type WebViewNavigation } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLang } from "@/i18n";
@@ -16,6 +16,7 @@ import { ApiFailure } from "@/lib/api";
 import { TopBar, IconButton, T, EmptyState, Button } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { isPortalUrl, signedInUrl } from "@/features/webview/bridge";
+import { useSafeBack } from "@/lib/nav";
 
 const COPY = {
   en: { loading: "Opening", refused: "That page is not part of Guest-ly.", failed: "Could not open the page.", retry: "Try again", reload: "Reload" },
@@ -25,7 +26,7 @@ const COPY = {
 export default function InAppWeb() {
   const { lang } = useLang();
   const c = COPY[lang];
-  const router = useRouter();
+  const back = useSafeBack();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ url?: string; path?: string; title?: string }>();
   const [target, setTarget] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export default function InAppWeb() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night, paddingTop: Math.max(insets.top, 54) }}>
-      <TopBar onBack={() => router.back()} title={params.title ?? "Guest-ly"} right={<IconButton name="undo" label={c.reload} onPress={() => ref.current?.reload()} />} />
+      <TopBar onBack={back} title={params.title ?? "Guest-ly"} right={<IconButton name="undo" label={c.reload} onPress={() => ref.current?.reload()} />} />
       {error ? (
         <View style={{ padding: 24 }}>
           <EmptyState title={error} action={<Button label={c.retry} small onPress={() => setAttempt((n) => n + 1)} />} />

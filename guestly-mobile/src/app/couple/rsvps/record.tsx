@@ -2,21 +2,21 @@
 // event, add a note. Goes through saveManualRsvp on the portal.
 
 import React, { useEffect, useState } from "react";
-import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { get, post, ApiFailure } from "@/lib/api";
 import { useCoupleGuests, type GuestDetail } from "@/lib/hooks";
 import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, Card, Row, Segmented, Button, T, Badge, Stack } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 type Answer = "attending" | "declined";
 
 export default function RecordRsvp() {
   const copy = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const { data } = useCoupleGuests(q, "all");
@@ -45,7 +45,7 @@ export default function RecordRsvp() {
       await qc.invalidateQueries({ queryKey: ["couple-rsvps"] });
       await qc.invalidateQueries({ queryKey: ["couple-guests"] });
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
@@ -54,8 +54,8 @@ export default function RecordRsvp() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.rsvps.title} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.rsvps.title} />} bottomInset={40} keyboard>
+      <>
         <BigTitle title={copy.rsvps.recordTitle} sub={copy.rsvps.recordIntro} size={34} />
         {!detail ? (
           <>
@@ -106,7 +106,7 @@ export default function RecordRsvp() {
             ) : null}
           </Stack>
         )}
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

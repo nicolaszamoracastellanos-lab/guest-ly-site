@@ -1,7 +1,7 @@
 // Import guests: paste or pick a file, review what was recognized, confirm.
 
 import React, { useState } from "react";
-import { View, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
@@ -13,6 +13,7 @@ import { Screen, TopBar, BigTitle, Card, Segmented, Input, Button, Badge, Banner
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/import/copy";
 import { commitImport, parseImport, type ParsePreview } from "@/features/import/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 type Way = "paste" | "file";
 
@@ -24,6 +25,7 @@ export default function ImportGuests() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const [way, setWay] = useState<Way>("paste");
   const [text, setText] = useState("");
@@ -101,7 +103,7 @@ export default function ImportGuests() {
 
   if (result) {
     return (
-      <Screen header={<TopBar onBack={() => router.back()} title={c.title} />}>
+      <Screen header={<TopBar onBack={back} title={c.title} />}>
         <BigTitle label={c.doneTitle} title={fmt(c.preview, { n: result.imported })} sub={fmt(c.doneBody, { guests: result.imported, rsvps: result.rsvpsRecorded })} size={38} />
         <Button label={c.done} onPress={() => router.replace("/couple/guests")} style={{ marginTop: 28 }} />
       </Screen>
@@ -109,8 +111,8 @@ export default function ImportGuests() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40} keyboard>
+      <>
         {!preview ? (
           <>
             <BigTitle title={c.title} sub={c.subtitle} size={38} />
@@ -170,7 +172,7 @@ export default function ImportGuests() {
             </Stack>
           </>
         )}
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

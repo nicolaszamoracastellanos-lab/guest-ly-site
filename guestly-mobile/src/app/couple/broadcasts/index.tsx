@@ -10,6 +10,7 @@ import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Banner, Button, EmptySt
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { useBroadcasts, type HistoryGroup } from "@/features/broadcasts/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export function groupTitle(g: HistoryGroup, unknown: string): string {
   if (g.groupKind === "campaign") return g.label;
@@ -32,6 +33,7 @@ export default function Broadcasts() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const user = useUserSession();
   const { data, isLoading } = useBroadcasts();
   const canSend = (data?.can_send ?? user?.me.can_edit) ?? false;
@@ -39,7 +41,7 @@ export default function Broadcasts() {
   const anyPhone = (data?.guests ?? []).some((g) => g.has_phone);
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} />}>
+    <Screen header={<TopBar onBack={back} />}>
       <BigTitle title={c.title} sub={c.subtitle} />
       <View style={{ marginTop: 20 }}>
         {!canSend ? <Banner icon="lock" title={c.readOnly} /> : null}

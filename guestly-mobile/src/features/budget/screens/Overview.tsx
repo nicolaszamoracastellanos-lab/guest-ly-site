@@ -14,6 +14,7 @@ import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, type BudgetRow } from "../hooks";
 import { formatMoney, formatMoneyShort, formatMonth, parseAmount, numText } from "../money";
 import { ProgressBar, TextField, ConfirmSheet, useAction } from "../ui";
+import { useSafeBack } from "@/lib/nav";
 
 const SELECTED_KEY = "budget-selected";
 
@@ -21,6 +22,7 @@ export function BudgetOverviewScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
@@ -91,7 +93,7 @@ export function BudgetOverviewScreen() {
   const months = (computed?.months ?? []).filter((m) => m.plannedBase > 0).slice(0, 4);
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} right={active && canEdit ? <IconButton name="gear" label={copy.settings} onPress={() => openEdit(active.budget)} /> : undefined} />}>
+    <Screen header={<TopBar onBack={back} title={copy.title} right={active && canEdit ? <IconButton name="gear" label={copy.settings} onPress={() => openEdit(active.budget)} /> : undefined} />}>
       <BigTitle title={active ? active.budget.name : copy.title} sub={copy.subtitle} size={38} />
 
       {!online ? (

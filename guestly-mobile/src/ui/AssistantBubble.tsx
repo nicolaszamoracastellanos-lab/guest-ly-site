@@ -1,8 +1,18 @@
-// The floating assistant button: a gold gem that lives on every screen,
-// drags anywhere, snaps to the nearest edge and remembers where it was left.
-// Tap opens the Coordinator (couples, planners) or the concierge (guests).
-// Mounted once by the root layout; hidden while a keyboard is open or on the
-// chat screens themselves.
+// The floating assistant button: a gold gem that drags anywhere, snaps to the
+// nearest edge and remembers where it was left. Tap opens the Coordinator
+// (couples, planners) or the concierge (guests). Mounted once by the root
+// layout; hidden while a keyboard is open and on the chat screens themselves.
+//
+// Part 9 audit (Sep 18 2026), D-010: at rest it used to sit over toggles,
+// badges and buttons. Now:
+//  - it shows on browse screens only (tab roots, section lists, guest site
+//    pages); forms and detail screens have none (`pathShowsBubble`);
+//  - its resting place is a reserved band right above the tab bar, and every
+//    scrolling screen that shows it keeps that band free at the end of its
+//    content (`useBottomClearance`), so it never rests on the last control;
+//  - a screen with its own floating control (add-guest button, docked action
+//    bar) lifts the band above that control (`useBubbleLift`);
+//  - a place chosen by dragging is still remembered, side and height.
 
 import React, { useEffect, useState } from "react";
 import { Keyboard, Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
@@ -15,12 +25,13 @@ import * as Haptics from "expo-haptics";
 import { useLang } from "@/i18n";
 import { Icon } from "./Icon";
 import { T } from "./Text";
-import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT } from "./tokens";
+import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN } from "./tokens";
+import { useBubbleLiftValue } from "./chrome";
 
 export type AssistantSurface = "guest" | "couple" | "planner";
 
-const SIZE = 56;
-const MARGIN = 14;
+const SIZE = BUBBLE_SIZE;
+const MARGIN = BUBBLE_MARGIN;
 const STORAGE_KEY = "assistant-bubble";
 
 type Saved = { side: "left" | "right"; y: number };
@@ -37,14 +48,18 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const { width, height } = useWindowDimensions();
   const [keyboard, setKeyboard] = useState(false);
   const [label, setLabel] = useState(false);
+  const lift = useBubbleLiftValue();
+  // Null until the person drags the bubble somewhere: then it rests in the band.
+  const [chosenY, setChosenY] = useState<number | null>(null);
 
   const minY = Math.max(insets.top, 54) + MARGIN;
-  const maxY = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - MARGIN;
+  const floorY = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - MARGIN;
+  const maxY = Math.max(minY, floorY - lift);
   const leftX = MARGIN;
   const rightX = width - SIZE - MARGIN;
 
   const x = useSharedValue(rightX);
-  const y = useSharedValue(Math.max(minY, maxY - 120));
+  const y = useSharedValue(maxY);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -59,7 +74,7 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
         if (raw && alive) {
           const saved = JSON.parse(raw) as Saved;
           x.set(saved.side === "left" ? leftX : rightX);
-          y.set(Math.min(Math.max(saved.y, minY), maxY));
+          if (typeof saved.y === "number") setChosenY(saved.y);
         }
       } catch {
         // No saved spot; the default corner is fine.
@@ -83,6 +98,14 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
     };
   }, []);
 
+  // Follow the band when a screen lifts it, the window changes size, or the
+  // saved place would now be under a docked control.
+  useEffect(() => {
+    const target = chosenY === null ? maxY : Math.min(Math.max(chosenY, minY), maxY);
+    y.set(withTiming(target, { duration: 160 }));
+    if (x.get() > width / 2) x.set(rightX);
+  }, [chosenY, maxY, minY, rightX, width, x, y]);
+
   const visible = !hidden && !keyboard;
   useEffect(() => {
     shown.set(withTiming(visible ? 1 : 0, { duration: 180 }));
@@ -96,6 +119,7 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   }, [label]);
 
   const persist = (side: "left" | "right", yy: number) => {
+    setChosenY(Math.round(yy));
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ side, y: Math.round(yy) } satisfies Saved)).catch(() => {});
   };
 

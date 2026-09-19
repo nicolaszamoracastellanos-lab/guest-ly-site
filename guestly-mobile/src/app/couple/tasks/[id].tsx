@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -14,11 +14,12 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskView } from "@/features/tasks/hooks";
 import { TaskForm, formFromTask, errorText, dueLabel, dueColor, ConfirmSheet, type TaskFormValue } from "@/features/tasks/ui";
+import { useSafeBack } from "@/lib/nav";
 
 export default function TaskDetail() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const user = useUserSession();
@@ -49,7 +50,7 @@ export default function TaskDetail() {
     try {
       await post(`/couple/tasks/${task.id}`, form);
       await invalidate();
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, ""));
     } finally {
@@ -78,7 +79,7 @@ export default function TaskDetail() {
       await del(`/couple/tasks/${task.id}`);
       await invalidate();
       setConfirm(false);
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, ""));
     } finally {
@@ -89,7 +90,7 @@ export default function TaskDetail() {
   const due = task ? dueLabel(task, copy, lang) : null;
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.editTask} />} bottomInset={40} keyboard>
+    <Screen header={<TopBar onBack={back} title={copy.editTask} />} bottomInset={40} keyboard>
       {isLoading && !board ? <Skeleton h={200} r={18} /> : null}
       {task && form ? (
         <Stack gap={18}>

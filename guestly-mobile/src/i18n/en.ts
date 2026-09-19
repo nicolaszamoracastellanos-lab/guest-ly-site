@@ -36,6 +36,11 @@ export const en = {
     error: "Something went wrong. Please try again.",
     yes: "Yes",
     no: "No",
+    button: "Button",
+    errorTitle: "We could not load this",
+    errorBody: "Check your connection and try again. Nothing was lost.",
+    updateAction: "Open the store",
+    icons: { back: "Back", x: "Close", bell: "Notifications", gear: "Settings", more: "More options", plus: "Add", edit: "Edit", share: "Share", search: "Search", filter: "Filter", undo: "Try again", calendar: "Calendar", "calendar-plus": "Add to calendar", camera: "Camera", photo: "Photo", down: "Expand", chev: "Open", check: "Done", info: "Information", phone: "Call", map: "Map", list: "List", signout: "Sign out" },
   },
   entrance: {
     tagline: "Every guest, every question, one calm place.",

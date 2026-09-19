@@ -11,6 +11,7 @@ import { post, ApiFailure } from "@/lib/api";
 import { useGuestSession } from "@/lib/session";
 import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton } from "@/ui";
 import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 type Turn = { role: "user" | "assistant"; content: string; escalated?: boolean };
 const DRAFT_KEY = "gl.concierge.draft";
@@ -20,6 +21,7 @@ export default function Concierge() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const session = useGuestSession();
   const insets = useSafeAreaInsets();
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -74,7 +76,7 @@ export default function Concierge() {
       scroll={false}
       padded={false}
       bottomInset={0}
-      header={<TopBar onBack={() => router.back()} right={<IconButton name="chat" onPress={() => router.push("/guest/messages")} label={copy.messages.title} />} />}
+      header={<TopBar onBack={back} right={<IconButton name="chat" onPress={() => router.push("/guest/messages")} label={copy.messages.title} />} />}
     >
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
         <Row gap={12} style={{ paddingHorizontal: 24, marginTop: 12 }}>

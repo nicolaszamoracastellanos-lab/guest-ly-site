@@ -2,7 +2,7 @@
 // couple's questions, then submit. Same roster shape as the web wizard.
 
 import React, { useMemo, useState } from "react";
-import { View, KeyboardAvoidingView, Platform } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -10,6 +10,7 @@ import { useGuestRsvp, type GuestPayload, type RsvpSummary } from "@/lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Segmented, Input, Button, Row, Stack, Skeleton, SectionLabel, Chip } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 type Answer = "attending" | "declined";
 
@@ -17,6 +18,7 @@ export default function RsvpAnswers() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { data, isLoading } = useGuestRsvp();
   const payload = data?.payload;
@@ -89,8 +91,8 @@ export default function RsvpAnswers() {
   const deadlinePassed = data?.summary.deadline_passed;
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={`${copy.guestHome.tabs.rsvp} · ${payload?.displayName ?? ""}`} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={`${copy.guestHome.tabs.rsvp} · ${payload?.displayName ?? ""}`} />} bottomInset={40} keyboard>
+      <>
         <BigTitle label={copy.rsvp.step2} title={copy.rsvp.whoIsComing} sub={copy.rsvp.perPerson} size={38} />
         {deadlinePassed ? (
           <T v="body15" color={colors.amber} style={{ marginTop: 12 }}>
@@ -168,7 +170,7 @@ export default function RsvpAnswers() {
           disabled={!payload || deadlinePassed}
           style={{ marginTop: 24 }}
         />
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

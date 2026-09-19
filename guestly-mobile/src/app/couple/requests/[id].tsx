@@ -2,8 +2,8 @@
 // unlock when enabled) or decline.
 
 import React, { useState } from "react";
-import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Alert } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang, relTime } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -13,11 +13,12 @@ import { biometricPrompt } from "@/lib/biometric";
 import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "./index";
+import { useSafeBack } from "@/lib/nav";
 
 export default function RequestDetail() {
   const copy = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const user = useUserSession();
   const { biometricEnabled } = useSession();
@@ -42,7 +43,7 @@ export default function RequestDetail() {
       await qc.invalidateQueries({ queryKey: ["couple-requests"] });
       await qc.invalidateQueries({ queryKey: ["couple-guests"] });
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
@@ -67,8 +68,8 @@ export default function RequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? []) : [];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.requests.title} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.requests.title} />} bottomInset={40} keyboard>
+      <>
         {r ? (
           <>
             <Row style={{ justifyContent: "space-between" }}>
@@ -131,7 +132,7 @@ export default function RequestDetail() {
             </T>
           </>
         ) : null}
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

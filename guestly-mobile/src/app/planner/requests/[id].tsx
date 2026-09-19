@@ -1,7 +1,7 @@
 // One planner request: changes, conversation, reply, withdraw.
 
 import React, { useState } from "react";
-import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
@@ -11,11 +11,13 @@ import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "@/app/couple/requests/index";
 import { describeChanges } from "@/app/couple/requests/[id]";
+import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerRequestDetail() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data } = usePlannerRequests();
@@ -43,7 +45,7 @@ export default function PlannerRequestDetail() {
     try {
       await post(`/planner/requests/${r.id}/cancel`, {});
       await qc.invalidateQueries({ queryKey: ["planner-requests"] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
@@ -54,8 +56,8 @@ export default function PlannerRequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? []) : [];
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.planner.requests} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
+      <>
         {r ? (
           <>
             <Row style={{ justifyContent: "space-between" }}>
@@ -118,7 +120,7 @@ export default function PlannerRequestDetail() {
             </T>
           </>
         ) : null}
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }

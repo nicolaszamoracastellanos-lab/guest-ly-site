@@ -3,7 +3,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,13 +14,14 @@ import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Stack, Icon } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 const PASS_RE = /^GL1:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
 export default function DoorCheckin() {
   const copy = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const online = useOnline();
@@ -104,7 +104,7 @@ export default function DoorCheckin() {
       )}
       <View style={[FILL, { backgroundColor: "rgba(8,11,16,0.35)" }]} />
       <View style={{ paddingTop: top }}>
-        <TopBar onBack={() => router.back()} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
+        <TopBar onBack={back} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
       </View>
       {!typing ? (
         <View style={styles.frame}>

@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Alert } from "react-native";
-import { useRouter } from "expo-router";
 import { useFeatureCopy } from "@/i18n/feature";
 import { relTime, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -11,11 +10,12 @@ import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, EmptyState, 
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
 import { useBrain } from "@/features/brain/hooks";
+import { useSafeBack } from "@/lib/nav";
 
 export default function BrainVersions() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const { data, isLoading, refetch } = useBrain();
@@ -44,7 +44,7 @@ export default function BrainVersions() {
   }
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.versionsTitle} size={36} />
       {notice ? (
         <T v="body15" color={colors.greenText} style={{ marginTop: 10 }}>

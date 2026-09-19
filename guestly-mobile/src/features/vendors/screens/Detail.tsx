@@ -13,11 +13,13 @@ import { useVendors, useVendorWrites, useVendorsBase, waDigits, websiteHref, ins
 import { statusKind } from "./List";
 import { formatMoney } from "../../budget/money";
 import { ConfirmSheet, KeyValue, useAction } from "../../budget/ui";
+import { useSafeBack } from "@/lib/nav";
 
 export function VendorDetailScreen() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const online = useOnline();
   const base = useVendorsBase();
   const params = useLocalSearchParams<{ id: string }>();
@@ -41,7 +43,7 @@ export function VendorDetailScreen() {
   const ig = vendor ? instagramHref(vendor.instagram) : null;
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.title} right={canEdit && vendor ? <IconButton name="edit" label={copy.edit} onPress={() => router.push({ pathname: "/couple/vendors/new" as never, params: { id: vendor.id } as never })} /> : undefined} />}>
+    <Screen header={<TopBar onBack={back} title={copy.title} right={canEdit && vendor ? <IconButton name="edit" label={copy.edit} onPress={() => router.push({ pathname: "/couple/vendors/new" as never, params: { id: vendor.id } as never })} /> : undefined} />}>
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 8 }}>
           <Skeleton h={60} r={18} />
@@ -142,7 +144,7 @@ export function VendorDetailScreen() {
             </View>
           ) : null}
 
-          <Sheet visible={linkOpen} onClose={() => setLinkOpen(false)} top={140}>
+          <Sheet visible={linkOpen} onClose={() => setLinkOpen(false)} top={140} scroll={false}>
             <View style={{ paddingHorizontal: 24, gap: 12, flex: 1 }}>
               <T v="title26">{copy.linkItem}</T>
               {unlinked.length === 0 ? (
@@ -158,7 +160,7 @@ export function VendorDetailScreen() {
             </View>
           </Sheet>
 
-          <ConfirmSheet visible={deleteOpen} title={copy.delete} body={copy.deleteBody} confirmLabel={copy.confirm} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => act(() => writes.remove(vendor.id), () => router.back())} />
+          <ConfirmSheet visible={deleteOpen} title={copy.delete} body={copy.deleteBody} confirmLabel={copy.confirm} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => act(() => writes.remove(vendor.id), () => back())} />
         </>
       ) : null}
     </Screen>

@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeBack } from "@/lib/nav";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -48,6 +49,7 @@ export default function SeatingIndex() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const goBack = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
   const { data, isLoading, error } = useCoupleSeating();
@@ -76,7 +78,7 @@ export default function SeatingIndex() {
   const pendingDb = error instanceof ApiFailure && error.code === "pending_db";
 
   function back() {
-    if (!draft.dirty) return router.back();
+    if (!draft.dirty) return goBack();
     Alert.alert(c.discardTitle, c.discardBody, [
       { text: c.keepEditing, style: "cancel" },
       {
@@ -84,7 +86,7 @@ export default function SeatingIndex() {
         style: "destructive",
         onPress: () => {
           if (data) seedDraft(data, true);
-          router.back();
+          goBack();
         },
       },
     ]);

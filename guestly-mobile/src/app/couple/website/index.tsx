@@ -14,6 +14,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useConfigDraft, WEBSITE_KEY, type SectionType, type WebsiteSurface } from "@/features/website/hooks";
 import { RowControls, SwitchRow, move } from "@/features/website/fields";
+import { useSafeBack } from "@/lib/nav";
 
 const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar" | "bus" | "coins" | "guests" | "info" | "mail" | "chat" | "globe"> = {
   hero: "photo",
@@ -34,6 +35,7 @@ export default function WebsiteHome() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const { surface, isLoading, draft, update, state, error } = useConfigDraft();
   const [busy, setBusy] = useState<string | null>(null);
@@ -121,7 +123,7 @@ export default function WebsiteHome() {
   const movable = sections.filter((s) => s.type !== "hero");
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={c.title} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {isLoading && !surface ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

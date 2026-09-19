@@ -2,8 +2,8 @@
 // Validated and rebuilt server-side by createRequest; nothing here writes.
 
 import React, { useState } from "react";
-import { View, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { View, Alert } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -11,13 +11,14 @@ import { usePlannerGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Chip, ChipRow, Input, Card, ListRow, Avatar, Button, Row, Stack, T } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useSafeBack } from "@/lib/nav";
 
 type Kind = "plus_one" | "edit_guest" | "guest_help" | "custom" | "send_reminders";
 
 export default function NewRequest() {
   const copy = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
+  const back = useSafeBack();
   const qc = useQueryClient();
   const user = useUserSession();
   const { data } = usePlannerGuests(user?.me.tenant.slug ?? "");
@@ -50,7 +51,7 @@ export default function NewRequest() {
       await post("/planner/requests", { kind, guest_ids: guestId ? [guestId] : [], payload, note });
       await qc.invalidateQueries({ queryKey: ["planner-requests"] });
       await qc.invalidateQueries({ queryKey: ["planner-home"] });
-      router.back();
+      back();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
@@ -61,8 +62,8 @@ export default function NewRequest() {
   const ready = (!needsGuest || guestId) && (kind !== "custom" || title.trim()) && (kind !== "guest_help" || title.trim()) && (kind !== "edit_guest" || (field.trim() && value.trim()));
 
   return (
-    <Screen header={<TopBar onBack={() => router.back()} title={copy.planner.requests} />} bottomInset={40} keyboard>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <Screen header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
+      <>
         <BigTitle title={copy.planner.newRequest} sub={copy.planner.footer} size={34} />
         <View style={{ marginTop: 18 }}>
           <ChipRow>
@@ -102,7 +103,7 @@ export default function NewRequest() {
         <T v="meta13" color={colors.ivory40} center style={{ marginTop: 12 }}>
           {copy.planner.footer}
         </T>
-      </KeyboardAvoidingView>
+      </>
     </Screen>
   );
 }
