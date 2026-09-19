@@ -110,3 +110,25 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 - C12: run sheet order and DONE state as on S. C42: fine on L.
 - S05, S06: the web view modal shows a thin brown sliver of the screen behind it at both top corners. Portal chrome inside the web view as on S.
 - Bubble (H22) on L still covers: C02 badge, C06 badge, C10 message text, C11 tile, C12 badge, C16 HIGH badge, C24 amount, C32 "Remove from table", C47-schedule toggle, S01 chevron.
+
+## Batch 8: A2 S planner EN after the seed (13 changed screens, five-up)
+
+- P01 populated: good rows; "1 weddings . 4 things need you" plural error; Requests tab shows a badge 1.
+- P03 requests: same squeezed row as C14 ("Add / seats", "Adriana Tejerina..." cut).
+- P04 request detail (planner): the CHANGES row reads "Adriana Tejerina +1" here, so the EMPTY label on the couple side (C15) is a couple-screen bug, not data. "Reply to the couple" appears twice, once as the field placeholder and once as a disabled button under it.
+- P06 board: floating "Add to the board" covers the second task row. Same systemic floating-button defect as C16.
+- P07 board task: third status segment under the bubble. P09 to P11 budget: same number wrapping as C24. P13, P14 vendors, P15 run sheet ("09:0 / 0" again), P16 seating read-only: render, read-only notes present.
+- S04 planner assistant: a DIFFERENT junk session than an hour ago ("MOCK:REQUEST", a "Confirm change" card marked CANCELLED). Someone is testing the planner Coordinator with mock prompts on demo-review while this audit runs. The lead must make sure those sessions are deleted before App Review. No agent of this step wrote to the Coordinator.
+
+## Batch 9: A2 L planner EN (20 shots, seven-up) and S guest EN G02 (single)
+
+- L planner: P01 to P18 render well on the Pro Max. Still broken: P05 "New request" primary hidden behind the tab bar; P09 "$5,890. / 00"; P15 "09:0 / 0", "16:0 / 0"; P06 floating button (no overlap at this list length, but it floats mid-screen).
+- L S04 planner assistant: a third junk session, this time with a LIVE action card ("replaced: QA-PC- Contenido largo de prueba..." with Confirm and Cancel buttons). Not touched. The overlap of the message list with the header block is confirmed on L.
+- S G02 RSVP (single, full size): the gold Continue button is almost entirely behind the floating tab bar, its label cannot be read. This is step 2 of the guest RSVP, App Review flow 1, and the iPad compatibility window has the same 375x667 layout. P0.
+- Sofia Rojas RSVP as found (not changed by this step): Sofia ceremony attending, reception attending; Martin ceremony attending, reception declined.
+
+## Batch 10: A2 L guest EN (14, seven-up) and L signed out EN (9, nine-up). ES retitle ran at 19:05 CDT (exit 0).
+
+- L guest: G01 to G07 are good on the Pro Max (RSVP button visible, day-of text fits, schedule header fits). G01 raw ISO date in the header (H10). G05 no AI wording (H18). G07 fallback message in the demo thread. G09 to G14 "Not published yet" (demo data).
+- L G08 More: the assistant bubble sits exactly on the language toggle (the ES half is hidden). P1, H22 family.
+- L signed out: E01 to E09 good. E02 code boxes visible above the keyboard on L (so E02 is an S and iPad problem). E03 raw ISO date. E07 whole form visible on L.
