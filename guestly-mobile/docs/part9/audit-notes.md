@@ -170,3 +170,44 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 - L-ES G01, G02 ("Actualizar mi respuesta" visible), G04 (header fits on L), G05, G06, G07, G08 (bubble on the language toggle), G09 to G14 (not published): as EN.
 - L-ES signed out: E01 four-line headline fits; E02 boxes visible; E03 raw ISO date; E04 dangling "Reciba noticias de"; E05 to E09 good.
 - S-ES guest after the seed: identical to batch 5 (the optional RSVP question shows only in step 3, which is never submitted in this audit).
+
+## Batch 16: A5 Dynamic Type at accessibility-extra-extra-extra-large, S, ES: signed out (E01, E02, E03, E07) and guest (G01, G02, G04, G05, G08), five-up
+
+- TAB BAR, every tab screen: the labels scale without any cap (raw `Text` in `src/ui/TabBar.tsx`, H1), grow to about 2.5x, overlap into one unreadable string ("IniciRSVProgConMas") and push the icons out. Navigation cannot be read at the largest text size. P1, systemic.
+- E01: the headline grows to five lines, runs up under the status bar and ON TOP of the wordmark; "Soy de la pareja o el plan..." is truncated; the trademark line is cut at the right edge.
+- E02, E03: title cut by the keyboard / search field hidden by the keyboard (worse than at the default size).
+- E07: fits (photo shrinks the visible form further; first button only).
+- G01: date line cut at the right edge ("domingo, 21 de marzo de 202"), countdown cut ("41" half visible).
+- G02: "No asistira" wraps to two lines and spills out of the segmented pill; badge ACOMPANANTE leaves the card on the right.
+- G04: the intro sentence overlaps the first time label ("4:00" sits on "invitado. Las horas son locales."); header date runs into the calendar icon; "Abrir e..." cut.
+- G05: fine (chips rail, bubble text). G08: rows fine, "Preguntas y respuestas" wraps cleanly.
+- The 1.3 cap of `src/ui/Text.tsx` holds for body text; what breaks is fixed-height or fixed-width containers and the uncapped raw `Text` nodes.
+
+## Batch 17: A5 Dynamic Type, S, ES, couple (C01, C02, C03, C06, C09, C11, C14, C16, C24, C28, C31, C35, C49, S01), five-up
+
+- Tab bar unreadable on all of them (see batch 16).
+- C01: the couple's names wrap to two lines and "Andres" is cut in half by the fixed-height hero.
+- C02: the search placeholder is drawn at about 28 pt: `TextInput` has no `maxFontSizeMultiplier` (H2), so inputs ignore the 1.3 cap that text obeys. Same in every Input.
+- C03: "Editar inv..." truncated. C06: stat labels "ASISTIR / AN", "PENDIEN / TES"; both floating buttons cut to "Registrar..." and "Recordar...".
+- C11: tile titles break mid word ("Presupue / sto", "Proveedor / es").
+- C14: request row titles collapse to ONE LETTER PER LINE next to the badge. P1.
+- C16: "Lista d...", "Recor"; floating button over the first task.
+- C24, C28: stat cards wrap letter by letter ("US / D / 34,3 / K", "Proveed / ores", "US / D / 19,5 / K").
+- C31: "Sugerir di...", "Plano de" cut by the bubble. C35: "09: / 00", block title broken into syllables ("Peina / do y / maqui / llaje"). C49: "CAMA / ND".
+- C09, S01: acceptable (S01 rows wrap cleanly; the AUTO control stays 44 pt wide).
+
+## Batch 18: A5 Dynamic Type, S, ES, planner (P01, P03, P06, P18), four-up
+
+- Tab bar unreadable. P03: request titles one letter per line. P06: stat label "Complet / a", floating button over the first board task. P01 and P18: text wraps cleanly.
+
+## Batch 19: A9 web rig, guest ES at 360 (13 shots, seven-up) and at 1440 (first 3 of 13, three-up)
+
+- 1440: every guest surface stretches edge to edge: hero photo 1440 wide, "Cambiar respuesta" and "Actualizar mi respuesta" buttons about 1400 px wide, RSVP rows with the answer control 1000 px away from its label, tab bar the full width (H12 confirmed for the guest surface).
+- 360: tabs fit with no horizontal overflow reported by the rig. RSVP: the bubble sits on the "No asistira" segment of the last row. Schedule: the two links wrap to two lines each ("Agregar al / calendario", "Abrir en / Mapas") and the header date still runs into the icon.
+- 360, pushed guest screens (site pages, messages): the whole card is drawn about 24 px to the left, the back chevron is cut and a strip of the previous screen shows on the right. The rig reports overflow 0, and the simulators do not show it, so this is a React Native Web stack artifact, not a phone defect. Logged so the fix step re-checks it after the width helper lands.
+
+## Batch 20: A2 T (iPad mini, compatibility window) couple ES, all 79 shots read nine-up (9 sheets), C13 singly
+
+- No crash, no blank screen, no letterbox surprise: every couple screen renders inside the 375x667 window, in Spanish, with the seed.
+- Because the window IS the SE layout, every S finding repeats on the iPad: C03 "[object Object]", C06 "PENDIENT / ES" and cut buttons, C10 composer under the tab bar, C11 and C16 truncated tiles, C14 squeezed row, C15 meta off the edge, C16 floating button over a row, C24 and C28 broken numbers and labels, C29 link off the edge, C31, C34, C46 truncated buttons, C35 "09:0 / 0", C36 and C37 Save behind the tab bar, C44 real names, C49 "CAMAN / D", C50 toggle under the bubble.
+- C13 (single): the name-search field at the bottom of door check-in is hidden behind the tab bar (only "C...bre" shows at the two ends). At a real door with a dead camera, the fallback cannot be reached. P1.

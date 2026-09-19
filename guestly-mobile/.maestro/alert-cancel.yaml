@@ -1,0 +1,23 @@
+# Opens a native alert from ONE control (by testID only, never by text), captures it, then taps the
+# cancel button. Written for the delete-account confirmation: the destructive button carries the same
+# words as the row, so nothing in this flow ever taps by that text.
+#   node scripts/part9/flow.mjs --device S --flow alert-cancel.yaml --to <dir> --env TARGET_ID=settings-delete --env CANCEL_TEXT=Cancelar --env NAME=S01-delete-alert
+appId: com.zcventures.guestly
+env:
+  TARGET_ID: ${TARGET_ID}
+  CANCEL_TEXT: ${CANCEL_TEXT || 'Cancel'}
+---
+- scrollUntilVisible:
+    element:
+      id: ${TARGET_ID}
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: ${TARGET_ID}
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ${NAME}
+- tapOn: ${CANCEL_TEXT}
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: ${NAME + '-after-cancel'}
