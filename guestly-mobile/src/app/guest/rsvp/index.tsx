@@ -109,8 +109,10 @@ export default function RsvpAnswers() {
           ) : null}
           {people.map((p, i) => (
             <Card key={i} kind="solid" padding={14}>
-              <Row style={{ justifyContent: "space-between", marginBottom: 6 }}>
-                <T v="name24">{p.name}</T>
+              {/* The name gives way and the badge drops under it when both do not fit:
+                  with large text ACOMPAÑANTE ran past the card's edge. */}
+              <Row gap={8} style={{ justifyContent: "space-between", flexWrap: "wrap", marginBottom: 6 }}>
+                <T v="name24" style={{ flexShrink: 1 }}>{p.name}</T>
                 <Badge label={p.tag} kind={p.kind} />
               </Row>
               {payload?.events.map((e) => (

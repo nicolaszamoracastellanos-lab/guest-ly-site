@@ -90,3 +90,44 @@ export function useBubbleLift(px: number) {
     }, [id, px])
   );
 }
+
+// A screen with its own round floating button (the add-guest button) shows no
+// bubble while it is focused: two gold circles stacked at the right edge read
+// as clutter and covered two rows of badges. The Coordinator stays one tap away
+// in the More menu and on every other tab.
+const hides = new Set<string>();
+let hiddenByScreen = false;
+const hideListeners = new Set<() => void>();
+function recomputeHide() {
+  const next = hides.size > 0;
+  if (next === hiddenByScreen) return;
+  hiddenByScreen = next;
+  hideListeners.forEach((l) => l());
+}
+function subscribeHide(l: () => void) {
+  hideListeners.add(l);
+  return () => {
+    hideListeners.delete(l);
+  };
+}
+
+/** Read by the root layout. */
+export function useBubbleHiddenByScreen(): boolean {
+  return useSyncExternalStore(subscribeHide, () => hiddenByScreen, () => false);
+}
+
+/** Called by a screen that floats its own round button. */
+export function useBubbleHide(active: boolean) {
+  const id = useId();
+  useFocusEffect(
+    useCallback(() => {
+      if (!active) return undefined;
+      hides.add(id);
+      recomputeHide();
+      return () => {
+        hides.delete(id);
+        recomputeHide();
+      };
+    }, [id, active])
+  );
+}

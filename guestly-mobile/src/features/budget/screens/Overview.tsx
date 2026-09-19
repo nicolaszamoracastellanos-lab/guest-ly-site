@@ -158,7 +158,7 @@ export function BudgetOverviewScreen() {
             <StatTile value={formatMoneyShort(totals.balanceBase, currency, lang)} label={copy.remaining} color={colors.goldLight} />
           </Row>
           <Card kind="solid" padding={16} style={{ marginTop: 10 }}>
-            <Row style={{ justifyContent: "space-between", marginBottom: 8 }}>
+            <Row gap={8} style={{ justifyContent: "space-between", flexWrap: "wrap", marginBottom: 8 }}>
               <T v="meta13" color={colors.ivory55}>
                 {copy.paid} {Math.round(totals.paidFraction * 100)}%
               </T>

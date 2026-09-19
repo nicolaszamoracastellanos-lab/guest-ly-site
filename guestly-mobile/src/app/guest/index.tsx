@@ -61,7 +61,7 @@ export default function GuestHome() {
           <Row style={[styles.topRow, { top }]}>
             <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
               <Gem />
-              <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={1} style={{ letterSpacing: 2, flexShrink: 1 }}>
+              <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={2} style={{ letterSpacing: 2, flexShrink: 1 }}>
                 {[city, mediumDate(when, lang)].filter(Boolean).join(" · ")}
               </T>
             </Row>

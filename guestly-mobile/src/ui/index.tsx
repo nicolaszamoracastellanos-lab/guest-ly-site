@@ -35,7 +35,7 @@ export { T } from "./Text";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { colors, radius, space, COLUMN } from "./tokens";
-export { useBottomClearance, useBubbleLift, useTabBarTop } from "./chrome";
+export { useBottomClearance, useBubbleLift, useBubbleHide, useTabBarTop } from "./chrome";
 
 // ---------------------------------------------------------------- layout
 
@@ -676,13 +676,16 @@ export function ListRow({ leading, title, sub, trailing, below, onPress, chevron
 export function StatTile({ value, label, color = colors.ivory, kind = "glass", style }: { value: string; label: string; color?: string; kind?: CardKind; style?: StyleProp<ViewStyle> }) {
   return (
     <Card kind={kind} radiusKey="tile" padding={12} style={[{ flex: 1, minWidth: 0, gap: 4, alignSelf: "stretch" }, style]}>
-      <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45}>
+      <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1}>
         {value}
       </T>
       {/* A single word shrinks rather than break mid word. A phrase wraps at its
           spaces at full size, up to three lines, so tiles in one row keep one
-          type size (the 80% tile on the insights screen used to print smaller). */}
-      <T v="meta13" color={colors.ivory55} numberOfLines={labelLines(label) === 1 ? 1 : 3} adjustsFontSizeToFit={labelLines(label) === 1} minimumFontScale={0.7}>
+          type size (the 80% tile on the insights screen used to print smaller).
+          Three tiles share a 327 pt row, so the number follows Dynamic Type only
+          to 1.1 and the label not at all (like the tab labels): with larger text
+          "Contratados" and "respondido" broke mid word. */}
+      <T v="meta13" color={colors.ivory55} numberOfLines={labelLines(label) === 1 ? 1 : 3} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1}>
         {label}
       </T>
     </Card>

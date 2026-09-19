@@ -2,7 +2,7 @@
 // (the guide renders inside the signed-in web view).
 
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { plural, useCopy } from "@/i18n";
 import { useMore } from "@/lib/hooks";
@@ -51,10 +51,16 @@ export default function MoreSheet() {
     router.push(item.route as never);
   }
 
+  // Two tiles per row need about 165 pt each. With large text on a narrow phone
+  // the labels broke mid word ("Presupue / sto"), so the grid goes to one column
+  // there (plan 6.2; Part 9 audit, D-031).
+  const { width, fontScale } = useWindowDimensions();
+  const oneColumn = width < 380 && fontScale > 1.15;
+
   const grid = (items: Item[]) => (
     <View style={styles.grid}>
       {items.map((it) => (
-        <Pressable key={it.key} onPress={() => open(it)} disabled={!it.available} accessibilityRole="button" accessibilityLabel={it.sub ? `${it.label}, ${it.sub}` : it.label} style={({ pressed }) => [styles.tile, pressed && { opacity: 0.75 }, !it.available && { opacity: 0.55 }]}>
+        <Pressable key={it.key} onPress={() => open(it)} disabled={!it.available} accessibilityRole="button" accessibilityLabel={it.sub ? `${it.label}, ${it.sub}` : it.label} style={({ pressed }) => [styles.tile, oneColumn && { width: "100%" }, pressed && { opacity: 0.75 }, !it.available && { opacity: 0.55 }]}>
           <Icon name={it.icon} size={22} color={colors.goldLight} />
           <View style={{ flex: 1, gap: 1 }}>
             <T v="body15" numberOfLines={2}>

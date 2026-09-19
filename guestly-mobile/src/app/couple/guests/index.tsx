@@ -10,7 +10,7 @@ import { COPY as TOOLS } from "@/features/exports/copy";
 import { exportGuests, type ExportPreset } from "@/features/exports/download";
 import { useCoupleGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset, useBottomClearance, useBubbleLift, COLUMN, QueryError, useTabBarTop } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset, useBottomClearance, useBubbleHide, COLUMN, QueryError, useTabBarTop } from "@/ui";
 import { colors } from "@/ui/tokens";
 
 const FILTERS = ["all", "attending", "pending", "declined"] as const;
@@ -36,7 +36,8 @@ export default function CoupleGuests() {
   const canEdit = user?.me.can_edit ?? false;
   // The add button floats where the assistant bubble would rest, so the bubble
   // moves up by the button and its gap while this list is on screen.
-  useBubbleLift(canEdit ? FAB_SIZE + 14 : 0);
+  // One floating circle per screen: with the add button up, the bubble steps aside.
+  useBubbleHide(canEdit);
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
