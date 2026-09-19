@@ -122,7 +122,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           if (metaRaw) {
             const meta = JSON.parse(metaRaw) as { tenant: TenantSummary; guest: GuestIdentity };
             setCredential({ kind: "guest", token });
-            applyTenantDefault(meta.tenant.locale_default);
+            applyTenantDefault(meta.tenant.locale_default, meta.guest.language);
             if (!cancelled) setState({ status: "guest", token, tenant: meta.tenant, guest: meta.guest, inviteCode });
             return;
           }
@@ -214,8 +214,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.setItemAsync(K_GUEST, JSON.stringify({ token, inviteCode }));
     await AsyncStorage.setItem(K_GUEST_META, JSON.stringify({ tenant, guest }));
     setCredential({ kind: "guest", token });
+    applyTenantDefault(tenant.locale_default, guest.language);
     setState({ status: "guest", token, tenant, guest, inviteCode });
-  }, []);
+  }, [applyTenantDefault]);
 
   const refreshMe = useCallback(async () => {
     if (state.status !== "user") return null;

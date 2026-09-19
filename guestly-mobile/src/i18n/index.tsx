@@ -1,5 +1,11 @@
-// Language ladder: app setting, then device locale, then the wedding's
-// locale_default (applied by the session once a wedding is known), else EN.
+// Language ladder, top wins (Part 9 audit, D-041):
+//   1. the language the user chose in the app (stored as gl.lang)
+//   2. the device language, when it is English or Spanish
+//   3. the guest's own language from the guest record (guests only)
+//   4. the wedding's locale_default (applied by the session once a wedding is known)
+//   5. English
+// Steps 3 and 4 only ever apply on a phone set to a third language. They used to
+// override step 2, so an English phone could flip to Spanish after opening a wedding.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,15 +24,22 @@ type Ctx = {
   explicit: boolean;
   copy: Copy;
   setLang: (l: Lang) => void;
-  /** The wedding's default, applied only while the user has not chosen. */
-  applyTenantDefault: (l: Lang | null | undefined) => void;
+  /** The wedding's default (and, for guests, the guest's own language first).
+   *  Applied only while the user has not chosen AND the device speaks neither
+   *  English nor Spanish. */
+  applyTenantDefault: (l: Lang | string | null | undefined, guestLanguage?: string | null) => void;
 };
 
 const LangContext = createContext<Ctx | null>(null);
 
+/** The device language when it is one the app speaks, else null. */
+function deviceLangExact(): Lang | null {
+  const code = getLocales()[0]?.languageCode?.toLowerCase();
+  return code === "es" || code === "en" ? code : null;
+}
+
 function deviceLang(): Lang {
-  const code = getLocales()[0]?.languageCode?.toLowerCase() ?? "en";
-  return code === "es" ? "es" : "en";
+  return deviceLangExact() ?? "en";
 }
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
@@ -57,8 +70,10 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyTenantDefault = useCallback(
-    (l: Lang | null | undefined) => {
-      if (!explicit && (l === "en" || l === "es")) setLangState(l);
+    (l: Lang | string | null | undefined, guestLanguage?: string | null) => {
+      if (explicit || deviceLangExact()) return;
+      const pick = guestLanguage === "en" || guestLanguage === "es" ? guestLanguage : l;
+      if (pick === "en" || pick === "es") setLangState(pick);
     },
     [explicit]
   );

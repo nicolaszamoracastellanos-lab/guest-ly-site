@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Sheet, Skeleton, SectionLabel, Toggle, Input, Icon, Hairline, ListRow, Avatar } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Sheet, Skeleton, SectionLabel, Toggle, Input, Icon, Hairline, ListRow, Avatar, DateEcho } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, findComputedItem, type ItemStatus, type PaymentKind, type ItemRow } from "../hooks";
@@ -308,6 +308,7 @@ export function BudgetItemScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <TextField label={copy.paidOn} value={pay.paid_on} onChange={(v) => setPay({ ...pay, paid_on: v })} keyboardType="numeric" />
+              <DateEcho value={pay.paid_on} />
             </View>
           </Row>
           <Options<PaymentKind> value={pay.kind} options={KINDS.map((k) => ({ value: k, label: copy.kinds[k] }))} onChange={(v) => setPay({ ...pay, kind: v })} />

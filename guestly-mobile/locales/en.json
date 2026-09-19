@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSCameraUsageDescription": "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.",
+    "NSPhotoLibraryUsageDescription": "Guest-ly lets you pick photos for the wedding website, the floor plan and budget receipts.",
+    "NSFaceIDUsageDescription": "Guest-ly can use biometric unlock instead of asking you to sign in again.",
+    "NSMicrophoneUsageDescription": "Guest-ly does not record audio. iOS shows this text only if a video with sound is ever captured, which the app does not do."
+  }
+}

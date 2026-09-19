@@ -11,7 +11,7 @@ import { post, del, ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useCoupleGuests, usePlannerGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Input, Button, Avatar, ListRow, Sheet, EmptyState, Skeleton, SectionLabel, Row, Stack, Hairline, Icon, Banner } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Input, Button, Avatar, ListRow, Sheet, EmptyState, Skeleton, SectionLabel, Row, Stack, Hairline, Icon, Banner, DateEcho } from "@/ui";
 import { colors, HIT_TARGET } from "@/ui/tokens";
 import { COPY } from "./copy";
 import { addDays, addMonths, ISO_DAY, TASK_INVALIDATE, useSharedTask, type Board, type BoardStatus, type BoardTask, type TaskCategory, type TaskPriority, type TaskRecurrence, type TaskStatus, type TaskView } from "./hooks";
@@ -123,6 +123,7 @@ export function DateField({ value, today, onChange }: { value: string | null; to
         autoCorrect={false}
         style={invalid ? { borderColor: "rgba(240,162,162,0.6)" } : undefined}
       />
+      <DateEcho value={text} />
       <ChipRow>
         <Chip label={copy.dateChips.none} on={!value} onPress={() => onChange(null)} />
         <Chip label={copy.dateChips.today} on={value === today} onPress={() => onChange(today)} />

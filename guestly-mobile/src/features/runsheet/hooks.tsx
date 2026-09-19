@@ -15,6 +15,7 @@ import {
   Row,
   Chip,
   ChipRow,
+  DateEcho,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "./copy";
@@ -177,6 +178,7 @@ export function BlockFormFields({
             keyboardType="number-pad"
             style={{ marginTop: 6 }}
           />
+          <DateEcho value={form.day} style={{ marginTop: 6 }} />
         </View>
         <View style={{ flex: 1 }}>
           <SectionLabel>{c.start}</SectionLabel>

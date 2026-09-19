@@ -25,7 +25,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useCopy, useLang } from "@/i18n";
+import { useCopy, useLang, longDate } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
 import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
@@ -594,6 +594,21 @@ export function Input({ icon, style, right, ...props }: Omit<TextInputProps, "st
       />
       {right}
     </View>
+  );
+}
+
+/** The typed date, read back in words under a YYYY-MM-DD text field, so a slip
+ *  of one digit is seen before saving (Part 9 audit, D-021). Renders nothing
+ *  until the text is a real calendar day. A native picker needs a new module. */
+export function DateEcho({ value, style }: { value: string | null | undefined; style?: StyleProp<TextStyle> }) {
+  const { lang } = useLang();
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const d = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== value) return null;
+  return (
+    <T v="meta13" color={colors.ivory70} style={style}>
+      {longDate(value, lang)}
+    </T>
   );
 }
 

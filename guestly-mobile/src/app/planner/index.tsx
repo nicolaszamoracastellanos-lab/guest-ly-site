@@ -3,7 +3,7 @@
 import React from "react";
 import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, useCopy } from "@/i18n";
+import { fmt, useCopy, useLang, mediumDate } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
 import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Gem, Icon, StatTile, SectionLabel, Skeleton, Card, ListRow } from "@/ui";
@@ -11,6 +11,7 @@ import { colors } from "@/ui/tokens";
 
 export default function PlannerHome() {
   const copy = useCopy();
+  const { lang } = useLang();
   const router = useRouter();
   const user = useUserSession();
   const { switchTenant } = useSession();
@@ -60,7 +61,7 @@ export default function PlannerHome() {
         {(data?.weddings ?? []).map((w, i, arr) => (
           <ListRow
             key={w.slug}
-            title={`${w.couple_names}${w.wedding_date ? ` · ${w.wedding_date}` : ""}`}
+            title={`${w.couple_names}${w.wedding_date ? ` · ${mediumDate(w.wedding_date, lang)}` : ""}`}
             sub={w.current ? `${copy.planner.current}${w.days_to_go !== null ? ` · ${w.days_to_go} ${copy.common.days}` : ""}` : w.days_to_go !== null && w.days_to_go < 30 ? `${copy.planner.nextUp} · ${w.days_to_go} ${copy.common.days}` : copy.planner.quiet}
             trailing={<Badge label={fmt(copy.planner.open, { n: w.open_requests })} kind={w.open_requests ? "amber" : "mute"} />}
             onPress={async () => { if (!w.current) await switchTenant(w.slug); }}

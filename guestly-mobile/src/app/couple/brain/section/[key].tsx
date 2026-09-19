@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { View, Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useLang, mediumDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner, DateEcho } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
 import { useDraft, setPath, getPath, replaceFacts } from "@/features/brain/draft";
@@ -72,6 +73,7 @@ function FieldEditor({ field, facts, disabled, base }: { field: Field; facts: We
         placeholder={field.kind === "list" ? c.oneEntryPerLine : undefined}
         style={field.kind === "text" ? undefined : { minHeight: 96, alignItems: "flex-start", paddingVertical: 12 }}
       />
+      {/(^|[._])date$/.test(field.path) ? <DateEcho value={value} /> : null}
       {field.hint ? (
         <T v="meta13" color={colors.ivory55}>
           {c.fields[field.hint] ?? ""}
@@ -87,6 +89,7 @@ function FieldEditor({ field, facts, disabled, base }: { field: Field; facts: We
 
 function ItineraryEditor({ facts, disabled }: { facts: WeddingFacts; disabled: boolean }) {
   const c = useFeatureCopy(COPY);
+  const { lang } = useLang();
   const events = facts.itinerary ?? [];
   const [open, setOpen] = useState<number | null>(events.length ? 0 : null);
   function update(next: ItineraryEvent[]) {
@@ -119,7 +122,7 @@ function ItineraryEditor({ facts, disabled }: { facts: WeddingFacts; disabled: b
             </Stack>
           ) : (
             <T v="meta13" color={colors.ivory55} style={{ marginTop: 4 }}>
-              {[e.date, e.time, e.location].filter(Boolean).join(" · ")}
+              {[e.date ? mediumDate(e.date, lang) : null, e.time, e.location].filter(Boolean).join(" · ")}
             </T>
           )}
         </Card>
