@@ -23,7 +23,9 @@ export function pathHasTabBar(pathname: string): boolean {
 // Sections where a person is typing, answering or scanning. The bubble would
 // only be in the way there, and it hides on every detail and form screen
 // (three or more path segments) as well.
-const NO_BUBBLE_SECTIONS = ["/guest/rsvp", "/guest/concierge", "/couple/checkin", "/couple/settings"];
+// The guest More screen is a settings screen (language, notifications, leave):
+// the bubble covered its controls on the Pro Max and its last line on the SE.
+const NO_BUBBLE_SECTIONS = ["/guest/rsvp", "/guest/concierge", "/guest/more", "/couple/checkin", "/couple/settings"];
 
 /** The bubble shows on the browse screens only: tab roots, the section lists
  *  behind the More menus and the guest site pages. */

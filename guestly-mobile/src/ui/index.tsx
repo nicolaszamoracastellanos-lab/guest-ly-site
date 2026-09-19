@@ -1,7 +1,7 @@
 // Guest-ly component kit. Direction A: night background, ivory type, gold
 // accents, glass surfaces, one paper (ivory) card per screen at most.
 
-import React, { useEffect, useRef, useState, type ReactNode } from "react";
+import React, { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   View,
   Pressable,
@@ -188,11 +188,11 @@ export function KeyboardFill({ children, modal = false }: { children: ReactNode;
   // Dynamic Island plus about 10 pt). Without it the composer of the Coordinator
   // sat half under the keyboard on the 667 pt phone.
   const sheetGap = modal && Platform.OS === "ios" ? insets.top + 10 : 0;
-  const measure = () => ref.current?.measureInWindow((_x, y) => setOffset(Math.max(0, Math.round(y || 0)) + sheetGap));
+  const measure = useCallback(() => ref.current?.measureInWindow((_x, y) => setOffset(Math.max(0, Math.round(y || 0)) + sheetGap)), [sheetGap]);
   useEffect(() => {
     const sub = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow", measure);
     return () => sub.remove();
-  }, []);
+  }, [measure]);
   return (
     <View ref={ref} style={styles.fill} onLayout={measure} collapsable={false}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.fill} keyboardVerticalOffset={offset}>

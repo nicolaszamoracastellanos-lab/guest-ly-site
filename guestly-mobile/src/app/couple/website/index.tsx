@@ -141,7 +141,7 @@ export default function WebsiteHome() {
               <SectionLabel color={colors.goldLight}>{c.address}</SectionLabel>
               <Badge label={surface.published ? c.published : c.draft} kind={surface.published ? "green" : "amber"} dot />
             </Row>
-            <Pressable onPress={copyLink} accessibilityRole="button" accessibilityLabel={c.copyLink} style={{ marginTop: 8 }}>
+            <Pressable onPress={copyLink} accessibilityRole="button" accessibilityLabel={c.copyLink} style={{ marginTop: 4, minHeight: 44, justifyContent: "center" }}>
               <T v="name24" numberOfLines={1}>
                 {c.addressHint}
                 <T v="name24" color={colors.goldLight}>
@@ -149,7 +149,7 @@ export default function WebsiteHome() {
                 </T>
               </T>
             </Pressable>
-            <T v="meta13" color={copied ? colors.green : colors.ivory55} style={{ marginTop: 4 }}>
+            <T v="meta13" color={copied ? colors.green : colors.ivory55} style={{ marginTop: 0 }}>
               {copied ? c.copied : surface.public_url}
             </T>
             <Row gap={8} style={{ marginTop: 14 }}>

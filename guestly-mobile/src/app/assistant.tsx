@@ -337,7 +337,7 @@ export default function AssistantScreen() {
                   editable={!busy}
                   style={{ paddingRight: 6 }}
                   right={
-                    <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.send} hitSlop={4} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
+                    <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.send} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
                       <Icon name="chev" size={20} color={colors.night} strokeWidth={2} />
                     </Pressable>
                   }
@@ -528,6 +528,6 @@ function Item({
 const styles = StyleSheet.create({
   bot: { maxWidth: 300, borderRadius: 18, borderBottomLeftRadius: 4, padding: 12, paddingHorizontal: 14, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)" },
   me: { maxWidth: 280, borderRadius: 18, borderBottomRightRadius: 4, padding: 12, paddingHorizontal: 14, backgroundColor: colors.gold },
-  send: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
+  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
   quote: { borderLeftWidth: 2, borderLeftColor: colors.goldBorder, paddingLeft: 10, gap: 4 },
 });

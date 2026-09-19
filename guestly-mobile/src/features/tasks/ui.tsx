@@ -65,10 +65,10 @@ export function TaskRowItem({ task, onToggle, onPress, last }: { task: TaskView;
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
         accessibilityLabel={done ? copy.reopen : copy.markDone}
-        hitSlop={10}
-        style={[styles.check, done && styles.checkOn]}
+        style={styles.checkHit}
       >
-        {done ? <Icon name="check" size={16} color={colors.night} strokeWidth={2.4} /> : null}
+        {/* The pressable is 44 pt; the circle inside keeps its size (D-024). */}
+        <View style={[styles.check, done && styles.checkOn]}>{done ? <Icon name="check" size={16} color={colors.night} strokeWidth={2.4} /> : null}</View>
       </Pressable>
       <View style={{ flex: 1, gap: 3 }}>
         <T v="body16" color={done ? colors.ivory55 : colors.ivory} style={done ? styles.strike : undefined} numberOfLines={2}>
@@ -646,6 +646,7 @@ export function ScreenTitle({ title, sub }: { title: string; sub?: string }) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 64, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
+  checkHit: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginLeft: -9, marginRight: -9 },
   check: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: colors.goldBorder, alignItems: "center", justifyContent: "center" },
   checkOn: { backgroundColor: colors.gold, borderColor: colors.gold },
   strike: { textDecorationLine: "line-through" },

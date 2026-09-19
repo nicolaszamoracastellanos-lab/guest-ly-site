@@ -220,7 +220,8 @@ export default function SeatingTable() {
                 onPress={() =>
                   draftActions.updateTable(table.id, { confidence: 1 })
                 }
-                hitSlop={8}
+                accessibilityRole="button"
+                style={{ minHeight: 44, justifyContent: "center" }}
               >
                 <T v="meta13" color={colors.goldLight}>
                   {c.confirmTable}
@@ -286,9 +287,9 @@ export default function SeatingTable() {
                       onPress={() =>
                         draftActions.unseatParty(g.rsvp_id, table.id)
                       }
-                      hitSlop={8}
                       accessibilityRole="button"
                       accessibilityLabel={c.removeParty}
+                      style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -12 }}
                     >
                       <Icon name="x" size={18} color={colors.ivory55} />
                     </Pressable>
@@ -314,9 +315,9 @@ export default function SeatingTable() {
                         onPress={() =>
                           draftActions.unseatPerson(table.id, r.index)
                         }
-                        hitSlop={10}
                         accessibilityRole="button"
                         accessibilityLabel={c.remove}
+                        style={{ minHeight: 44, justifyContent: "center" }}
                       >
                         <T v="meta13" color={colors.ivory55}>
                           {c.remove}

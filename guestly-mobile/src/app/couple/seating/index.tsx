@@ -212,7 +212,7 @@ export default function SeatingIndex() {
             <Pressable
               onPress={() => setAddOpen(true)}
               accessibilityRole="button"
-              hitSlop={8}
+              style={{ minHeight: 44, justifyContent: "center" }}
             >
               <Row gap={6}>
                 <Icon name="plus" size={16} color={colors.goldLight} />
