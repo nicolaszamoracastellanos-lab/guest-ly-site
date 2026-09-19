@@ -211,3 +211,37 @@ Note: demo-review keeps moving under us. Guests header read 48 parties / 88 peop
 - No crash, no blank screen, no letterbox surprise: every couple screen renders inside the 375x667 window, in Spanish, with the seed.
 - Because the window IS the SE layout, every S finding repeats on the iPad: C03 "[object Object]", C06 "PENDIENT / ES" and cut buttons, C10 composer under the tab bar, C11 and C16 truncated tiles, C14 squeezed row, C15 meta off the edge, C16 floating button over a row, C24 and C28 broken numbers and labels, C29 link off the edge, C31, C34, C46 truncated buttons, C35 "09:0 / 0", C36 and C37 Save behind the tab bar, C44 real names, C49 "CAMAN / D", C50 toggle under the bubble.
 - C13 (single): the name-search field at the bottom of door check-in is hidden behind the tab bar (only "C...bre" shows at the two ends). At a real door with a dead camera, the fallback cannot be reached. P1.
+
+## Batch 21: A2 T planner ES (20, ten-up) and T guest ES (14, seven-up). Seed retitled back to EN at 19:30 CDT.
+
+- T planner: all 20 render in the compatibility window; findings equal S (greeting, squeezed request rows, number wrapping, floating board button, "09:0 / 0", S04 junk session, this time a fourth variant with "hola" and "Entendido").
+- T guest: all 14 render. G02 on the iPad: the RSVP primary button is behind the tab bar exactly as on the SE, which makes it an App Review risk (P0). G03 card cut by the tab bar, G04 ES header into the icon, G09 to G14 not published.
+- First A4 captures (S, ES): C02 tools sheet opens and fits (the chip rail inside the sheet shows a partial chip, fine). C04: Maestro found the phone field in the hierarchy but its position is under the keyboard, so the tap landed on the keyboard suggestion bar: proof that the screen does not move the focused field above the keyboard (H6). Nothing was saved. P01 scroll: the end of the home is reachable above the tab bar.
+- Loading state seen by accident (C10 capture landed on the guests list mid-load): three skeleton rows in the list shape, header and chips already drawn. Good.
+
+## Batch 22: A4 interaction pass, S, ES, couple (Maestro; 12 captures read six-up)
+
+- C37 new block, field "Quien lo dirige" focused: the keyboard covers the focused field; the last thing visible is the LUGAR label. P1 keyboard (H6 confirmed by a real tap).
+- S03 assistant, composer focused: the composer is NOT visible above the keyboard on the SE; the user types blind. P1 keyboard.
+- C13 door check-in: the screen does not scroll, so the name field stays behind the tab bar. Confirmed.
+- C16 scrolled to the end: reachable; the full-width floating "Agregar una tarea" hides one whole row wherever the list stops. C24 scrolled: "Importar desd..." truncated next to "Agregar linea"; a "Crear presupuesto" text link shows under an existing budget. C11 scrolled: "Bot de What...", "guest-ly.co..." truncated sublabels; footer trademark line fits.
+- S01 delete account: the confirmation alert opens ("Retiraremos su acceso en un plazo de 30 dias y le avisaremos por correo. Continuar?"), dark styled, both buttons 44 pt. Cancel was tapped; the second capture shows Settings unchanged. The account was NOT deleted.
+- S01 wedding switcher: tapping the Boda row opens nothing because the demo couple has one wedding. n/a.
+- C49 share: the capture shows the page without the iOS share sheet (taken before it rose, or the tap did not register). Inconclusive, listed under not verified.
+- Harness misses, recaptured or dropped: P05 notes field (flow failed, text not found), C10 composer (the deep link had not landed yet; the L capture in batch 7 and the S capture in batch 1 already cover C10), C30 (flow failed).
+
+## Batch 23: A9 web rig, full matrix: 581 screenshots (4 roles, EN and ES, 360, 390, 430, 768, 1024, 1440), 8 with horizontal overflow
+
+- Overflow (rig measurement, all 581 screens): ONLY the entrance, in both languages: 420 px at 360, 390 px at 390, 350 px at 430, 12 px at 768. It is the 780 px photo keeping its intrinsic width (H12). Every other screen: 0 px at every width.
+- Read: signed out ES at 360 (5), signed out ES at 1440 (2), couple ES at 1440 (2), couple ES at 768 (2) and 1024 (1), guest ES at 360 (13) and 1440 (3). The other widths and EN were judged from the overflow numbers only and are NOT marked as read.
+- 360 entrance: the trademark line wraps to two lines beside the language toggle (H13 confirmed). Headline four lines, buttons fit.
+- 360 sign-in: fine. State bug: after "link sent", switching to password mode keeps the green "Revise su correo..." message on screen under the password form.
+- 1440 entrance: the photo covers the left 780 px only, the rest is a flat dark panel with the wordmark stranded at x 440; buttons 1400 px wide (H12 confirmed). 1440 sign-in, couple home, guests: everything edge to edge, badges 1300 px from the names, tab bar full width, hero photo upscaled and soft.
+- 768 and 1024: same stretching, no column. Budget at 1024 shows the stat numbers on one line (so the wrapping in C24 is purely a width problem).
+
+## Batch 24: A4 guest and signed out (S, ES)
+
+- G02 RSVP after three scroll gestures (p2 and p4 are identical): the screen does NOT scroll, so the primary button can never be brought out from behind the tab bar on the SE and in the iPad window. P0 confirmed by interaction, not only by a still.
+- G05 concierge with the keyboard open: the composer rides above the keyboard, chips stay visible. Pass.
+- E05 notify: the screen scrolls; "Permitir notificaciones" and "Ahora no" are reachable after one scroll. P2 (primary action below the fold on the SE).
+- E07 email field: flow failed to find the field without scrolling (known G9). Not captured.
