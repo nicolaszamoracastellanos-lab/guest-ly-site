@@ -71,3 +71,42 @@ agent's context. The clean result is `docs/PART9-AUDIT.md`. Shot paths are under
 - P18 More: list rows here, tiles on the couple More (inconsistent pattern, P3). "Coordinador / Bot de WhatsApp".
 - S02 settings planner: "Plan: standard. Se administra en la web." No purchase call to action (H20 cleared), but "standard" is a raw tier value.
 - S04 planner assistant: NOT empty any more. It opens a session full of test junk ("Contenido largo de prueba" x12, "MOCK:SLOW", "Listo, tarde un poco."), created by someone else on demo-review today. App Review would see it. Also a real layout defect on the same screen: the message list scrolls UNDER the header block and overlaps the intro sentence. P1.
+
+## Batch 5: A1 S guest ES and EN (14 + 14 shots, five-up; G06 EN opened singly). Seed applied after this batch.
+
+**Seed applied at 2026-09-18T23:50:52Z (18:50 CDT)**: 8 tasks, 2 board tasks, 5 vendors, 1 budget (5 categories, 12 lines, 3 payments, 2 vendor links), 6 tables with 22 of 43 seated, 8 run sheet blocks, 1 optional RSVP question, 1 open planner request, `emailSent=false`. Ledger in `.part9/seed-ledger.json`.
+
+- G01 home: header "TARIJA, BOLIVIA . 2027-03-21" raw ISO date (H10). The assistant bubble covers the venue name in the date line.
+- G02 RSVP: the gold primary button is hidden behind the floating tab bar (same systemic defect as C16). Bubble covers the "ACOMPANANTE" / "PARTY MEMBER" badge.
+- G03 confirm: the ivory answer card is cut by the tab bar. The title sits on the brightest part of the photo (weak scrim), EN and ES.
+- G04 schedule: ES header "DOMINGO, 21 DE MARZO DE 2027" runs into the calendar icon (EN fits). "Abrir en Mapas" touches the right edge under the bubble.
+- G05 concierge: subtitle "Conoce la boda. Una persona interviene cuando hace falta." / "Knows the wedding. A person steps in when needed." never says the concierge is an AI (H18 confirmed). EN greeting mixes languages: "Hola Sofia. I know the schedule...".
+- G06 day-of EN (single): the body text is five lines and the two buttons sit on top of the fifth line ("leaves at 2:00 am" hidden). P1 overlap. ES fits by luck of line breaks.
+- G07 messages: demo thread shows the unaccented technical-problem fallback message ("Perdon, tuve un problema tecnico"). Bad demo content for review.
+- G08 More: fine. G09 to G14 site pages: ALL six say "Todavia no esta publicado" / "Not published yet" because the demo-review website is a draft. App Review flow 1 would walk into six empty pages. Agents may not publish; the lead or Nicolas must publish the demo-review site. The More menu still links to pages that are not published. "Intentar de nuevo" is left aligned under centered text.
+
+## Batch 6: A2 S couple EN after the seed (79 shots; the 20 screens the seed changed read five-up, the rest equal to batch 3)
+
+Note: demo-review keeps moving under us. Guests header read 48 parties / 88 people at 18:53 CDT (40 / 73 at 14:38). This wave created no guest. RSVP pending count went 16 to 24.
+
+- C01 home populated: good briefing rows.
+- C08 RSVP questions: row carries two 32 pt icon buttons plus a chevron, crowded, under 44 pt.
+- C12 day-of with a run sheet: the 01:30 "Last song and farewell" block sorts FIRST (before 09:00) and every block shows DONE with strike-through today; after-midnight blocks need to sort after the evening. P2.
+- C14 requests: the row title is squeezed to one word per line ("Add / seats") by the wide AWAITING THE COUPLE badge; email cut "planner-review@...". P1.
+- C15 request detail: the meta line "2m . planner-review@gues" runs off the right edge with no ellipsis. The CHANGES row shows only "+1" with an empty label on the left. P1.
+- C16 tasks populated: the gold "Add a task" button floats in the MIDDLE of the list (y 490 of 667) on top of the first task row and its HIGH badge. P1 overlap.
+- C17 edit task, C36 edit block, C39 couple: dates are raw ISO text fields.
+- C24 budget: stat cards break numbers: "$5,89 / 0.00" and "USD / 28.4 / K" on three lines; formats mix "USD 34.3K" and "$5,890.00". P1.
+- C25 category: reorder arrows are about 24 pt. C29 vendor: "+ Link a budget line" is a small text link; empty quoted price prints a lone dot.
+- C28 vendors: stat cards of uneven height.
+- C32 table: "Remove from table" text links (small targets), the last one under the bubble.
+- C35 run sheet: the time column is too narrow for the display font: "09:00" breaks into "09:0 / 0". P1. Badge CONFIRMED under the bubble.
+
+## Batch 7: A2 L (iPhone 17 Pro Max, 440x956) couple EN, all 79 shots read six-up (14 sheets)
+
+- The Pro Max cures most SE problems: keyboards leave the fields visible, RSVP stat labels fit, "Remind 24 pending" fits, the thread composer (C10) sits ABOVE the tab bar, C49 "CAMAND" fits on one line, C15 meta line fits.
+- Still broken on L: C03 "[object Object]"; C11 sublabels "The day, minute...", "Gaps, escalations...", "guest-ly.com/de..."; C13 helper text under the tab bar; C16 tiles "Wedding ch...", "Reminders a..." and the floating "Add a task" on top of a task row; C24 "$5,890. / 00" still wraps; C35 "09:0 / 0" and "16:0 / 0" still wrap; C36 and C37 Save button hidden behind the tab bar (gold edge peeks out); C17 Save overlaps the "Category: Vendors" footnote; C15 CHANGES row has an empty label; C33 shows a toggle with NO label at all (there is room on L, so the label is missing, not hidden); C47-registry three-way segmented control ("Link to a registry | A page on this site | Only the note") is crammed and wraps.
+- C44 on L shows the whole approved template: the real couple's names, their real date ("Viernes 27 de noviembre de 2026"), their programme and `https://app.guest-ly.com/alexnico`, inside demo-review. P0 confirmed at full size. Evidence is kept out of git on purpose.
+- C12: run sheet order and DONE state as on S. C42: fine on L.
+- S05, S06: the web view modal shows a thin brown sliver of the screen behind it at both top corners. Portal chrome inside the web view as on S.
+- Bubble (H22) on L still covers: C02 badge, C06 badge, C10 message text, C11 tile, C12 badge, C16 HIGH badge, C24 amount, C32 "Remove from table", C47-schedule toggle, S01 chevron.
