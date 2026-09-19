@@ -20,7 +20,8 @@ export default function Checklists() {
   const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
-  const { data: board, isLoading } = useTasksBoard();
+  const mainQuery = useTasksBoard();
+  const { data: board, isLoading } = mainQuery;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [category, setCategory] = useState<TaskCategory | "all">("all");
   const [busy, setBusy] = useState(false);
@@ -54,7 +55,7 @@ export default function Checklists() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={120}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} />} bottomInset={120}>
       <BigTitle title={copy.checklist} sub={copy.checklistIntro} size={34} />
       {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <View style={{ marginTop: 16 }}>

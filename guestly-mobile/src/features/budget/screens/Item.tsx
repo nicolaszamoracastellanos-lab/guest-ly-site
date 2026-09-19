@@ -40,7 +40,8 @@ export function BudgetItemScreen() {
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
   const params = useLocalSearchParams<{ id: string; b?: string }>();
-  const { data, isLoading } = useBudgetSurface(params.b ?? null);
+  const mainQuery = useBudgetSurface(params.b ?? null);
+  const { data, isLoading } = mainQuery;
   const writes = useBudgetWrites();
   const { busy, act } = useAction();
 
@@ -138,7 +139,7 @@ export function BudgetItemScreen() {
   const comments = row?.comments ?? [];
 
   return (
-    <Screen header={<TopBar onBack={back} title={found?.group.category?.name ?? copy.uncategorized} />} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={found?.group.category?.name ?? copy.uncategorized} />} keyboard>
       <>
         {isLoading && !data ? (
           <Stack gap={10} style={{ marginTop: 8 }}>

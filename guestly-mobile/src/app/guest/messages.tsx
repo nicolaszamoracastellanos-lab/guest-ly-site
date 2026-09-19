@@ -16,11 +16,12 @@ export default function GuestMessages() {
   const router = useRouter();
   const back = useSafeBack();
   const session = useGuestSession();
-  const { data, isLoading } = useGuestMessages();
+  const mainQuery = useGuestMessages();
+  const { data, isLoading } = mainQuery;
   const messages = data?.messages ?? [];
 
   return (
-    <Screen header={<TopBar onBack={back} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} />} bottomInset={40}>
       <BigTitle title={copy.messages.title} sub={copy.messages.guestSubtitle} />
       <Stack gap={10} style={{ marginTop: 20 }}>
         {isLoading && !data ? (

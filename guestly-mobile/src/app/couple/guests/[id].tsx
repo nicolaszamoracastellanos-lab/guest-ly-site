@@ -2,14 +2,14 @@
 // waiting for the couple, message and edit.
 
 import React, { useState } from "react";
-import { View, Linking, ScrollView, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, Linking, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useCopy, useLang, relTime } from "@/i18n";
+import { fmt, localized, useCopy, useLang, relTime } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useGuestDetail } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Footer } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Footer, Field, ButtonRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -21,7 +21,8 @@ export default function GuestDetailScreen() {
   const qc = useQueryClient();
   const user = useUserSession();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading } = useGuestDetail(id);
+  const mainQuery = useGuestDetail(id);
+  const { data, isLoading } = mainQuery;
   const d = data?.detail;
   const waiting = data?.waiting_for_you;
   const [editing, setEditing] = useState(false);
@@ -65,6 +66,10 @@ export default function GuestDetailScreen() {
     }
   }
 
+  // Event titles arrive as { en, es }; answers arrive as the raw enum.
+  const eventTitle = (t: string | { en?: string; es?: string }) => localized(t, lang);
+  const answerLabel = (a: string | null) => (a === "attending" ? copy.guests.filters.attending : a === "declined" ? copy.guests.filters.declined : a === "pending" || !a ? copy.guests.filters.pending : a);
+
   async function sendReply() {
     if (!waiting || !reply.trim()) return;
     setBusy(true);
@@ -82,9 +87,8 @@ export default function GuestDetailScreen() {
   }
 
   return (
-    <Screen scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={back} title={copy.guests.title} />}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.guests.title} />} keyboard>
+        <>
           {isLoading && !d ? (
             <Stack gap={12} style={{ marginTop: 20 }}>
               <Skeleton h={56} />
@@ -109,7 +113,7 @@ export default function GuestDetailScreen() {
 
               {!editing ? (
                 <View style={{ marginTop: 18 }}>
-                  <DetailRow icon="check" iconColor={status === "attending" ? colors.greenText : colors.goldLight} title={d.events.length ? d.events.map((e) => `${e.title}: ${e.answer ?? "·"}`).join(" · ") : copy.guests.detail.ceremonyReception} sub={d.rsvp?.updatedAt ? fmt(copy.guests.detail.answered, { when: relTime(d.rsvp.updatedAt, lang), channel }) : copy.guests.detail.notAnswered} />
+                  <DetailRow icon="check" iconColor={status === "attending" ? colors.greenText : colors.goldLight} title={d.events.length ? d.events.map((e) => `${eventTitle(e.title)}: ${answerLabel(e.answer)}`).join(" · ") : copy.guests.detail.ceremonyReception} sub={d.rsvp?.updatedAt ? fmt(copy.guests.detail.answered, { when: relTime(d.rsvp.updatedAt, lang), channel }) : copy.guests.detail.notAnswered} />
                   {d.members.length ? <DetailRow icon="guests" title={d.members.join(", ")} sub={copy.rsvp.partyMember} /> : null}
                   <DetailRow icon="grid" title={table ? `${copy.guests.detail.table} ${table}` : copy.guests.detail.noTable} sub={d.seats[0]?.plan ?? null} />
                   {d.answers.length ? <DetailRow icon="info" title={d.answers.map((a) => a.answer).join(", ")} sub={d.answers.map((a) => a.question).join(" · ")} /> : null}
@@ -141,40 +145,41 @@ export default function GuestDetailScreen() {
                     </Stack>
                   ) : null}
 
-                  <Row gap={8} style={{ marginTop: 28 }}>
-                    <View style={{ flex: 1 }}>
-                      <Button label={copy.guests.detail.message} icon="chat" onPress={() => (phone ? Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`) : router.push("/couple/messages"))} />
-                    </View>
-                    {canEdit ? (
-                      <View style={{ flex: 1 }}>
-                        <Button label={copy.guests.detail.edit} icon="edit" kind="ghost" onPress={startEdit} />
-                      </View>
-                    ) : null}
-                  </Row>
+                  <ButtonRow style={{ marginTop: 28 }}>
+                    <Button label={copy.guests.detail.message} icon="chat" onPress={() => (phone ? Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`) : router.push("/couple/messages"))} />
+                    {canEdit ? <Button label={copy.guests.detail.edit} icon="edit" kind="ghost" onPress={startEdit} /> : null}
+                  </ButtonRow>
                 </View>
               ) : form ? (
                 <Stack gap={10} style={{ marginTop: 20 }}>
-                  <Input value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholder={copy.guests.name} />
-                  <Input value={form.party_size} onChangeText={(v) => setForm({ ...form, party_size: v.replace(/\D/g, "") })} placeholder={copy.guests.partySize} keyboardType="number-pad" />
-                  <Input value={form.members} onChangeText={(v) => setForm({ ...form, members: v })} placeholder={copy.guests.members} multiline style={{ borderRadius: 18 }} />
-                  <Input value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} placeholder={copy.guests.phone} keyboardType="phone-pad" />
-                  <Input value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} placeholder={copy.guests.email} keyboardType="email-address" autoCapitalize="none" />
-                  <Input value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} placeholder={copy.guests.notes} multiline style={{ borderRadius: 18 }} />
-                  <Row gap={8} style={{ marginTop: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Button label={copy.common.cancel} kind="ghost" onPress={() => setEditing(false)} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Button label={copy.common.save} onPress={saveEdit} loading={busy} />
-                    </View>
-                  </Row>
+                  <Field label={copy.guests.name}>
+                    <Input value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} autoCapitalize="words" />
+                  </Field>
+                  <Field label={copy.guests.partySize}>
+                    <Input value={form.party_size} onChangeText={(v) => setForm({ ...form, party_size: v.replace(/\D/g, "") })} keyboardType="number-pad" />
+                  </Field>
+                  <Field label={copy.guests.members}>
+                    <Input value={form.members} onChangeText={(v) => setForm({ ...form, members: v })} multiline />
+                  </Field>
+                  <Field label={copy.guests.phone}>
+                    <Input value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} keyboardType="phone-pad" />
+                  </Field>
+                  <Field label={copy.guests.email}>
+                    <Input value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} keyboardType="email-address" autoCapitalize="none" />
+                  </Field>
+                  <Field label={copy.guests.notes}>
+                    <Input value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} multiline />
+                  </Field>
+                  <ButtonRow style={{ marginTop: 8 }}>
+                    <Button label={copy.common.cancel} kind="ghost" onPress={() => setEditing(false)} />
+                    <Button label={copy.common.save} onPress={saveEdit} loading={busy} />
+                  </ButtonRow>
                 </Stack>
               ) : null}
             </>
           ) : null}
           <Footer version={copy.common.footerVersion} trademark={copy.common.footerTrademark} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </>
     </Screen>
   );
 }

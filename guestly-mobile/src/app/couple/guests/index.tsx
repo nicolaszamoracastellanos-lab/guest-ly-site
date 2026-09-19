@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { View, Pressable, StyleSheet, FlatList } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
@@ -11,8 +10,8 @@ import { COPY as TOOLS } from "@/features/exports/copy";
 import { exportGuests, type ExportPreset } from "@/features/exports/download";
 import { useCoupleGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset } from "@/ui";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset, useBottomClearance, useBubbleLift, COLUMN, QueryError, useTabBarTop } from "@/ui";
+import { colors } from "@/ui/tokens";
 
 const FILTERS = ["all", "attending", "pending", "declined"] as const;
 
@@ -20,7 +19,8 @@ export default function CoupleGuests() {
   const copy = useCopy();
   const router = useRouter();
   const user = useUserSession();
-  const insets = useSafeAreaInsets();
+  const { clearance } = useBottomClearance();
+  const tabTop = useTabBarTop();
   const top = useTopInset();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
@@ -29,10 +29,14 @@ export default function CoupleGuests() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [exporting, setExporting] = useState<ExportPreset | null>(null);
   const [toolsError, setToolsError] = useState<string | null>(null);
-  const { data, isLoading } = useCoupleGuests(q, filter);
+  const guestsQuery = useCoupleGuests(q, filter);
+  const { data, isLoading } = guestsQuery;
   const items = data?.items ?? [];
   const totals = data?.totals;
   const canEdit = user?.me.can_edit ?? false;
+  // The add button floats where the assistant bubble would rest, so the bubble
+  // moves up by the button and its gap while this list is on screen.
+  useBubbleLift(canEdit ? FAB_SIZE + 14 : 0);
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
@@ -41,7 +45,7 @@ export default function CoupleGuests() {
         right={
           <Row gap={8}>
             <IconButton name="more" label={tools.menu} onPress={() => { setToolsError(null); setToolsOpen(true); }} />
-            <IconButton name="bell" onPress={() => router.push("/couple/messages")} />
+            <IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} />
           </Row>
         }
       />
@@ -66,12 +70,12 @@ export default function CoupleGuests() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Screen scroll={false} padded={false} bottomInset={0} contentStyle={{ flex: 1 }}>
+      <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
         <FlatList
           data={items}
           keyExtractor={(g) => g.id}
-          ListHeaderComponent={<View style={{ paddingTop: top - 4 }}>{header}</View>}
-          contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 80 }}
+          ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
+          contentContainerStyle={[COLUMN, { paddingBottom: clearance + (canEdit ? FAB_SIZE + 14 : 0) }]}
           ListEmptyComponent={
             isLoading ? (
               <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 16 }}>
@@ -79,6 +83,8 @@ export default function CoupleGuests() {
                 <Skeleton h={60} />
                 <Skeleton h={60} />
               </Stack>
+            ) : guestsQuery.isError ? (
+              <QueryError onRetry={() => void guestsQuery.refetch()} />
             ) : q || filter !== "all" ? (
               <EmptyState title={copy.common.search} body={copy.find.moreLetters} />
             ) : (
@@ -126,7 +132,7 @@ export default function CoupleGuests() {
           accessibilityRole="button"
           accessibilityLabel={copy.guests.add}
           onPress={() => router.push("/couple/guests/new")}
-          style={[styles.fab, { bottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 14 }]}
+          style={[styles.fab, { bottom: tabTop + 14 }]}
         >
           <Icon name="plus" size={24} color={colors.night} strokeWidth={2} />
         </Pressable>
@@ -153,6 +159,8 @@ export default function CoupleGuests() {
   }
 }
 
+const FAB_SIZE = 56;
+
 const styles = StyleSheet.create({
-  fab: { position: "absolute", right: 20, width: 54, height: 54, borderRadius: 27, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center", shadowColor: colors.gold, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
+  fab: { position: "absolute", right: 14, width: FAB_SIZE, height: FAB_SIZE, borderRadius: FAB_SIZE / 2, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center", shadowColor: colors.gold, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
 });

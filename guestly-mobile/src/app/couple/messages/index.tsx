@@ -4,11 +4,10 @@
 import React, { useState } from "react";
 import { View, FlatList } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, ChipRow, ListRow, Avatar, Badge, Row, T, EmptyState, Skeleton, Stack, useTopInset } from "@/ui";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, ChipRow, ListRow, Avatar, Badge, Row, T, EmptyState, Skeleton, Stack, useTopInset, useBottomClearance, COLUMN, QueryError } from "@/ui";
+import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { useInboxList } from "@/features/inbox/hooks";
 
@@ -18,10 +17,11 @@ export default function Inbox() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { clearance } = useBottomClearance();
   const top = useTopInset();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("needs_you");
-  const { data, isLoading } = useInboxList(filter);
+  const inbox = useInboxList(filter);
+  const { data, isLoading } = inbox;
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
@@ -40,18 +40,20 @@ export default function Inbox() {
   );
 
   return (
-    <Screen scroll={false} padded={false} bottomInset={0} contentStyle={{ flex: 1 }}>
+    <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
       <FlatList
         data={data?.items ?? []}
         keyExtractor={(i) => i.id}
-        ListHeaderComponent={<View style={{ paddingTop: top - 4 }}>{header}</View>}
-        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 20 }}
+        ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
+        contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
         ListEmptyComponent={
           isLoading && !data ? (
             <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 16 }}>
               <Skeleton h={66} />
               <Skeleton h={66} />
             </Stack>
+          ) : inbox.isError ? (
+            <QueryError onRetry={() => void inbox.refetch()} />
           ) : (
             <EmptyState title={filter === "needs_you" ? c.emptyNeedsYou : c.empty} />
           )

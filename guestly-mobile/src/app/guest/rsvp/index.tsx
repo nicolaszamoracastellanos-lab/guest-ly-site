@@ -6,7 +6,7 @@ import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
-import { useGuestRsvp, type GuestPayload, type RsvpSummary } from "@/lib/hooks";
+import { useGuestRsvp, type RsvpSummary } from "@/lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Segmented, Input, Button, Row, Stack, Skeleton, SectionLabel, Chip } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -20,7 +20,8 @@ export default function RsvpAnswers() {
   const router = useRouter();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data, isLoading } = useGuestRsvp();
+  const mainQuery = useGuestRsvp();
+  const { data, isLoading } = mainQuery;
   const payload = data?.payload;
   const [seats, setSeats] = useState<Record<string, Answer>[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -91,7 +92,7 @@ export default function RsvpAnswers() {
   const deadlinePassed = data?.summary.deadline_passed;
 
   return (
-    <Screen header={<TopBar onBack={back} title={`${copy.guestHome.tabs.rsvp} · ${payload?.displayName ?? ""}`} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={`${copy.guestHome.tabs.rsvp} · ${payload?.displayName ?? ""}`} />} bottomInset={40} keyboard>
       <>
         <BigTitle label={copy.rsvp.step2} title={copy.rsvp.whoIsComing} sub={copy.rsvp.perPerson} size={38} />
         {deadlinePassed ? (

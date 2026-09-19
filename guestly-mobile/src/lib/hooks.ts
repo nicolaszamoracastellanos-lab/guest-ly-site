@@ -63,7 +63,8 @@ export type GuestDetail = {
     id: string; name: string; partySize: number; members: string[]; tags: string[]; language: "en" | "es" | null;
     createdAt: string | null; lastRemindedAt: string | null; checkedInAt: string | null; notes: string | null;
     rsvp: { id: string; status: string; partySize: number | null; updatedAt: string | null; notes: string | null } | null;
-    events: { id: string; title: string; answer: string | null }[];
+    /** The API sends the title as a bilingual object; older builds typed it as a string. */
+    events: { id: string; title: string | { en?: string; es?: string }; answer: string | null }[];
     roster: { name: string; attending: boolean; events: Record<string, string> }[];
     answers: { question: string; answer: string }[];
     seats: { plan: string; table: string; person: string }[];

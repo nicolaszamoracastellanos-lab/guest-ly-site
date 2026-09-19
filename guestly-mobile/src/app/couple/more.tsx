@@ -16,7 +16,8 @@ export default function MoreSheet() {
   const copy = useCopy();
   const router = useRouter();
   const user = useUserSession();
-  const { data } = useMore();
+  const mainQuery = useMore();
+  const { data } = mainQuery;
   const e = data?.entries ?? {};
   const n = (k: string) => e[k]?.count ?? 0;
 
@@ -71,7 +72,7 @@ export default function MoreSheet() {
   );
 
   return (
-    <Screen header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="gear" onPress={() => router.push("/settings")} />} />}>
+    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="gear" onPress={() => router.push("/settings")} />} />}>
       <View style={{ marginTop: 18 }}>
         <BigTitle title={copy.more.title} sub={user?.me.tenant.couple_names} />
       </View>

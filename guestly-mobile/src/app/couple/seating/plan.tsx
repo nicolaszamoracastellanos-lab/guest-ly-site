@@ -36,7 +36,8 @@ export default function SeatingPlan() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data } = useCoupleSeating();
+  const mainQuery = useCoupleSeating();
+  const { data } = mainQuery;
   const image = useQuery({
     queryKey: ["couple-seating-image"],
     queryFn: () => get<{ signed_url: string | null }>("/couple/seating/image"),
@@ -113,7 +114,7 @@ export default function SeatingPlan() {
   const url = image.data?.signed_url ?? null;
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={<TopBar onBack={back} title={c.floorPlan} />}
       bottomInset={40}
     >

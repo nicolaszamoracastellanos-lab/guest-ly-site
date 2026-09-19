@@ -90,6 +90,21 @@ export function fmt(template: string, vars: Record<string, string | number | nul
   });
 }
 
+/** A value the API may send as plain text or as { en, es }. Never prints
+ *  "[object Object]" and never hands an object to a Text node. */
+export function localized(v: string | { en?: string | null; es?: string | null } | null | undefined, lang: Lang): string {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  return v[lang] || v.en || v.es || "";
+}
+
+/** Singular and plural forms: plural(1, f) gives f.one, anything else f.other.
+ *  Both languages only need the two forms. "{n}" is filled in. */
+export function plural(n: number | null | undefined, forms: { one: string; other: string }): string {
+  const v = n ?? 0;
+  return fmt(v === 1 ? forms.one : forms.other, { n: v });
+}
+
 /** Long date in the current language, e.g. "Saturday 21 March 2027". */
 export function longDate(iso: string | null | undefined, lang: Lang): string {
   if (!iso) return "";
@@ -101,6 +116,15 @@ export function longDate(iso: string | null | undefined, lang: Lang): string {
     month: "long",
     year: "numeric",
   });
+}
+
+/** Date with its year but no weekday, e.g. "21 Mar 2027". For headers and
+ *  cards where a raw "2027-03-21" used to show. */
+export function mediumDate(iso: string | null | undefined, lang: Lang): string {
+  if (!iso) return "";
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 /** Short date, e.g. "1 Feb". */

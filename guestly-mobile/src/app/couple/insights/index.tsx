@@ -23,7 +23,8 @@ export default function Insights() {
   const qc = useQueryClient();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
-  const { data, isLoading } = useInsights();
+  const mainQuery = useInsights();
+  const { data, isLoading } = mainQuery;
   const [answering, setAnswering] = useState<string | null>(null);
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export default function Insights() {
   const maxCount = Math.max(1, ...(data?.top_questions.map((q) => q.count) ?? [1]));
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={36} />
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

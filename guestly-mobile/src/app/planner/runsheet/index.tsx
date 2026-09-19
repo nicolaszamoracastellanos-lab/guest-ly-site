@@ -25,9 +25,10 @@ export default function PlannerRunsheet() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const back = useSafeBack();
-  const { data, isLoading, error } = usePlannerRunsheet();
+  const mainQuery = usePlannerRunsheet();
+  const { data, isLoading, error } = mainQuery;
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={
         <TopBar
           onBack={back}

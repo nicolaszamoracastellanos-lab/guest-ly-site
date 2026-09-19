@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useCopy, useLang } from "@/i18n";
+import { fmt, localized, useCopy, useLang } from "@/i18n";
 import { get, post, ApiFailure } from "@/lib/api";
 import { useCoupleGuests, type GuestDetail } from "@/lib/hooks";
 import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, Card, Row, Segmented, Button, T, Badge, Stack } from "@/ui";
@@ -77,7 +77,7 @@ export default function RecordRsvp() {
                 {events.map((e) => (
                   <Row key={e.id} style={{ justifyContent: "space-between", minHeight: 48 }}>
                     <T v="body16" style={{ flex: 1 }}>
-                      {e.title}
+                      {localized(e.title, lang)}
                     </T>
                     <View style={{ width: 176 }}>
                       <Segmented<Answer>

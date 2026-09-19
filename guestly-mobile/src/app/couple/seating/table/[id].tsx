@@ -45,7 +45,8 @@ export default function SeatingTable() {
   const back = useSafeBack();
   const online = useOnline();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useCoupleSeating();
+  const mainQuery = useCoupleSeating();
+  const { data } = mainQuery;
   const draft = useDraft();
   const save = useSavePlan();
   const [saving, setSaving] = useState(false);
@@ -146,7 +147,7 @@ export default function SeatingTable() {
     n === 1 ? c.person : fmt(c.people, { n });
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={
         <TopBar
           onBack={back}

@@ -30,14 +30,15 @@ export default function PlannerSeating() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const back = useSafeBack();
-  const { data, isLoading, error } = usePlannerSeating();
+  const mainQuery = usePlannerSeating();
+  const { data, isLoading, error } = mainQuery;
   const unseated =
     data?.parties.filter((p) => p.confirmed && p.unseated > 0) ?? [];
   const peopleLabel = (n: number) =>
     n === 1 ? c.person : fmt(c.people, { n });
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={<TopBar onBack={back} title={c.title} />}
       bottomInset={40}
     >

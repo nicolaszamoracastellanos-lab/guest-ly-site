@@ -13,13 +13,14 @@ export default function PlannerRequests() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
-  const { data, isLoading } = usePlannerRequests();
+  const mainQuery = usePlannerRequests();
+  const { data, isLoading } = mainQuery;
   const rows = data?.requests ?? [];
   const tasks = (data?.tasks ?? []).filter((t) => t.assigned_to === "planner" && t.status !== "done").slice(0, 5);
   const label = (s: string) => (s === "open" ? copy.planner.awaiting : s === "approved" ? copy.planner.approved : s === "declined" ? copy.planner.declined : copy.planner.cancelled);
 
   return (
-    <Screen header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="plus" onPress={() => router.push("/planner/requests/new")} label={copy.planner.newRequest} />} />}>
+    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="plus" onPress={() => router.push("/planner/requests/new")} label={copy.planner.newRequest} />} />}>
       <View style={{ marginTop: 18 }}>
         <BigTitle title={copy.planner.requests} sub={copy.planner.footer} />
       </View>

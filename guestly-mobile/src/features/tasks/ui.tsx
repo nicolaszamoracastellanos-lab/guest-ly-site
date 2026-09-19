@@ -388,7 +388,8 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
   const online = useOnline();
   const user = useUserSession();
   const canEdit = surface === "planner" ? true : (user?.me.can_edit ?? false);
-  const { data, isLoading } = useSharedTask(surface, id);
+  const mainQuery = useSharedTask(surface, id);
+  const { data, isLoading } = mainQuery;
   const task = data?.task;
   const [title, setTitle] = useState<string | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
@@ -447,7 +448,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
   const dirty = (title !== null && title !== task?.title) || (detail !== null && detail !== task?.detail);
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.segments.board} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.segments.board} />} bottomInset={40} keyboard>
       {isLoading && !task ? <Skeleton h={160} r={18} /> : null}
       {task ? (
         <Stack gap={18}>

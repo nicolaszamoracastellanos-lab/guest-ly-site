@@ -5,11 +5,11 @@ import { View, StyleSheet, Image, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { fmt, useCopy } from "@/i18n";
+import { useCopy } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { Screen, T, Row, Gem, Wordmark, IconButton, Badge, Hairline, Icon, StatTile, Card, Banner, Skeleton, SectionLabel } from "@/ui";
+import { Screen, T, Row, Gem, Wordmark, IconButton, Badge, Icon, StatTile, Card, Banner, Skeleton, SectionLabel } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/hands.jpg");
@@ -21,14 +21,15 @@ export default function CoupleHome() {
   const { dayOfManual } = useSession();
   const insets = useSafeAreaInsets();
   const online = useOnline();
-  const { data, isLoading } = useCoupleHome();
+  const mainQuery = useCoupleHome();
+  const { data, isLoading } = mainQuery;
   const top = Math.max(insets.top, 54);
   const couple = data?.couple_names ?? user?.me.tenant.couple_names ?? "";
   const days = data?.countdown ? data.countdown.days : null;
   const dayOf = (data?.day_of ?? false) || dayOfManual;
 
   return (
-    <Screen padded={false}>
+    <Screen query={mainQuery} padded={false}>
       <View style={styles.hero}>
         <Image source={photo} style={FILL} resizeMode="cover" />
         <LinearGradient colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.7, 1]} style={FILL} />

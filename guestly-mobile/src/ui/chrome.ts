@@ -9,7 +9,7 @@
 import { useCallback, useId, useSyncExternalStore } from "react";
 import { usePathname, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BUBBLE_ZONE, TAB_CLEARANCE } from "./tokens";
+import { BUBBLE_ZONE, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TAB_CLEARANCE } from "./tokens";
 
 const SURFACES = ["guest", "couple", "planner"];
 
@@ -42,6 +42,13 @@ export function useBottomClearance(): { tabBar: boolean; bubble: boolean; cleara
   const bubble = pathShowsBubble(pathname);
   const clearance = insets.bottom + (tabBar ? TAB_CLEARANCE : 24) + (bubble ? BUBBLE_ZONE : 0);
   return { tabBar, bubble, clearance };
+}
+
+/** Distance from the bottom of the window to the top edge of the floating tab
+ *  bar. Floating controls sit a gap above this. */
+export function useTabBarTop(): number {
+  const insets = useSafeAreaInsets();
+  return insets.bottom + TAB_BAR_BOTTOM + TAB_BAR_HEIGHT;
 }
 
 // A screen with its own floating control above the tab bar (the add-guest

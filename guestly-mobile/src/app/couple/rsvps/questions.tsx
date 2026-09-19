@@ -27,7 +27,8 @@ export default function RsvpQuestions() {
   const qc = useQueryClient();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
-  const { data, isLoading } = useRsvpQuestions();
+  const mainQuery = useRsvpQuestions();
+  const { data, isLoading } = mainQuery;
   const questions = data?.questions ?? [];
   const events = data?.events ?? [];
   const [editing, setEditing] = useState<{ index: number | null; draft: Draft } | null>(null);
@@ -101,7 +102,7 @@ export default function RsvpQuestions() {
   const setD = (patch: Partial<Draft>) => setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {error && !editing ? <Banner icon="warning" title={error} kind="red" /> : null}
       <Stack gap={10} style={{ marginTop: 18 }}>

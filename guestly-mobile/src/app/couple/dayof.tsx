@@ -11,11 +11,12 @@ import { colors } from "@/ui/tokens";
 export default function CoupleDayOf() {
   const copy = useCopy();
   const router = useRouter();
-  const { data, isLoading } = useCoupleDayOf();
+  const mainQuery = useCoupleDayOf();
+  const { data, isLoading } = mainQuery;
   const pct = data && data.parties_total ? Math.min(100, Math.round((data.parties_in / data.parties_total) * 100)) : 0;
 
   return (
-    <Screen header={<TopBar left={<Wordmark height={20} />} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" onPress={() => router.push("/couple/messages")} /></Row>} />}>
+    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" onPress={() => router.push("/couple/messages")} /></Row>} />}>
       <Row gap={24} align="flex-end" style={{ marginTop: 16 }}>
         <View>
           <SectionLabel color={colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>

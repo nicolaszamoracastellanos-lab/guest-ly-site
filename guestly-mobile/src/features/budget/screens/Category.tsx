@@ -26,7 +26,8 @@ export function BudgetCategoryScreen() {
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
   const params = useLocalSearchParams<{ id: string; b?: string; add?: string }>();
-  const { data, isLoading } = useBudgetSurface(params.b ?? null);
+  const mainQuery = useBudgetSurface(params.b ?? null);
+  const { data, isLoading } = mainQuery;
   const writes = useBudgetWrites();
   const { busy, act } = useAction();
 
@@ -79,7 +80,7 @@ export function BudgetCategoryScreen() {
   }
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={
         <TopBar
           onBack={back}

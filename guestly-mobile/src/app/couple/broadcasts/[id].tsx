@@ -16,11 +16,12 @@ export default function BroadcastDetail() {
   const { lang } = useLang();
   const back = useSafeBack();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading } = useBroadcast(id);
+  const mainQuery = useBroadcast(id);
+  const { data, isLoading } = mainQuery;
   const g = data?.group;
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.detail} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.detail} />}>
       {isLoading && !data ? <Skeleton h={160} r={18} /> : null}
       {g && g.groupKind === "campaign" ? (
         <>

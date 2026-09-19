@@ -17,7 +17,8 @@ export default function WebsiteThemeScreen() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data, isLoading } = useWebsite();
+  const mainQuery = useWebsite();
+  const { data, isLoading } = mainQuery;
   const [busy, setBusy] = useState<WebsiteTheme | null>(null);
 
   async function choose(theme: WebsiteTheme) {
@@ -34,7 +35,7 @@ export default function WebsiteThemeScreen() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.theme} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.theme} />} bottomInset={40}>
       <BigTitle title={c.theme} sub={c.subtitle} size={38} />
       <Stack gap={12} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={140} r={18} /> : null}

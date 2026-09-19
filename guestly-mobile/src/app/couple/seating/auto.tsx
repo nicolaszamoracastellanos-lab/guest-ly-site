@@ -38,7 +38,8 @@ export default function SeatingAuto() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data } = useCoupleSeating();
+  const mainQuery = useCoupleSeating();
+  const { data } = mainQuery;
   const [criteria, setCriteria] = useState<SeatingCriterion[]>(ALL);
   const [includeUnconfirmed, setIncludeUnconfirmed] = useState(false);
   const [preview, setPreview] = useState<AutoAssignResult | null>(null);
@@ -85,7 +86,7 @@ export default function SeatingAuto() {
   }
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={<TopBar onBack={back} title={c.suggest} />}
       bottomInset={40}
     >

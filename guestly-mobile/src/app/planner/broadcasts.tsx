@@ -18,11 +18,12 @@ export default function PlannerBroadcasts() {
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
-  const { data, isLoading } = usePlannerBroadcasts();
+  const mainQuery = usePlannerBroadcasts();
+  const { data, isLoading } = mainQuery;
   const history = data?.history ?? [];
 
   return (
-    <Screen header={<TopBar onBack={back} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} />}>
       <BigTitle title={c.plannerTitle} sub={c.plannerSubtitle} />
       <Button label={c.plannerRequest} icon="megaphone" onPress={() => router.push({ pathname: "/planner/requests/new", params: { kind: "send_reminders" } })} style={{ marginTop: 18 }} />
       {data ? (

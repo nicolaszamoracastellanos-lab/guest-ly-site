@@ -1,10 +1,8 @@
 // RSVPs: three tiles, filters, the list, record and remind.
 
 import React, { useState } from "react";
-import { LinearGradient } from "expo-linear-gradient";
 import { View, FlatList, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime, shortDate } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
@@ -22,7 +20,6 @@ import {
   Avatar,
   Badge,
   Button,
-  Row,
   Card,
   T,
   Skeleton,
@@ -30,8 +27,16 @@ import {
   Sheet,
   Input,
   useTopInset,
+  useBottomClearance,
+  COLUMN,
+  QueryError,
+  EmptyState,
+  DockedActions,
+  ButtonRow,
+  StatRow,
+  labelLines,
 } from "@/ui";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM } from "@/ui/tokens";
+import { colors } from "@/ui/tokens";
 
 const FILTERS = ["all", "pending", "changed", "attending", "declined"] as const;
 
@@ -41,16 +46,24 @@ export default function CoupleRsvps() {
   const router = useRouter();
   const qc = useQueryClient();
   const user = useUserSession();
-  const insets = useSafeAreaInsets();
+  const { clearance } = useBottomClearance();
+  const [dock, setDock] = useState(0);
   const top = useTopInset();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
-  const { data, isLoading } = useCoupleRsvps(filter);
+  const rsvps = useCoupleRsvps(filter);
+  const { data, isLoading } = rsvps;
   const [remindOpen, setRemindOpen] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const canEdit = user?.me.can_edit ?? false;
   const totals = data?.totals;
   const pending = totals?.pending_parties ?? 0;
+
+  // The API sends "3 of 3" in English; show it in the app language.
+  const seatsLabel = (v: string) => {
+    const m = /^(\d+) of (\d+)$/.exec(v.trim());
+    return m ? fmt(copy.rsvps.seatsOf, { a: m[1], b: m[2] }) : v;
+  };
 
   async function remindAll() {
     setBusy(true);
@@ -92,10 +105,7 @@ export default function CoupleRsvps() {
       <TopBar
         left={<Wordmark height={20} />}
         right={
-          <IconButton
-            name="bell"
-            onPress={() => router.push("/couple/messages")}
-          />
+          <IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} />
         }
       />
       <View style={{ marginTop: 18 }}>
@@ -111,7 +121,7 @@ export default function CoupleRsvps() {
           }
         />
       </View>
-      <Row gap={8} style={{ marginTop: 18 }}>
+      <StatRow style={{ marginTop: 18 }}>
         <Tile
           label={copy.rsvps.tiles.attending}
           n={totals?.attending_seats}
@@ -130,7 +140,7 @@ export default function CoupleRsvps() {
           unit={copy.rsvps.tiles.parties}
           color={colors.amber}
         />
-      </Row>
+      </StatRow>
       <View style={{ marginTop: 14 }}>
         <ChipRow>
           {FILTERS.map((f) => (
@@ -148,35 +158,32 @@ export default function CoupleRsvps() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Screen
-        scroll={false}
-        padded={false}
-        bottomInset={0}
-        contentStyle={{ flex: 1 }}
-      >
+      <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
         <FlatList
           data={data?.items ?? []}
           keyExtractor={(r) => r.id}
           ListHeaderComponent={
-            <View style={{ paddingTop: top - 4 }}>{header}</View>
+            <View style={{ paddingTop: top }}>{header}</View>
           }
-          contentContainerStyle={{
-            paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 90,
-          }}
+          contentContainerStyle={[COLUMN, { paddingBottom: clearance + (canEdit ? dock : 0) }]}
           ListEmptyComponent={
             isLoading ? (
               <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 16 }}>
                 <Skeleton h={60} />
                 <Skeleton h={60} />
               </Stack>
-            ) : null
+            ) : rsvps.isError ? (
+              <QueryError onRetry={() => void rsvps.refetch()} />
+            ) : (
+              <EmptyState title={copy.rsvps.emptyTitle} body={copy.rsvps.emptyBody} />
+            )
           }
           renderItem={({ item: r }) => (
             <View style={{ paddingHorizontal: 24 }}>
               <ListRow
                 leading={<Avatar initials={r.initials} />}
                 title={r.name}
-                sub={`${r.seats_answered}${r.updated_at ? ` · ${relTime(r.updated_at, lang)}` : ""}${r.channel ? ` · ${fmt(copy.rsvps.via, { channel: (copy.rsvps.channelNames as Record<string, string>)[r.source ?? r.channel] ?? r.channel })}` : ""}`}
+                sub={`${seatsLabel(r.seats_answered)}${r.updated_at ? ` · ${relTime(r.updated_at, lang)}` : ""}${r.channel ? ` · ${fmt(copy.rsvps.via, { channel: (copy.rsvps.channelNames as Record<string, string>)[r.source ?? r.channel] ?? r.channel })}` : ""}`}
                 trailing={
                   <Badge
                     label={
@@ -211,49 +218,12 @@ export default function CoupleRsvps() {
         />
       </Screen>
       {canEdit ? (
-        <>
-          <LinearGradient
-            pointerEvents="none"
-            colors={["rgba(13,17,23,0)", "rgba(13,17,23,0.92)", colors.night]}
-            locations={[0, 0.45, 1]}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 120,
-            }}
-          />
-          <Row
-            gap={8}
-            style={{
-              position: "absolute",
-              left: 20,
-              right: 20,
-              bottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 14,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Button
-                label={copy.rsvps.record}
-                small
-                icon="plus"
-                onPress={() => router.push("/couple/rsvps/record")}
-                style={{ minHeight: 50 }}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button
-                label={fmt(copy.rsvps.remind, { n: pending })}
-                small
-                kind="glass"
-                onPress={() => setRemindOpen(true)}
-                disabled={!pending}
-                style={{ minHeight: 50 }}
-              />
-            </View>
-          </Row>
-        </>
+        <DockedActions onHeight={setDock}>
+          <ButtonRow>
+            <Button label={copy.rsvps.record} small icon="plus" onPress={() => router.push("/couple/rsvps/record")} />
+            <Button label={fmt(copy.rsvps.remind, { n: pending })} small kind="glass" onPress={() => setRemindOpen(true)} disabled={!pending} />
+          </ButtonRow>
+        </DockedActions>
       ) : null}
       <Sheet
         visible={remindOpen}
@@ -301,16 +271,19 @@ function Tile({
       kind="glass"
       radiusKey="tile"
       padding={12}
-      style={{ flex: 1, gap: 2 }}
+      style={{ flex: 1, minWidth: 0, gap: 2 }}
       border={highlight ? "rgba(201,169,110,0.5)" : undefined}
     >
-      <T v="label11" color={colors.ivory55}>
-        {label}
-      </T>
-      <T v="title34" color={color}>
+      {/* One word shrinks to fit instead of breaking mid word ("PENDIENT / ES"). */}
+      <View style={{ minHeight: 32, justifyContent: "flex-end" }}>
+        <T v="label11" color={colors.ivory55} numberOfLines={labelLines(label)} adjustsFontSizeToFit minimumFontScale={0.7} style={{ letterSpacing: 1 }}>
+          {label}
+        </T>
+      </View>
+      <T v="title34" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
         {n ?? "·"}
       </T>
-      <T v="meta13" color={colors.ivory55}>
+      <T v="meta13" color={colors.ivory55} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
         {unit}
       </T>
     </Card>

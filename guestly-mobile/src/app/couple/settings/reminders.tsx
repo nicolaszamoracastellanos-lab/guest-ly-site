@@ -20,7 +20,8 @@ export default function ReminderSettings() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data, isLoading } = useCoupleSettings();
+  const mainQuery = useCoupleSettings();
+  const { data, isLoading } = mainQuery;
   const [draft, setDraft] = useState<Reminders | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [newDay, setNewDay] = useState("");
@@ -66,7 +67,7 @@ export default function ReminderSettings() {
   );
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={60} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={60} keyboard>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       <Stack gap={14} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={200} r={18} /> : null}

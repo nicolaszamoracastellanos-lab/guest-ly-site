@@ -27,7 +27,8 @@ export default function Conversation() {
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading, refetch } = useConversation(id);
+  const mainQuery = useConversation(id);
+  const { data, isLoading, refetch } = mainQuery;
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [handling, setHandling] = useState(false);
@@ -81,7 +82,7 @@ export default function Conversation() {
   const channelLabel = data ? (c.channel[data.channel] ?? data.channel) : "";
 
   return (
-    <Screen scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
+    <Screen query={mainQuery} scroll={false} padded={false} bottomInset={0} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled">
           {isLoading && !data ? (

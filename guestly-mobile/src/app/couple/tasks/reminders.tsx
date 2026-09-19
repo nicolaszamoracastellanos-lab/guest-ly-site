@@ -24,7 +24,8 @@ export default function Reminders() {
   const online = useOnline();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
-  const { data: board, isLoading } = useTasksBoard();
+  const mainQuery = useTasksBoard();
+  const { data: board, isLoading } = mainQuery;
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [confirmRotate, setConfirmRotate] = useState(false);
@@ -66,7 +67,7 @@ export default function Reminders() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
       <BigTitle title={copy.reminders} size={34} />
       {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <Stack gap={16} style={{ marginTop: 20 }}>

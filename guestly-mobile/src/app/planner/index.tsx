@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Gem, Icon, StatTile, SectionLabel, Skeleton, Stack, Card, ListRow } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Gem, Icon, StatTile, SectionLabel, Skeleton, Card, ListRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 
 export default function PlannerHome() {
@@ -14,14 +14,15 @@ export default function PlannerHome() {
   const router = useRouter();
   const user = useUserSession();
   const { switchTenant } = useSession();
-  const { data, isLoading } = usePlannerHome();
+  const mainQuery = usePlannerHome();
+  const { data, isLoading } = mainQuery;
   const hour = new Date().getHours();
   const part = hour < 12 ? copy.planner.morning : hour < 19 ? copy.planner.afternoon : copy.planner.evening;
   const name = data?.greeting_name ?? user?.me.user.email.split("@")[0] ?? "";
   const needs = (data?.briefing.length ?? 0) + (data?.weddings.reduce((s, w) => s + w.open_requests, 0) ?? 0);
 
   return (
-    <Screen header={<TopBar left={<Row gap={8}><Wordmark height={20} /><Badge label={copy.settings.planner} kind="gold" /></Row>} right={<IconButton name="bell" badge={needs > 0} onPress={() => router.push("/planner/requests")} />} />}>
+    <Screen query={mainQuery} header={<TopBar left={<Row gap={8}><Wordmark height={20} /><Badge label={copy.settings.planner} kind="gold" /></Row>} right={<IconButton name="bell" badge={needs > 0} onPress={() => router.push("/planner/requests")} />} />}>
       <View style={{ marginTop: 18 }}>
         <T v="title42" size={38}>
           {fmt(copy.planner.greeting, { part, name: cap(name) })}

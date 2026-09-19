@@ -25,7 +25,8 @@ export default function TaskDetail() {
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: board, isLoading } = useTasksBoard();
+  const mainQuery = useTasksBoard();
+  const { data: board, isLoading } = mainQuery;
   const task = board?.tasks.find((t) => t.id === id) ?? null;
   const [form, setForm] = useState<TaskFormValue | null>(null);
   const [seededAt, setSeededAt] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export default function TaskDetail() {
   const due = task ? dueLabel(task, copy, lang) : null;
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.editTask} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.editTask} />} bottomInset={40} keyboard>
       {isLoading && !board ? <Skeleton h={200} r={18} /> : null}
       {task && form ? (
         <Stack gap={18}>

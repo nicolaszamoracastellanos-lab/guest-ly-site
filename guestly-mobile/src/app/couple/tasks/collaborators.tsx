@@ -27,7 +27,8 @@ export default function Collaborators() {
   const online = useOnline();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
-  const { data: board, isLoading } = useTasksBoard();
+  const mainQuery = useTasksBoard();
+  const { data: board, isLoading } = mainQuery;
   const [editing, setEditing] = useState<{ id: string | null; form: Form } | null>(null);
   const [removing, setRemoving] = useState<Collaborator | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,7 +71,7 @@ export default function Collaborators() {
   const setF = <K extends keyof Form>(k: K, v: Form[K]) => setEditing((e) => (e ? { ...e, form: { ...e.form, [k]: v } } : e));
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
       <BigTitle title={copy.collaborators} sub={copy.collaboratorsIntro} size={34} />
       {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <Stack gap={18} style={{ marginTop: 20 }}>

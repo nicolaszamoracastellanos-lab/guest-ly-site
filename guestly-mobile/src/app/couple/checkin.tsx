@@ -12,7 +12,7 @@ import { ApiFailure, get } from "@/lib/api";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Stack, Icon } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 

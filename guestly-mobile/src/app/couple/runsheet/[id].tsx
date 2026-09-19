@@ -29,7 +29,8 @@ export default function EditBlock() {
   const qc = useQueryClient();
   const online = useOnline();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useCoupleRunsheet();
+  const mainQuery = useCoupleRunsheet();
+  const { data } = mainQuery;
   const block = useMemo(
     () => data?.days.flatMap((d) => d.blocks).find((b) => b.id === id) ?? null,
     [data, id],
@@ -79,7 +80,7 @@ export default function EditBlock() {
   }
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={<TopBar onBack={back} title={c.editBlock} />}
       bottomInset={40}
       keyboard

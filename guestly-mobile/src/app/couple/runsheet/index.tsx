@@ -40,7 +40,8 @@ export default function CoupleRunsheet() {
   const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
-  const { data, isLoading, error } = useCoupleRunsheet();
+  const mainQuery = useCoupleRunsheet();
+  const { data, isLoading, error } = mainQuery;
   const [seeding, setSeeding] = useState(false);
 
   async function cycle(b: RunsheetBlock) {
@@ -82,7 +83,7 @@ export default function CoupleRunsheet() {
   const canEdit = data?.can_edit ?? false;
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={
         <TopBar
           onBack={back}

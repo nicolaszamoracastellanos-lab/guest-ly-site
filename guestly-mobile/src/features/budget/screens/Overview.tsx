@@ -28,7 +28,8 @@ export function BudgetOverviewScreen() {
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
   const [selected, setSelected] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
-  const { data, isLoading, refetch } = useBudgetSurface(restored ? selected : undefined);
+  const mainQuery = useBudgetSurface(restored ? selected : undefined);
+  const { data, isLoading, refetch } = mainQuery;
   const writes = useBudgetWrites();
   const { busy, act } = useAction();
 
@@ -93,7 +94,7 @@ export function BudgetOverviewScreen() {
   const months = (computed?.months ?? []).filter((m) => m.plannedBase > 0).slice(0, 4);
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.title} right={active && canEdit ? <IconButton name="gear" label={copy.settings} onPress={() => openEdit(active.budget)} /> : undefined} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} right={active && canEdit ? <IconButton name="gear" label={copy.settings} onPress={() => openEdit(active.budget)} /> : undefined} />}>
       <BigTitle title={active ? active.budget.name : copy.title} sub={copy.subtitle} size={38} />
 
       {!online ? (

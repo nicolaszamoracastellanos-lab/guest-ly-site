@@ -18,13 +18,14 @@ export default function CoupleRequests() {
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
-  const { data, isLoading } = useCoupleRequests();
+  const mainQuery = useCoupleRequests();
+  const { data, isLoading } = mainQuery;
   const rows = data?.requests ?? [];
   const kind = (s: string) => (s === "open" ? "amber" : s === "approved" ? "green" : "mute") as "amber" | "green" | "mute";
   const label = (s: string) => (s === "open" ? copy.planner.awaiting : s === "approved" ? copy.planner.approved : s === "declined" ? copy.planner.declined : copy.planner.cancelled);
 
   return (
-    <Screen header={<TopBar onBack={back} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} />}>
       <BigTitle title={copy.requests.title} sub={copy.requests.fromPlanner} />
       <Stack gap={10} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={120} r={18} /> : null}

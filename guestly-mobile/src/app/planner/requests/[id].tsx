@@ -20,7 +20,8 @@ export default function PlannerRequestDetail() {
   const back = useSafeBack();
   const qc = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = usePlannerRequests();
+  const mainQuery = usePlannerRequests();
+  const { data } = mainQuery;
   const r = data?.requests.find((x) => x.id === id);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<"reply" | "cancel" | null>(null);
@@ -56,7 +57,7 @@ export default function PlannerRequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? []) : [];
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
       <>
         {r ? (
           <>

@@ -35,13 +35,14 @@ export default function Broadcasts() {
   const router = useRouter();
   const back = useSafeBack();
   const user = useUserSession();
-  const { data, isLoading } = useBroadcasts();
+  const mainQuery = useBroadcasts();
+  const { data, isLoading } = mainQuery;
   const canSend = (data?.can_send ?? user?.me.can_edit) ?? false;
   const history = data?.history ?? [];
   const anyPhone = (data?.guests ?? []).some((g) => g.has_phone);
 
   return (
-    <Screen header={<TopBar onBack={back} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} />}>
       <BigTitle title={c.title} sub={c.subtitle} />
       <View style={{ marginTop: 20 }}>
         {!canSend ? <Banner icon="lock" title={c.readOnly} /> : null}

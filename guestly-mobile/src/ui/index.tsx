@@ -24,17 +24,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useCopy } from "@/i18n";
+import { useCopy, useLang } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
 import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
-import { useBottomClearance, useBubbleLift } from "./chrome";
+import { useBottomClearance, useBubbleLift, useTabBarTop } from "./chrome";
 
 export { T } from "./Text";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { colors, radius, space, COLUMN } from "./tokens";
-export { useBottomClearance, useBubbleLift } from "./chrome";
+export { useBottomClearance, useBubbleLift, useTabBarTop } from "./chrome";
 
 // ---------------------------------------------------------------- layout
 
@@ -62,6 +62,7 @@ export function Screen({
   contentStyle,
   keyboard,
   topInset = true,
+  query,
 }: {
   children: ReactNode;
   scroll?: boolean;
@@ -73,14 +74,35 @@ export function Screen({
   keyboard?: boolean;
   /** False for list screens whose list header carries the top inset itself. */
   topInset?: boolean;
+  /** The screen's main query. While it has failed with nothing cached the
+   *  screen shows the shared error state with Retry instead of its content
+   *  (never a false empty state, never a blank screen); with cached content it
+   *  shows the offline banner above it (Part 9 audit, D-023). */
+  query?: QueryLike | null;
 }) {
   const insets = useSafeAreaInsets();
   const top = useTopInset();
+  const { lang } = useLang();
   const { clearance } = useBottomClearance();
   const bottom = scroll ? Math.max(clearance, bottomInset + insets.bottom) : bottomInset + insets.bottom;
+  const failed = !!query?.isError && query.data === undefined;
+  const stale = !!query?.isError && query.data !== undefined;
   const inner = (
     <View style={[styles.column, padded && styles.padded, !scroll && styles.fill, { paddingTop: header || !topInset ? 0 : top, paddingBottom: bottom }, contentStyle]}>
-      {children}
+      {failed ? (
+        <View style={!padded && styles.padded}>
+          <QueryError onRetry={() => void query?.refetch()} message={queryMessage(query, lang)} />
+        </View>
+      ) : (
+        <>
+          {stale ? (
+            <View style={[{ marginBottom: 12 }, !padded && styles.padded]}>
+              <StaleBanner onRetry={() => void query?.refetch()} />
+            </View>
+          ) : null}
+          {children}
+        </>
+      )}
     </View>
   );
   return (
@@ -114,6 +136,17 @@ export function Screen({
       )}
     </View>
   );
+}
+
+/** The part of a react-query result the kit needs. */
+export type QueryLike = { isError: boolean; data: unknown; error?: unknown; refetch: () => unknown };
+
+/** The API's own bilingual sentence when the failure carries one. */
+function queryMessage(query: QueryLike | null | undefined, lang: "en" | "es"): string | null {
+  const e = query?.error as { messages?: { en?: string; es?: string }; status?: number } | null | undefined;
+  // A plain 5xx has no useful sentence of its own; the shared copy reads better.
+  if (!e?.messages || (e.status ?? 0) >= 500) return null;
+  return e.messages[lang] ?? null;
 }
 
 /** Top padding under the status bar. Notch and Dynamic Island phones keep the
@@ -291,6 +324,22 @@ function useIconLabel(name: IconName, label?: string): string {
   if (label) return label;
   const map: Partial<Record<IconName, string>> = c.icons;
   return map[name] ?? c.button;
+}
+
+/** Two or three buttons side by side with equal heights, so a label that wraps
+ *  to two lines does not leave its neighbour shorter. */
+export function ButtonRow({ children, gap = 8, style }: { children: ReactNode; gap?: number; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[{ flexDirection: "row", alignItems: "stretch", gap }, style]}>
+      {React.Children.map(children, (child) => (child ? <View style={{ flex: 1, minWidth: 0 }}>{child}</View> : null))}
+    </View>
+  );
+}
+
+/** One line for a single word (it shrinks instead of breaking mid word), two
+ *  lines when the label has spaces to break at. */
+export function labelLines(label: string): 1 | 2 {
+  return /\s/.test(label.trim()) ? 2 : 1;
 }
 
 export function IconButton({ name, onPress, badge, style, label, testID }: { name: IconName; onPress?: () => void; badge?: boolean; style?: StyleProp<ViewStyle>; label?: string; testID?: string }) {
@@ -569,7 +618,7 @@ export function StatTile({ value, label, color = colors.ivory, kind = "glass", s
       <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45}>
         {value}
       </T>
-      <T v="meta13" color={colors.ivory55} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+      <T v="meta13" color={colors.ivory55} numberOfLines={labelLines(label)} adjustsFontSizeToFit minimumFontScale={0.7}>
         {label}
       </T>
     </Card>
@@ -749,16 +798,20 @@ export function QueryState({ query, message }: { query: { isError: boolean; data
 /** Primary actions docked above the floating tab bar, on a fade so list rows do
  *  not show through (Part 9 audit, D-011). The list under it must end with
  *  `dockedListPadding` so its last row scrolls clear. */
-export function DockedActions({ children }: { children: ReactNode }) {
-  const { clearance } = useBottomClearance();
+export function DockedActions({ children, onHeight }: { children: ReactNode; onHeight?: (h: number) => void }) {
+  const tabTop = useTabBarTop();
   const [h, setH] = React.useState(0);
   // The bubble rests above the dock while this screen is focused.
   useBubbleLift(h);
-  const base = clearance - 16;
   return (
-    <View pointerEvents="box-none" style={[styles.dock, { paddingBottom: base + 10 }]}>
+    <View pointerEvents="box-none" style={[styles.dock, { paddingBottom: tabTop + 12 }]}>
       <LinearGradient pointerEvents="none" colors={["rgba(8,11,16,0)", "rgba(8,11,16,0.94)", colors.nightDeep]} locations={[0, 0.35, 1]} style={FILL} />
-      <View style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]} onLayout={(e) => setH(Math.round(e.nativeEvent.layout.height))}>
+      <View style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]} onLayout={(e) => {
+          const next = Math.round(e.nativeEvent.layout.height);
+          setH(next);
+          onHeight?.(next);
+        }}
+      >
         {children}
       </View>
     </View>

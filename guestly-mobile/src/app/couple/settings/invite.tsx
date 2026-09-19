@@ -18,7 +18,8 @@ export default function InviteCode() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data, isLoading } = useCoupleSettings();
+  const mainQuery = useCoupleSettings();
+  const { data, isLoading } = mainQuery;
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
@@ -51,7 +52,7 @@ export default function InviteCode() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       <Stack gap={14} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={180} r={18} /> : null}

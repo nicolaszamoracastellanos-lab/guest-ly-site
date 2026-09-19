@@ -18,7 +18,8 @@ export default function NotificationSettings() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data, isLoading } = useCoupleSettings();
+  const mainQuery = useCoupleSettings();
+  const { data, isLoading } = mainQuery;
   const [busy, setBusy] = useState(false);
 
   async function set(key: "rsvp_email" | "weekly_digest", v: boolean) {
@@ -37,7 +38,7 @@ export default function NotificationSettings() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       <Stack gap={12} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={140} r={18} /> : null}

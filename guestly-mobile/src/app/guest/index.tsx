@@ -5,13 +5,12 @@ import React, { useEffect } from "react";
 import { View, StyleSheet, Image, ScrollView, Linking, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { fmt, useCopy, useLang, longDate, shortDate } from "@/i18n";
+import { fmt, useCopy, useLang, longDate, shortDate, mediumDate } from "@/i18n";
 import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { T, Card, Button, Badge, Countdown, ActionTile, Row, Gem, IconButton, Banner, Skeleton, Stack, SectionLabel } from "@/ui";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, FILL } from "@/ui/tokens";
+import { T, Card, Button, Badge, Countdown, ActionTile, Row, Gem, IconButton, Banner, Skeleton, Stack, SectionLabel, QueryError, StaleBanner, useBottomClearance, useTopInset, COLUMN } from "@/ui";
+import { colors, FILL } from "@/ui/tokens";
 
 const fallback = require("../../../assets/photos/bluehour.jpg");
 
@@ -20,9 +19,10 @@ export default function GuestHome() {
   const { lang } = useLang();
   const router = useRouter();
   const session = useGuestSession();
-  const insets = useSafeAreaInsets();
+  const { clearance } = useBottomClearance();
   const online = useOnline();
-  const { data, isLoading, refetch } = useGuestHome();
+  const mainQuery = useGuestHome();
+  const { data, isLoading, refetch } = mainQuery;
 
   useEffect(() => {
     if (data?.day_of) router.replace("/guest/dayof");
@@ -31,7 +31,10 @@ export default function GuestHome() {
   const couple = data?.couple_names ?? session?.tenant.couple_names ?? "";
   const [n1, n2] = splitNames(couple);
   const hero = data?.hero_image_url ?? session?.tenant.hero_image_url ?? null;
-  const top = Math.max(insets.top, 54);
+  const top = useTopInset();
+  const failed = mainQuery.isError && !data;
+  const when = data?.wedding_date ?? session?.tenant.wedding_date ?? null;
+  const city = data?.city ?? session?.tenant.city ?? "";
   const rsvp = data?.rsvp;
   const seats = rsvp ? (rsvp.max_party === 1 ? copy.guestHome.seatsOne : fmt(copy.guestHome.seatsMany, { n: rsvp.max_party })) : "";
   const deadline = rsvp?.deadline ? shortDate(rsvp.deadline, lang) : null;
@@ -44,7 +47,7 @@ export default function GuestHome() {
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + insets.bottom + 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Image source={hero ? { uri: hero } : fallback} style={FILL} resizeMode="cover" />
           <LinearGradient
@@ -53,15 +56,15 @@ export default function GuestHome() {
             style={FILL}
           />
           <Row style={[styles.topRow, { top }]}>
-            <Row gap={8}>
+            <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
               <Gem />
-              <T v="label11" color="rgba(247,243,236,0.85)" style={{ letterSpacing: 2 }}>
-                {data?.city ?? session?.tenant.city ?? ""} · {data?.wedding_date ?? session?.tenant.wedding_date ?? ""}
+              <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={1} style={{ letterSpacing: 2, flexShrink: 1 }}>
+                {[city, mediumDate(when, lang)].filter(Boolean).join(" · ")}
               </T>
             </Row>
             <IconButton name="bell" onPress={() => router.push("/guest/messages")} label={copy.messages.title} />
           </Row>
-          <View style={styles.names}>
+          <View style={[styles.names, COLUMN]}>
             <SectionLabel color={colors.goldLight}>{copy.guestHome.invited}</SectionLabel>
             <T v="display60" size={n1.length > 14 ? 48 : 60} numberOfLines={2} adjustsFontSizeToFit style={{ marginTop: 10 }}>
               {n1}
@@ -78,7 +81,7 @@ export default function GuestHome() {
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: 24, marginTop: -60 }}>
+        <View style={[COLUMN, { paddingHorizontal: 24, marginTop: -60 }]}>
           {data?.countdown ? (
             <Countdown days={data.countdown.days} hours={data.countdown.hours} minutes={data.countdown.minutes} labels={{ days: copy.common.days, hours: copy.common.hours, min: copy.common.min }} />
           ) : isLoading ? (
@@ -87,12 +90,23 @@ export default function GuestHome() {
         </View>
 
         {!online ? (
-          <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
+          <View style={[COLUMN, { paddingHorizontal: 20, marginTop: 16 }]}>
             <Banner icon="wifi-off" title={copy.common.offline} body={copy.common.offlineDetail} />
+          </View>
+        ) : mainQuery.isError && data ? (
+          <View style={[COLUMN, { paddingHorizontal: 20, marginTop: 16 }]}>
+            <StaleBanner onRetry={() => void refetch()} />
           </View>
         ) : null}
 
-        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        {/* With the API failing and nothing saved, say so. Never tell a guest who
+            has answered that the RSVP is still pending (Part 9 audit, D-023). */}
+        {failed ? (
+          <View style={[COLUMN, { paddingHorizontal: 20, marginTop: 20 }]}>
+            <QueryError onRetry={() => void refetch()} compact />
+          </View>
+        ) : (
+        <View style={[COLUMN, { paddingHorizontal: 20, marginTop: 20 }]}>
           <Card kind="glass" blur padding={18}>
             <Row style={{ justifyContent: "space-between" }}>
               <SectionLabel color={colors.goldLight}>{copy.guestHome.yourRsvp}</SectionLabel>
@@ -120,8 +134,9 @@ export default function GuestHome() {
             />
           </Card>
         </View>
+        )}
 
-        <Row gap={8} style={{ paddingHorizontal: 20, marginTop: 12 }}>
+        <Row gap={8} align="stretch" style={[COLUMN, { paddingHorizontal: 20, marginTop: 12 }]}>
           <ActionTile icon="calendar" label={copy.guestHome.schedule} onPress={() => router.push("/guest/schedule")} />
           <ActionTile
             icon="pin"
@@ -147,6 +162,6 @@ export function splitNames(names: string): [string, string] {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.night },
   hero: { overflow: "hidden", minHeight: 560, justifyContent: "flex-end", paddingBottom: 84 },
-  topRow: { position: "absolute", left: 24, right: 20, justifyContent: "space-between" },
+  topRow: { position: "absolute", left: 24, right: 14, gap: 8, justifyContent: "space-between" },
   names: { paddingHorizontal: 24 },
 });

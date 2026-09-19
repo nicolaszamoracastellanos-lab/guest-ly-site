@@ -24,7 +24,8 @@ export default function BrainHome() {
   const qc = useQueryClient();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
-  const { data, isLoading, refetch } = useBrain();
+  const mainQuery = useBrain();
+  const { data, isLoading, refetch } = mainQuery;
   const draft = useDraft();
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export default function BrainHome() {
   const facts = draft.facts as Record<string, unknown>;
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
 
       <Card kind="glass" padding={16} style={{ marginTop: 20 }}>

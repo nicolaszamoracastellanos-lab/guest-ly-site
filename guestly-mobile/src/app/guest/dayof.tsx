@@ -15,7 +15,8 @@ const photo = require("../../../assets/photos/courtyard.jpg");
 export default function GuestDayOf() {
   const copy = useCopy();
   const router = useRouter();
-  const { data, isLoading } = useGuestDayOf();
+  const mainQuery = useGuestDayOf();
+  const { data, isLoading } = mainQuery;
   const now = data?.now_local;
   const focus = data?.current ?? data?.next ?? data?.events[0] ?? null;
 
@@ -29,7 +30,7 @@ export default function GuestDayOf() {
   }
 
   return (
-    <Screen padded={false}>
+    <Screen query={mainQuery} padded={false}>
       <View style={styles.hero}>
         <Image source={photo} style={FILL} resizeMode="cover" />
         <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={FILL} />

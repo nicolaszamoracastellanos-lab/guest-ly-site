@@ -52,7 +52,8 @@ export default function SeatingIndex() {
   const goBack = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
-  const { data, isLoading, error } = useCoupleSeating();
+  const mainQuery = useCoupleSeating();
+  const { data, isLoading, error } = mainQuery;
   const draft = useDraft();
   const save = useSavePlan();
   const [saving, setSaving] = useState(false);
@@ -121,7 +122,7 @@ export default function SeatingIndex() {
     n === 1 ? c.person : fmt(c.people, { n });
 
   return (
-    <Screen
+    <Screen query={mainQuery}
       header={
         <TopBar
           onBack={back}

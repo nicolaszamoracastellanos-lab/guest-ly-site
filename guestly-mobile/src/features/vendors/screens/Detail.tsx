@@ -23,7 +23,8 @@ export function VendorDetailScreen() {
   const online = useOnline();
   const base = useVendorsBase();
   const params = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading } = useVendors();
+  const mainQuery = useVendors();
+  const { data, isLoading } = mainQuery;
   const writes = useVendorWrites();
   const { busy, act } = useAction();
   const [linkOpen, setLinkOpen] = useState(false);
@@ -43,7 +44,7 @@ export function VendorDetailScreen() {
   const ig = vendor ? instagramHref(vendor.instagram) : null;
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.title} right={canEdit && vendor ? <IconButton name="edit" label={copy.edit} onPress={() => router.push({ pathname: "/couple/vendors/new" as never, params: { id: vendor.id } as never })} /> : undefined} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} right={canEdit && vendor ? <IconButton name="edit" label={copy.edit} onPress={() => router.push({ pathname: "/couple/vendors/new" as never, params: { id: vendor.id } as never })} /> : undefined} />}>
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 8 }}>
           <Skeleton h={60} r={18} />

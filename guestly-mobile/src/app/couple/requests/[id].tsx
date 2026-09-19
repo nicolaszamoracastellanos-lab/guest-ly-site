@@ -23,7 +23,8 @@ export default function RequestDetail() {
   const user = useUserSession();
   const { biometricEnabled } = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data } = useCoupleRequests();
+  const mainQuery = useCoupleRequests();
+  const { data } = mainQuery;
   const r = data?.requests.find((x) => x.id === id);
   const [note, setNote] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -68,7 +69,7 @@ export default function RequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? []) : [];
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.requests.title} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.requests.title} />} bottomInset={40} keyboard>
       <>
         {r ? (
           <>

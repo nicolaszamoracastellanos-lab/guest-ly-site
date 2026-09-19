@@ -16,11 +16,12 @@ export default function GuestSchedule() {
   const copy = useCopy();
   const { lang } = useLang();
   const session = useGuestSession();
-  const { data, isLoading } = useGuestSchedule();
+  const mainQuery = useGuestSchedule();
+  const { data, isLoading } = mainQuery;
   const events = data?.events ?? [];
 
   return (
-    <Screen padded={false}>
+    <Screen query={mainQuery} padded={false}>
       <View style={styles.hero}>
         <Image source={photo} style={FILL} resizeMode="cover" />
         <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.6)", colors.night]} locations={[0, 0.3, 0.7, 1]} style={FILL} />

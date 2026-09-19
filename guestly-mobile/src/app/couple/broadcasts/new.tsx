@@ -24,7 +24,8 @@ export default function NewBroadcast() {
   const router = useRouter();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const { data, isLoading } = useBroadcasts();
+  const mainQuery = useBroadcasts();
+  const { data, isLoading } = mainQuery;
 
   const [audienceKey, setAudienceKey] = useState<string>("all");
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -118,7 +119,7 @@ export default function NewBroadcast() {
 
   if (result) {
     return (
-      <Screen header={<TopBar onBack={back} title={c.title} />}>
+      <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />}>
         <BigTitle label={c.sentTitle} title={fmt(c.sentOf, { sent: result.summary.sent, total: result.summary.total })} sub={fmt(c.sentBody, { sent: result.summary.sent, total: result.summary.total, failed: result.summary.failed })} size={38} />
         {result.failed_batches.length ? (
           <Stack gap={8} style={{ marginTop: 16 }}>
