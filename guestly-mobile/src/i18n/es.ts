@@ -404,7 +404,7 @@ export const es: Copy = {
     current: "Actual",
     nextUp: "Próxima",
     quiet: "Tranquila",
-    open: "{n} abiertas",
+    open: { one: "{n} abierta", other: "{n} abiertas" },
     tabs: { home: "Inicio", guests: "Invitados", requests: "Solicitudes", budget: "Presupuesto", more: "Más" },
     guestsTitle: "Invitados",
     guestsNote: "Los datos de contacto quedan con la pareja. Usted ve nombres, grupos y respuestas.",

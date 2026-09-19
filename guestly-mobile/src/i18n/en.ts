@@ -402,7 +402,7 @@ export const en = {
     current: "Current",
     nextUp: "Next up",
     quiet: "Quiet",
-    open: "{n} open",
+    open: { one: "{n} open", other: "{n} open" },
     tabs: { home: "Home", guests: "Guests", requests: "Requests", budget: "Budget", more: "More" },
     guestsTitle: "Guests",
     guestsNote: "Contact details stay with the couple. You see names, parties and answers.",

@@ -63,7 +63,7 @@ export default function PlannerHome() {
             key={w.slug}
             title={`${w.couple_names}${w.wedding_date ? ` · ${mediumDate(w.wedding_date, lang)}` : ""}`}
             sub={w.current ? `${copy.planner.current}${w.days_to_go !== null ? ` · ${w.days_to_go} ${copy.common.days}` : ""}` : w.days_to_go !== null && w.days_to_go < 30 ? `${copy.planner.nextUp} · ${w.days_to_go} ${copy.common.days}` : copy.planner.quiet}
-            trailing={<Badge label={fmt(copy.planner.open, { n: w.open_requests })} kind={w.open_requests ? "amber" : "mute"} />}
+            trailing={<Badge label={plural(w.open_requests, copy.planner.open)} kind={w.open_requests ? "amber" : "mute"} />}
             onPress={async () => { if (!w.current) await switchTenant(w.slug); }}
             chevron={!w.current}
             last={i === arr.length - 1}

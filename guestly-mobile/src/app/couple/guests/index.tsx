@@ -128,15 +128,15 @@ export default function CoupleGuests() {
         </View>
       </Sheet>
       {canEdit ? (
-        <Pressable
-          testID="fab-add"
-          accessibilityRole="button"
-          accessibilityLabel={copy.guests.add}
-          onPress={() => router.push("/couple/guests/new")}
-          style={[styles.fab, { bottom: tabTop + 14 }]}
-        >
-          <Icon name="plus" size={24} color={colors.night} strokeWidth={2} />
-        </Pressable>
+        // Anchored to the content column, not to the window: on a 1440 px window
+        // the button sat 400 px away from the list it adds to (D-027).
+        <View pointerEvents="box-none" style={[styles.fabHost, { bottom: tabTop + 14 }]}>
+          <View pointerEvents="box-none" style={[COLUMN, { alignItems: "flex-end", paddingRight: 14 }]}>
+            <Pressable testID="fab-add" accessibilityRole="button" accessibilityLabel={copy.guests.add} onPress={() => router.push("/couple/guests/new")} style={styles.fab}>
+              <Icon name="plus" size={24} color={colors.night} strokeWidth={2} />
+            </Pressable>
+          </View>
+        </View>
       ) : null}
     </View>
   );
@@ -163,5 +163,6 @@ export default function CoupleGuests() {
 const FAB_SIZE = 56;
 
 const styles = StyleSheet.create({
-  fab: { position: "absolute", right: 14, width: FAB_SIZE, height: FAB_SIZE, borderRadius: FAB_SIZE / 2, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center", shadowColor: colors.gold, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
+  fabHost: { position: "absolute", left: 0, right: 0 },
+  fab: { width: FAB_SIZE, height: FAB_SIZE, borderRadius: FAB_SIZE / 2, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center", shadowColor: colors.gold, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
 });

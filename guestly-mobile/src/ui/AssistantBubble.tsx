@@ -25,7 +25,7 @@ import * as Haptics from "expo-haptics";
 import { useLang } from "@/i18n";
 import { Icon } from "./Icon";
 import { T } from "./Text";
-import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN } from "./tokens";
+import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN, MAX_CONTENT_WIDTH } from "./tokens";
 import { useBubbleLiftValue } from "./chrome";
 
 export type AssistantSurface = "guest" | "couple" | "planner";
@@ -55,8 +55,11 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const minY = Math.max(insets.top, 54) + MARGIN;
   const floorY = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - MARGIN;
   const maxY = Math.max(minY, floorY - lift);
-  const leftX = MARGIN;
-  const rightX = width - SIZE - MARGIN;
+  // On a wide window the bubble keeps to the edges of the centered content
+  // column instead of the far edges of the window (large screen rule).
+  const gutter = Math.max(0, (width - MAX_CONTENT_WIDTH) / 2);
+  const leftX = gutter + MARGIN;
+  const rightX = width - gutter - SIZE - MARGIN;
 
   const x = useSharedValue(rightX);
   const y = useSharedValue(maxY);
