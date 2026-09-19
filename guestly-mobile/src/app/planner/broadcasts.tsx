@@ -4,7 +4,7 @@
 import React from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, relTime, useLang } from "@/i18n";
+import { fmt, plural, relTime, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Button, EmptyState, Skeleton, Stack, SectionLabel, T, Chip, ChipRow } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -15,6 +15,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerBroadcasts() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -23,14 +24,14 @@ export default function PlannerBroadcasts() {
   const history = data?.history ?? [];
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.planner.tabs.more} />}>
       <BigTitle title={c.plannerTitle} sub={c.plannerSubtitle} />
       <Button label={c.plannerRequest} icon="megaphone" onPress={() => router.push({ pathname: "/planner/requests/new", params: { kind: "send_reminders" } })} style={{ marginTop: 18 }} />
       {data ? (
         <View style={{ marginTop: 24 }}>
           <SectionLabel style={{ marginBottom: 8 }}>{c.plannerAudiences}</SectionLabel>
           <T v="meta13" color={colors.ivory55} style={{ marginBottom: 10 }}>
-            {fmt(c.plannerPhones, { with: data.guests_with_phone, without: data.guests_without_phone })}
+            {fmt(c.plannerPhones, { with: plural(data.guests_with_phone, c.plannerWithPhone), without: data.guests_without_phone })}
           </T>
           <ChipRow>
             {data.audiences.map((a) => (

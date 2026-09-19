@@ -5,7 +5,7 @@ import { View, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeatureCopy } from "@/i18n/feature";
-import { relTime, useLang } from "@/i18n";
+import { relTime, useLang, useCopy } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Gem, Icon } from "@/ui";
@@ -18,6 +18,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function BrainHome() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -60,7 +61,7 @@ export default function BrainHome() {
   const facts = draft.facts as Record<string, unknown>;
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
 
       <Card kind="glass" padding={16} style={{ marginTop: 20 }}>
@@ -68,10 +69,12 @@ export default function BrainHome() {
           <Skeleton h={40} />
         ) : (
           <Stack gap={8}>
-            <Row style={{ justifyContent: "space-between" }}>
-              <Row gap={8}>
+            {/* The sentence shrinks and wraps; the badge keeps its width. It used to
+                push past the card's right edge on a 375 pt phone. */}
+            <Row gap={8} style={{ justifyContent: "space-between" }}>
+              <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
                 <Gem />
-                <T v="body16">{data?.published_version ? c.live(data.published_version) : c.nothingLive}</T>
+                <T v="body16" style={{ flexShrink: 1 }}>{data?.published_version ? c.live(data.published_version) : c.nothingLive}</T>
               </Row>
               {data?.published_version ? <Badge label={differs ? c.draftBadge : c.liveBadge} kind={differs ? "amber" : "green"} dot /> : null}
             </Row>

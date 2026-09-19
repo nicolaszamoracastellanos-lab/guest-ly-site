@@ -3,7 +3,7 @@
 import React from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, relTime, useLang } from "@/i18n";
+import { fmt, relTime, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Banner, Button, EmptyState, Skeleton, Stack, SectionLabel, T } from "@/ui";
@@ -31,6 +31,7 @@ export function deliveryLine(g: HistoryGroup, c: (typeof COPY)["en"]): string {
 
 export default function Broadcasts() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -42,7 +43,7 @@ export default function Broadcasts() {
   const anyPhone = (data?.guests ?? []).some((g) => g.has_phone);
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />}>
       <BigTitle title={c.title} sub={c.subtitle} />
       <View style={{ marginTop: 20 }}>
         {!canSend ? <Banner icon="lock" title={c.readOnly} /> : null}

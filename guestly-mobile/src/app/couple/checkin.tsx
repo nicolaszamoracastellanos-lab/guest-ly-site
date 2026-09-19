@@ -5,14 +5,13 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { ApiFailure, get } from "@/lib/api";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardFill, useBottomClearance, useKeyboardOpen, useTopInset } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -23,7 +22,6 @@ export default function DoorCheckin() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const insets = useSafeAreaInsets();
   const online = useOnline();
   const [permission, requestPermission] = useCameraPermissions();
   const { data: dayof } = useCoupleDayOf();
@@ -93,7 +91,13 @@ export default function DoorCheckin() {
 
   const guest = card?.result?.guest ?? null;
   const seats = guest?.party_size ?? card?.pending?.seats ?? 1;
-  const top = Math.max(insets.top, 54);
+  const top = useTopInset();
+  // The counter and the name search sat BEHIND the floating tab bar, so a person
+  // who denied the camera could never reach the name field the denied copy points
+  // to (Part 9 audit, D-003). The block ends clear of the tab bar; with the
+  // keyboard up it rides on top of the keyboard instead.
+  const { clearance } = useBottomClearance();
+  const keyboardOpen = useKeyboardOpen();
 
   return (
     <View style={styles.root}>
@@ -103,6 +107,7 @@ export default function DoorCheckin() {
         <View style={[FILL, { backgroundColor: colors.night }]} />
       )}
       <View style={[FILL, { backgroundColor: "rgba(8,11,16,0.35)" }]} />
+      <KeyboardFill>
       <View style={{ paddingTop: top }}>
         <TopBar onBack={back} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
       </View>
@@ -124,7 +129,7 @@ export default function DoorCheckin() {
       </T>
 
       <View style={{ flex: 1 }} />
-      <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 16, gap: 12 }}>
+      <View style={{ paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 12 }}>
         {typing ? (
           <Card kind="glass" blur padding={10}>
             <Input icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} />
@@ -180,6 +185,7 @@ export default function DoorCheckin() {
           </Pressable>
         </Row>
       </View>
+      </KeyboardFill>
     </View>
   );
 }

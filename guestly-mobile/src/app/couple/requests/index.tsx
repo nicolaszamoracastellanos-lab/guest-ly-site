@@ -25,7 +25,7 @@ export default function CoupleRequests() {
   const label = (s: string) => (s === "open" ? copy.planner.awaiting : s === "approved" ? copy.planner.approved : s === "declined" ? copy.planner.declined : copy.planner.cancelled);
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.coupleHome.tabs.more} />}>
       <BigTitle title={copy.requests.title} sub={copy.requests.fromPlanner} />
       <Stack gap={10} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={120} r={18} /> : null}

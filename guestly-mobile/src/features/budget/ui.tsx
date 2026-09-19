@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { View, Pressable, Alert } from "react-native";
 import { ApiFailure } from "@/lib/api";
 import { useLang } from "@/i18n";
-import { T, Row, Badge, Button, Sheet, Stack, Input } from "@/ui";
+import { T, Row, Badge, Button, Sheet, Input, Field as KitField } from "@/ui";
 import { colors } from "@/ui/tokens";
 import type { ItemStatus } from "./hooks";
 
@@ -62,12 +62,9 @@ export function ConfirmSheet({ visible, title, body, confirmLabel, cancelLabel, 
 /** A labelled input so forms read as a list of fields. */
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Stack gap={6}>
-      <T v="meta13" color={colors.ivory55}>
-        {label}
-      </T>
-      {children}
-    </Stack>
+    // The kit's label style, so budget and vendor forms read like every other
+    // form in the app (Part 9 audit, D-039: one label style).
+    <KitField label={label}>{children}</KitField>
   );
 }
 

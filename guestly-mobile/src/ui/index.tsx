@@ -28,7 +28,7 @@ import * as Haptics from "expo-haptics";
 import { useCopy, useLang, longDate } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
-import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
+import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COVER, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
 import { useBottomClearance, useBubbleLift, useTabBarTop } from "./chrome";
 
 export { T } from "./Text";
@@ -679,7 +679,10 @@ export function StatTile({ value, label, color = colors.ivory, kind = "glass", s
       <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45}>
         {value}
       </T>
-      <T v="meta13" color={colors.ivory55} numberOfLines={labelLines(label)} adjustsFontSizeToFit minimumFontScale={0.7}>
+      {/* A single word shrinks rather than break mid word. A phrase wraps at its
+          spaces at full size, up to three lines, so tiles in one row keep one
+          type size (the 80% tile on the insights screen used to print smaller). */}
+      <T v="meta13" color={colors.ivory55} numberOfLines={labelLines(label) === 1 ? 1 : 3} adjustsFontSizeToFit={labelLines(label) === 1} minimumFontScale={0.7}>
         {label}
       </T>
     </Card>
@@ -866,7 +869,7 @@ export function DockedActions({ children, onHeight }: { children: ReactNode; onH
   useBubbleLift(h);
   return (
     <View pointerEvents="box-none" style={[styles.dock, { paddingBottom: tabTop + 12 }]}>
-      <LinearGradient pointerEvents="none" colors={["rgba(8,11,16,0)", "rgba(8,11,16,0.94)", colors.nightDeep]} locations={[0, 0.35, 1]} style={FILL} />
+      <LinearGradient pointerEvents="none" colors={["rgba(8,11,16,0)", "rgba(8,11,16,0.94)", colors.nightDeep]} locations={[0, 0.3, 1]} style={COVER} />
       <View style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]} onLayout={(e) => {
           const next = Math.round(e.nativeEvent.layout.height);
           setH(next);

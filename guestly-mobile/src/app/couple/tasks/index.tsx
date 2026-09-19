@@ -5,7 +5,7 @@ import React, { useMemo, useState } from "react";
 import { View, FlatList, Alert, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -22,6 +22,7 @@ type Row_ = { kind: "header"; key: string; label: string; count: number } | { ki
 
 export default function CoupleTasks() {
   const copy = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -74,7 +75,7 @@ export default function CoupleTasks() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar onBack={back} right={canEdit ? <Pressable onPress={() => router.push(segment === "ours" ? "/couple/tasks/new" : "/couple/tasks/board/new")} accessibilityRole="button" accessibilityLabel={copy.add} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
+      <TopBar onBack={back} title={app.coupleHome.tabs.more} right={canEdit ? <Pressable onPress={() => router.push(segment === "ours" ? "/couple/tasks/new" : "/couple/tasks/board/new")} accessibilityRole="button" accessibilityLabel={copy.add} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
       <View style={{ marginTop: 10 }}>
         <BigTitle title={copy.title} sub={progress ? fmt(copy.progress, { done: progress.done, total: progress.total }) : copy.subtitle} />
       </View>

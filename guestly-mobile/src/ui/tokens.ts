@@ -119,3 +119,11 @@ export const COLUMN = { width: "100%", maxWidth: MAX_CONTENT_WIDTH, alignSelf: "
  *  at their pixel size, spilling over whole screens. Percent sizes override
  *  the intrinsic ones. */
 export const FILL = { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" } as const;
+
+/** Cover the parent's whole box, padding included. For views and gradients
+ *  (nothing with an intrinsic size). React Native resolves the percent sizes of
+ *  FILL against the parent's CONTENT box, so inside a padded parent FILL stops
+ *  short by the padding: the docked action bar's backdrop ended above its own
+ *  bottom padding and list rows showed through under the buttons. A photo inside
+ *  a padded parent goes in a COVER view, with FILL on the image itself. */
+export const COVER = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;

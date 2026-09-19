@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Alert, Share } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Row, Gem, EmptyState, SectionLabel, ButtonRow } from "@/ui";
@@ -15,6 +15,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function InviteCode() {
   const c = useFeatureCopy(COPY).invite;
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -52,7 +53,7 @@ export default function InviteCode() {
   }
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.settings.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       <Stack gap={14} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={180} r={18} /> : null}

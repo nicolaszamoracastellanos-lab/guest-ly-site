@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useLang, useCopy } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton } from "@/ui";
@@ -15,6 +15,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function NotificationSettings() {
   const c = useFeatureCopy(COPY).notifications;
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -38,7 +39,7 @@ export default function NotificationSettings() {
   }
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.settings.title} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       <Stack gap={12} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={140} r={18} /> : null}

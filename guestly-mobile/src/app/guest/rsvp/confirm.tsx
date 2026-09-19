@@ -8,7 +8,7 @@ import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestSession } from "@/lib/session";
 import { useGuestRsvp, useGuestSchedule } from "@/lib/hooks";
 import { Screen, TopBar, T, Card, Button, Row, Stack, Icon, SectionLabel } from "@/ui";
-import { colors, FILL } from "@/ui/tokens";
+import { colors, FILL, COVER } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
 const photo = require("../../../../assets/photos/toast.jpg");
@@ -35,9 +35,12 @@ export default function RsvpConfirm() {
   return (
     <Screen padded={false} bottomInset={40} header={<TopBar onBack={() => router.replace("/guest")} title={copy.guestHome.tabs.rsvp} />}>
       <View style={styles.hero}>
-        <Image source={photo} style={FILL} resizeMode="cover" />
+        {/* COVER wrapper: the hero has padding (see tokens.ts). */}
+        <View style={COVER}>
+          <Image source={photo} style={FILL} resizeMode="cover" />
         {/* Darker behind the headline: it sat on the brightest part of the photo (D-036). */}
-        <LinearGradient colors={["rgba(8,11,16,0.62)", "rgba(8,11,16,0.5)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.65, 1]} style={FILL} />
+        <LinearGradient colors={["rgba(8,11,16,0.62)", "rgba(8,11,16,0.5)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.65, 1]} style={COVER} />
+        </View>
         <View style={styles.headline}>
           <View style={styles.check}>
             <Icon name="check" size={26} color={colors.night} strokeWidth={2} />

@@ -6,7 +6,7 @@ import { View, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/lib/nav";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -47,6 +47,7 @@ import {
 
 export default function SeatingIndex() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const goBack = useSafeBack();
@@ -126,7 +127,7 @@ export default function SeatingIndex() {
       header={
         <TopBar
           onBack={back}
-          title={c.title}
+          title={app.coupleHome.tabs.more}
           right={
             draft.dirty ? (
               <Button

@@ -83,7 +83,7 @@ export function VendorDetailScreen() {
               </Pressable>
             ) : null}
             {vendor.address ? <KeyValue label={copy.address} value={vendor.address} /> : null}
-            <KeyValue label={copy.priceQuoted} value={vendor.price_quoted === null ? "·" : formatMoney(vendor.price_quoted, vendor.currency ?? currency, lang)} color={colors.goldLight} />
+            <KeyValue label={copy.priceQuoted} value={vendor.price_quoted === null ? copy.notQuoted : formatMoney(vendor.price_quoted, vendor.currency ?? currency, lang)} color={colors.goldLight} />
             {vendor.notes ? (
               <T v="body15" color={colors.ivory70} style={{ marginTop: 10 }}>
                 {vendor.notes}
@@ -91,7 +91,9 @@ export function VendorDetailScreen() {
             ) : null}
           </Card>
 
-          <Row style={{ justifyContent: "space-between", marginTop: 22, marginBottom: 8 }}>
+          {/* Wraps: in Spanish the label and the link are wider than a 375 pt
+              phone, and the link ran off the right edge (Part 9 audit, D-012). */}
+          <Row gap={4} style={{ justifyContent: "space-between", flexWrap: "wrap", marginTop: 22, marginBottom: 8 }}>
             <SectionLabel>{copy.linkedItems}</SectionLabel>
             {canEdit ? (
               <Pressable onPress={() => setLinkOpen(true)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: "center" }}>

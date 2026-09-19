@@ -12,6 +12,13 @@ import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
+/** The plan arrives as the raw tier id ("standard"). Known ids read from the copy;
+ *  an unknown one is shown with a capital, never as a bare lowercase id. */
+function tierLabel(tier: string | null | undefined, labels: Record<string, string>): string {
+  if (!tier) return "";
+  return labels[tier] ?? tier.charAt(0).toUpperCase() + tier.slice(1).replace(/_/g, " ");
+}
+
 export default function Settings() {
   const copy = useCopy();
   const { lang, setLang } = useLang();
@@ -109,7 +116,7 @@ export default function Settings() {
           </Card>
         ) : null}
         <T v="meta13" color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
-          {fmt(copy.settings.plan, { tier: me?.tenant.tier ?? "" })}
+          {fmt(copy.settings.plan, { tier: tierLabel(me?.tenant.tier, copy.settings.tiers) })}
         </T>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.privacy} onPress={() => Linking.openURL("https://guest-ly.com/privacy")} />
@@ -123,7 +130,7 @@ export default function Settings() {
         <T v="title30">{copy.settings.wedding}</T>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 14 }}>
           {(me?.tenants ?? []).map((t, i, arr) => (
-            <ListRow key={t.slug} title={t.couple_names} sub={t.status} trailing={t.slug === me?.tenant.slug ? <Badge label={copy.planner.current} kind="gold" /> : undefined} onPress={async () => { await switchTenant(t.slug); setSwitching(false); }} last={i === arr.length - 1} chevron={false} />
+            <ListRow key={t.slug} title={t.couple_names} trailing={t.slug === me?.tenant.slug ? <Badge label={copy.planner.current} kind="gold" /> : undefined} onPress={async () => { await switchTenant(t.slug); setSwitching(false); }} last={i === arr.length - 1} chevron={false} />
           ))}
         </Card>
       </Sheet>

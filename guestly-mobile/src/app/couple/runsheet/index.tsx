@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { View, Linking, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -35,6 +35,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function CoupleRunsheet() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -87,7 +88,7 @@ export default function CoupleRunsheet() {
       header={
         <TopBar
           onBack={back}
-          title={c.title}
+          title={app.coupleHome.tabs.more}
           right={
             <Row gap={8}>
               {data?.blocks_total ? (

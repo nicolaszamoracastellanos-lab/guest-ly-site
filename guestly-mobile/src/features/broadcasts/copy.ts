@@ -66,7 +66,8 @@ export const COPY = {
     plannerSubtitle: "Sends happen through the couple. File a reminder request and they approve it.",
     plannerRequest: "Ask the couple to send reminders",
     plannerAudiences: "Who could be reached",
-    plannerPhones: "{with} guests with a phone, {without} without",
+    plannerPhones: "{with}, {without} without",
+    plannerWithPhone: { one: "{n} guest with a phone", other: "{n} guests with a phone" },
   },
   es: {
     title: "Mensajes masivos",
@@ -131,6 +132,7 @@ export const COPY = {
     plannerSubtitle: "Los envíos pasan por la pareja. Presente una solicitud de recordatorio y ellos la aprueban.",
     plannerRequest: "Pedir a la pareja que envíe recordatorios",
     plannerAudiences: "A quién se podría llegar",
-    plannerPhones: "{with} invitados con teléfono, {without} sin teléfono",
+    plannerPhones: "{with}, {without} sin teléfono",
+    plannerWithPhone: { one: "{n} invitado con teléfono", other: "{n} invitados con teléfono" },
   },
 };

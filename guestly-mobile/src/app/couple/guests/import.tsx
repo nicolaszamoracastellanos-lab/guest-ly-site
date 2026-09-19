@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { Screen, TopBar, BigTitle, Card, Segmented, Input, Button, Badge, Banner, Stack, SectionLabel, T, ListRow, Avatar, Row } from "@/ui";
@@ -23,6 +23,7 @@ function initials(name: string): string {
 
 export default function ImportGuests() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -103,7 +104,7 @@ export default function ImportGuests() {
 
   if (result) {
     return (
-      <Screen header={<TopBar onBack={back} title={c.title} />}>
+      <Screen header={<TopBar onBack={back} title={app.guests.title} />}>
         <BigTitle label={c.doneTitle} title={fmt(c.preview, { n: result.imported })} sub={fmt(c.doneBody, { guests: result.imported, rsvps: result.rsvpsRecorded })} size={38} />
         <Button label={c.done} onPress={() => router.replace("/couple/guests")} style={{ marginTop: 28 }} />
       </Screen>

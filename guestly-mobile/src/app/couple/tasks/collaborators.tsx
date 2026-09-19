@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { Alert, View, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -21,6 +21,9 @@ const blank: Form = { name: "", role_label: "", email: "", phone: "", language: 
 
 export default function Collaborators() {
   const copy = useFeatureCopy(COPY);
+  const app = useCopy();
+  // The portal role arrives as the raw enum (owner, admin, viewer, planner).
+  const roleLabel = (r: string) => ({ owner: app.settings.owner, admin: app.settings.admin, viewer: app.settings.viewer, planner: app.settings.planner } as Record<string, string>)[r] ?? r;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -81,7 +84,7 @@ export default function Collaborators() {
             <SectionLabel style={{ marginBottom: 6 }}>{copy.members}</SectionLabel>
             <Card kind="solid" padding={2} style={{ paddingHorizontal: 14 }}>
               {board.members.map((m, i) => (
-                <ListRow key={m.userId} leading={<Avatar initials={initials(m.name)} size={36} />} title={m.name} sub={`${m.email} · ${m.role}`} chevron={false} last={i === board.members.length - 1} />
+                <ListRow key={m.userId} leading={<Avatar initials={initials(m.name)} size={36} />} title={m.name} sub={`${m.email} · ${roleLabel(m.role)}`} chevron={false} last={i === board.members.length - 1} />
               ))}
             </Card>
           </View>
@@ -100,7 +103,7 @@ export default function Collaborators() {
                   key={c.id}
                   leading={<Avatar initials={initials(c.name)} size={36} />}
                   title={c.name}
-                  sub={[c.role_label, c.email, c.notifications_enabled ? null : copy.helperFields.notify + ": off"].filter(Boolean).join(" · ")}
+                  sub={[c.role_label, c.email, c.notifications_enabled ? null : copy.noReminderEmail].filter(Boolean).join(" · ")}
                   onPress={canEdit ? () => setEditing({ id: c.id, form: { name: c.name, role_label: c.role_label, email: c.email, phone: c.phone ?? "", language: c.language, notifications_enabled: c.notifications_enabled } }) : undefined}
                   last={i === board.collaborators.length - 1}
                 />

@@ -16,6 +16,12 @@ import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
 import { errorText, ConfirmSheet } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 
+/** "America/La_Paz" reads as "La Paz": the city part of the zone id, spaces for underscores. */
+function zoneLabel(tz: string | null | undefined): string {
+  if (!tz) return "";
+  return (tz.split("/").pop() ?? tz).replace(/_/g, " ");
+}
+
 export default function Reminders() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
@@ -80,7 +86,7 @@ export default function Reminders() {
                 <Toggle value={board.settings.reminders_enabled} onChange={(v) => canEdit && !busy && setEnabled(v)} label={copy.remindersSwitch} />
               </Row>
               <T v="meta13" color={colors.ivory55} style={{ marginTop: 8 }}>
-                {copy.remindersBody} ({board.tz})
+                {copy.remindersBody} ({zoneLabel(board.tz)})
               </T>
             </Card>
             <Card kind="solid" padding={16}>

@@ -3,7 +3,7 @@
 import React from "react";
 import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, useCopy, useLang, mediumDate } from "@/i18n";
+import { fmt, plural, useCopy, useLang, mediumDate } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
 import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Gem, Icon, StatTile, SectionLabel, Skeleton, Card, ListRow } from "@/ui";
@@ -29,7 +29,7 @@ export default function PlannerHome() {
           {fmt(copy.planner.greeting, { part, name: cap(name) })}
         </T>
         <T v="body15" color={colors.ivory55} style={{ marginTop: 6 }}>
-          {fmt(copy.planner.subtitle, { weddings: data?.weddings.length ?? user?.me.tenants.length ?? 0, needs })}
+          {fmt(copy.planner.subtitle, { weddings: plural(data?.weddings.length ?? user?.me.tenants.length ?? 0, copy.planner.weddingsCount), needs: plural(needs, copy.planner.needsCount) })}
         </T>
       </View>
       <SectionLabel style={{ marginTop: 26, marginBottom: 6 }}>{copy.planner.needsYou}</SectionLabel>

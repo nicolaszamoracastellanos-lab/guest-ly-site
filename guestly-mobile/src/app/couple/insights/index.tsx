@@ -5,7 +5,7 @@ import { View, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeatureCopy } from "@/i18n/feature";
-import { relTime, useLang } from "@/i18n";
+import { relTime, useLang, useCopy } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, Input, Row, Stack, StatTile, SectionLabel, EmptyState, Skeleton, Gem } from "@/ui";
@@ -17,6 +17,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function Insights() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -79,7 +80,7 @@ export default function Insights() {
   const maxCount = Math.max(1, ...(data?.top_questions.map((q) => q.count) ?? [1]));
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={36} />
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

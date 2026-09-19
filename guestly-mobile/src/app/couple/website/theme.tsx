@@ -35,7 +35,7 @@ export default function WebsiteThemeScreen() {
   }
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.theme} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
       <BigTitle title={c.theme} sub={c.subtitle} size={38} />
       <Stack gap={12} style={{ marginTop: 20 }}>
         {isLoading && !data ? <Skeleton h={140} r={18} /> : null}

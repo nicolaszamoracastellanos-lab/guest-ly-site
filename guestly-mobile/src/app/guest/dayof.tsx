@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy } from "@/i18n";
 import { useGuestDayOf } from "@/lib/hooks";
 import { Screen, T, Row, Gem, IconButton, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
-import { colors, FILL } from "@/ui/tokens";
+import { colors, FILL, COVER } from "@/ui/tokens";
 import { clockLabel } from "./schedule";
 
 const photo = require("../../../assets/photos/courtyard.jpg");
@@ -35,8 +35,11 @@ export default function GuestDayOf() {
       {/* The hero grows with its text. It had a fixed height with the text pinned
           inside, so a five-line sentence ran under the buttons (Part 9 audit, D-015). */}
       <View style={[styles.hero, { paddingTop: top + 64 }]}>
-        <Image source={photo} style={FILL} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={FILL} />
+        {/* COVER wrapper: the hero has padding (see tokens.ts). */}
+        <View style={COVER}>
+          <Image source={photo} style={FILL} resizeMode="cover" />
+          <LinearGradient colors={["rgba(8,11,16,0.34)", "rgba(8,11,16,0.12)", "rgba(13,17,23,0.66)", colors.night]} locations={[0, 0.25, 0.58, 1]} style={COVER} />
+        </View>
         <Row style={[styles.top, { top }]}>
           <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
             <Gem />

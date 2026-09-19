@@ -21,7 +21,7 @@ export default function GuestMessages() {
   const messages = data?.messages ?? [];
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} />} bottomInset={40}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.guestHome.tabs.more} />} bottomInset={40}>
       <BigTitle title={copy.messages.title} sub={copy.messages.guestSubtitle} />
       <Stack gap={10} style={{ marginTop: 20 }}>
         {isLoading && !data ? (

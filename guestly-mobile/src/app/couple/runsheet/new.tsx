@@ -51,7 +51,7 @@ export default function NewBlock() {
 
   return (
     <Screen
-      header={<TopBar onBack={back} title={c.newBlock} />}
+      header={<TopBar onBack={back} title={c.title} />}
       bottomInset={40}
       keyboard
     >

@@ -5,7 +5,7 @@ import React, { useMemo, useState } from "react";
 import { View, FlatList, Alert, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -20,6 +20,7 @@ const NEXT: Record<BoardStatus, BoardStatus> = { open: "in_progress", in_progres
 
 export default function PlannerTasks() {
   const copy = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -48,7 +49,7 @@ export default function PlannerTasks() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar onBack={back} right={<Pressable onPress={() => router.push("/planner/tasks/new")} accessibilityRole="button" accessibilityLabel={copy.addBoard} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable>} />
+      <TopBar onBack={back} title={app.planner.tabs.more} right={<Pressable onPress={() => router.push("/planner/tasks/new")} accessibilityRole="button" accessibilityLabel={copy.addBoard} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable>} />
       <View style={{ marginTop: 10 }}>
         <BigTitle title={copy.planner.title} sub={copy.planner.subtitle} />
       </View>

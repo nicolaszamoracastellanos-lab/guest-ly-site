@@ -3,7 +3,7 @@
 
 import React from "react";
 import { View } from "react-native";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import {
@@ -28,6 +28,7 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerSeating() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const mainQuery = usePlannerSeating();
@@ -39,7 +40,7 @@ export default function PlannerSeating() {
 
   return (
     <Screen query={mainQuery}
-      header={<TopBar onBack={back} title={c.title} />}
+      header={<TopBar onBack={back} title={app.planner.tabs.more} />}
       bottomInset={40}
     >
       <BigTitle title={c.title} sub={c.readOnly} size={38} />

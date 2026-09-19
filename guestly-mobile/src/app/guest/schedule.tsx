@@ -8,7 +8,7 @@ import { useCopy, useLang, longDate } from "@/i18n";
 import { useGuestSchedule } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { Screen, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel, useTopInset, Button } from "@/ui";
-import { colors, FILL } from "@/ui/tokens";
+import { colors, FILL, COVER } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/ceremony.jpg");
 
@@ -28,8 +28,12 @@ export default function GuestSchedule() {
           The scrim is darker behind the title, which sat on the brightest part of
           the photo (D-036). */}
       <View style={[styles.hero, { paddingTop: top + 64 }]}>
-        <Image source={photo} style={FILL} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.6)", "rgba(8,11,16,0.2)", "rgba(13,17,23,0.78)", colors.night]} locations={[0, 0.28, 0.62, 1]} style={FILL} />
+        {/* COVER, not FILL, on the wrapper: the hero has padding, and FILL's percent
+            sizes stop short of a padded parent's edge (see tokens.ts). */}
+        <View style={COVER}>
+          <Image source={photo} style={FILL} resizeMode="cover" />
+          <LinearGradient colors={["rgba(8,11,16,0.6)", "rgba(8,11,16,0.2)", "rgba(13,17,23,0.78)", colors.night]} locations={[0, 0.28, 0.62, 1]} style={COVER} />
+        </View>
         <Row style={[styles.top, { top }]}>
           <Row gap={8} align="flex-start" style={{ flex: 1, minWidth: 0 }}>
             <View style={{ marginTop: 4 }}>

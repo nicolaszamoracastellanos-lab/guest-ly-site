@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { useLang } from "@/i18n";
+import { useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Input, ListRow, StatTile, Badge, Chip, ChipRow, Banner, EmptyState, Skeleton, Avatar } from "@/ui";
@@ -25,6 +25,7 @@ function fold(s: string): string {
 
 export function VendorsListScreen() {
   const copy = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -50,7 +51,7 @@ export function VendorsListScreen() {
   const bookedTotal = booked.reduce((s, v) => s + (v.price_quoted ?? 0), 0);
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} right={canEdit ? <IconButton name="plus" label={copy.add} onPress={() => router.push({ pathname: "/couple/vendors/new" as never })} /> : undefined} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} right={canEdit ? <IconButton name="plus" label={copy.add} onPress={() => router.push({ pathname: "/couple/vendors/new" as never })} /> : undefined} />}>
       <BigTitle title={copy.title} sub={copy.subtitle} size={38} />
       {!online ? (
         <View style={{ marginTop: 14 }}>
@@ -113,7 +114,9 @@ export function VendorsListScreen() {
                 leading={<Avatar initials={v.name.slice(0, 2).toUpperCase()} />}
                 title={v.name}
                 sub={`${copy.categories[v.category] ?? v.category}${v.price_quoted !== null ? ` · ${formatMoney(v.price_quoted, v.currency ?? currency, lang)}` : ""}${v.rating ? ` · ${"★".repeat(v.rating)}` : ""}`}
-                trailing={<Badge label={copy.statuses[v.status] ?? v.status} kind={statusKind(v.status)} />}
+                // Under the name, not beside it: a wide badge such as PRESELECCIONADO
+                // squeezed the name to "Flor de..." on a 375 pt phone (D-012 pattern).
+                below={<Badge label={copy.statuses[v.status] ?? v.status} kind={statusKind(v.status)} />}
                 onPress={() => router.push({ pathname: `${routePrefix}/[id]` as never, params: { id: v.id } as never })}
                 last={i === filtered.length - 1}
               />

@@ -10,7 +10,7 @@ import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { T, Card, Button, Badge, Countdown, ActionTile, Row, Gem, IconButton, Banner, Skeleton, Stack, SectionLabel, QueryError, StaleBanner, useBottomClearance, useTopInset, COLUMN } from "@/ui";
-import { colors, FILL } from "@/ui/tokens";
+import { colors, FILL, COVER } from "@/ui/tokens";
 
 const fallback = require("../../../assets/photos/bluehour.jpg");
 
@@ -49,12 +49,15 @@ export default function GuestHome() {
     <View style={styles.root}>
       <ScrollView contentContainerStyle={{ paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Image source={hero ? { uri: hero } : fallback} style={FILL} resizeMode="cover" />
-          <LinearGradient
-            colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.08)", "rgba(13,17,23,0.55)", colors.night]}
-            locations={[0, 0.26, 0.5, 1]}
-            style={FILL}
-          />
+          {/* COVER wrapper: the hero has bottom padding (see tokens.ts). */}
+          <View style={COVER}>
+            <Image source={hero ? { uri: hero } : fallback} style={FILL} resizeMode="cover" />
+            <LinearGradient
+              colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.08)", "rgba(13,17,23,0.55)", colors.night]}
+              locations={[0, 0.26, 0.5, 1]}
+              style={COVER}
+            />
+          </View>
           <Row style={[styles.topRow, { top }]}>
             <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
               <Gem />

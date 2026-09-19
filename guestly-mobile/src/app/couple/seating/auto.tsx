@@ -16,7 +16,7 @@ import {
   Row,
   Stack,
   SectionLabel,
-  Toggle,
+  ToggleRow,
   Icon,
   Badge,
 } from "@/ui";
@@ -87,7 +87,7 @@ export default function SeatingAuto() {
 
   return (
     <Screen query={mainQuery}
-      header={<TopBar onBack={back} title={c.suggest} />}
+      header={<TopBar onBack={back} title={c.title} />}
       bottomInset={40}
     >
       <BigTitle title={c.suggest} sub={c.suggestIntro} size={34} />
@@ -126,16 +126,18 @@ export default function SeatingAuto() {
           </Pressable>
         ))}
       </Card>
-      <View style={{ marginTop: 14 }}>
-        <Toggle
+      {/* A row with its words on screen: the bare switch said nothing about what
+          it switches (its label was only an accessibility label; D-025). */}
+      <Card kind="solid" padding={4} style={{ marginTop: 14, paddingHorizontal: 16 }}>
+        <ToggleRow
+          label={c.includeUnconfirmed}
           value={includeUnconfirmed}
           onChange={(v) => {
             setIncludeUnconfirmed(v);
             setPreview(null);
           }}
-          label={c.includeUnconfirmed}
         />
-      </View>
+      </Card>
 
       <Button
         label={c.preview}

@@ -159,7 +159,7 @@ export function BlockFormFields({
   const vendorName =
     vendors.find((v) => v.id === form.vendor_id)?.name ?? c.noVendor;
   return (
-    <Stack gap={14}>
+    <Stack gap={14} style={{ marginTop: 14 }}>
       <View>
         <SectionLabel>{c.titleField}</SectionLabel>
         <Input

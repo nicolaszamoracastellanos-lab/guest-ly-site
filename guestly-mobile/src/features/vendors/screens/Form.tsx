@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { View, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, T, Row, Stack, Button } from "@/ui";
+import { Screen, TopBar, BigTitle, T, Row, Stack, Button, SectionLabel } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useVendors, useVendorWrites, type VendorCategory, type VendorStatus, type VendorRow } from "../hooks";
@@ -82,15 +82,11 @@ export function VendorFormScreen() {
         <Stack gap={12} style={{ marginTop: 18 }}>
           <TextField label={copy.name} value={form.name} onChange={(v) => setForm({ ...form, name: v })} autoCapitalize="words" />
           <View style={{ gap: 6 }}>
-            <T v="meta13" color={colors.ivory55}>
-              {copy.category}
-            </T>
+            <SectionLabel>{copy.category}</SectionLabel>
             <Options<VendorCategory> value={form.category} options={CATEGORIES.map((c) => ({ value: c, label: copy.categories[c] }))} onChange={(v) => setForm({ ...form, category: v })} />
           </View>
           <View style={{ gap: 6 }}>
-            <T v="meta13" color={colors.ivory55}>
-              {copy.status}
-            </T>
+            <SectionLabel>{copy.status}</SectionLabel>
             <Options<VendorStatus> value={form.status} options={STATUSES.map((s) => ({ value: s, label: copy.statuses[s] }))} onChange={(v) => setForm({ ...form, status: v })} />
           </View>
           <TextField label={copy.contactName} value={form.contact_name} onChange={(v) => setForm({ ...form, contact_name: v })} autoCapitalize="words" />
@@ -108,9 +104,7 @@ export function VendorFormScreen() {
             </View>
           </Row>
           <View style={{ gap: 6 }}>
-            <T v="meta13" color={colors.ivory55}>
-              {copy.rating}
-            </T>
+            <SectionLabel>{copy.rating}</SectionLabel>
             <Row gap={4}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => setForm({ ...form, rating: form.rating === n ? null : n })} accessibilityRole="button" accessibilityLabel={`${n}`} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>

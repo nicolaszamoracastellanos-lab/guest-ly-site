@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
@@ -22,6 +22,7 @@ function blank(): Draft {
 
 export default function RsvpQuestions() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -102,7 +103,7 @@ export default function RsvpQuestions() {
   const setD = (patch: Partial<Draft>) => setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.rsvps.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {error && !editing ? <Banner icon="warning" title={error} kind="red" /> : null}
       <Stack gap={10} style={{ marginTop: 18 }}>

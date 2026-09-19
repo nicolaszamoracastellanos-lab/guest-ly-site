@@ -6,7 +6,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useLang, mediumDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner, DateEcho } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner, DateEcho, SectionLabel } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
 import { useDraft, setPath, getPath, replaceFacts } from "@/features/brain/draft";
@@ -60,9 +60,7 @@ function FieldEditor({ field, facts, disabled, base }: { field: Field; facts: We
   const value = field.kind === "list" ? (Array.isArray(raw) ? (raw as string[]).join("\n") : "") : typeof raw === "string" ? raw : "";
   return (
     <View style={{ gap: 6 }}>
-      <T v="meta13" color={colors.goldLight}>
-        {c.fields[field.label] ?? field.label}
-      </T>
+      <SectionLabel>{c.fields[field.label] ?? field.label}</SectionLabel>
       <Input
         value={value}
         editable={!disabled}
@@ -155,9 +153,7 @@ function HotelsEditor({ facts, disabled }: { facts: WeddingFacts; disabled: bool
         <Card key={i} kind="solid" padding={14}>
           <Stack gap={10}>
             <Row style={{ justifyContent: "space-between" }}>
-              <T v="meta13" color={colors.goldLight}>
-                {c.fields.hotel}
-              </T>
+              <SectionLabel>{c.fields.hotel}</SectionLabel>
               {!disabled ? <Button label={c.remove} kind="text" small full={false} onPress={() => update(hotels.filter((_, j) => j !== i))} /> : null}
             </Row>
             <Input value={h.name ?? ""} editable={!disabled} placeholder={c.fields.name} onChangeText={(t) => update(hotels.map((x, j) => (j === i ? { ...x, name: t } : x)))} />
@@ -201,15 +197,11 @@ function FaqEditor({ facts, disabled, prefill }: { facts: WeddingFacts; disabled
         <Card key={i} kind="solid" padding={14}>
           <Stack gap={10}>
             <Row style={{ justifyContent: "space-between" }}>
-              <T v="meta13" color={colors.goldLight}>
-                {c.fields.question}
-              </T>
+              <SectionLabel>{c.fields.question}</SectionLabel>
               {!disabled ? <Button label={c.remove} kind="text" small full={false} onPress={() => update(faq.filter((_, j) => j !== i))} /> : null}
             </Row>
             <Input value={q.question} editable={!disabled} multiline style={{ minHeight: 56, alignItems: "flex-start", paddingVertical: 12 }} onChangeText={(t) => update(faq.map((x, j) => (j === i ? { ...x, question: t } : x)))} />
-            <T v="meta13" color={colors.goldLight}>
-              {c.fields.answer}
-            </T>
+            <SectionLabel>{c.fields.answer}</SectionLabel>
             <Input value={q.answer} editable={!disabled} multiline style={{ minHeight: 96, alignItems: "flex-start", paddingVertical: 12 }} onChangeText={(t) => update(faq.map((x, j) => (j === i ? { ...x, answer: t } : x)))} />
           </Stack>
         </Card>

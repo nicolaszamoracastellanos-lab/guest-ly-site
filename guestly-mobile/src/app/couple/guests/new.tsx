@@ -5,7 +5,7 @@ import { View, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
-import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented } from "@/ui";
+import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field } from "@/ui";
 import { useSafeBack } from "@/lib/nav";
 
 export default function NewGuest() {
@@ -44,16 +44,32 @@ export default function NewGuest() {
     <Screen header={<TopBar onBack={back} title={copy.guests.title} />} bottomInset={40} keyboard>
       <>
         <BigTitle title={copy.guests.add} size={38} />
-        <Stack gap={10} style={{ marginTop: 20 }}>
-          <Input value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholder={copy.guests.name} autoFocus autoCapitalize="words" />
-          <Input value={form.party_size} onChangeText={(v) => setForm({ ...form, party_size: v.replace(/\D/g, "") })} placeholder={copy.guests.partySize} keyboardType="number-pad" />
-          <Input value={form.members} onChangeText={(v) => setForm({ ...form, members: v })} placeholder={copy.guests.members} multiline style={{ borderRadius: 18 }} />
-          <Input value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} placeholder={copy.guests.phone} keyboardType="phone-pad" />
-          <Input value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} placeholder={copy.guests.email} keyboardType="email-address" autoCapitalize="none" />
-          <Input value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} placeholder={copy.guests.notes} multiline style={{ borderRadius: 18 }} />
-          <View style={{ width: 176 }}>
-            <Segmented<"en" | "es"> value={form.language} options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }]} onChange={(v) => setForm({ ...form, language: v })} />
-          </View>
+        {/* A visible label on every field: a placeholder disappears with the first
+            character, and the seats field was a bare "1" (Part 9 audit, D-039). */}
+        <Stack gap={14} style={{ marginTop: 20 }}>
+          <Field label={copy.guests.name}>
+            <Input value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} autoFocus autoCapitalize="words" accessibilityLabel={copy.guests.name} />
+          </Field>
+          <Field label={copy.guests.partySize}>
+            <Input value={form.party_size} onChangeText={(v) => setForm({ ...form, party_size: v.replace(/\D/g, "") })} keyboardType="number-pad" accessibilityLabel={copy.guests.partySize} />
+          </Field>
+          <Field label={copy.guests.members}>
+            <Input value={form.members} onChangeText={(v) => setForm({ ...form, members: v })} multiline accessibilityLabel={copy.guests.members} />
+          </Field>
+          <Field label={copy.guests.phone}>
+            <Input value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} keyboardType="phone-pad" accessibilityLabel={copy.guests.phone} />
+          </Field>
+          <Field label={copy.guests.email}>
+            <Input value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} keyboardType="email-address" autoCapitalize="none" accessibilityLabel={copy.guests.email} />
+          </Field>
+          <Field label={copy.guests.notes}>
+            <Input value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} multiline accessibilityLabel={copy.guests.notes} />
+          </Field>
+          <Field label={copy.guests.language}>
+            <View style={{ width: 176 }}>
+              <Segmented<"en" | "es"> value={form.language} options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }]} onChange={(v) => setForm({ ...form, language: v })} />
+            </View>
+          </Field>
         </Stack>
         <Row gap={8} style={{ marginTop: 24 }}>
           <View style={{ flex: 1 }}>

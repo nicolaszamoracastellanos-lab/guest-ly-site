@@ -115,7 +115,7 @@ export default function SeatingPlan() {
 
   return (
     <Screen query={mainQuery}
-      header={<TopBar onBack={back} title={c.floorPlan} />}
+      header={<TopBar onBack={back} title={c.title} />}
       bottomInset={40}
     >
       <BigTitle title={c.floorPlan} sub={c.floorPlanIntro} size={34} />

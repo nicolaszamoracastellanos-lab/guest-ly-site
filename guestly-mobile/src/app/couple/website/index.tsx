@@ -6,7 +6,7 @@ import { View, Alert, Pressable, Share } from "react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useLang, useCopy } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, Banner, EmptyState } from "@/ui";
@@ -33,6 +33,7 @@ const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar
 
 export default function WebsiteHome() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -123,7 +124,7 @@ export default function WebsiteHome() {
   const movable = sections.filter((s) => s.type !== "hero");
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {isLoading && !surface ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

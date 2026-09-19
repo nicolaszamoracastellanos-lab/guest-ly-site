@@ -39,7 +39,7 @@ export default function SectionEditor() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={title} right={<T v="meta13" color={state === "error" ? colors.red : state === "saved" ? colors.green : colors.ivory40}>{status}</T>} />} bottomInset={60} keyboard>
+    <Screen header={<TopBar onBack={back} title={c.title} right={<T v="meta13" color={state === "error" ? colors.red : state === "saved" ? colors.green : colors.ivory40}>{status}</T>} />} bottomInset={60} keyboard>
       <BigTitle title={title} size={36} />
       {isLoading && !draft ? (
         <Stack gap={10} style={{ marginTop: 20 }}>
