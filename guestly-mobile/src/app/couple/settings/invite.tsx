@@ -1,13 +1,13 @@
 // The invitation code card: copy, share, regenerate.
 
 import React, { useState } from "react";
-import { View, Alert, Share } from "react-native";
+import { Alert, Share } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Row, Gem, EmptyState, SectionLabel } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Row, Gem, EmptyState, SectionLabel, ButtonRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/settings/copy";
 import { useCoupleSettings, SETTINGS_KEY, type CoupleSettings } from "@/features/settings/hooks";
@@ -66,21 +66,18 @@ export default function InviteCode() {
                   {data.wedding.couple_names}
                 </T>
               </Row>
-              <T v="display60" color={colors.ink} style={{ marginTop: 14, letterSpacing: 6 }}>
+              {/* One line, always: the code used to wrap to "CAMAN / D" on a 375 pt phone (D-013). */}
+              <T v="display60" color={colors.ink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5} style={{ marginTop: 14, letterSpacing: 6 }} accessibilityLabel={data.invite_code.split("").join(" ")}>
                 {data.invite_code}
               </T>
-              <T v="meta13" color={colors.muted} style={{ marginTop: 8 }}>
+              <T v="meta13" color={colors.muted} numberOfLines={2} style={{ marginTop: 8 }}>
                 {data.invite_url}
               </T>
             </Card>
-            <Row gap={8}>
-              <View style={{ flex: 1 }}>
-                <Button label={copied === "code" ? c.copied : `${c.copy} · ${c.code}`} small kind="glass" onPress={() => void copy("code")} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button label={copied === "link" ? c.copied : `${c.copy} · ${c.link}`} small kind="glass" onPress={() => void copy("link")} />
-              </View>
-            </Row>
+            <ButtonRow>
+              <Button label={copied === "code" ? c.copied : c.copyCode} small kind="glass" onPress={() => void copy("code")} />
+              <Button label={copied === "link" ? c.copied : c.copyLink} small kind="glass" onPress={() => void copy("link")} />
+            </ButtonRow>
             <Button label={c.share} icon="share" onPress={() => void Share.share({ message: fmt(c.shareText, { code: data.invite_code, url: data.invite_url }) })} />
             {data.can_edit ? (
               <>

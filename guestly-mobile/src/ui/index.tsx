@@ -660,7 +660,7 @@ export function ListRow({ leading, title, sub, trailing, below, onPress, chevron
  *  or "$5,89 0.00" (Part 9 audit, D-008). */
 export function StatTile({ value, label, color = colors.ivory, kind = "glass", style }: { value: string; label: string; color?: string; kind?: CardKind; style?: StyleProp<ViewStyle> }) {
   return (
-    <Card kind={kind} radiusKey="tile" padding={12} style={[{ flex: 1, minWidth: 0, gap: 4 }, style]}>
+    <Card kind={kind} radiusKey="tile" padding={12} style={[{ flex: 1, minWidth: 0, gap: 4, alignSelf: "stretch" }, style]}>
       <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45}>
         {value}
       </T>

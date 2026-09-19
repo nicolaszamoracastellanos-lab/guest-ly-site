@@ -14,14 +14,16 @@ export function formatMoney(amount: number, currency: string, lang: Lang): strin
   }
 }
 
-/** Compact money for tiles: 251.5K instead of 251,525.06. */
+/** Compact money for tiles: "USD 251.5K" instead of 251,525.06. One format for
+ *  every tile, so a row never mixes "USD 34.3K" with "$5,890.00", and nothing
+ *  in a narrow tile is long enough to break mid number (Part 9 audit, D-008). */
 export function formatMoneyShort(amount: number, currency: string, lang: Lang): string {
   const safe = Number.isFinite(amount) ? amount : 0;
   const abs = Math.abs(safe);
-  if (abs < 10_000) return formatMoney(safe, currency, lang);
   const sign = safe < 0 ? "-" : "";
   if (abs >= 1_000_000) return `${sign}${currency} ${plain(abs / 1_000_000, lang, 1)}M`;
-  return `${sign}${currency} ${plain(abs / 1_000, lang, 1)}K`;
+  if (abs >= 1_000) return `${sign}${currency} ${plain(abs / 1_000, lang, 1)}K`;
+  return `${sign}${currency} ${plain(abs, lang, 0)}`;
 }
 
 export function formatQty(qty: number, lang: Lang): string {

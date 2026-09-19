@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCopy, useLang, longDate } from "@/i18n";
 import { useGuestSchedule } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
-import { Screen, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel } from "@/ui";
+import { Screen, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel, useTopInset, Button } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/ceremony.jpg");
@@ -16,19 +16,26 @@ export default function GuestSchedule() {
   const copy = useCopy();
   const { lang } = useLang();
   const session = useGuestSession();
+  const top = useTopInset();
   const mainQuery = useGuestSchedule();
   const { data, isLoading } = mainQuery;
   const events = data?.events ?? [];
 
   return (
-    <Screen query={mainQuery} padded={false}>
-      <View style={styles.hero}>
+    <Screen query={mainQuery} padded={false} topInset={false}>
+      {/* Flow layout: the title block pushes the hero taller instead of sitting at
+          a fixed offset where large text ran into the first event (D-016, D-031).
+          The scrim is darker behind the title, which sat on the brightest part of
+          the photo (D-036). */}
+      <View style={[styles.hero, { paddingTop: top + 64 }]}>
         <Image source={photo} style={FILL} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.6)", colors.night]} locations={[0, 0.3, 0.7, 1]} style={FILL} />
-        <Row style={styles.top}>
-          <Row gap={8}>
-            <Gem />
-            <T v="label11" color="rgba(247,243,236,0.85)" style={{ letterSpacing: 2 }}>
+        <LinearGradient colors={["rgba(8,11,16,0.6)", "rgba(8,11,16,0.2)", "rgba(13,17,23,0.78)", colors.night]} locations={[0, 0.28, 0.62, 1]} style={FILL} />
+        <Row style={[styles.top, { top }]}>
+          <Row gap={8} align="flex-start" style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ marginTop: 4 }}>
+              <Gem />
+            </View>
+            <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={2} style={{ letterSpacing: 2, flexShrink: 1 }}>
               {longDate(data?.wedding_date ?? session?.tenant.wedding_date, lang)}
             </T>
           </Row>
@@ -36,7 +43,7 @@ export default function GuestSchedule() {
         </Row>
         <View style={styles.title}>
           <T v="title42">{copy.schedule.title}</T>
-          <T v="body15" color={colors.ivory55}>
+          <T v="body15" color={colors.ivory70}>
             {copy.schedule.intro}
           </T>
         </View>
@@ -51,8 +58,8 @@ export default function GuestSchedule() {
         ) : null}
         {events.map((e, i) => (
           <Row key={e.id} gap={16} align="flex-start">
-            <View style={{ width: 56, alignItems: "flex-end", paddingTop: 2 }}>
-              <T v="title26" size={22} color={colors.goldLight}>
+            <View style={{ width: 62, alignItems: "flex-end", paddingTop: 2 }}>
+              <T v="title26" size={22} color={colors.goldLight} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                 {clockLabel(e.time)}
               </T>
             </View>
@@ -81,15 +88,10 @@ export default function GuestSchedule() {
                   {e.dress_code}
                 </T>
               ) : null}
-              <Row gap={16} style={{ marginTop: 8 }}>
-                <T v="meta13" color={colors.goldLight} onPress={() => Linking.openURL(e.ics_url)}>
-                  {copy.rsvp.addCalendar}
-                </T>
-                {e.maps_url ? (
-                  <T v="meta13" color={colors.goldLight} onPress={() => Linking.openURL(e.maps_url!)}>
-                    {copy.dayof.openMaps}
-                  </T>
-                ) : null}
+              {/* 44 pt buttons, not 20 pt text links (D-024). */}
+              <Row gap={4} style={{ marginTop: 2, flexWrap: "wrap", marginLeft: -8 }}>
+                <Button label={copy.rsvp.addCalendar} kind="text" small full={false} haptic={false} onPress={() => Linking.openURL(e.ics_url)} />
+                {e.maps_url ? <Button label={copy.dayof.openMaps} kind="text" small full={false} haptic={false} onPress={() => Linking.openURL(e.maps_url!)} /> : null}
               </Row>
             </View>
           </Row>
@@ -116,7 +118,7 @@ export function clockLabel(time: string | null): string {
 }
 
 const styles = StyleSheet.create({
-  hero: { overflow: "hidden", height: 330 },
-  top: { position: "absolute", left: 24, right: 20, top: 54, justifyContent: "space-between" },
-  title: { position: "absolute", left: 24, right: 24, top: 196, gap: 6 },
+  hero: { overflow: "hidden", minHeight: 330, paddingBottom: 40, justifyContent: "flex-end" },
+  top: { position: "absolute", left: 24, right: 14, gap: 8, justifyContent: "space-between", alignItems: "flex-start" },
+  title: { paddingHorizontal: 24, gap: 6 },
 });

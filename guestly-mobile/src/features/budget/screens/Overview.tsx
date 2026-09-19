@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, ListRow, StatTile, Sheet, Banner, EmptyState, Skeleton, SectionLabel, Chip, ChipRow, Hairline } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, ListRow, StatTile, Sheet, Banner, EmptyState, Skeleton, SectionLabel, Chip, ChipRow, Hairline, ButtonRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, type BudgetRow } from "../hooks";
@@ -226,14 +226,10 @@ export function BudgetOverviewScreen() {
           </Card>
 
           {canEdit ? (
-            <Row gap={8} style={{ marginTop: 14 }}>
-              <View style={{ flex: 1 }}>
-                <Button label={copy.addItem} small icon="plus" onPress={() => router.push({ pathname: `${routePrefix}/category/[id]` as never, params: { id: "none", b: active.budget.id, add: "1" } as never })} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button label={copy.importBudget} small kind="glass" icon="camera" onPress={() => router.push({ pathname: `${routePrefix}/import` as never, params: { b: active.budget.id } as never })} />
-              </View>
-            </Row>
+            <ButtonRow style={{ marginTop: 14 }}>
+              <Button label={copy.addItem} small icon="plus" onPress={() => router.push({ pathname: `${routePrefix}/category/[id]` as never, params: { id: "none", b: active.budget.id, add: "1" } as never })} />
+              <Button label={copy.importBudget} small kind="glass" icon="camera" onPress={() => router.push({ pathname: `${routePrefix}/import` as never, params: { b: active.budget.id } as never })} />
+            </ButtonRow>
           ) : null}
 
           {months.length ? (
@@ -257,7 +253,8 @@ export function BudgetOverviewScreen() {
 
           {canEdit ? (
             <View style={{ marginTop: 18 }}>
-              <Button label={copy.createBudget} kind="text" small onPress={openCreate} />
+              {/* A budget already exists here, so the link says what it really does (D-037). */}
+              <Button label={copy.createAnother} kind="text" small onPress={openCreate} />
             </View>
           ) : null}
         </>

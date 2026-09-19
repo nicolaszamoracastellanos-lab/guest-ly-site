@@ -36,7 +36,8 @@ export default function RsvpConfirm() {
     <Screen padded={false} bottomInset={40} header={<TopBar onBack={() => router.replace("/guest")} title={copy.guestHome.tabs.rsvp} />}>
       <View style={styles.hero}>
         <Image source={photo} style={FILL} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.28)", "rgba(8,11,16,0.06)", "rgba(13,17,23,0.55)", colors.night]} locations={[0, 0.28, 0.6, 1]} style={FILL} />
+        {/* Darker behind the headline: it sat on the brightest part of the photo (D-036). */}
+        <LinearGradient colors={["rgba(8,11,16,0.62)", "rgba(8,11,16,0.5)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.65, 1]} style={FILL} />
         <View style={styles.headline}>
           <View style={styles.check}>
             <Icon name="check" size={26} color={colors.night} strokeWidth={2} />
@@ -59,7 +60,7 @@ export default function RsvpConfirm() {
               .join(" · ");
             return (
               <Row key={i} style={[styles.paperRow, i === roster.length - 1 && !dietary && { borderBottomWidth: 0 }]}>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
                   <T v="body16" color={colors.ink}>
                     {p.name ?? ""}
                   </T>
@@ -91,14 +92,11 @@ export default function RsvpConfirm() {
           <T v="body16" style={{ marginTop: 6 }}>
             {copy.rsvp.addCalendarBody}
           </T>
-          <Row gap={8} style={{ marginTop: 12 }}>
-            <View style={{ flex: 1.25 }}>
-              <Button label={copy.rsvp.addCalendar} small icon="calendar-plus" onPress={() => ics && Linking.openURL(ics)} disabled={!ics} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.guestHome.changeAnswer} small kind="ghost" onPress={() => back()} />
-            </View>
-          </Row>
+          {/* Stacked: side by side both Spanish labels were cut with an ellipsis (D-006). */}
+          <Stack gap={8} style={{ marginTop: 12 }}>
+            <Button label={copy.rsvp.addCalendar} small icon="calendar-plus" onPress={() => ics && Linking.openURL(ics)} disabled={!ics} />
+            <Button label={copy.guestHome.changeAnswer} small kind="ghost" onPress={() => back()} />
+          </Stack>
         </Card>
         <Stack style={{ marginTop: 20 }}>
           <Button label={copy.common.done} kind="text" onPress={() => router.replace("/guest")} />
@@ -109,8 +107,8 @@ export default function RsvpConfirm() {
 }
 
 const styles = StyleSheet.create({
-  hero: { overflow: "hidden", height: 430 },
-  headline: { position: "absolute", left: 24, right: 24, top: 60 },
+  hero: { overflow: "hidden", minHeight: 360, paddingTop: 40, paddingBottom: 64 },
+  headline: { paddingHorizontal: 24 },
   check: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
   paperRow: { minHeight: 52, justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 },
   pill: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
