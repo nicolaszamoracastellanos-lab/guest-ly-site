@@ -678,11 +678,18 @@ export function ListRow({ leading, title, sub, trailing, below, onPress, chevron
 
 /** One number and its label. The number shrinks to fit on one line and the
  *  label breaks only between words, so a narrow tile never prints "ATTENDIN G"
- *  or "$5,89 0.00" (Part 9 audit, D-008). */
+ *  or "$5,89 0.00" (Part 9 audit, D-008).
+ *
+ *  The value forces lining figures (not the display font's default old-style
+ *  ones): CormorantGaramond's old-style "1" is a bare ascender, indistinguishable
+ *  from a capital I, at any count including exactly 1 (fixer round 2, es-MX
+ *  store screenshot 05 showed "I le necesitan" where the value was 1). Lining
+ *  figures keep every digit cap-height and legible alone; "43", "26%" and
+ *  "181" already read fine either way, so this trades nothing away. */
 export function StatTile({ value, label, color = colors.ivory, kind = "glass", style }: { value: string; label: string; color?: string; kind?: CardKind; style?: StyleProp<ViewStyle> }) {
   return (
     <Card kind={kind} radiusKey="tile" padding={12} style={[{ flex: 1, minWidth: 0, gap: 4, alignSelf: "stretch" }, style]}>
-      <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1}>
+      <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1} style={{ fontVariant: ["lining-nums"] }}>
         {value}
       </T>
       {/* A single word shrinks rather than break mid word. A phrase wraps at its
