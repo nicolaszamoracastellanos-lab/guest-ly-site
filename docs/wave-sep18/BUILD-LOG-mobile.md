@@ -490,3 +490,84 @@ the output afterward. No test script exists in `package.json` (`start`, `reset-p
 M, L, T, P, deleted the wave's created SE simulator, stopped Metro/proxy/static-server ports, removed
 `.part9/web`, `.part9/sim-dev`, `.part9/sim-release` and any `.tar.gz`. Free disk before and after are
 both recorded in the final report, not just one of them.
+
+## Step 5, fixer round 1 (Sep 20 2026, 16:07 to 16:16 CDT)
+
+Independent review of `mobile/part9-audit` reported three findings after Step 4. This step is a
+targeted fixer pass on those three; it is not a re-run of the full Part 9 audit and no simulator was
+booted. `git status` and `git diff` at the start of this step showed a clean working tree (no
+uncommitted work from a possibly-interrupted earlier fixer to resume). Free disk at the start: 13 GB.
+
+**Finding 1, major, confirmed and fixed.** `src/app/couple/tasks/reminders.tsx` rendered
+`board.feed_url`, a bearer-token calendar subscription link, as plain selectable text. The screen's
+own copy (`feedBody`) already calls this link something to keep private, a `rotate` action exists
+because the token is a capability secret, and the branch's own audit had already found this exact
+defect (D-043, C23) and explicitly left it unfixed, filed as P3 polish. Confirmed against the live
+source: `board.feed_url` is `${PORTAL_BASE_URL}/api/ics/tasks/<slug>?token=<secret>` (from
+`guestly-mobile-api/src/app/api/mobile/v1/couple/tasks/feed/rotate/route.ts`), so the token really
+does sit in the visible text. Fix: added `maskFeedUrl()`, which shows only the origin (`scheme://host`)
+plus a fixed run of masked bullets; Copy Link is now the only way to obtain the real value, the same
+way a password field never renders its value as plain text. Updated the D-043 and C23 rows in
+`docs/PART9-AUDIT.md` to record the fix and reclassify it as an information-disclosure defect, not
+polish. Commit `26c78fc`.
+
+**Finding 2, major, confirmed and fixed.** The Spanish planner greeting template
+(`"Buenos {part}, {name}."` with `afternoon: "tardes"`, `evening: "noches"`) produced "Buenos tardes"
+and "Buenos noches", which are ungrammatical: tardes and noches are feminine and need Buenas, not
+Buenos. Only the morning branch ("Buenos días") was ever correct. The audit table (D-020) claimed
+this was fixed and verified, but the cited evidence, `D-020-fixed.jpg`, was captured in the morning,
+the one branch that already worked, so the miss shipped anyway for roughly two thirds of the day.
+Confirmed by reading `src/i18n/es.ts:397-400` and `src/app/planner/index.tsx:21`: the hour-based branch
+is never varied by gender in the template. Fix, in `src/i18n/es.ts` only: folded the full phrase into
+the part-of-day copy (`morning: "Buenos días"`, `afternoon: "Buenas tardes"`, `evening: "Buenas
+noches"`) and simplified the template to `"{part}, {name}."`, so the template can no longer disagree
+with the noun regardless of which branch runs; `en.ts` and `planner/index.tsx` needed no change since
+English has no gender agreement here and both already pass `part` straight through. Updated the D-020
+row to record the real defect and why the earlier verification missed it. Not re-verified on a device
+in the afternoon or evening branch (no simulator was booted this step); that is left for the next
+audit pass or the lead. Commit `8d9d8d6`.
+
+**Finding 3, minor, confirmed and fixed.** `store/metadata.json`'s `review_notes_es` quoted English
+button and tab labels (Open my invitation, I'm the couple or the planner, Not now, Guests/RSVPs/
+Messages/More, Settings, Delete account, the AI-disclosure quote, the concierge chip labels, Sign in
+with Apple/Google) even though the Spanish UI shows different text for every one of them. Confirmed
+against `src/i18n/es.ts`: `entrance.openInvitation` is "Abrir mi invitación", `entrance.coupleOrPlanner`
+is "Soy de la pareja o el planner", `notNow` is "Ahora no", the couple tab bar is Invitados/RSVPs/
+Mensajes/Más, `settings.gear`/icon label is "Ajustes", `deleteAccount` is "Eliminar cuenta", the
+concierge chips are Vestimenta/Hoteles cerca/Mesa de regalos, the concierge AI-disclosure subtitle is
+"Responde un asistente de IA que conoce esta boda...", and Apple/Google sign-in read "Continuar con
+Apple"/"Continuar con Google". Rewrote `review_notes_es` to quote these real strings throughout, the
+same way `review_notes_en` already matches the English UI; `review_notes_en` is unchanged. Commit
+`27f1396`.
+
+### Gates
+
+`bash guestly-mobile/scripts/part9/gates.sh --fast`, run twice (once after finding 1 plus the doc
+edits, once again after all three commits): both times exit 0, `GATES: all clean`. `npx tsc --noEmit`
+0 errors both times. `npx eslint src` 0 errors, 3 warnings both times (`broadcasts/new.tsx`,
+`vendors/screens/List.tsx`, `lib/api.ts`, none in any file this step touched; within the 9-warning
+budget). Em dash, brand middle-dot, purchase wording, Face ID wording, real tenant names, JWT-shaped
+tokens on disk and demo passwords on disk: all clean. Feature copy parity: 16 files, 0 problems.
+`expo-doctor` not run (network-dependent, `--fast` skips it, nothing touched this step is
+doctor-relevant). As the build check: `npx expo export -p web --output-dir .part9-fixer-build`
+exported cleanly (two JS bundles, no errors), confirming all three changes compile and bundle; the
+output was deleted immediately after (`rm -rf .part9-fixer-build`). No local `expo run:ios`, EAS
+build, or simulator boot was done this step; the three fixes are TypeScript/i18n/JSON only, touch no
+native code, and a fresh simulator-profile EAS build was judged unnecessary just to re-verify a
+three-line-scale change, given the explicit disk and build-budget constraints on this wave. That
+device-level re-verification (specifically: C23's masked feed URL, and the ES greeting in the
+afternoon and evening branches) is recorded as open above and belongs to the next audit or store
+pass. No test script exists in `package.json`, unchanged from every earlier step; none ran.
+
+### Not done, and why
+
+- No simulator was booted this step (role was a targeted fixer pass on three specific findings, not
+  a re-audit); the two UI-facing fixes (masked feed URL, ES greeting) are verified by reading the
+  code and by a clean web export, not by an on-device screenshot. Flagging this explicitly rather
+  than claiming a visual check that did not happen.
+- The `D-020-fixed.jpg` and `D-043-fixed.jpg` evidence images were not replaced or recaptured; they
+  still show the old, wrong state and the audit rows now say so.
+- Disk and other findings from the wave outside these three were not touched.
+
+Free disk at the end of this step: 13 GB (unchanged from the start; the one build artifact created,
+`.part9-fixer-build`, was deleted right after use).
