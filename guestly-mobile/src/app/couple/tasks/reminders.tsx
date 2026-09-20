@@ -16,6 +16,21 @@ import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
 import { errorText, ConfirmSheet } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 
+// The feed URL carries a bearer token as a query param: anyone holding the
+// full string can subscribe to the couple's private task calendar with no
+// further login. Never render it in full; show only the origin (safe to see,
+// useful to confirm it is really Guest-ly) with the token-bearing path
+// masked. Copy Link stays the only way to get the real value, same as a
+// password field never renders its value as plain text.
+function maskFeedUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}/••••••••`;
+  } catch {
+    return "••••••••••••••••";
+  }
+}
+
 export default function Reminders() {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
@@ -90,8 +105,8 @@ export default function Reminders() {
               </T>
               {board.feed_url ? (
                 <View style={{ marginTop: 12, gap: 10 }}>
-                  <T v="meta13" color={colors.ivory55} numberOfLines={2}>
-                    {board.feed_url}
+                  <T v="meta13" color={colors.ivory55} numberOfLines={1} selectable={false}>
+                    {maskFeedUrl(board.feed_url)}
                   </T>
                   <Button label={copied ? copy.copied : copy.copyLink} icon="share" small kind="glass" onPress={copyLink} />
                   {canEdit ? <Button label={copy.rotate} small kind="ghost" onPress={() => setConfirmRotate(true)} /> : null}
