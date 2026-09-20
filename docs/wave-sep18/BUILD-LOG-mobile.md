@@ -624,8 +624,9 @@ step used) reverse-engineered to match the existing frame's geometry (card inset
 hairline border), fonts (the app's own `CormorantGaramond`/`Jost` files) and the exact headline/role-tag
 text read off each screen's own untouched twin (05 "Cada confirmación en cuanto llega" / PAREJA, 07
 "Mesas y presupuesto, resueltos" / PAREJA, 08 "El planner propone, la pareja aprueba" / PLANNER),
-fixing one wordmark bug of my own along the way (my first draft wrote "Guest·ly" with a middle dot,
-caught before it reached a committed file: the wave's own brand rule is hyphen only).
+fixing one wordmark bug of my own along the way (my first draft wrote the brand name with a middle-dot
+character instead of a hyphen, caught before it reached a committed file: the wave's own brand rule is
+hyphen only).
 
 **03 is NOT fixed, and cannot be from this repository.** Reading the recaptured guest-schedule screen,
 the ceremony and reception notes ("Arrive by 3:40. Seats are not assigned.", the shuttle paragraph,
