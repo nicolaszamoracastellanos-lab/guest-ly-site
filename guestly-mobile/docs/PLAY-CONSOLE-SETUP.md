@@ -1,6 +1,6 @@
 # Google Play Console setup
 
-Nico does this once. Budget 45 minutes plus Google's identity verification wait (usually one to three days).
+Nico does this once. Budget 45 minutes plus Google's identity verification wait (usually one to three days). `docs/ANDROID-READINESS.md` is the fuller picture (what is done, what is still open, the honest gap); this file is only the click-by-click steps for the account and listing.
 
 ## 1. Developer account
 
@@ -24,7 +24,7 @@ Organization accounts skip the personal-account requirement of a 14-day closed t
 - Full description: copy from `store/metadata.json` (EN and ES).
 - App icon 512x512: `store/icon-512.png`.
 - Feature graphic 1024x500: `store/feature-graphic.png`.
-- Phone screenshots: from `store/screenshots/android/` once the emulator run exists (see `scripts/screenshots.sh`). Demo tenant only.
+- Phone screenshots: `store/screenshots/play-phone/en-US/` and `es-419/`, 1080x1920. Not built yet (`docs/ANDROID-READINESS.md` section 5 says why); demo-review tenant only when they are.
 - Category: Lifestyle. Tags: Weddings, Events.
 - Contact email `hello@guest-ly.com`, privacy policy `https://guest-ly.com/privacy`.
 
@@ -32,16 +32,19 @@ Organization accounts skip the personal-account requirement of a 14-day closed t
 
 - Privacy policy: `https://guest-ly.com/privacy`.
 - Ads: No.
-- App access: provide the demo credentials so reviewers can sign in:
+- App access: provide the demo credentials so reviewers can sign in. Values
+  live in the gitignored `guestly-mobile/credentials/demo-accounts.env`
+  (`store/metadata.json`'s `credentials_location` field says the same
+  thing for iOS):
   - Guest: invite code `CAMAND`, then type `Sof` and pick Sofía Rojas.
-  - Couple: `review@guest-ly.com` and the password from `scripts/create-demo-users.mjs`.
-  - Planner: `planner-review@guest-ly.com`.
+  - Couple: `review@guest-ly.com` and `PART9_COUPLE_PASSWORD`.
+  - Planner: `planner-review@guest-ly.com` and `PART9_PLANNER_PASSWORD`.
 - Content rating: complete the IARC questionnaire as a Utility/Productivity app, no user-generated public content, no violence. Expect "Everyone".
 - Target audience: 18 and over. Not designed for children.
 - News app: No. COVID-19: No. Financial features: No. Health: No.
 - Government app: No.
-- Data safety (mirror the iOS privacy answers):
-  - Collected: Name, Email address (couples and planners, account), Device or other IDs (push token), Messages (guest questions to the concierge).
+- Data safety (mirror the iOS privacy answers, `store/metadata.json`'s `app_privacy`):
+  - Collected: Name, Email address (couples and planners, account), Phone number (guests, entered by the couple on the web, shown to couples only), Device or other IDs (push token), Messages (guest questions to the concierge), Photos or videos (couples and planners: website images, the floor plan, budget receipts).
   - Shared: No.
   - Encrypted in transit: Yes. Users can request deletion: Yes (in-app Settings, Delete account, and email nicolas@guest-ly.com).
   - Not used for advertising or analytics.

@@ -115,3 +115,25 @@ Open: guestly://auth/callback in the Supabase redirect allow-list;
 ANDROID_SHA256_FINGERPRINTS (after the Play upload key exists);
 MOBILE_IOS_STORE_URL and MOBILE_ANDROID_STORE_URL (after store approval);
 Apple Program License Agreement + EU trader status; Play Console account.
+
+## Status Sep 20 2026 (Part 9 store step)
+
+Confirmed read-only with `npx eas build:version:get` (`appVersionSource:
+remote` in `eas.json`, so these are EAS's own counters, not anything in this
+repo): iOS `buildNumber` is **7**, Android `versionCode` is **4**. Marketing
+`version` stays `1.0.0` (plan D5; ASC already has version 1.0 in Prepare for
+Submission and 1.0.0 keeps OTA runtime compatibility with TestFlight build
+7). Nothing to bump before the next build: `eas.json`'s
+`production.autoIncrement: true` plus the remote source means the lead's
+next `eas build -p ios --profile production` becomes build 8 and the next
+`eas build -p android --profile production` becomes versionCode 5,
+automatically. `app.config.ts` now carries a comment next to
+`android.versionCode` saying the remote source owns the real number.
+
+Store deliverables from this step: `store/screenshots/ios-6.9/{en-US,es-MX}/{raw,framed}/`
+(8 screens x 2 languages, demo-review only), `store/icon-512.png`,
+`store/feature-graphic.png`, `store/metadata.json` (review notes, app
+privacy, credentials placeholders), `docs/ANDROID-READINESS.md`. The Play
+phone screenshot set (`store/screenshots/play-phone/`) was not built this
+step (plan C15: lowest priority, dropped when time is short); see
+`docs/ANDROID-READINESS.md` section 5.
