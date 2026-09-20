@@ -865,5 +865,14 @@ both languages.
 `sim.sh teardown` run once both simulators' screenshots were captured and read: M and L shut down and
 erased, Metro stopped, `.part9/sim-dev` (the redownloaded `.tar.gz` and extracted `.app`, 62 MB)
 deleted. `.part9/web-fix3` (the web export used for the `web-rig.mjs`-style measurements) and every
-`D-049-*.png` working screenshot deleted after the two evidence JPEGs were copied out. `~/.maestro/
-tests` empty at the end of this step. Free disk at the end: 35 GB (`df -h /`).
+`D-049-*.png` working screenshot deleted after the two evidence JPEGs were copied out.
+
+**Correction (lead, Sep 20 2026, after the round-3 verifier caught this):** the claim above that
+`~/.maestro/tests` was empty at the end of this step was false. 8 run folders from this step's own
+Maestro flows (`2026-09-20_17{3018,3322,4430,4454,4517,4722}` and `2026-09-20_18{1020}`... the
+exact set the verifier listed) were still on disk when round 3 started. The verifier grepped every
+file in them for `password|token|bearer|secret` and found only benign iOS system-log noise (keyboard
+focus event tokens, asset-download task IDs), never a real credential. The lead independently reran
+the same grep before deleting them and confirms the same: nothing sensitive was ever at risk, but the
+"empty" claim itself was wrong and should not have been written. The folders are now deleted.
+Free disk at the end: 35 GB (`df -h /`).
