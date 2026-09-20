@@ -339,3 +339,154 @@ or SDK changes this wave. The two character scans also ran clean against
   walk logs, contact sheets and both downloaded `sim-release` app bundles; the store step will want
   the app bundle, so I left `.part9` in place rather than delete it, but it should be cleared at
   final teardown (plan 10.5).
+
+---
+
+## Step 4, store (Sep 20 2026)
+
+**Resume note:** `git status` and `git diff` at the start of this step showed nothing uncommitted
+for this step; the tree only had pre-existing untracked screenshot folders from other, unrelated
+workstreams sharing this same repo checkout (`wave-sep18-screenshots/` and similar, all under the
+`guest-ly` root, not `guestly-mobile/`), which I left untouched. The fix step's own commits were
+already complete and clean, so this step started fresh rather than finishing someone else's partial
+work.
+
+### What exists now
+
+- Reinstalled `sim-release` build `8eae524e-b557-45d5-bbfb-11d6db60febc` (the fix step's second,
+  final build, commit `4c34e4e`) on L (iPhone 17 Pro Max, 1320x2868), which the fix step had left on
+  the first `sim-release` build. No new EAS build: the wave's 3-build budget (plan C9) stays spent at
+  3 of 3.
+- **App Store screenshots**, demo-review only, `store/screenshots/ios-6.9/{en-US,es-MX}/`:
+  - `raw/`: 8 screens x 2 languages, 1320x2868, JPEG 92, no alpha (checked with `sips` on all 16
+    files; largest is 602 KB).
+  - `framed/`: same 16, composited over a night/gold background with a Cormorant Garamond caption
+    and a Jost sub-line (fonts loaded from `node_modules/@expo-google-fonts`, matching the app's own
+    type), the capture at a 44 px corner radius with a hairline border, no device frame artwork, no
+    AI-generated typography. Built with a small Playwright script
+    (`.part9/frame-build/frame.html` + `render.mjs`, gitignored, not committed) borrowing
+    `guestly-portal/node_modules/playwright-core` read-only (a temp runner file was written there to
+    resolve the import, then deleted immediately after use; `git status` in `guestly-portal` was
+    checked before and after and shows no trace of it).
+  - `store/icon-512.png` (`sips -Z 512` from `assets/brand/icon.png`) and
+    `store/feature-graphic.png` (1024x500, same compositor) are both built.
+  - **Not built** (plan C15, explicitly the lowest priority, dropped first when time is short): the
+    Play phone screenshot set at 1080x1920. The iOS raw captures are too tall and narrow for it
+    (ratio 2.17, Play caps at 2:1), so it needs its own capture pass, not a resize; recorded as open
+    in `docs/ANDROID-READINESS.md` section 5.
+  - Screenshot 04 (guest concierge) deliberately shows the AI's greeting state, not an answered
+    question. Why, below.
+- **`store/metadata.json`**: added `review_notes_es`, `whats_new` (EN/ES), `copyright`,
+  `primary_locale`, `promotional_text` (EN/ES), `age_rating_answers`, `export_compliance`,
+  `sign_in_required: true`, and a `credentials_location` field that names the gitignored env file and
+  its two key names instead of ever holding a value. `app_privacy` now lists Photos or Videos
+  (couples and planners: website images, the floor plan, budget receipts) and drops the old
+  "Location" line from `not_collected` now that the purpose string itself is gone (D-028, fix step).
+  `review_notes_en`/`review_notes_es` now also cover: what the AI concierge and the couple/planner
+  assistant are and how they disclose themselves, what the camera is used for, that notifications are
+  optional, the account-deletion path, that the app runs on iPad only in the iPhone compatibility
+  window, and that Sign in with Apple is offered. No `store.config.json` (plan C15); nothing here
+  calls `eas metadata:push` or `eas metadata:pull`.
+- **`docs/ANDROID-READINESS.md`**: new. What is done, what only Nicolas can do in order with time
+  estimates, code follow-ups before an Android release, and the honest gap (no Android emulator or
+  SDK on this Mac, so no screen of this app has ever run on Android in this wave). Folded together
+  with the existing `docs/PLAY-CONSOLE-SETUP.md` so the two do not disagree (updated its screenshot
+  path, its Data safety collected-data list to include Photos or Videos, and its credentials
+  reference to point at the same `credentials/demo-accounts.env` keys).
+- **Version and build**: confirmed read-only with `eas build:version:get` (`appVersionSource:
+  remote`): iOS `buildNumber` **7**, Android `versionCode` **4**. Marketing `version` stays `1.0.0`
+  (plan D5). Nothing to bump in this repo: `eas.json`'s `production.autoIncrement: true` plus the
+  remote source means the lead's next `eas build -p ios --profile production` becomes build 8 and the
+  next Android production build becomes versionCode 5, automatically. Added a comment next to
+  `app.config.ts`'s `android.versionCode` saying the remote source owns the real number. The lead's
+  next commands are written into `docs/CREDENTIALS-CHECKLIST.md`, not run by me.
+
+### Two defects found while building the screenshots, and why one code fix shipped without a new release build
+
+Building screenshot 04 (guest concierge, "with the parking question answered," plan 10.1) surfaced
+the first real AI reply this whole wave has captured on a live build; every earlier step avoided
+asking the concierge a real question on purpose (plan C2, to dodge an escalation email). Two things
+broke:
+
+- **D-044 (P1, fixed in source).** The API client's 20 s default timeout
+  (`src/lib/api.ts`) is too short for a real AI reply: asking Hotels nearby through the quick-reply
+  chip reliably showed "You seem to be offline. We will retry when the connection is back." on a
+  fully working connection (every other screen's reads on the same session succeeded). Fixed by
+  giving the concierge call its own 120 s timeout, matching the couple/planner assistant's own
+  precedent for exactly this reason (`src/features/assistant/stream.ts`, already 120 s).
+- **D-046 (P2, fixed in source).** Capturing the ES couple-home screenshot showed the "today's
+  briefing" bullet sitting on the wrong line once the (longer) Spanish sentence wrapped to three
+  lines, because `Row`'s default `alignItems` is `center`. The planner home has the identical row and
+  the identical bug. Fixed both with `align="flex-start"` plus a small `paddingTop` wrapper around the
+  dot, the same pattern `couple/insights/index.tsx` already used for the same reason.
+- **D-045 (P2, left open).** The AI reply renders as plain text, so markdown in the model's answer
+  shows as literal characters (`**Formal**`, asterisks and all). Real and reproducible, but it is a
+  design decision (which markdown subset to support) touching at least two screens (concierge and the
+  couple/planner assistant), not a one-line fix; left for the lead.
+
+Both fixes are real, small, and precedented, but neither could be verified against a NEW
+`sim-release` binary: the wave's 3-build budget was already spent by the fix step, and plan C9 says a
+4th build needs the lead's explicit yes, which nobody could give inside this step. Instead:
+
+- Verified on the **dev client** (`sim-dev`, already installed on M from the harness step; Metro
+  served the current commit's JS with `--no-dev --minify`, the same production-like flags the harness
+  doc uses, against the LIVE api): the same Hotels nearby question that failed at 20 s on the
+  sim-release binary returned a real, correct, web-grounded answer at about 22 s (evidence:
+  `docs/part9/evidence/D-044-fixed.jpg`); the ES briefing row on both couple and planner home now
+  keeps its dot on the first line at both two and three wrapped lines (evidence:
+  `docs/part9/evidence/D-046-fixed.jpg`).
+- The **official App Store screenshots still come from the unfixed `sim-release` binary**: the ES
+  couple-home and ES planner-requests-home raw captures show the pre-fix, slightly low dot (D-046
+  visible but very small), and screenshot 04 uses the concierge's clean empty/greeting state rather
+  than risk shipping either the D-044 false-offline message or the D-045 literal asterisks in a
+  public store image. Both fixes reach the app for real the next time the lead cuts a production
+  build.
+- Metro (port 8097) was stopped immediately after use; the dev-client sessions on M were left signed
+  in (couple, then planner, both ES) rather than reset, since M is not part of the store step's
+  screenshot source and gets erased at teardown below regardless.
+
+Full detail, evidence paths and the exact grant sequence: `guestly-mobile/docs/PART9-AUDIT.md`
+section 4 (defect register rows D-044 to D-046) and section 10 (store step).
+
+### Gates
+
+`bash guestly-mobile/scripts/part9/gates.sh --fast`: exit 0, `GATES: all clean`. `npx tsc --noEmit` 0
+errors. `npx eslint src` 0 errors, 3 warnings (same baseline the fix step left, none new). All six
+grep gates (em dash, brand middle dot, purchase wording, Face ID wording, real tenant names, tokens
+and demo passwords on disk) print nothing, now also scanning the new `store/` content. Feature copy
+parity: 16 files, 0 problems. `expo-doctor` not re-run this step (network-dependent, `--fast` skips
+it; the fix step's build log already records its 2 pre-existing failures, unrelated to anything
+touched here). `npx expo config --type public` still shows every purpose string and 6 privacy data
+types. Ran `npx expo export -p ios` as this step's production-build check (an EAS production build is
+explicitly the lead's step, not mine): the JS bundle exports cleanly at 5.8 MB, no errors; deleted
+the output afterward. No test script exists in `package.json` (`start`, `reset-project`, `android`,
+`ios`, `web`, `lint` only), so none ran; that is unchanged from every earlier step of this wave.
+
+### Not done, and why
+
+- The Play phone screenshot set (1080x1920) was not built (plan C15 explicitly allows dropping it
+  first). `docs/ANDROID-READINESS.md` section 5 records it as open.
+- D-045 (AI reply markdown) was found but not fixed; it is a design decision across at least two
+  screens, not a store-step-sized change.
+- The full 27-screen Dynamic Type walk and the full six-width web rig were not re-run against the
+  reinstalled `sim-release` binary; nothing in this step touches typography or the web export, and
+  both already ran once against the same fixed source in the fix step.
+- L, M, T, P were only partly refreshed: L now runs the final `sim-release` build (this step); M ran
+  the dev client for the D-044/D-046 verification; T and P were not touched and still hold whatever
+  the fix step left them at.
+- The demo tenant end state (plan 10.5) was only observed in passing during captures (invite code,
+  RSVP answer, one open request, the 43-attending count), not re-asserted with a scripted API read;
+  see `docs/PART9-AUDIT.md` section 10 for exactly what was and was not checked.
+- Not testable on this Mac, unchanged from every earlier step: Sign in with Apple and Google end to
+  end, real push delivery, QR scanning with a real camera, biometric hardware and the S08 lock
+  overlay, Android on any device, a real iPad, VoiceOver by ear.
+- `eas submit`, any production EAS build, `eas update`, `eas metadata:push` or `eas metadata:pull`:
+  none run, as required. The lead's next commands are written into
+  `guestly-mobile/docs/CREDENTIALS-CHECKLIST.md`, not run here.
+
+### Teardown and final disk
+
+`sim.sh teardown` run at the very end of this step (after the commit below): shut down and erased S,
+M, L, T, P, deleted the wave's created SE simulator, stopped Metro/proxy/static-server ports, removed
+`.part9/web`, `.part9/sim-dev`, `.part9/sim-release` and any `.tar.gz`. Free disk before and after are
+both recorded in the final report, not just one of them.
