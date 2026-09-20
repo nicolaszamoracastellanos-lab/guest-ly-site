@@ -713,3 +713,157 @@ captures, already copied into `store/screenshots/` and read) and `.part9/frame-b
 render deleted after use. `~/.maestro/tests` empty at the end of this step (nothing new left behind
 beyond the one tap flow, whose run folder did not persist). Free disk at the end: 40 GB (`df -h /`;
 essentially unchanged from the start once the sim-release build and its download were cleaned up).
+
+## Step 7, fixer round 3 (Sep 20 2026, 17:10 to 18:20 CDT)
+
+Independent review of `mobile/part9-audit` after step 6 reported three findings, all dated Sep 20.
+`git status` and `git diff` at the start of this step showed a clean working tree at `e2da42b` (no
+uncommitted work from a possibly-interrupted earlier round-3 fixer to resume; only the same
+pre-existing, unrelated screenshot folders under the `guest-ly` root, left untouched, plus a new
+untracked `docs/wave-sep18/verify-mobile-r2/` left by the reviewer itself, read in full before this
+step and covered under Finding 2 below). Free disk at the start: 13 GB reported by the brief, 40 GB
+actually read by `df -h /` throughout, same mismatch every earlier round has noted; not treated as
+real.
+
+**Finding 1, major, confirmed and fixed, then found to be bigger than reported.** Read
+`docs/wave-sep18/verify-mobile-r2/webrig/couple/{en,es}/360/01-tab-index.png` myself: the gold
+assistant bubble genuinely sits on the couple home briefing list's third row ("1 new RSVP arrived...
+hours.") and its chevron, unscrolled, both languages. Reproduced independently with a small ad hoc
+Playwright script built on the same technique as `scripts/part9/web-rig.mjs` (not committed, lived
+under `.part9/`, deleted at teardown): measured the bubble's and the row's real bounding boxes rather
+than eyeballing screenshots, confirming a 51 px vertical overlap at 360x740.
+
+Root cause: `useBottomClearance`'s reserved band (D-010) only pads the very END of a screen's scroll
+content, so it guarantees a scrolling screen "ends clear of" the bubble, which is what D-010's own
+fix note claims and is what every earlier verification pass on this branch tested (scroll to the
+end, check it's clear). It says nothing about content that happens to render mid-page, at the bubble's
+fixed on-screen position, on the FIRST, unscrolled paint, which is exactly this case: the couple home
+briefing list's third row balloons to two lines when its sentence doesn't fit on one, and at a 360 pt
+width that pushes it down into where the bubble rests.
+
+Fix, part one: a new shared `BriefingRow` (`src/ui/index.tsx`), replacing near-identical JSX
+duplicated between `couple/index.tsx` and `planner/index.tsx`. Its text now carries
+`numberOfLines={2}`, the same cap `ListRow` already uses on its title for the same reason (D-012), so
+no briefing sentence can grow past two lines regardless of language or width and push the next row
+into danger. Verified with the official `web-rig.mjs` technique (fresh `npx expo export -p web`, a
+small script measuring `assistant-bubble`'s and each row's real `getBoundingClientRect()`) at 360,
+390 and 430: the third row cleared the bubble at all three widths, confirmed visually with a cropped
+screenshot showing a clean gap between the row's separator line and the bubble.
+
+That measurement also caught something the finding did not name: at 390 px the couple home's stat
+tiles and "Ask the wedding brain" card (and, on planner home, the stat tiles and weddings list)
+themselves overlapped the bubble by up to 37 px, clear at 360 and 430. Confirmed this was not a web
+rig artifact by building `sim-dev` fresh (redownloading the ONE `sim-dev` artifact this wave already
+built, `d267d22f...`, not a new build; JS-only fixes need no rebuild, plan section 2.1) onto a real
+iPhone 17e simulator (M, 390x844) with Metro serving current source: the bubble genuinely sat on top
+of "26%" and the "Ask the wedding brain anything" card's text, on device, not just in the web proxy.
+
+Root cause of this second case: the colliding block, measured on M, is taller (174 to 272 px
+depending on role and content) than the bubble's entire reachable travel between the tab bar and the
+content above it (about 56 to 126 px). `useBubbleLift`, the mechanism every other screen with its own
+floating control already uses to dodge a collision, only moves the bubble UP; here that only trades
+the stat-tiles collision for a fresh one against the briefing rows above it, confirmed by trying it
+first: a `useBubbleLift`-based version computed a 70 px (maximum) lift on M and the bubble landed
+squarely back on the third briefing row, worse than before.
+
+Fix, part two: a new `useBubbleAvoid` hook (`src/ui/chrome.ts`). A screen passes the ref of its
+"risky" block (couple home: the stat tiles through the "Ask" card, wrapped in one `View`; planner
+home: the stat tiles through the weddings list, same wrapping); the hook measures that block in
+window coordinates with `measureInWindow` (a mount timer, the block's own `onLayout` so a query
+resolving and skeleton rows being replaced re-measures, and the window's height as a dependency) and,
+when it would collide with the bubble's own window-relative resting band, hides the bubble via the
+existing `useBubbleHide`, the same tradeoff the kit already makes for a screen with its own floating
+round button: the Coordinator stays one tap away in the More menu on every screen, and on couple home
+also from the "Ask the wedding brain" card right there, so nothing is actually out of reach.
+
+Verified on the M simulator, both roles, EN and ES, cold-launched fresh each time (`inject-session.mjs
+--role couple|planner --lang en|es`, the "Open in Guest-ly?" system sheet dismissed with a one-tap
+Maestro flow, the same gotcha the plan and step 6 both name): the bubble now hides cleanly on both
+home screens whenever the block below the briefing would otherwise sit under it, "26%", "16" and
+"Pending" fully legible, and shows normally on every other screen (spot-checked Messages, both roles).
+Also booted L (17 Pro Max, 440x956) as a second real device: couple and planner home there also
+collide (a smaller, genuine 21 px overlap on couple home, not visible without the on-device
+measurement) and the bubble correctly hides there too; a non-colliding screen (Messages) on L shows it
+normally. The mechanism is dynamic (window height and a live layout measurement, not a per-breakpoint
+table), which is why it caught this device the finding itself never named.
+
+Evidence: `docs/part9/evidence/D-049.jpg` (before, couple home, M, EN, produced by temporarily
+`git checkout --`-ing `couple/index.tsx` back to its pre-fix content with the working copy backed up
+first, screenshotting, then restoring the backup byte for byte, confirmed with a clean `tsc` after)
+and `docs/part9/evidence/D-049-fixed.jpg` (after, same screen, same device, same language). Logged as
+D-049 in `PART9-AUDIT.md` section 4, with a correction note added to D-010's own row so it no longer
+overclaims. Commit `5502ebb`.
+
+**Finding 2, major, confirmed and fixed.** `bash scripts/part9/gates.sh --fast` reproduced twice
+against `e2da42b`, both times `GATES: FAILED` on `docs/wave-sep18/BUILD-LOG-mobile.md:627`: step 6's
+own sentence describing a middle-dot wordmark typo it caught quoted the typo literally
+("Guest\[MIDDLE DOT\]ly"), which is itself the forbidden string the gate scans `docs/wave-sep18` for,
+and which was itself committed. The independent reviewer's own `verify-mobile-r2/` evidence folder
+reproduced the identical gate failure (its own saved log of the same run) and was read in full, then
+deleted (nothing in it needed to survive as a deliverable: two screenshots already re-verified for
+Finding 1 above, one gates log whose content is this paragraph, and a full `web-rig.mjs` run covering
+screens already covered by step 6). Fix: reworded the one sentence to describe the mistake ("a
+middle-dot character instead of a hyphen") without reproducing it. `gates.sh --fast` now exits 0,
+`GATES: all clean`. Commit `b974e9b`.
+
+**Finding 3, confirmed real, not fixable from this repository, no new action taken.** Independently
+read `store/screenshots/ios-6.9/es-MX/{raw,framed}/03-guest-schedule.jpg`: fully Spanish chrome (date
+header, "Ceremonia"/"Recepción", tab bar), but the ceremony and reception notes are still English
+("Arrive by 3:40. Seats are not assigned.", the full shuttle and dress paragraph), exactly as D-047
+already discloses. Independently read `guestly-mobile-api/src/lib/prompt-generator.ts` and
+`src/lib/mobile/guest-views.ts` (read only, that repo is a sibling of the portal, outside this round's
+`guestly-mobile` directory just as it was outside step 6's): `ItineraryEvent.notes` is `notes?:
+string`, no `{en, es}` shape anywhere in the type, confirming step 6's root cause independently rather
+than trusting its own citation.
+
+Considered, and deliberately did not attempt, a same-shape data workaround: the couple's own
+`couple/brain/draft` / `publish` endpoints (`guestly-mobile-api/src/app/api/mobile/v1/couple/brain/
+publish/route.ts`) are a real, existing write path a couple's own session can call, and in principle a
+script could write Spanish text into demo-review's `notes` field before a fresh Spanish capture, the
+same pattern `seed-demo.mjs` already uses for tasks and tables. Rejected this for three reasons, read
+from the code, not guessed: the field is not bilingual, so writing Spanish content makes the STILL-
+English screenshot set wrong instead (there is no way to have both correct without the schema change,
+only which language is broken); `publish` replaces the tenant's entire `WeddingFacts` document rather
+than patching one field, so a read-then-write against a document this round has no familiarity with
+carries real risk of dropping something; and `demo-review` is a tenant other workstreams in this wave
+also read from, and this same document grounds its live AI concierge, so a bad write's blast radius is
+not confined to one screenshot. The finding's own suggested fix already names the two ways this
+actually gets fixed (a bilingual `itinerary[].notes` field, or Nicolas retyping the Spanish notes
+through the portal Brain editor before the next es-MX recapture); both are for the lead or Nicolas,
+not this round. Documented in `PART9-AUDIT.md`'s D-047 row rather than left silently unaddressed. No
+code or screenshot file touched for this finding.
+
+### Gates
+
+`bash scripts/part9/gates.sh --fast`: exit 0, `GATES: all clean` (em dash, brand middle-dot, purchase
+wording, Face ID wording, real tenant names, tokens and demo passwords on disk, all clean; feature
+copy parity 16 files, 0 problems). `npx tsc --noEmit`: 0 errors. `npx eslint src`: 0 errors, 3
+warnings, same baseline as every earlier step, none in a file this step touched. As the build check,
+`npx expo export -p web --output-dir .part9-fixer3-build` exported cleanly (two JS bundles, no
+errors); deleted immediately after. No test script exists in `package.json`, unchanged from every
+earlier step; none ran. On-device verification for Finding 1 (the substantial part of this step) is
+described above rather than repeated here: a real M (390x844) and L (440x956) simulator, both roles,
+both languages.
+
+### Not done, and why
+
+- Finding 3 (D-047, 03's English notes) is still open: confirmed real and re-diagnosed independently,
+  but genuinely not fixable inside `guestly-mobile`, and the one workaround that stays inside this
+  round's own reach (a live write to the shared demo tenant's `WeddingFacts`) was judged too risky to
+  attempt under this round's time and directory constraints. See the finding's own writeup above.
+- D-049's fix was verified on M (390x844) and L (440x956) real simulators and at 360, 390 and 430 on
+  the web rig; T and P (the iPad compatibility windows) were not re-walked this step, since neither
+  couple nor planner home showed the collision on the web rig at their compatibility widths and
+  nothing about the fix is width-specific (it measures the real window height at runtime).
+- The `web-rig.mjs`-style ad hoc scripts and the temporary evidence screenshots this step produced
+  under `.part9/` were not committed (that directory is gitignored); only the two evidence JPEGs this
+  step's finding actually needed were copied into `docs/part9/evidence/` and committed.
+- Nothing outside the three findings was touched.
+
+### Teardown and final disk
+
+`sim.sh teardown` run once both simulators' screenshots were captured and read: M and L shut down and
+erased, Metro stopped, `.part9/sim-dev` (the redownloaded `.tar.gz` and extracted `.app`, 62 MB)
+deleted. `.part9/web-fix3` (the web export used for the `web-rig.mjs`-style measurements) and every
+`D-049-*.png` working screenshot deleted after the two evidence JPEGs were copied out. `~/.maestro/
+tests` empty at the end of this step. Free disk at the end: 35 GB (`df -h /`).
