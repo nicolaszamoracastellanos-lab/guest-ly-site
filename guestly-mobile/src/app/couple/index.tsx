@@ -1,6 +1,6 @@
 // Couple home: photo header, today's briefing, three stat tiles, the brain.
 
-import React from "react";
+import React, { useRef } from "react";
 import { View, StyleSheet, Image, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,7 +9,7 @@ import { useCopy } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { Screen, T, Row, Gem, Wordmark, IconButton, Badge, Icon, StatTile, Card, Banner, Skeleton, SectionLabel } from "@/ui";
+import { Screen, T, Row, Wordmark, IconButton, Badge, Icon, StatTile, Card, Banner, Skeleton, SectionLabel, BriefingRow, useBubbleAvoid } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/hands.jpg");
@@ -27,6 +27,13 @@ export default function CoupleHome() {
   const couple = data?.couple_names ?? user?.me.tenant.couple_names ?? "";
   const days = data?.countdown ? data.countdown.days : null;
   const dayOf = (data?.day_of ?? false) || dayOfManual;
+  // The stat tiles and the "ask the brain" card below the briefing: the
+  // block a person sees without scrolling once the briefing list is done
+  // loading. `useBottomClearance` only guarantees the very end of the
+  // scroll is clear of the bubble; on some window heights (390 pt wide,
+  // fixer round 3) this block itself sits right where the bubble rests.
+  const afterBriefing = useRef<View>(null);
+  const bubbleAvoid = useBubbleAvoid(afterBriefing);
 
   return (
     <Screen query={mainQuery} padded={false}>
@@ -71,41 +78,29 @@ export default function CoupleHome() {
           </T>
         ) : null}
         {(data?.briefing ?? []).map((b, i) => (
-          <Pressable key={i} onPress={() => go(b.href)} accessibilityRole="button">
-            {/* D-046: top-aligned, not the Row default of centered, so the dot
-                stays by the first line once a briefing sentence wraps to three
-                lines (seen on ES at the 1320 pt width). Same fix already used
-                in couple/insights/index.tsx for the same reason. */}
-            <Row gap={14} align="flex-start" style={styles.briefRow}>
-              <View style={{ paddingTop: 8 }}>
-                <Gem size={6} color={b.tone === "info" ? colors.gold : colors.amber} />
-              </View>
-              <T v="body16" color={colors.ivory90} style={{ flex: 1 }}>
-                {b.text}
-              </T>
-              <Icon name="chev" size={18} color={colors.ivory40} />
-            </Row>
-          </Pressable>
+          <BriefingRow key={i} text={b.text} tone={b.tone} onPress={() => go(b.href)} />
         ))}
       </View>
 
-      <Row gap={8} style={{ paddingHorizontal: 20, marginTop: 22 }}>
-        <StatTile value={String(data?.totals.attending_seats ?? "")} label={copy.coupleHome.attending} />
-        <StatTile value={String(data?.needs_you ?? "")} label={copy.coupleHome.needYou} color={colors.goldLight} />
-        <StatTile value={data?.budget_percent_paid !== null && data?.budget_percent_paid !== undefined ? `${data.budget_percent_paid}%` : "·"} label={copy.coupleHome.budgetPaid} />
-      </Row>
+      <View ref={afterBriefing} {...bubbleAvoid}>
+        <Row gap={8} style={{ paddingHorizontal: 20, marginTop: 22 }}>
+          <StatTile value={String(data?.totals.attending_seats ?? "")} label={copy.coupleHome.attending} />
+          <StatTile value={String(data?.needs_you ?? "")} label={copy.coupleHome.needYou} color={colors.goldLight} />
+          <StatTile value={data?.budget_percent_paid !== null && data?.budget_percent_paid !== undefined ? `${data.budget_percent_paid}%` : "·"} label={copy.coupleHome.budgetPaid} />
+        </Row>
 
-      <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-        <Pressable onPress={() => router.push("/assistant" as never)} accessibilityRole="button">
-          <Card kind="glass" padding={0} radiusKey="pill" style={{ height: 52, justifyContent: "center", paddingHorizontal: 18 }}>
-            <Row gap={10}>
-              <Icon name="sparkle" size={20} color={colors.goldLight} />
-              <T v="body15" color={colors.ivory55}>
-                {copy.coupleHome.ask}
-              </T>
-            </Row>
-          </Card>
-        </Pressable>
+        <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
+          <Pressable onPress={() => router.push("/assistant" as never)} accessibilityRole="button">
+            <Card kind="glass" padding={0} radiusKey="pill" style={{ height: 52, justifyContent: "center", paddingHorizontal: 18 }}>
+              <Row gap={10}>
+                <Icon name="sparkle" size={20} color={colors.goldLight} />
+                <T v="body15" color={colors.ivory55}>
+                  {copy.coupleHome.ask}
+                </T>
+              </Row>
+            </Card>
+          </Pressable>
+        </View>
       </View>
     </Screen>
   );
@@ -136,5 +131,4 @@ const styles = StyleSheet.create({
   hero: { overflow: "hidden", height: 330 },
   top: { position: "absolute", left: 24, right: 20, justifyContent: "space-between" },
   headline: { position: "absolute", left: 24, right: 24, top: 196 },
-  briefRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 },
 });

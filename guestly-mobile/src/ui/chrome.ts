@@ -6,10 +6,11 @@
 // tab bar and the bubble rested on top of toggles, badges and buttons. The
 // rule now lives in one place instead of a magic number per screen.
 
-import { useCallback, useId, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useState, useSyncExternalStore } from "react";
 import { usePathname, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BUBBLE_ZONE, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TAB_CLEARANCE } from "./tokens";
+import { useWindowDimensions, type View } from "react-native";
+import { BUBBLE_MARGIN, BUBBLE_SIZE, BUBBLE_ZONE, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TAB_CLEARANCE } from "./tokens";
 
 const SURFACES = ["guest", "couple", "planner"];
 
@@ -97,6 +98,68 @@ export function useBubbleLift(px: number) {
       };
     }, [id, px])
   );
+}
+
+/**
+ * Hides the bubble while one specific block on a fixed-layout dashboard
+ * (couple and planner home) is on screen: the stat tiles through the last
+ * card below them, a block that sits above the screen's own trailing
+ * `useBottomClearance` padding, so D-010's "every scrolling screen ends clear
+ * of it" does not reach it. The bubble's resting height is a fixed distance
+ * from the *window's* bottom edge, while this block sits at a nearly fixed
+ * distance from the *content's* top, so whether the two collide on the
+ * screen's first, unscrolled paint depends only on window height, not on
+ * anything a screen author can see at write time (found on a real 390x844
+ * simulator, fixer round 3, not just the web rig: clear at 360 and 430, but
+ * on 390 the block is measured taller than the bubble's entire reachable
+ * travel between the tab bar and the content above, so lifting it clear
+ * (the tactic `useBubbleLift` gives every other screen) has nowhere to land
+ * without landing on something else instead). Hiding is the same tradeoff
+ * the kit already makes for a screen with its own floating round button: the
+ * Coordinator stays one tap away in the More menu, on couple home also from
+ * the "Ask the wedding brain" card, so nothing is actually out of reach.
+ *
+ * Pass the ref of that block AND spread the returned `layoutProps` onto the
+ * same element (`{...layoutProps}`, alongside its own `ref`): `onLayout`
+ * re-measures whenever the block's own frame changes, which is what catches
+ * a query resolving and the skeleton rows being replaced by real (shorter or
+ * taller) ones. A mount timer and the window's own height also trigger a
+ * measurement, so an `onLayout` that never fires (a block whose size never
+ * changes) is not relied on alone. Measured in window coordinates, so it is
+ * correct regardless of scroll position, which is always 0 at the moments
+ * this measures. Native only: `measureInWindow` is not reliable enough on
+ * the web target for this (the web rig's own layout check already covers
+ * the same screens another way).
+ */
+export function useBubbleAvoid(ref: React.RefObject<View | null>): { onLayout: () => void } {
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [collide, setCollide] = useState(false);
+
+  const measure = useCallback(() => {
+    const node = ref.current as unknown as { measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void } | null;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((_x, y, _w, h) => {
+      if (h <= 0) return; // not laid out yet
+      // A margin of air on both sides of the bubble's own box: hides it a
+      // beat before it would actually touch the block, not only once a
+      // pixel of the two truly shares the same row.
+      const bubbleTop = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - BUBBLE_SIZE - BUBBLE_MARGIN - BUBBLE_MARGIN;
+      const bubbleBottom = bubbleTop + BUBBLE_SIZE + BUBBLE_MARGIN * 2;
+      const contentBottom = y + h;
+      const overlap = Math.min(bubbleBottom, contentBottom) - Math.max(bubbleTop, y);
+      setCollide(overlap > 0);
+    });
+  }, [ref, height, insets.bottom]);
+
+  useEffect(() => {
+    const t = setTimeout(measure, 350);
+    return () => clearTimeout(t);
+  }, [measure]);
+
+  useBubbleHide(collide);
+
+  return { onLayout: measure };
 }
 
 // A screen with its own round floating button (the add-guest button) shows no

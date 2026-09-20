@@ -35,7 +35,7 @@ export { T } from "./Text";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { colors, radius, space, COLUMN } from "./tokens";
-export { useBottomClearance, useBubbleLift, useBubbleHide, useTabBarTop } from "./chrome";
+export { useBottomClearance, useBubbleLift, useBubbleAvoid, useBubbleHide, useTabBarTop } from "./chrome";
 
 // ---------------------------------------------------------------- layout
 
@@ -676,6 +676,34 @@ export function ListRow({ leading, title, sub, trailing, below, onPress, chevron
   );
 }
 
+/** One line of a home dashboard's "today's briefing" digest (couple and
+ *  planner home both use it). Capped to two lines: Part 9 audit D-010 gave
+ *  the assistant bubble a reserved band above the tab bar and made every
+ *  scrolling screen keep that band clear at the very end of its content, but
+ *  that only protects the end of the scroll. A briefing sentence with no
+ *  line cap could grow to four lines on a narrow phone, which pushes the
+ *  row below it down into the bubble's fixed on-screen position even before
+ *  the person has scrolled at all (found at the 360 px breakpoint, fixer
+ *  round 3: the bubble sat on the third row's last line and its chevron).
+ *  Two lines matches `ListRow`'s own title cap (D-012) and keeps every
+ *  row's height predictable regardless of language or sentence length; the
+ *  full sentence is always one tap away on the screen it links to. */
+export function BriefingRow({ text, tone, onPress }: { text: string; tone: "risk" | "warn" | "info"; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button">
+      <Row gap={14} align="flex-start" style={styles.briefRow}>
+        <View style={{ paddingTop: 8 }}>
+          <Gem size={6} color={tone === "info" ? colors.gold : colors.amber} />
+        </View>
+        <T v="body16" color={colors.ivory90} numberOfLines={2} style={{ flex: 1 }}>
+          {text}
+        </T>
+        <Icon name="chev" size={18} color={colors.ivory40} />
+      </Row>
+    </Pressable>
+  );
+}
+
 /** One number and its label. The number shrinks to fit on one line and the
  *  label breaks only between words, so a narrow tile never prints "ATTENDIN G"
  *  or "$5,89 0.00" (Part 9 audit, D-008).
@@ -944,6 +972,7 @@ const styles = StyleSheet.create({
   sheetWide: { maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", width: "100%", borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.goldBorder },
   sheet: { flexShrink: 1, backgroundColor: colors.night, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, borderTopWidth: 1, borderTopColor: colors.goldBorder, paddingHorizontal: 24 },
   grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(247,243,236,0.2)", marginTop: 10, marginBottom: 14 },
+  briefRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 },
 });
 
 export const platformIsAndroid = Platform.OS === "android";
