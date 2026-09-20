@@ -1,0 +1,9 @@
+# One tap on a control by testID, then a capture. Used for the cold deep link back check (D-022).
+#   node scripts/part9/flow.mjs --device S --flow tap-id.yaml --to <dir> --env TARGET_ID=topbar-back --env NAME=back-after
+appId: com.zcventures.guestly
+---
+- tapOn:
+    id: ${TARGET_ID}
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ${NAME}
