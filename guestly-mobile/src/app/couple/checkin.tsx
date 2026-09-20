@@ -2,7 +2,7 @@
 // the ivory guest card, works offline with a replayable queue.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Pressable, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Alert, Linking } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -98,6 +98,13 @@ export default function DoorCheckin() {
   // keyboard up it rides on top of the keyboard instead.
   const { clearance } = useBottomClearance();
   const keyboardOpen = useKeyboardOpen();
+  // Denied is only what the person answered; while iOS is still asking, the
+  // status is "undetermined" and the scanner frame stays. With the camera
+  // denied there is nothing to point at, so the frame and the pointing hint
+  // give way to the two things that help: type a name, or open Settings. On a
+  // 667 pt window the frame plus the denied sentence pushed the name search
+  // back behind the tab bar (Part 9 release walk, camera denied in Spanish).
+  const denied = !!permission && !permission.granted && permission.status !== "undetermined";
 
   return (
     <View style={styles.root}>
@@ -111,7 +118,19 @@ export default function DoorCheckin() {
       <View style={{ paddingTop: top }}>
         <TopBar onBack={back} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
       </View>
-      {!typing ? (
+      {denied && !typing ? (
+        <View style={{ marginTop: 36, paddingHorizontal: 32, gap: 14, alignItems: "stretch" }}>
+          <View style={{ alignItems: "center" }}>
+            <Icon name="camera" size={30} color={colors.goldLight} />
+          </View>
+          <T v="body15" color={colors.ivory70} center>
+            {copy.checkin.cameraDenied}
+          </T>
+          <Button label={copy.checkin.typeName} icon="search" onPress={() => setTyping(true)} />
+          <Button label={copy.checkin.openSettings} kind="glass" onPress={() => void Linking.openSettings().catch(() => {})} />
+        </View>
+      ) : null}
+      {!typing && !denied ? (
         <View style={styles.frame}>
           {[styles.tl, styles.tr, styles.bl, styles.br].map((s, i) => (
             <View key={i} style={[styles.corner, s]} />
@@ -119,14 +138,11 @@ export default function DoorCheckin() {
           <View style={styles.scanline} />
         </View>
       ) : null}
-      {!permission?.granted && !typing ? (
-        <T v="body15" color={colors.ivory70} center style={{ marginHorizontal: 40, marginTop: 24 }}>
-          {copy.checkin.cameraDenied}
+      {denied && !typing ? null : (
+        <T v="meta13" color={colors.ivory70} center style={{ marginTop: typing ? 12 : 26 }}>
+          {copy.checkin.hint}
         </T>
-      ) : null}
-      <T v="meta13" color={colors.ivory70} center style={{ marginTop: typing ? 12 : 26 }}>
-        {copy.checkin.hint}
-      </T>
+      )}
 
       <View style={{ flex: 1 }} />
       <View style={{ paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 12 }}>

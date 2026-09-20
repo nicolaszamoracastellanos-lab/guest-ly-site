@@ -349,6 +349,7 @@ export const en = {
     withMembers: "with {members}",
     table: "Table {t}",
     cameraDenied: "Camera access is off. Type names instead, or allow the camera in Settings.",
+    openSettings: "Open Settings",
     scanned: "Checked in",
     undo: "Undo",
     notFound: "That pass does not belong to this wedding.",

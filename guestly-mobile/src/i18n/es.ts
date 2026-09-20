@@ -351,6 +351,7 @@ export const es: Copy = {
     withMembers: "con {members}",
     table: "Mesa {t}",
     cameraDenied: "El acceso a la cámara está desactivado. Escriba los nombres o permita la cámara en Ajustes.",
+    openSettings: "Abrir Ajustes",
     scanned: "Registrado",
     undo: "Deshacer",
     notFound: "Ese pase no pertenece a esta boda.",
