@@ -208,3 +208,134 @@ clean and `docs/PART9-AUDIT.md` did not exist, so the step started from zero.
 - State left: S booted (couple session, EN, dark, text size large), L, M, T, P shut down with the
   dev client installed. Metro runs on 8097 on the direct base. Disk: 15 GB free;
   `~/Library/Developer/CoreSimulator/Devices` holds 16 GB and shrinks at teardown.
+
+---
+
+## Step 3, fix (Sep 19 to Sep 20 2026, finished 15:20 CDT after one interruption)
+
+**Resume.** This step was cut off by a usage limit mid-work. On entry the tree had 13 fix commits
+already made (`1f08fb7` through `4c34e4e`), an uncommitted rewrite of `docs/PART9-AUDIT.md` marking
+all 43 defects fixed and verified, 40 untracked `docs/part9/evidence/D-###-fixed.jpg` files, and one
+untracked Maestro flow (`.maestro/tap-id.yaml`). I reviewed the tree critically rather than trusting
+it: read the code for a sample of P0 and P1 fixes against their defect text (D-002, D-003, D-004,
+D-018, D-019, D-023, D-024, D-026, D-028, D-030), cross-checked every `Shot:` reference in the table
+against the evidence folder, cross-checked the `tap-targets.mjs` JSON output (0 controls under 44 pt
+across the `F`, `F2`, `R` and `F7` batches, matching D-024's claim), checked the token/tenant-name
+grep gates against the new text, and confirmed no dependency, portal or API-contract file was
+touched (`git diff --stat 540c15b..HEAD -- package.json package-lock.json` empty). One real gap
+turned up: `D-015-fixed.jpg` was referenced but missing on disk. Recaptured it on the simulator
+(release binary, S, ES, `/guest/dayof`) and it shows the fix holding (hero grows with the Spanish
+sentence, the Abrir en Mapas button sits below it, not on top). Everything else in the prior work was
+sound and is kept.
+
+### What this step did
+
+- Finished 43 of 43 defects from the register: every P0 and P1 fixed and verified with a re-capture
+  that was opened and read (plan 9.2); P2 and P3 fixed except the three that need a portal change, a
+  design decision by Nicolas, or a native module this wave forbids, each named as such in its own row
+  (D-001 portal template bodies, D-004 demo tenant data, D-019 portal chrome, D-020 portal attention
+  engine strings, D-021 native date picker, D-036 source photography, D-043 P18 list-vs-tiles design
+  call). Full detail, evidence paths and commits: `guestly-mobile/docs/PART9-AUDIT.md` sections 2 and
+  4. Kit-level fixes landed first (`src/ui/index.tsx`, `Screen`, `Sheet`, `Button`, `TabBar`,
+  `TopBar`, `QueryError`, touch sizes, `chrome.ts` for the content-width helper), then shared flows,
+  then per-surface defects in register order, then native config, matching plan 9.1.
+- `useSafeBack` replaces all 89 bare `router.back()` call sites (`src/lib/nav.ts`), verified on the
+  RELEASE build with cold deep links per folder (D-022).
+- Native config truth: bilingual purpose strings (`locales/en.json`, `locales/es.json`), no
+  `NSLocationWhenInUseUsageDescription` key (checked with `strings` over the downloaded `.app` and
+  every framework inside it before removing it, then re-checked with `plutil` against the built app
+  twice, once per release build in this step), `recordAudioAndroid: false` plus a truthful microphone
+  string instead of the injected English default, privacy manifest additions. Language ladder
+  (device beats wedding default) and the Dynamic Type policy are both recorded in `BUILD-LOG.md`
+  decisions 14 to 17, alongside the phone-only iPad decision (D4).
+- Fixed the one real gap found on resume: `docs/part9/evidence/D-015-fixed.jpg` (see Resume above).
+- Two `sim-release` cloud builds this step (the 2nd and 3rd of the wave's three-build budget): one
+  before I took over (`d315ac19`, commit `5062307`), one by me after the last fix commit
+  (`8eae524e`, commit `4c34e4e`, the true end of this step). Full detail:
+  `guestly-mobile/docs/PART9-AUDIT.md` section 9. The first build's `R1` regression walk (full A2 on
+  S-ES and L-EN, ten spot screens on T-EN) found two more defects that only showed up on a release
+  binary; I independently re-verified their fixes and the release-only claims (D-003 camera-denied
+  door check-in, D-010/D-021/D-036 on guest home, D-028 purpose strings, D-031 Dynamic Type, D-024 tap
+  targets) against the SECOND, final build myself rather than trust the first pass, and saved one new
+  shot the prior work had not captured (`D-003-fixed-denied.jpg`, the camera-denied state, reached by
+  revoking the camera permission and dismissing the resulting system prompt with a `tap-point.yaml`
+  Maestro tap since a fresh mount re-prompts after a reset).
+- `.maestro/tap-id.yaml` (kept from the prior work, used for the D-022 cold-deep-link back check) and
+  `.maestro/tap-point.yaml` (already committed) both proven again in this step.
+
+### Gates
+
+`bash guestly-mobile/scripts/part9/gates.sh`, run fresh by me after the last edit (not trusted from
+an old log): exit 0. `npx tsc --noEmit` 0 errors. `npx eslint src` 0 errors, 3 warnings (all
+pre-existing: two `react-hooks/exhaustive-deps` and one unused `err`, none new, fewer than the
+9-warning baseline the plan allows). All six grep gates (em dash, brand middle dot, purchase wording,
+Face ID wording, real tenant names, tokens on disk) print nothing. Feature copy parity: 16 files, 0
+problems. `expo-doctor`: the same 2 pre-existing failures as every earlier step (`eas-cli` in project
+dependencies, 34 packages behind the SDK 57 patch set), left alone because the plan forbids dependency
+or SDK changes this wave. The two character scans also ran clean against
+`/Users/nicolas_z/Desktop/guest-ly/docs/wave-sep18/`.
+
+### Evidence
+
+- 43 of 43 defects have a `Shot:` reference in the register and every one of those 75 referenced
+  files exists in `docs/part9/evidence/` (checked by extracting every `docs/part9/evidence/*.jpg`
+  path from the doc and testing each for existence).
+- Spot-checked in the actual source, not just the doc's claim: D-002 (`invite.tsx`, the photo card
+  hides itself under 900 pt of window height so the six boxes and title clear the keyboard), D-003
+  (`Screen` bottom inset accounts for the tab bar height plus the safe area), D-004
+  (`guest/more.tsx` hides links to unpublished site pages), D-018 (AI disclosure sentence in both
+  `en.ts` and `es.ts`), D-019 (`bridge.ts` allow-lists two signed-in paths and refuses `//host` and
+  `\` and `://` inside a path), D-023 (`QueryError` shared component, wired into `Screen`), D-024
+  (tap target JSON output, see Resume), D-026 (bilingual error mapping by status code and message
+  text in `sign-in.tsx`), D-028 (purpose strings and the missing location key, confirmed twice against
+  the built binary), D-030 (session gate change), D-015 (fresh capture, see Resume).
+- Tap targets: batches `F` and `F2` (2026-09-19 08:33 to 08:41 CDT, after the kit fixes) and `R` and
+  `F7` (2026-09-20 06:25 to 06:53 CDT, after the very last commit) all read 0 controls under 44 pt;
+  the JSON files are the source of truth, not just the doc's summary sentence.
+- Dynamic Type re-checked by me independently on the FINAL release build (S, ES,
+  `accessibility-extra-extra-extra-large`, `/couple/budget`): tab bar labels capped, stat card numbers
+  stay on one line. Not repeated as a full 27-screen walk a second time; the first full pass, on fixed
+  source, is what D-031's register row documents.
+- Web rig regression: `.part9/web-shots-fix/index.json`, 521 screenshots, 0 with horizontal overflow
+  (checked by loading the JSON and counting, not by re-reading the summary line).
+- No dependency, portal or API contract file touched: `git diff --stat 540c15b..HEAD -- package.json
+  package-lock.json` and a search of the whole diff for portal paths are both empty.
+- Commits this step (oldest to newest): `1f08fb7 8c20109 9b3d5c2 9bf93f4 eccc9af cca01c3 de31558
+  692473c d9df901 f226034 5062307 3a04e1a 4c34e4e` (prior work, kept) plus this step's own commit(s)
+  for the audit doc, the D-015 and D-003-fixed-denied shots, and this log entry.
+
+### Not done, and why
+
+- The full 27-screen Dynamic Type walk and the full six-width web rig were each run once against
+  fixed source, not repeated against the second release build, because that build only adds two
+  commits that touch neither typography nor the web export (see section 9 of the audit doc).
+- L, M, T and P were not reinstalled with the second, final `sim-release` build; only S was. L and T
+  still hold the first `sim-release` build. The store step should reinstall the final build
+  (`8eae524e...`) on whichever device it captures from (plan 10.1 wants the Pro Max).
+- Not testable on this Mac, unchanged from the earlier steps: Sign in with Apple and Google end to
+  end, real push delivery, QR scanning with a real camera, biometric hardware and the lock overlay
+  (S08), Android on any device, a real iPad, VoiceOver by ear.
+- Version and build bump (plan 10.3), App Store screenshots, `metadata.json` review notes and
+  `ANDROID-READINESS.md` (plan 10) belong to the store step; not started here.
+
+### For the lead or Nicolas
+
+- D-001: per-tenant broadcast template bodies in the portal (the app now hides a template body that
+  does not belong to the current wedding, but demo-review still needs its own templates for a true
+  fix).
+- D-004: demo-review is not review-ready (unpublished site, fallback message in the demo thread, QA
+  leftovers, a second planner request, a guest with a phone number). Publish, clean up, then freeze
+  the tenant before App Review and before store captures.
+- D-019: the portal should drop its own chrome and the maintenance banner when a page is opened
+  inside the app's web view (the app now allow-lists which pages it will open at all, which closes
+  the guideline 3.1.1 risk, but the embedded page still looks like the full portal).
+- D-020: three home-screen rows are written in the `tu` form; they come from the portal attention
+  engine, not the app.
+- D-036: source photography is soft at 3x on the largest phones; a design call for Nicolas, not a
+  code fix (plan 13.7).
+- Simulator build budget: all 3 of 3 allowed builds used (`d267d22f` sim-dev, `d315ac19` and
+  `8eae524e` sim-release). A fourth build needs the lead's yes (plan C9).
+- Disk: about 24 GB free at the end of this step. `.part9/` (gitignored) still holds about 2.4 GB of
+  walk logs, contact sheets and both downloaded `sim-release` app bundles; the store step will want
+  the app bundle, so I left `.part9` in place rather than delete it, but it should be cleared at
+  final teardown (plan 10.5).
