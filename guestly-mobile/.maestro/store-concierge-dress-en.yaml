@@ -1,0 +1,5 @@
+appId: com.zcventures.guestly
+---
+- tapOn: "Dress code"
+- waitForAnimationToEnd:
+    timeout: 12000

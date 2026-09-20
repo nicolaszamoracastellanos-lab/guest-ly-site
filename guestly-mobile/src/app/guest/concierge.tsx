@@ -6,7 +6,7 @@ import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "reac
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { api, ApiFailure } from "@/lib/api";
 import { useGuestSession } from "@/lib/session";
 import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton, KeyboardFill, Hairline, ChipRow, useKeyboardOpen, useBottomClearance } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -57,7 +57,16 @@ export default function Concierge() {
     setTurns((t) => [...t, { role: "user", content: msg }]);
     setBusy(true);
     try {
-      const r = await post<{ reply: string; escalated: boolean }>("/guest/concierge", { message: msg, session_id: sessionId, history });
+      // A real reply calls the AI engine, which can run well past the API
+      // client's 20 s default (D-044: that default made a working connection
+      // show "You seem to be offline" on every question). The couple and
+      // planner assistant already gives itself 120 s for the same reason
+      // (src/features/assistant/stream.ts); this screen now does too.
+      const r = await api<{ reply: string; escalated: boolean }>("/guest/concierge", {
+        method: "POST",
+        body: { message: msg, session_id: sessionId, history },
+        timeoutMs: 120_000,
+      });
       setTurns((t) => [...t, { role: "assistant", content: r.reply, escalated: r.escalated }]);
     } catch (err) {
       setTurns((t) => [...t, { role: "assistant", content: err instanceof ApiFailure ? err.messages[lang] : copy.common.error }]);

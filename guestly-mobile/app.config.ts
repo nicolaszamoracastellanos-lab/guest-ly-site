@@ -120,6 +120,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: "com.zcventures.guestly",
+    // eas.json sets "appVersionSource": "remote", so EAS owns the real
+    // versionCode (confirmed 4 on 2026-09-20, `eas build:version:get -p
+    // android`) and this local number is ignored for any EAS build; it is
+    // read only if the project is ever built outside EAS.
     versionCode: 1,
     adaptiveIcon: {
       foregroundImage: "./assets/brand/adaptive-foreground.png",

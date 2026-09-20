@@ -41,8 +41,11 @@ export default function PlannerHome() {
       ) : null}
       {(data?.briefing ?? []).map((b, i) => (
         <Pressable key={i} onPress={() => go(b.href)}>
-          <Row gap={14} style={{ minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 }}>
-            <Gem size={6} color={b.tone === "info" ? colors.gold : colors.amber} />
+          {/* D-046: same top-align fix as couple/index.tsx, this screen's twin row. */}
+          <Row gap={14} align="flex-start" style={{ minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 }}>
+            <View style={{ paddingTop: 8 }}>
+              <Gem size={6} color={b.tone === "info" ? colors.gold : colors.amber} />
+            </View>
             <T v="body16" color={colors.ivory90} style={{ flex: 1 }}>
               {b.text}
             </T>

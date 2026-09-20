@@ -72,8 +72,14 @@ export default function CoupleHome() {
         ) : null}
         {(data?.briefing ?? []).map((b, i) => (
           <Pressable key={i} onPress={() => go(b.href)} accessibilityRole="button">
-            <Row gap={14} style={styles.briefRow}>
-              <Gem size={6} color={b.tone === "info" ? colors.gold : colors.amber} />
+            {/* D-046: top-aligned, not the Row default of centered, so the dot
+                stays by the first line once a briefing sentence wraps to three
+                lines (seen on ES at the 1320 pt width). Same fix already used
+                in couple/insights/index.tsx for the same reason. */}
+            <Row gap={14} align="flex-start" style={styles.briefRow}>
+              <View style={{ paddingTop: 8 }}>
+                <Gem size={6} color={b.tone === "info" ? colors.gold : colors.amber} />
+              </View>
               <T v="body16" color={colors.ivory90} style={{ flex: 1 }}>
                 {b.text}
               </T>
