@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Alert, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
-import { useLang } from "@/i18n";
+import { useLang, zoneLabel } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -15,12 +15,6 @@ import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
 import { errorText, ConfirmSheet } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
-
-/** "America/La_Paz" reads as "La Paz": the city part of the zone id, spaces for underscores. */
-function zoneLabel(tz: string | null | undefined): string {
-  if (!tz) return "";
-  return (tz.split("/").pop() ?? tz).replace(/_/g, " ");
-}
 
 export default function Reminders() {
   const copy = useFeatureCopy(COPY);

@@ -5,10 +5,14 @@ import type { Lang } from "@/i18n";
 
 const LOCALE: Record<Lang, string> = { en: "en-US", es: "es-BO" };
 
+/** Full money. The currency shows as its code in both languages ("USD 9,500.00",
+ *  "USD 9.500,00"): a bare "$" is ambiguous for a wedding in Latin America, and
+ *  in English it sat next to the "USD 34.3K" tiles on the same screen (Part 9
+ *  release walk). Spanish already printed the code, so the widths are proven. */
 export function formatMoney(amount: number, currency: string, lang: Lang): string {
   const safe = Number.isFinite(amount) ? amount : 0;
   try {
-    return new Intl.NumberFormat(LOCALE[lang], { style: "currency", currency, maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(safe);
+    return new Intl.NumberFormat(LOCALE[lang], { style: "currency", currency, currencyDisplay: "code", maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(safe);
   } catch {
     return `${currency} ${plain(safe, lang, 2)}`;
   }

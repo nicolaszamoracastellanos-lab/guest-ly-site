@@ -715,9 +715,15 @@ export function ActionTile({ icon, label, onPress }: { icon: IconName; label: st
 }
 
 export function Countdown({ days, hours, minutes, labels }: { days: number; hours: number; minutes: number; labels: { days: string; hours: string; min: string } }) {
+  // Part 9 release walk: with three digit days the row was 335 pt wide on a
+  // 375 pt phone, wider than the 327 pt column, and its last figure sat under
+  // the assistant bubble at rest. Under 400 pt the figures step down and the
+  // gaps tighten, so the whole row ends left of the bubble.
+  const { width } = useWindowDimensions();
+  const narrow = width < 400;
   const cell = (n: number, l: string) => (
-    <Row gap={6} align="baseline" key={l}>
-      <T v="display44" size={44}>
+    <Row gap={narrow ? 5 : 6} align="baseline" key={l}>
+      <T v="display44" size={narrow ? 36 : 44}>
         {String(n).padStart(2, "0")}
       </T>
       <T v="meta13" color={colors.ivory55}>
@@ -727,7 +733,7 @@ export function Countdown({ days, hours, minutes, labels }: { days: number; hour
   );
   const sep = <View style={{ width: 1, height: 30, backgroundColor: "rgba(201,169,110,0.5)" }} />;
   return (
-    <Row gap={22} align="flex-end">
+    <Row gap={narrow ? 11 : 22} align="flex-end">
       {cell(days, labels.days)}
       {sep}
       {cell(hours, labels.hours)}

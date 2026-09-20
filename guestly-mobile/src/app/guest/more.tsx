@@ -69,7 +69,7 @@ export default function GuestMore() {
           />
         </Card>
         <T v="meta13" color={colors.ivory40} center>
-          {copy.guestMore.leaveConfirm}
+          {copy.guestMore.leaveNote}
         </T>
       </Stack>
       <Footer version={copy.common.footerVersion} trademark={copy.common.footerTrademark} />

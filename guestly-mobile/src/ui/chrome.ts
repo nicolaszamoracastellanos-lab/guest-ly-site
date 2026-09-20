@@ -26,11 +26,17 @@ export function pathHasTabBar(pathname: string): boolean {
 // The guest More screen is a settings screen (language, notifications, leave):
 // the bubble covered its controls on the Pro Max and its last line on the SE.
 const NO_BUBBLE_SECTIONS = ["/guest/rsvp", "/guest/concierge", "/guest/more", "/couple/checkin", "/couple/settings"];
+// The guest home is the invitation itself, and it already opens the concierge
+// twice (its own quick action and the tab). On the release walk the bubble
+// rested on the last countdown figure on the small phone and on the Concierge
+// quick action on the Pro Max, so this one screen goes without it.
+const NO_BUBBLE_EXACT = ["/guest"];
 
 /** The bubble shows on the browse screens only: tab roots, the section lists
  *  behind the More menus and the guest site pages. */
 export function pathShowsBubble(pathname: string): boolean {
   if (!pathHasTabBar(pathname)) return false;
+  if (NO_BUBBLE_EXACT.includes(pathname)) return false;
   if (NO_BUBBLE_SECTIONS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return false;
   if (pathname.startsWith("/guest/site")) return true;
   return pathname.split("/").filter(Boolean).length <= 2;

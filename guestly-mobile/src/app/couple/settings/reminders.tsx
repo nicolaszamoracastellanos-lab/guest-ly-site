@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { View, Alert, Pressable } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang, useCopy } from "@/i18n";
+import { fmt, useLang, useCopy, zoneLabel } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Input, Row, SectionLabel, EmptyState, Chip } from "@/ui";
@@ -108,7 +108,7 @@ export default function ReminderSettings() {
             <SectionLabel>{c.window}</SectionLabel>
             <Card kind="solid" padding={16}>
               <T v="meta13" color={colors.ivory55}>
-                {fmt(c.windowHint, { tz: draft.tz })}
+                {fmt(c.windowHint, { tz: zoneLabel(draft.tz) })}
               </T>
               <T v="label11" color={colors.goldLight} style={{ marginTop: 12, marginBottom: 6 }}>
                 {c.from}

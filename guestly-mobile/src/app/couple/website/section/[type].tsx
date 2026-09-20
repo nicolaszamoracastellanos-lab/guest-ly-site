@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import { View, Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useLang } from "@/i18n";
+import { useLang, mediumDate } from "@/i18n";
 import { ApiFailure } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Button, Stack, Skeleton, SectionLabel, Segmented, Row, Hairline, Banner } from "@/ui";
@@ -119,7 +119,7 @@ export default function SectionEditor() {
                       <View>
                         <T v="body16">{ev.name}</T>
                         <T v="meta13" color={colors.ivory55}>
-                          {ev.meta}
+                          {(ev.meta ?? "").replace(/\b\d{4}-\d{2}-\d{2}\b/g, (iso) => mediumDate(iso, lang))}
                         </T>
                       </View>
                       <SwitchRow label={c.fields.hidden} value={o.hidden} onChange={(v) => set({ hidden: v })} />

@@ -204,6 +204,7 @@ export const es: Copy = {
     notifications: "Notificaciones",
     leave: "Salir de esta boda",
     leaveConfirm: "Necesitará el código de invitación para volver. ¿Continuar?",
+    leaveNote: "Necesitará el código de invitación para volver.",
     aboutWedding: "Sobre la boda",
   },
   coupleHome: {

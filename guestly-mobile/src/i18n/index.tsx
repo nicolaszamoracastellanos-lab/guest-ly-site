@@ -142,6 +142,13 @@ export function mediumDate(iso: string | null | undefined, lang: Lang): string {
   return d.toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** "America/La_Paz" reads as "La Paz": the city part of the zone id, spaces
+ *  for underscores. A raw zone id never goes on screen (Part 9 audit, D-020). */
+export function zoneLabel(tz: string | null | undefined): string {
+  if (!tz) return "";
+  return (tz.split("/").pop() ?? tz).replace(/_/g, " ");
+}
+
 /** Short date, e.g. "1 Feb". */
 export function shortDate(iso: string | null | undefined, lang: Lang): string {
   if (!iso) return "";

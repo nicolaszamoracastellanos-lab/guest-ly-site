@@ -202,6 +202,7 @@ export const en = {
     notifications: "Notifications",
     leave: "Leave this wedding",
     leaveConfirm: "You will need the invite code to come back. Continue?",
+    leaveNote: "You will need the invite code to come back.",
     aboutWedding: "About the wedding",
   },
   coupleHome: {
