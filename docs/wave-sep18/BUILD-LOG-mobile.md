@@ -571,3 +571,144 @@ pass. No test script exists in `package.json`, unchanged from every earlier step
 
 Free disk at the end of this step: 13 GB (unchanged from the start; the one build artifact created,
 `.part9-fixer-build`, was deleted right after use).
+
+## Step 6, fixer round 2 (Sep 20 2026, 16:20 to 17:05 CDT)
+
+Independent review of `mobile/part9-audit` after step 5 reported three findings. `git status` and
+`git diff` at the start of this step showed a clean working tree (no uncommitted work from a
+possibly-interrupted earlier fixer to resume; the only untracked entries were pre-existing
+screenshot folders under the `guest-ly` root from unrelated workstreams, left untouched). Free disk
+at the start: 13 GB (`df -h /` actually read 40 GB free throughout this step; the brief's 14 GB
+figure did not match this machine's real state, noted here rather than silently assumed).
+
+**Finding 1, blocker, confirmed and mostly fixed.** The delivered
+`store/screenshots/ios-6.9/es-MX/{raw,framed}/` set mixed English into a Spanish listing on 4 of 8
+screens (03, 05, 07, 08). Confirmed by reading all 16 es-MX images myself (not just the four named):
+05's "RESUMEN DE HOY" task summary and 08's task card both quoted the English seed titles ("Book the
+guest shuttle, Send the last invitations.", "Review the seating draft" / "Tables 1 to 3 are done, the
+rest needs a second look."), 07's six table rows were all English ("Table 1" through "Friends from
+school") despite `scripts/part9/seed-demo.mjs` defining Spanish labels for every one, and 02, 04, 06
+were already correctly Spanish (not seed-demo.mjs content, so no fix needed there). Root cause
+confirmed against `.part9/seed-ledger.json`: `lang: "en"` (unchanged since the Sep 18 seed run), i.e.
+the store step captured the es-MX set without ever running `seed-demo.mjs --lang es` first, exactly
+as the reviewer traced it.
+
+Fix: ran `node scripts/part9/seed-demo.mjs --lang es` against demo-review (real API calls as the demo
+couple and planner, retitles the existing rows in place by their ledger ids, never deletes or
+recreates anything); the script itself took the `retitle` branch and confirmed with `--verify`
+reporting every seeded task, table and run-sheet row "not in English" (verify's own job is checking
+for the EN end state, so this failure list is the expected, correct outcome once the tenant is in
+Spanish). The two roles' event titles were already fine, since `e.title[lang]` was already localized
+independent of the seed script.
+
+The screenshots themselves still needed a fresh capture off a real binary talking to the live,
+now-reseeded API, and the sim-release binary on hand (`8eae524e...`) was already stale (missing every
+fixer-round-1 commit: masked feed URL, ES greeting agreement, `review_notes_es`). This round's brief
+explicitly carves out an exception to the wave's three-build budget ("Simulator-profile EAS builds
+are allowed"), so a third `sim-release` cloud build was cut from current HEAD (`96c482c9-...`, commit
+`3578f51`, queued 16:30, finished 16:40 CDT; full detail and what it carries in
+`guestly-mobile/docs/PART9-AUDIT.md` section 9 point 5), downloaded, and installed on L only
+(iPhone 17 Pro Max, the ios-6.9 store device). Note on tooling: this step needed Java for Maestro (one
+tap to dismiss an iOS "Open in Guest-ly?" system sheet that swallowed a deep link, the same modal-route
+gotcha the audit doc already names in section 8.4); Java was not on `PATH` but a Homebrew
+`openjdk@17` was already installed, so `JAVA_HOME`/`PATH` were set inline per command rather than
+installing anything new.
+
+Recaptured 03, 05, 07 and 08 live (`inject-session.mjs` per role, `xcrun simctl openurl` deep links,
+`xcrun simctl io screenshot`), read every new image, and confirmed 05, 07 and 08 are now fully
+Spanish (task titles, table names, the run-sheet review note). Replaced their `raw/` JPEGs (1320x2868,
+JPEG 92, no alpha, matching the existing convention) and rebuilt their `framed/` twins with a small
+local Playwright compositor (`.part9/frame-build/frame.html` + `render.mjs`, gitignored, not
+committed, the same technique and the same borrowed `guestly-portal/node_modules/playwright` the store
+step used) reverse-engineered to match the existing frame's geometry (card inset, 44 px corner radius,
+hairline border), fonts (the app's own `CormorantGaramond`/`Jost` files) and the exact headline/role-tag
+text read off each screen's own untouched twin (05 "Cada confirmación en cuanto llega" / PAREJA, 07
+"Mesas y presupuesto, resueltos" / PAREJA, 08 "El planner propone, la pareja aprueba" / PLANNER),
+fixing one wordmark bug of my own along the way (my first draft wrote "Guest·ly" with a middle dot,
+caught before it reached a committed file: the wave's own brand rule is hyphen only).
+
+**03 is NOT fixed, and cannot be from this repository.** Reading the recaptured guest-schedule screen,
+the ceremony and reception notes ("Arrive by 3:40. Seats are not assigned.", the shuttle paragraph,
+"Formal. Garden reception...") were still English. Traced this to
+`guestly-mobile-api/src/lib/mobile/guest-views.ts:32,84`: `notes: raw?.notes ?? null` where `notes` is
+typed `string | null`, a single value with no per-language field, populated by the tenant's
+`WeddingFacts.itinerary`, which is edited through the portal's Brain/logistics editor, not through
+`seed-demo.mjs` and not through any mobile-API write path `guestly-mobile` or its scripts touch (the
+event TITLES are correctly localized through a real `{en, es}` object, `e.title[lang]`, which is
+exactly why only the notes are wrong and the reviewer's single root cause did not fully explain 03).
+I read `guestly-mobile-api` only (read-only, a sibling worktree of the portal repo, never edited: this
+round's directory is `guestly-mobile` only, and the shared-worktree rule means I do not touch another
+session's checkout). A mobile-API write path does exist for the couple's own facts
+(`couple/brain/draft` / `couple/brain/publish`), but using it correctly needs read-then-write of the
+tenant's full, unfamiliar `WeddingFacts` document (id matching against `ctx.events`, `sanitizeFacts`
+validation, and this same data grounds the live AI concierge a guest or reviewer could be talking to),
+which is a portal-repo change with real blast radius, not a same-shape retitle-in-place like
+`seed-demo.mjs`'s own content. Left open, recorded as D-047 in `PART9-AUDIT.md` with the exact fix
+needed (bilingual `itinerary[].notes`, or the lead retyping the demo tenant's notes in Spanish through
+the portal Brain editor) and left off this round's commit; 03's screenshot files are untouched,
+matching their state before this step, since nothing this repository can change actually changed them.
+
+**Finding 2, minor, confirmed and fixed.** `~/.maestro/tests/2026-09-20_153821/store-concierge-en/`
+was left on disk from the store step's concierge capture (D-044's own investigation), never deleted,
+contradicting the plan's wrap-up rule (10.5: delete every `~/.maestro/tests/*` folder this wave
+creates). Grepped `commands.json` and every log in that folder for `password|token|bearer|secret`
+first: no hits, confirming the reviewer's own read that this is a hygiene gap, not a live secret leak.
+Deleted the folder. New Maestro runs this step (one `tap-point.yaml` tap to dismiss the "Open in
+Guest-ly?" sheet) left nothing behind afterward (`~/.maestro/tests` did not exist after use), so
+nothing further to clean at the end of this step.
+
+**Finding 3, minor, confirmed and fixed.** `store/screenshots/ios-6.9/es-MX/raw/05-couple-home.jpg`
+showed a bare "I" for a stat whose real value was 1 ("I le necesitan"). Confirmed both visually (the
+image genuinely reads as a capital I, no different from the letter) and structurally: read
+`CormorantGaramond_500Medium.ttf`'s own GSUB table with `fontTools` and found it ships both `onum`
+(oldstyle) and `lnum` (lining) figure features, oldstyle being what the app currently renders (its "1"
+is a bare ascender with no serif, indistinguishable from a capital I at any size). Multi-digit values
+("43", "181", "26%") stay legible because neighboring digits provide scale; a lone "1" has nothing to
+disambiguate it. Fix, `src/ui/index.tsx` `StatTile` only: the value `<T>` now carries
+`style={{ fontVariant: ["lining-nums"] }}`, which uses the font's own `lnum` feature so every stat
+digit becomes cap-height and unambiguous; every other use of the display serif elsewhere in the app
+(hero countdown, wordmark, headlines) is untouched, so the wider brand type does not change. Verified
+on-device on the third `sim-release` build described above (L, couple home, ES): the stat now reads a
+clear "1"; "43" and "26%" render exactly as before.
+
+### Gates
+
+`bash guestly-mobile/scripts/part9/gates.sh --fast`: exit 0, `GATES: all clean` (em dash, brand
+middle-dot, purchase wording, Face ID wording, real tenant names, tokens and demo passwords on disk,
+all clean; feature copy parity 16 files, 0 problems). `npx tsc --noEmit`: 0 errors. `npx eslint src`:
+0 errors, 3 warnings, same baseline as every earlier step, none in a file this step touched. As the
+build check, `npx expo export -p web --output-dir .part9-fixer2-build` exported cleanly (two JS
+bundles, no errors); deleted immediately after. No test script exists in `package.json`, unchanged
+from every earlier step; none ran. The third `sim-release` cloud build itself (`96c482c9-...`) is this
+step's on-device verification for D-047 and D-048, described above rather than repeated here.
+
+### Not done, and why
+
+- D-047 (03's English ceremony/reception notes) is NOT fixed: its data lives in a field with no
+  bilingual shape at all, owned and edited entirely by the portal repo (`guestly-mobile-api` /
+  `guestly-portal`), which this round's directory excludes. Recorded above and in `PART9-AUDIT.md`
+  as an explicit, addressed-to-the-lead defect rather than left silently broken or falsely marked
+  fixed.
+- 01, 02, 04, 06 (es-MX) were re-read but not re-captured: reading them confirmed they were already
+  correct and contain no `seed-demo.mjs` content, so recapturing them would only have spent build and
+  simulator time for a byte-for-byte-equivalent image.
+- The `framed/` rebuild for 03, 05, 07, 08 uses a locally reverse-engineered compositor, not the
+  store step's own (never committed, deleted at teardown per the wave's own hygiene rule). Geometry,
+  fonts and captions were matched by reading the existing frames pixel-by-pixel and copying their
+  exact caption text; side-by-side with an untouched frame (01) it is very close but is a
+  recreation, not the original tool, and should be treated that way if a future step needs to extend
+  the framing further.
+- The wave's own `docs/wave-sep18/PLAN-mobile.md` and `scripts/screenshots.sh` were not touched; this
+  step only recaptured the four numbered es-MX screens the findings named.
+- D-045 (AI reply markdown, open since the store step) was not touched; out of scope for this round's
+  three findings.
+
+### Teardown and final disk
+
+`sim.sh teardown` run once all four screenshots were captured and read: L shut down and erased, Metro
+and proxy ports (none were running this step) checked and left alone, `.part9/sim-release` (the
+downloaded `.tar.gz` and extracted `.app`, 154 MB) deleted. `.part9/shots-fixer2` (the raw PNG
+captures, already copied into `store/screenshots/` and read) and `.part9/frame-build`'s one test
+render deleted after use. `~/.maestro/tests` empty at the end of this step (nothing new left behind
+beyond the one tap flow, whose run folder did not persist). Free disk at the end: 40 GB (`df -h /`;
+essentially unchanged from the start once the sim-release build and its download were cleaned up).
