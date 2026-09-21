@@ -55,6 +55,11 @@ export function isWithin(url: string, prefixes: string[]): boolean {
 export async function signedInUrl(path: string): Promise<string> {
   const start = await post<BridgeStart>("/auth/bridge", {});
   const base = portalOrigin();
-  const next = path.startsWith("/") ? path : `/${path}`;
+  const clean = path.startsWith("/") ? path : `/${path}`;
+  // ?embed=1 tells the portal's own Shell/PlannerShell to drop the
+  // sidebar/topbar/bottom-nav chrome for this page (D-019); no real browser
+  // session ever sets it, only this bridge, only for the two allow-listed
+  // guide pages.
+  const next = `${clean}${clean.includes("?") ? "&" : "?"}embed=1`;
   return `${base}/auth/mobile?token_hash=${encodeURIComponent(start.token_hash)}&next=${encodeURIComponent(next)}`;
 }

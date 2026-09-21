@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { api, ApiFailure } from "@/lib/api";
 import { useGuestSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton, KeyboardFill, Hairline, ChipRow, useKeyboardOpen, useBottomClearance } from "@/ui";
+import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton, KeyboardFill, Hairline, ChipRow, useKeyboardOpen, useBottomClearance, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -161,7 +161,7 @@ function Bubble({ role, text, escalated, escalatedLabel }: { role: "user" | "ass
       <View style={{ flex: 1, gap: 6, alignItems: "flex-start" }}>
         <View style={[styles.bot, escalated && { borderColor: "rgba(245,158,11,0.35)" }]}>
           <T v="body15" color={colors.ivory90}>
-            {text}
+            {renderInlineBold(text)}
           </T>
         </View>
         {escalated && escalatedLabel ? <Badge label={escalatedLabel} kind="amber" /> : null}

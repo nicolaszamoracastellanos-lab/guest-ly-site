@@ -13,7 +13,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, KeyboardFill } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, KeyboardFill, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
@@ -432,7 +432,7 @@ function Item({
         <Avatar gem size={28} />
         <View style={[styles.bot, { flex: 1 }]}>
           <T v="body15" color={colors.ivory90}>
-            {item.text}
+            {renderInlineBold(item.text)}
           </T>
         </View>
       </Row>

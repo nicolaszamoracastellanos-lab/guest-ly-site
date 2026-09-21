@@ -10,7 +10,7 @@ import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, ApiFailure } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card, KeyboardFill, useKeyboardOpen, useBottomClearance } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card, KeyboardFill, useKeyboardOpen, useBottomClearance, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { useConversation, type TranscriptLine } from "@/features/inbox/hooks";
@@ -183,7 +183,7 @@ function Bubble({ m, name, onAddToBrain }: { m: TranscriptLine; name: string; on
           borderColor: m.is_gap ? "rgba(243,198,107,0.5)" : couple ? colors.goldBorder : colors.ivory14,
         }}
       >
-        <T v="body15">{m.text}</T>
+        <T v="body15">{m.role === "bot" ? renderInlineBold(m.text) : m.text}</T>
       </View>
       <Row gap={6} style={{ paddingHorizontal: 4, flexWrap: "wrap", justifyContent: guest ? "flex-start" : "flex-end" }}>
         <T v="meta13" color={colors.ivory40}>

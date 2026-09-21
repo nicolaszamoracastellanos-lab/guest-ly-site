@@ -32,6 +32,7 @@ import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, C
 import { useBottomClearance, useBubbleLift, useTabBarTop } from "./chrome";
 
 export { T } from "./Text";
+export { renderInlineBold } from "./MarkdownText";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { colors, radius, space, COLUMN } from "./tokens";
