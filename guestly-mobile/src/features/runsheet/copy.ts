@@ -1,4 +1,4 @@
-// Day-of runsheet copy, EN and neutral LatAm ES (usted).
+// Day-of runsheet copy, EN and neutral LatAm ES (tú).
 
 export const COPY = {
   en: {
@@ -45,11 +45,11 @@ export const COPY = {
   es: {
     title: "Guion del día",
     intro:
-      "El programa minuto a minuto de su boda. Las horas son la hora local de la boda.",
+      "El programa minuto a minuto de tu boda. Las horas son la hora local de la boda.",
     readOnly: "Está viendo el guion en modo de solo lectura.",
     emptyTitle: "Aún no hay guion",
     emptyHint:
-      "Empiece desde una plantilla estándar del día de la boda y ajuste cada hora a su plan, o agregue bloques uno por uno.",
+      "Empieza desde una plantilla estándar del día de la boda y ajusta cada hora a tu plan, o agrega bloques uno por uno.",
     template: "Empezar desde una plantilla",
     addBlock: "Agregar bloque",
     addCalendar: "Agregar al calendario",

@@ -1,4 +1,4 @@
-// Website builder copy, EN and neutral LatAm ES (usted).
+// Website builder copy, EN and neutral LatAm ES (tú).
 
 export const COPY = {
   en: {
@@ -132,7 +132,7 @@ export const COPY = {
   },
   es: {
     title: "Sitio web de la boda",
-    subtitle: "Todo lo que los invitados ven en su dirección.",
+    subtitle: "Todo lo que los invitados ven en tu dirección.",
     published: "Publicado",
     draft: "Borrador",
     address: "Dirección",
@@ -256,7 +256,7 @@ export const COPY = {
     },
     errors: {
       tooBig: "Esa foto es demasiado grande. Elija una de menos de 4 MB.",
-      pickFailed: "No se pudieron abrir sus fotos.",
+      pickFailed: "No se pudieron abrir tus fotos.",
     },
   },
 };

@@ -4,7 +4,7 @@
 appId: com.zcventures.guestly
 env:
   CODE: ${CODE || 'CAMAND'}
-  QUERY: ${QUERY || 'Sof'}
+  QUERY: ${QUERY || 'Whit'}
 ---
 - runFlow: launch.yaml
 - extendedWaitUntil:

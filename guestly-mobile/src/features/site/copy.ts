@@ -53,9 +53,9 @@ const en = {
 
 const es: typeof en = {
   title: "La boda",
-  subtitle: "Todo lo que la pareja ha compartido con usted.",
+  subtitle: "Todo lo que la pareja ha compartido contigo.",
   notPublishedTitle: "Todavía no está publicado",
-  notPublishedBody: "La pareja todavía no ha publicado su sitio de boda. Vuelva a revisar pronto.",
+  notPublishedBody: "La pareja todavía no ha publicado su sitio de boda. Vuelve a revisar pronto.",
   errorTitle: "No se pudo cargar el sitio",
   retry: "Intentar de nuevo",
   openFullSite: "Ver el sitio completo",

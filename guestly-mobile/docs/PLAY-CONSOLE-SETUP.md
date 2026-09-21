@@ -36,7 +36,7 @@ Organization accounts skip the personal-account requirement of a 14-day closed t
   live in the gitignored `guestly-mobile/credentials/demo-accounts.env`
   (`store/metadata.json`'s `credentials_location` field says the same
   thing for iOS):
-  - Guest: invite code `CAMAND`, then type `Sof` and pick Sofía Rojas.
+  - Guest: invite code `CAMAND`, then type `Whit` and pick Whitney Adler.
   - Couple: `review@guest-ly.com` and `PART9_COUPLE_PASSWORD`.
   - Planner: `planner-review@guest-ly.com` and `PART9_PLANNER_PASSWORD`.
 - Content rating: complete the IARC questionnaire as a Utility/Productivity app, no user-generated public content, no violence. Expect "Everyone".

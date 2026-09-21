@@ -1,4 +1,4 @@
-// Broadcasts copy, EN + neutral LatAm ES (usted).
+// Broadcasts copy, EN + neutral LatAm ES (tú).
 
 export const COPY = {
   en: {
@@ -71,11 +71,11 @@ export const COPY = {
   },
   es: {
     title: "Mensajes masivos",
-    subtitle: "Mensajes de WhatsApp a sus invitados, con las plantillas aprobadas.",
+    subtitle: "Mensajes de WhatsApp a tus invitados, con las plantillas aprobadas.",
     newBroadcast: "Nuevo mensaje",
     history: "Enviados",
     historyEmpty: "Todavía no se ha enviado nada.",
-    historyEmptyBody: "Su primer mensaje masivo aparecerá aquí con sus conteos de entrega.",
+    historyEmptyBody: "Tu primer mensaje masivo aparecerá aquí con sus conteos de entrega.",
     noPhones: "Ningún invitado tiene teléfono todavía. Agregue teléfonos en la lista de invitados primero.",
     recipients: "{n} destinatarios",
     sentOf: "{sent} de {total} enviados",
@@ -95,7 +95,7 @@ export const COPY = {
     withoutPhone: "{n} sin teléfono se omitirán",
     template: "Plantilla aprobada",
     templateNames: { invite: "Invitación", rsvp_reminder: "Recordatorio de RSVP", event_reminder: "Recordatorio de evento", general_update: "Aviso general" },
-    templateNotYours: "Esta plantilla aprobada todavía no está preparada para su boda, así que no se puede enviar desde aquí. Escriba un mensaje personalizado o pida a Guest-ly que prepare sus plantillas.",
+    templateNotYours: "Esta plantilla aprobada todavía no está preparada para tu boda, así que no se puede enviar desde aquí. Escribe un mensaje personalizado o pide a Guest-ly que prepare tus plantillas.",
     custom: "Mensaje personalizado",
     customHint: "El texto libre solo llega a quienes escribieron al concierge en las últimas 24 horas. Son reglas de WhatsApp, no nuestras.",
     language: "Idioma",

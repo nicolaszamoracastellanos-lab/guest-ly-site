@@ -1,4 +1,4 @@
-// Seating copy, EN and neutral LatAm ES (usted).
+// Seating copy, EN and neutral LatAm ES (tú).
 
 export const COPY = {
   en: {
@@ -90,7 +90,7 @@ export const COPY = {
   },
   es: {
     title: "Mesas",
-    subtitle: "Dé a cada invitado un asiento en la mesa correcta.",
+    subtitle: "Da a cada invitado un asiento en la mesa correcta.",
     allSeated: "Todos los confirmados tienen asiento.",
     stats: {
       seated: "sentados",
@@ -100,7 +100,7 @@ export const COPY = {
     },
     tables: "Mesas",
     noTables:
-      "Aún no hay mesas. Agréguelas una por una, o deje que el concierge sugiera una distribución según sus números.",
+      "Aún no hay mesas. Agrégalas una por una, o deja que el concierge sugiera una distribución según tus números.",
     addTable: "Agregar una mesa",
     tableName: "Nombre de la mesa",
     tableNamePlaceholder: "Mesa 1",
@@ -114,11 +114,11 @@ export const COPY = {
     unseatedHint: "Toque un grupo para asignarle una mesa.",
     unconfirmed: "Aún sin confirmar",
     unconfirmedHint:
-      "Grupos sin respuesta de asistencia. Puede sentarlos a partir de una estimación.",
+      "Grupos sin respuesta de asistencia. Puedes sentarlos a partir de una estimación.",
     showUnconfirmed: "Mostrar grupos sin confirmar",
     people: "{n} personas",
     person: "1 persona",
-    pickTable: "Elija una mesa para {name}",
+    pickTable: "Elige una mesa para {name}",
     noRoom: "{free} libres",
     assign: "Sentar aquí",
     remove: "Quitar de la mesa",
@@ -129,7 +129,7 @@ export const COPY = {
     saved: "Plan guardado",
     discardTitle: "Cambios sin guardar",
     discardBody:
-      "Cambió la distribución y no la ha guardado. ¿Salir de todos modos?",
+      "Cambiaste la distribución y no la has guardado. ¿Salir de todos modos?",
     keepEditing: "Seguir editando",
     discard: "Descartar cambios",
     deleteTable: "Eliminar mesa",
@@ -156,10 +156,10 @@ export const COPY = {
     warnings: "Notas",
     floorPlan: "Plano del salón",
     floorPlanIntro:
-      "Una foto o captura del plano del lugar. El concierge lo lee y encuentra las mesas por usted.",
+      "Una foto o captura del plano del lugar. El concierge lo lee y encuentra las mesas por ti.",
     takePhoto: "Tomar una foto",
     pickPhoto: "Elegir de la galería",
-    uploading: "Subiendo su plano",
+    uploading: "Subiendo tu plano",
     readPlan: "Leer el plano",
     readPlanHint:
       "Encuentra las mesas en la foto y las agrega como borradores. Las mesas existentes no se mueven. Puede tardar hasta dos minutos.",
@@ -171,10 +171,10 @@ export const COPY = {
     draft: "Borrador",
     manual: "Manual",
     fromPlan: "Del plano",
-    readOnly: "Está viendo la distribución en modo de solo lectura.",
+    readOnly: "Estás viendo la distribución en modo de solo lectura.",
     empty: "La pareja aún no ha empezado la distribución de mesas.",
-    error: "Algo salió mal. Inténtelo de nuevo.",
-    photoDenied: "Guest-ly necesita acceso a sus fotos para esto.",
+    error: "Algo salió mal. Inténtalo de nuevo.",
+    photoDenied: "Guest-ly necesita acceso a tus fotos para esto.",
     cameraDenied: "Guest-ly necesita la cámara para esto.",
   },
 };

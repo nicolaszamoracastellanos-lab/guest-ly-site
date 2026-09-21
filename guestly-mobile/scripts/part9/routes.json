@@ -37,7 +37,7 @@
    "needs_seed": false,
    "via": "deeplink",
    "wait_ms": 6000,
-   "note": "lands on /find with the demo tenant; results states need typing (invite-ui.yaml types Sof)"
+   "note": "lands on /find with the demo tenant; results states need typing (invite-ui.yaml types Whit)"
   },
   {
    "id": "E04",

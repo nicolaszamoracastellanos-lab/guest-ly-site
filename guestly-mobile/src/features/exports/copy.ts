@@ -26,7 +26,7 @@ export const COPY = {
     import: "Importar invitados",
     importSub: "Pegue una lista o elija una hoja de cálculo",
     export: "Exportar a Excel",
-    exportSub: "El libro con su marca, compartido desde el teléfono",
+    exportSub: "El libro con tu marca, compartido desde el teléfono",
     presets: {
       full: "Lista completa",
       attending: "Solo confirmados",

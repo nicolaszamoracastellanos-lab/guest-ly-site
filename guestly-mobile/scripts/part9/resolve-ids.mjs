@@ -23,7 +23,7 @@ async function main() {
   await assertDemoTenant(c);
 
   const guests = (await data(c, "/couple/guests"))?.items ?? [];
-  const sofia = guests.find((g) => g.name === "Sofía Rojas") ?? guests.find((g) => /^Sof/.test(g.name));
+  const sofia = guests.find((g) => g.name === "Whitney Adler") ?? guests.find((g) => /^Whit/.test(g.name));
   const inbox = (await data(c, "/couple/messages?filter=all"))?.items ?? [];
   const requests = (await data(c, "/couple/requests"))?.requests ?? [];
   const tasks = (await data(c, "/couple/tasks"))?.tasks ?? [];

@@ -1,4 +1,4 @@
-// Budget copy, EN and neutral LatAm ES (usted).
+// Budget copy, EN and neutral LatAm ES (tú).
 
 const en = {
   title: "Budget",
@@ -99,10 +99,10 @@ const en = {
 const es: typeof en = {
   title: "Presupuesto",
   subtitle: "Cada línea, cada pago, un solo total.",
-  pending: "El presupuesto todavía se está preparando para esta boda. No se pierde nada, vuelva a intentarlo en un momento.",
-  readOnly: "Puede ver el presupuesto pero no modificarlo.",
+  pending: "El presupuesto todavía se está preparando para esta boda. No se pierde nada, vuelve a intentarlo en un momento.",
+  readOnly: "Puedes ver el presupuesto pero no modificarlo.",
   emptyTitle: "Todavía no hay presupuesto",
-  emptyBody: "Empiece con un nombre y una moneda, o léalo desde una hoja de cálculo o una foto.",
+  emptyBody: "Empieza con un nombre y una moneda, o léelo desde una hoja de cálculo o una foto.",
   createBudget: "Crear presupuesto",
   createAnother: "Crear otro presupuesto",
   importBudget: "Importar desde archivo o foto",
@@ -167,11 +167,11 @@ const es: typeof en = {
   delete: "Eliminar",
   confirm: "Confirmar",
   saved: "Guardado",
-  offline: "Está sin conexión. Los cambios necesitan conexión.",
+  offline: "Estás sin conexión. Los cambios necesitan conexión.",
   switchBudget: "Presupuestos",
   linkedVendor: "Proveedor vinculado",
   importTitle: "Leer un presupuesto",
-  importIntro: "Pegue una lista, elija una hoja de cálculo o tome una foto de una impresa. Usted revisa cada línea antes de que se guarde algo.",
+  importIntro: "Pega una lista, elige una hoja de cálculo o toma una foto de una impresa. Revisas cada línea antes de que se guarde algo.",
   paste: "Pegar texto",
   pastePlaceholder: "Concepto, proveedor, monto, uno por línea",
   takePhoto: "Tomar una foto",
@@ -179,8 +179,8 @@ const es: typeof en = {
   chooseFile: "Elegir una hoja de cálculo",
   reading: "Leyendo",
   read: "Leer",
-  previewTitle: "Revise lo que se leyó",
-  previewBody: "Corrija títulos o montos, quite las líneas que no quiera y confirme.",
+  previewTitle: "Revisa lo que se leyó",
+  previewBody: "Corrige títulos o montos, quita las líneas que no quieras y confirma.",
   warnings: "Notas del lector",
   target: "Dónde se guarda",
   newBudget: "Un presupuesto nuevo",

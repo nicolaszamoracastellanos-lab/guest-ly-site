@@ -5,7 +5,7 @@ with the exact commands. The plan is `docs/wave-sep18/PLAN-mobile.md` at the rep
 this file and the plan disagree, this file is what was proven.
 
 Everything talks to the LIVE API at app.guest-ly.com. Only the demo-review tenant, only its demo
-accounts, invite code CAMAND and the guest Sofía Rojas. No secrets are in this file.
+accounts, invite code CAMAND and the guest Whitney Adler. No secrets are in this file.
 
 ## 0. Rules that every command below obeys
 

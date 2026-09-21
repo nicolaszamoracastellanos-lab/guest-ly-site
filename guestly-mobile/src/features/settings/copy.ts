@@ -52,7 +52,7 @@ export const COPY = {
   es: {
     notifications: {
       title: "Notificaciones por correo",
-      subtitle: "Lo que Guest-ly le envía por correo.",
+      subtitle: "Lo que Guest-ly te envía por correo.",
       rsvpEmail: "Correos de nuevas confirmaciones",
       rsvpEmailHint: "Un correo cada vez que un invitado responde.",
       weeklyDigest: "Resumen de los lunes",
@@ -61,7 +61,7 @@ export const COPY = {
     },
     reminders: {
       title: "Recordatorios automáticos",
-      subtitle: "Recuerde por WhatsApp a quienes aún no respondieron.",
+      subtitle: "Recuerda por WhatsApp a quienes aún no respondieron.",
       enabled: "Enviar recordatorios automáticamente",
       enabledHint: "Solo a invitados con teléfono registrado que aún no han respondido.",
       offsets: "Días antes de la boda",
@@ -77,12 +77,12 @@ export const COPY = {
       neverRun: "Aún no se envió ningún recordatorio.",
       save: "Guardar",
       saved: "Guardado",
-      pending: "Los recordatorios se están preparando para esta boda. Inténtelo de nuevo en un momento.",
+      pending: "Los recordatorios se están preparando para esta boda. Inténtalo de nuevo en un momento.",
       readOnly: "Solo la pareja puede cambiar estos ajustes.",
     },
     invite: {
       title: "Código de invitación",
-      subtitle: "Los invitados lo escriben en la app para abrir su boda.",
+      subtitle: "Los invitados lo escriben en la app para abrir tu boda.",
       code: "Código",
       link: "Enlace",
       copy: "Copiar",
@@ -90,10 +90,10 @@ export const COPY = {
       copyLink: "Copiar el enlace",
       copied: "Copiado",
       share: "Compartir",
-      shareText: "Abra nuestra boda en la app Guest-ly con el código {code}: {url}",
+      shareText: "Abre nuestra boda en la app Guest-ly con el código {code}: {url}",
       regenerate: "Generar un código nuevo",
       regenerateConfirm: "El código actual deja de funcionar de inmediato. Quienes ya abrieron la boda siguen dentro. ¿Continuar?",
-      pending: "El código de invitación se está preparando. Inténtelo de nuevo en un momento.",
+      pending: "El código de invitación se está preparando. Inténtalo de nuevo en un momento.",
     },
   },
 };

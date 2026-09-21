@@ -1,4 +1,4 @@
-// Vendor directory copy, EN and neutral LatAm ES (usted).
+// Vendor directory copy, EN and neutral LatAm ES (tú).
 
 const en = {
   title: "Vendors",
@@ -69,10 +69,10 @@ const en = {
 const es: typeof en = {
   title: "Proveedores",
   subtitle: "Cada proveedor, desde la primera llamada hasta el último pago.",
-  pending: "El directorio de proveedores todavía se está preparando para esta boda. Vuelva en un momento.",
-  readOnly: "Está viendo el directorio de proveedores en modo de solo lectura.",
+  pending: "El directorio de proveedores todavía se está preparando para esta boda. Vuelve en un momento.",
+  readOnly: "Estás viendo el directorio de proveedores en modo de solo lectura.",
   emptyTitle: "Todavía no hay proveedores",
-  emptyBody: "Tenga en un solo lugar cada salón, catering y fotógrafo con quien esté hablando: contactos, cotizaciones, su calificación privada y las líneas del presupuesto de cada uno.",
+  emptyBody: "Ten en un solo lugar cada salón, catering y fotógrafo con quien estés hablando: contactos, cotizaciones, tu calificación privada y las líneas del presupuesto de cada uno.",
   noMatches: "Ningún proveedor coincide.",
   add: "Agregar proveedor",
   edit: "Editar proveedor",
@@ -111,7 +111,7 @@ const es: typeof en = {
   priceQuoted: "Precio cotizado",
   notQuoted: "Sin cotizar",
   currency: "Moneda (3 letras, vacío = moneda del presupuesto)",
-  rating: "Su calificación",
+  rating: "Tu calificación",
   notes: "Notas",
   call: "Llamar",
   whatsapp: "WhatsApp",
@@ -128,7 +128,7 @@ const es: typeof en = {
   delete: "Eliminar proveedor",
   deleteBody: "Las líneas del presupuesto y las tareas asociadas se conservan; solo se elimina la ficha.",
   confirm: "Confirmar",
-  offline: "Está sin conexión. Los cambios necesitan conexión.",
+  offline: "Estás sin conexión. Los cambios necesitan conexión.",
   taskStatus: { open: "Abierta", in_progress: "En curso", done: "Hecha" },
 };
 

@@ -40,7 +40,7 @@ export const COPY = {
     reading: "Leyendo",
     preview: "Se encontraron {n} invitados",
     previewSkipped: "{n} filas omitidas",
-    duplicates: "{n} ya están en su lista (sin marcar)",
+    duplicates: "{n} ya están en tu lista (sin marcar)",
     truncated: "Solo se muestran las primeras 500 filas.",
     mapping: "Columnas leídas como",
     keep: "Conservar",

@@ -12,7 +12,7 @@
 // (with overflow_px per screen; anything above 0 is a horizontal scroll bug).
 //
 // Safety
-//   * Only demo-review: demo couple, demo planner, invite CAMAND and Sofia Rojas.
+//   * Only demo-review: demo couple, demo planner, invite CAMAND and Whitney Adler.
 //   * The Supabase OTP endpoint is intercepted for the whole run and answered
 //     locally with 200 {}. No sign-in email can leave this machine. If the
 //     interception is not armed the run aborts.
@@ -267,7 +267,7 @@ async function runGuest() {
   await tid(page, "invite-input").fill("CAMAND");
   await tid(page, "find-input").waitFor({ timeout: 20000 });
   await snap(page, "guest", "en", 390, "find-empty");
-  await tid(page, "find-input").fill("Sof");
+  await tid(page, "find-input").fill("Whit");
   await tid(page, "find-row-0").waitFor({ timeout: 20000 });
   await snap(page, "guest", "en", 390, "find-results");
   await tid(page, "find-row-0").click();
