@@ -33,7 +33,7 @@ html.wizard-locked {
 
 .section {
   position: relative;
-  padding-block: clamp(4rem, 10vw, 8rem);
+  padding-block: clamp(2.5rem, 6vw, 4.5rem);
   scroll-margin-top: 80px;
 }
 
@@ -211,7 +211,7 @@ body.js-ready .reveal.is-visible {
 /* --------------------------------------------------------- section header */
 
 .sec-head {
-  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+  margin-bottom: clamp(1.5rem, 3.5vw, 2.5rem);
 }
 
 .sec-eyebrow {
