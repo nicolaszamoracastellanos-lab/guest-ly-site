@@ -236,6 +236,8 @@ export interface SiteCopy {
     channelsFootnote: string;
     /* 5 months included, then $20/mo: rendered under the plan cards. */
     maintenanceLine: string;
+    /* Capacity add-on beyond Grande's 500+: rendered under the plan cards. */
+    addonLine: string;
     coordLink: string;
     compareLink: string;
   };
@@ -1034,7 +1036,7 @@ const en: SiteCopy = {
       {
         id: 'essentials',
         name: 'Essentials',
-        guests: 'Up to 60 guests',
+        guests: 'Up to 160 guests',
         price: 199,
         priceNote: 'One payment · 5 months live',
         features: [
@@ -1048,7 +1050,7 @@ const en: SiteCopy = {
       {
         id: 'signature',
         name: 'Signature',
-        guests: 'Up to 160 guests',
+        guests: 'Up to 300 guests',
         price: 399,
         priceNote: 'One payment · 5 months live',
         features: [
@@ -1063,7 +1065,7 @@ const en: SiteCopy = {
       {
         id: 'grande',
         name: 'Grande',
-        guests: 'Up to 300 guests',
+        guests: '500+ guests',
         price: 699,
         priceNote: 'One payment · 5 months live',
         features: [
@@ -1114,6 +1116,7 @@ const en: SiteCopy = {
     },
     channelsFootnote: 'SMS and Telegram concierge channels are coming soon and will join when they launch.',
     maintenanceLine: 'Every plan includes 5 months live from delivery. Keep it live longer for $20/mo, cancel any time.',
+    addonLine: 'More than 500 guests? You can buy add-ons in blocks of 100 guests for $149 each, just ask.',
     coordLink: 'See it in action',
     compareLink: 'See how this compares',
   },
@@ -1236,10 +1239,10 @@ const en: SiteCopy = {
       sub: 'Three things every couple knows by heart.',
       guestsLabel: 'How many guests?',
       guestRanges: [
-        { id: 'essentials', label: 'Up to 60' },
-        { id: 'signature', label: '61 to 160' },
-        { id: 'grande', label: '161 to 300' },
-        { id: 'grande-plus', label: 'More than 300' },
+        { id: 'essentials', label: 'Up to 160' },
+        { id: 'signature', label: '161 to 300' },
+        { id: 'grande', label: '301 to 500' },
+        { id: 'grande-plus', label: 'More than 500' },
       ],
       dateLabel: 'Wedding date',
       locationLabel: 'City / Country',
@@ -1249,7 +1252,7 @@ const en: SiteCopy = {
       title: 'Our recommendation',
       sub: 'Pick a different tier any time. The price never changes later.',
       reason: '{guests} guests fits {plan}.',
-      reasonPlus: 'For more than 300 guests, Grande is the fit. We will confirm capacity with you.',
+      reasonPlus: 'For more than 500 guests, Grande is the fit, plus add-on blocks of 100 guests. We will confirm capacity with you.',
       addon: {
         title: 'Add the AI Coordinator',
         pitch: 'Run your wedding by chat: $79 one-time or $19/mo, cancel any time.',
@@ -2066,7 +2069,7 @@ const es: SiteCopy = {
       {
         id: 'essentials',
         name: 'Essentials',
-        guests: 'Hasta 60 invitados',
+        guests: 'Hasta 160 invitados',
         price: 199,
         priceNote: 'Pago único · 5 meses activos',
         features: [
@@ -2080,7 +2083,7 @@ const es: SiteCopy = {
       {
         id: 'signature',
         name: 'Signature',
-        guests: 'Hasta 160 invitados',
+        guests: 'Hasta 300 invitados',
         price: 399,
         priceNote: 'Pago único · 5 meses activos',
         features: [
@@ -2095,7 +2098,7 @@ const es: SiteCopy = {
       {
         id: 'grande',
         name: 'Grande',
-        guests: 'Hasta 300 invitados',
+        guests: '500+ invitados',
         price: 699,
         priceNote: 'Pago único · 5 meses activos',
         features: [
@@ -2146,6 +2149,7 @@ const es: SiteCopy = {
     },
     channelsFootnote: 'Los canales de SMS y Telegram llegan pronto y se sumarán cuando estén activos.',
     maintenanceLine: 'Cada plan incluye 5 meses activos desde la entrega. Mantenlo activo más tiempo por $20/mes, cancela cuando quieras.',
+    addonLine: '¿Más de 500 invitados? Puedes comprar bloques de 100 invitados adicionales por $149 cada uno, solo pregunta.',
     coordLink: 'Míralo en acción',
     compareLink: 'Mira cómo se compara',
   },
@@ -2268,10 +2272,10 @@ const es: SiteCopy = {
       sub: 'Tres cosas que toda pareja sabe de memoria.',
       guestsLabel: '¿Cuántos invitados?',
       guestRanges: [
-        { id: 'essentials', label: 'Hasta 60' },
-        { id: 'signature', label: '61 a 160' },
-        { id: 'grande', label: '161 a 300' },
-        { id: 'grande-plus', label: 'Más de 300' },
+        { id: 'essentials', label: 'Hasta 160' },
+        { id: 'signature', label: '161 a 300' },
+        { id: 'grande', label: '301 a 500' },
+        { id: 'grande-plus', label: 'Más de 500' },
       ],
       dateLabel: 'Fecha de la boda',
       locationLabel: 'Ciudad / País',
@@ -2281,7 +2285,7 @@ const es: SiteCopy = {
       title: 'Nuestra recomendación',
       sub: 'Puedes elegir otro plan cuando quieras. El precio nunca cambia después.',
       reason: '{guests} invitados encaja con {plan}.',
-      reasonPlus: 'Para más de 300 invitados, Grande es el plan. Confirmamos la capacidad contigo.',
+      reasonPlus: 'Para más de 500 invitados, Grande es el plan, más bloques de 100 invitados adicionales. Confirmamos la capacidad contigo.',
       addon: {
         title: 'Agregar el Coordinador IA',
         pitch: 'Maneja tu boda por chat: $79 pago único o $19/mes, cancela cuando quieras.',
