@@ -236,8 +236,6 @@ export interface SiteCopy {
     channelsFootnote: string;
     /* 5 months included, then $20/mo: rendered under the plan cards. */
     maintenanceLine: string;
-    /* Capacity add-on beyond Grande's 500+: rendered under the plan cards. */
-    addonLine: string;
     coordLink: string;
     compareLink: string;
   };
@@ -1116,7 +1114,6 @@ const en: SiteCopy = {
     },
     channelsFootnote: 'SMS and Telegram concierge channels are coming soon and will join when they launch.',
     maintenanceLine: 'Every plan includes 5 months live from delivery. Keep it live longer for $20/mo, cancel any time.',
-    addonLine: 'More than 500 guests? You can buy add-ons in blocks of 100 guests for $149 each, just ask.',
     coordLink: 'See it in action',
     compareLink: 'See how this compares',
   },
@@ -2149,7 +2146,6 @@ const es: SiteCopy = {
     },
     channelsFootnote: 'Los canales de SMS y Telegram llegan pronto y se sumarán cuando estén activos.',
     maintenanceLine: 'Cada plan incluye 5 meses activos desde la entrega. Mantenlo activo más tiempo por $20/mes, cancela cuando quieras.',
-    addonLine: '¿Más de 500 invitados? Puedes comprar bloques de 100 invitados adicionales por $149 cada uno, solo pregunta.',
     coordLink: 'Míralo en acción',
     compareLink: 'Mira cómo se compara',
   },
