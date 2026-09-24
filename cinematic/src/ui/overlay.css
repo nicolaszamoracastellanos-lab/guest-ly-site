@@ -307,10 +307,12 @@ body.js-ready .reveal.is-visible {
   gap: 0.5rem;
 }
 
-@media (min-width: 881px) {
+/* Desktop row starts at 1200px: below that the ES links + actions cannot
+   share one line, so narrower screens keep the burger menu. */
+@media (min-width: 1200px) {
   .nav__inner {
     padding-inline: 20px;
-    gap: 1.5rem;
+    gap: 1.1rem;
   }
 }
 
@@ -538,7 +540,7 @@ body.js-ready .reveal.is-visible {
   gap: 0.75rem;
 }
 
-@media (min-width: 881px) {
+@media (min-width: 1200px) {
   .nav__inner {
     padding-block: 0.75rem;
   }
@@ -546,13 +548,10 @@ body.js-ready .reveal.is-visible {
   .nav__links {
     display: flex;
     align-items: center;
-    gap: 1.4rem;
+    gap: 1.1rem;
     margin-inline: auto;
-  }
-
-  .nav__links {
-    flex-wrap: wrap;
-    row-gap: 0;
+    /* Always one line; the breakpoint above guarantees it fits. */
+    flex-wrap: nowrap;
   }
 
   .nav__links a {
@@ -574,7 +573,7 @@ body.js-ready .reveal.is-visible {
   .nav__actions {
     display: flex;
     align-items: center;
-    gap: 1.1rem;
+    gap: 0.8rem;
   }
 
   .nav__login {
