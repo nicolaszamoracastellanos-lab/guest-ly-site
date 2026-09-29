@@ -29,7 +29,7 @@ export default function PlannerRunsheet() {
   const mainQuery = usePlannerRunsheet();
   const { data, isLoading, error } = mainQuery;
   return (
-    <Screen query={mainQuery}
+    <Screen query={mainQuery} refresh
       header={
         <TopBar
           onBack={back}

@@ -15,7 +15,7 @@
 //  - a place chosen by dragging is still remembered, side and height.
 
 import React, { useEffect, useState } from "react";
-import { Keyboard, Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Keyboard, Platform, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,19 +26,21 @@ import { useLang } from "@/i18n";
 import { Icon } from "./Icon";
 import { T } from "./Text";
 import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN, MAX_CONTENT_WIDTH } from "./tokens";
-import { useBubbleLiftValue } from "./chrome";
+import { useBubbleDocked, useBubbleLiftValue } from "./chrome";
 
 export type AssistantSurface = "guest" | "couple" | "planner";
 
 const SIZE = BUBBLE_SIZE;
 const MARGIN = BUBBLE_MARGIN;
 const STORAGE_KEY = "assistant-bubble";
+/** How much of the bubble shows while docked: inside the 24 pt screen gutter. */
+const SLIVER = 18;
 
 type Saved = { side: "left" | "right"; y: number };
 
 const LABEL = {
   en: { coordinator: "Ask the Coordinator", concierge: "Ask the concierge" },
-  es: { coordinator: "Pregunte al Coordinador", concierge: "Pregunte al concierge" },
+  es: { coordinator: "Pregúntale al Coordinador", concierge: "Pregúntale al concierge" },
 };
 
 export default function AssistantBubble({ surface, hidden = false, badge = false }: { surface: AssistantSurface; hidden?: boolean; badge?: boolean }) {
@@ -49,6 +51,10 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const [keyboard, setKeyboard] = useState(false);
   const [label, setLabel] = useState(false);
   const lift = useBubbleLiftValue();
+  // Docked while the screen's content runs on below the visible area: only a
+  // sliver shows, inside the screen gutter, so the bubble never rests on a
+  // row's pill or button mid-list (chrome.ts, useBubbleDock).
+  const docked = useBubbleDocked();
   // Null until the person drags the bubble somewhere: then it rests in the band.
   const [chosenY, setChosenY] = useState<number | null>(null);
 
@@ -60,6 +66,8 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const gutter = Math.max(0, (width - MAX_CONTENT_WIDTH) / 2);
   const leftX = gutter + MARGIN;
   const rightX = width - gutter - SIZE - MARGIN;
+  const leftDockX = gutter - SIZE + SLIVER;
+  const rightDockX = width - gutter - SLIVER;
 
   const x = useSharedValue(rightX);
   const y = useSharedValue(maxY);
@@ -67,6 +75,8 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const startY = useSharedValue(0);
   const scale = useSharedValue(1);
   const shown = useSharedValue(1);
+  const onRight = useSharedValue(1);
+  const dock = useSharedValue(0);
 
   // Restore the last resting place, once per mount.
   useEffect(() => {
@@ -76,6 +86,7 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw && alive) {
           const saved = JSON.parse(raw) as Saved;
+          onRight.set(saved.side === "left" ? 0 : 1);
           x.set(saved.side === "left" ? leftX : rightX);
           if (typeof saved.y === "number") setChosenY(saved.y);
         }
@@ -106,8 +117,15 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   useEffect(() => {
     const target = chosenY === null ? maxY : Math.min(Math.max(chosenY, minY), maxY);
     y.set(withTiming(target, { duration: 160 }));
-    if (x.get() > width / 2) x.set(rightX);
-  }, [chosenY, maxY, minY, rightX, width, x, y]);
+  }, [chosenY, maxY, minY, y]);
+
+  // Rest, or dock into the gutter on the side it lives on.
+  useEffect(() => {
+    const right = onRight.get() === 1;
+    const target = docked ? (right ? rightDockX : leftDockX) : right ? rightX : leftX;
+    x.set(withSpring(target, { damping: 20, stiffness: 200 }));
+    dock.set(withTiming(docked ? 1 : 0, { duration: 180 }));
+  }, [docked, leftDockX, leftX, rightDockX, rightX, onRight, x, dock]);
 
   const visible = !hidden && !keyboard;
   useEffect(() => {
@@ -150,7 +168,9 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
     })
     .onEnd((e) => {
       const side: "left" | "right" = x.get() + SIZE / 2 + e.velocityX * 0.05 < width / 2 ? "left" : "right";
-      x.set(withSpring(side === "left" ? leftX : rightX, { damping: 18, stiffness: 180 }));
+      onRight.set(side === "right" ? 1 : 0);
+      const dockedNow = dock.get() > 0.5;
+      x.set(withSpring(side === "left" ? (dockedNow ? leftDockX : leftX) : dockedNow ? rightDockX : rightX, { damping: 18, stiffness: 180 }));
       scale.set(withSpring(1));
       runOnJS(persist)(side, y.get());
     });
@@ -170,8 +190,8 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const gesture = Gesture.Race(pan, Gesture.Exclusive(longPress, tap));
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value * (0.7 + 0.3 * shown.value) }],
-    opacity: shown.value,
+    transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value * (0.7 + 0.3 * shown.value) * (1 - 0.12 * dock.value) }],
+    opacity: shown.value * (1 - 0.1 * dock.value),
   }));
   const labelStyle = useAnimatedStyle(() => ({
     // The label sits on the side with room: left of the bubble when it rests
@@ -193,11 +213,22 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
               </T>
             </Animated.View>
           ) : null}
-          <Pressable testID="assistant-bubble" accessibilityRole="button" accessibilityLabel={text} style={styles.button} onPress={open} onLongPress={showLabel}>
+          {/* Touches belong to the gesture above (tap, hold, drag). The view
+              only speaks to VoiceOver and TalkBack: a Pressable here also
+              fired on the same tap and pushed the chat twice (P2-36). */}
+          <View
+            testID="assistant-bubble"
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={text}
+            accessibilityActions={[{ name: "activate" }, { name: "longpress", label: text }]}
+            onAccessibilityAction={(e) => (e.nativeEvent.actionName === "activate" ? open() : showLabel())}
+            style={styles.button}
+          >
             <View style={styles.ring} />
             <Icon name="sparkle" size={26} color={colors.night} strokeWidth={1.8} />
             {badge ? <View style={styles.badge} /> : null}
-          </Pressable>
+          </View>
         </Animated.View>
       </GestureDetector>
     </View>

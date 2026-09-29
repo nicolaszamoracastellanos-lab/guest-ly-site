@@ -11,6 +11,7 @@ import { useVendors, useVendorWrites, type VendorCategory, type VendorStatus, ty
 import { TextField, Options, useAction } from "../../budget/ui";
 import { parseAmount, numText } from "../../budget/money";
 import { useSafeBack } from "@/lib/nav";
+import { useUnsavedGuard } from "@/lib/unsaved";
 
 const CATEGORIES: VendorCategory[] = ["venue", "catering", "photo", "video", "music", "flowers", "decor", "beauty", "attire", "cake", "transport", "stationery", "planner", "rentals", "other"];
 const STATUSES: VendorStatus[] = ["shortlist", "contacted", "quoted", "booked", "done", "cancelled"];
@@ -45,13 +46,18 @@ export function VendorFormScreen() {
   const writes = useVendorWrites();
   const { busy, act } = useAction();
   const editing = params.id ? data?.vendors.find((v) => v.id === params.id) ?? null : null;
-  // Seed once per vendor; state adjusted during render, keyed on the id.
+  // Seed once per screen target: a vendor id, or "new" for a blank card. Add
+  // used to open with the last edited vendor's fields and save a duplicate.
+  const target = params.id ?? "new";
   const [form, setForm] = useState<Form>(EMPTY);
   const [seeded, setSeeded] = useState<string | null>(null);
-  if (editing && seeded !== editing.id) {
-    setForm(fromRow(editing));
-    setSeeded(editing.id);
+  if (seeded !== target && (editing || !params.id)) {
+    setForm(editing ? fromRow(editing) : EMPTY);
+    setSeeded(target);
   }
+  const canEdit = data?.can_edit ?? false;
+  // Typed changes not saved yet ask before leaving (lib/unsaved).
+  const leave = useUnsavedGuard(seeded === target && JSON.stringify(form) !== JSON.stringify(editing ? fromRow(editing) : EMPTY));
 
   async function save() {
     const body = {
@@ -71,12 +77,17 @@ export function VendorFormScreen() {
     };
     await act(
       () => (editing ? writes.update(editing.id, body) : writes.create(body)),
-      () => back()
+      () => {
+        leave.release();
+        setForm(EMPTY);
+        setSeeded(null);
+        back();
+      }
     );
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.title} />} bottomInset={40} keyboard>
+    <Screen header={<TopBar onBack={() => leave(back)} title={copy.title} />} bottomInset={40} keyboard>
       <>
         <BigTitle title={editing ? copy.edit : copy.add} size={36} />
         <Stack gap={12} style={{ marginTop: 18 }}>
@@ -122,7 +133,7 @@ export function VendorFormScreen() {
             <Button label={copy.cancel} kind="ghost" onPress={() => back()} />
           </View>
           <View style={{ flex: 1 }}>
-            <Button label={copy.save} onPress={save} loading={busy} disabled={!form.name.trim()} />
+            <Button label={copy.save} onPress={save} loading={busy} disabled={!form.name.trim() || !canEdit || busy} />
           </View>
         </Row>
       </>

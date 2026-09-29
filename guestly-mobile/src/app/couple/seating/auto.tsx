@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { View, Pressable, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, ApiFailure } from "@/lib/api";
 import {
@@ -35,6 +35,7 @@ const ALL: SeatingCriterion[] = ["party", "relationship", "tags", "surname"];
 
 export default function SeatingAuto() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -64,6 +65,7 @@ export default function SeatingAuto() {
   }
 
   async function run(apply: boolean) {
+    if (busy) return;
     setBusy(apply ? "apply" : "preview");
     try {
       const r = await post<AutoAssignResult>("/couple/seating/auto-assign", {
@@ -79,7 +81,7 @@ export default function SeatingAuto() {
       }
       setPreview(r);
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
     } finally {
       setBusy(null);
     }

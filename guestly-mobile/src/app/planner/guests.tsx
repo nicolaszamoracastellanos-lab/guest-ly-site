@@ -1,11 +1,11 @@
 // Planner guests: names, parties, answers. Contact details never arrive.
 
-import React, { useState } from "react";
-import { View, FlatList } from "react-native";
+import React, { useCallback, useState } from "react";
+import { View, FlatList, RefreshControl } from "react-native";
 import { fmt, useCopy } from "@/i18n";
 import { usePlannerGuests } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, BigTitle, Input, ListRow, Avatar, Badge, T, Skeleton, Stack, useTopInset, Icon, Row, useBottomClearance, COLUMN, QueryError, EmptyState } from "@/ui";
+import { Screen, TopBar, Wordmark, BigTitle, Input, ListRow, Avatar, Badge, T, Skeleton, Stack, useTopInset, Icon, Row, useBottomClearance, COLUMN, QueryError, EmptyState, useScrimScroll } from "@/ui";
 import { colors } from "@/ui/tokens";
 
 export default function PlannerGuests() {
@@ -13,15 +13,26 @@ export default function PlannerGuests() {
   const user = useUserSession();
   const { clearance } = useBottomClearance();
   const top = useTopInset();
+  const scrim = useScrimScroll();
   const [q, setQ] = useState("");
   const guestsQuery = usePlannerGuests(user?.me.tenant.slug ?? "");
   const { data, isLoading } = guestsQuery;
+  const [pulling, setPulling] = useState(false);
+  const onPull = useCallback(async () => {
+    setPulling(true);
+    try {
+      await guestsQuery.refetch();
+    } finally {
+      setPulling(false);
+    }
+  }, [guestsQuery]);
   const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const items = (data?.guests ?? []).filter((g) => (q ? fold(g.name).includes(fold(q)) : true));
 
   return (
-    <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
+    <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
       <FlatList
+        {...scrim.listProps}
         data={items}
         keyExtractor={(g) => g.id}
         ListHeaderComponent={
@@ -36,11 +47,26 @@ export default function PlannerGuests() {
                 {copy.planner.guestsNote}
               </T>
             </Row>
-            <Input icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoCorrect={false} style={{ marginTop: 14, marginBottom: 6 }} />
+            <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoCorrect={false} style={{ marginTop: 14, marginBottom: 6 }} />
           </View>
         }
         contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
-        ListEmptyComponent={isLoading ? <Stack gap={10} style={{ paddingHorizontal: 24 }}><Skeleton h={60} /><Skeleton h={60} /></Stack> : guestsQuery.isError ? <QueryError onRetry={() => void guestsQuery.refetch()} /> : q ? <EmptyState title={copy.common.search} body={copy.find.moreLetters} /> : null}
+        refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={colors.goldLight} colors={[colors.gold]} progressBackgroundColor={colors.night} />}
+        ListEmptyComponent={
+          isLoading ? (
+            <Stack gap={10} style={{ paddingHorizontal: 24 }}>
+              <Skeleton h={60} />
+              <Skeleton h={60} />
+            </Stack>
+          ) : guestsQuery.isError ? (
+            <QueryError onRetry={() => void guestsQuery.refetch()} />
+          ) : q ? (
+            <EmptyState title={copy.core.pickerEmpty} />
+          ) : (
+            // A wedding with no guests yet used to render nothing (P2-32).
+            <EmptyState title={copy.core.guestsEmpty} body={copy.core.guestsEmptyBody} />
+          )
+        }
         renderItem={({ item: g }) => (
           <View style={{ paddingHorizontal: 24 }}>
             <ListRow

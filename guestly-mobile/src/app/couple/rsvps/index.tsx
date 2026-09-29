@@ -5,7 +5,9 @@ import { View, FlatList, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime, shortDate } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { get } from "@/lib/api";
+import { useOnline } from "@/lib/query";
+import { errorText, newSendKey, outcomeUnknown, postOnce } from "@/features/shared/requests";
 import { useCoupleRsvps } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import {
@@ -35,6 +37,8 @@ import {
   ButtonRow,
   StatRow,
   labelLines,
+  useScrimScroll,
+  StaleBanner,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 
@@ -49,15 +53,24 @@ export default function CoupleRsvps() {
   const { clearance } = useBottomClearance();
   const [dock, setDock] = useState(0);
   const top = useTopInset();
+  const scrim = useScrimScroll();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const rsvps = useCoupleRsvps(filter);
   const { data, isLoading } = rsvps;
   const [remindOpen, setRemindOpen] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  // One key per send attempt (the sheet opening), reused if Remind is tapped
+  // again in the same sheet, so the portal can refuse a duplicate run.
+  const [sendKey, setSendKey] = useState("");
   const canEdit = user?.me.can_edit ?? false;
   const totals = data?.totals;
+  const online = useOnline();
+  // Offline with nothing saved for this filter the counts are unknown: say
+  // so, never "0 parties still to answer" or "Remind 0 pending" (QA Sep 29).
+  const known = totals !== undefined;
   const pending = totals?.pending_parties ?? 0;
+  const troubled = !online || rsvps.isError;
 
   // The API sends "3 of 3" in English; show it in the app language.
   const seatsLabel = (v: string) => {
@@ -65,36 +78,53 @@ export default function CoupleRsvps() {
     return m ? fmt(copy.rsvps.seatsOf, { a: m[1], b: m[2] }) : v;
   };
 
+  function openRemind() {
+    setConfirm("");
+    setSendKey(newSendKey());
+    setRemindOpen(true);
+  }
+
+  function closeRemind() {
+    if (busy) return;
+    setRemindOpen(false);
+    setConfirm("");
+  }
+
   async function remindAll() {
+    if (busy || !sendKey) return;
     setBusy(true);
     try {
-      const pendingList = await (
-        await import("@/lib/api")
-      ).get<{ items: { guest_id: string | null }[] }>(
-        "/couple/rsvps?filter=pending",
-      );
+      const pendingList = await get<{ items: { guest_id: string | null }[] }>("/couple/rsvps?filter=pending");
       const ids = pendingList.items
         .map((i) => i.guest_id)
         .filter((x): x is string => !!x);
-      const r = await post<{
+      const r = await postOnce<{
         sent?: number;
+        failed?: number;
         skipped?: number;
         outcomes?: unknown[];
-      }>("/couple/rsvps/remind", { guest_ids: ids, confirm });
+      }>("/couple/rsvps/remind", { guest_ids: ids, confirm }, sendKey);
       setRemindOpen(false);
+      setConfirm("");
       Alert.alert(
         copy.rsvps.remindOne,
         fmt(copy.rsvps.remindSent, {
           n: r.sent ?? ids.length,
+          failed: r.failed ?? 0,
           skipped: r.skipped ?? 0,
         }),
       );
       await qc.invalidateQueries({ queryKey: ["couple-rsvps"] });
     } catch (err) {
-      Alert.alert(
-        copy.common.error,
-        err instanceof ApiFailure ? err.messages[lang] : "",
-      );
+      if (outcomeUnknown(err)) {
+        // The run may have gone out: never leave the sheet armed for a second one.
+        setRemindOpen(false);
+        setConfirm("");
+        Alert.alert(copy.rsvps.remindUnknownTitle, copy.rsvps.remindUnknownBody);
+        void qc.invalidateQueries({ queryKey: ["couple-rsvps"] });
+      } else {
+        Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      }
     } finally {
       setBusy(false);
     }
@@ -112,15 +142,24 @@ export default function CoupleRsvps() {
         <BigTitle
           title={copy.rsvps.title}
           sub={
-            data?.deadline
-              ? fmt(copy.rsvps.subtitle, {
-                  deadline: shortDate(data.deadline, lang),
-                  pending,
-                })
-              : fmt(copy.rsvps.subtitleNoDeadline, { pending })
+            !known
+              ? troubled
+                ? copy.rsvps.countsOffline
+                : undefined
+              : data?.deadline
+                ? fmt(copy.rsvps.subtitle, {
+                    deadline: shortDate(data.deadline, lang),
+                    pending,
+                  })
+                : fmt(copy.rsvps.subtitleNoDeadline, { pending })
           }
         />
       </View>
+      {known && troubled ? (
+        <View style={{ marginTop: 14 }}>
+          <StaleBanner onRetry={() => void rsvps.refetch()} />
+        </View>
+      ) : null}
       <StatRow style={{ marginTop: 18 }}>
         <Tile
           label={copy.rsvps.tiles.attending}
@@ -158,8 +197,9 @@ export default function CoupleRsvps() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
+      <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
         <FlatList
+          {...scrim.listProps}
           data={data?.items ?? []}
           keyExtractor={(r) => r.id}
           ListHeaderComponent={
@@ -221,20 +261,20 @@ export default function CoupleRsvps() {
         <DockedActions onHeight={setDock}>
           <ButtonRow>
             <Button label={copy.rsvps.record} small icon="plus" onPress={() => router.push("/couple/rsvps/record")} />
-            <Button label={fmt(copy.rsvps.remind, { n: pending })} small kind="glass" onPress={() => setRemindOpen(true)} disabled={!pending} />
+            <Button label={known ? fmt(copy.rsvps.remind, { n: pending }) : copy.rsvps.remindOne} small kind="glass" onPress={openRemind} disabled={!known || !pending || !online} />
           </ButtonRow>
         </DockedActions>
       ) : null}
       <Sheet
         visible={remindOpen}
-        onClose={() => setRemindOpen(false)}
+        onClose={closeRemind}
         top={320}
       >
         <T v="title30">{copy.rsvps.remindOne}</T>
         <T v="body15" color={colors.ivory70} style={{ marginTop: 8 }}>
           {fmt(copy.rsvps.remindConfirm, { n: pending })}
         </T>
-        <Input
+        <Input accessibilityLabel={copy.rsvps.remindTyped}
           value={confirm}
           onChangeText={setConfirm}
           placeholder={copy.rsvps.remindTyped}
@@ -245,7 +285,7 @@ export default function CoupleRsvps() {
           label={fmt(copy.rsvps.remind, { n: pending })}
           onPress={remindAll}
           loading={busy}
-          disabled={!["send", "enviar"].includes(confirm.trim().toLowerCase())}
+          disabled={busy || !["send", "enviar"].includes(confirm.trim().toLowerCase())}
           style={{ marginTop: 14 }}
         />
       </Sheet>

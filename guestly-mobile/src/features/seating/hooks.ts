@@ -107,6 +107,11 @@ function set(next: Draft) {
   emit();
 }
 
+/** Forgets the draft: sign-out or a switch to another wedding. */
+export function resetSeatingDraft() {
+  set({ basedOn: null, tables: [], assignments: {}, dirty: false });
+}
+
 /** Seeds the draft from a fresh surface unless there are unsaved edits. */
 export function seedDraft(surface: SeatingSurface, force = false) {
   if (!force && draft.dirty && draft.basedOn === surface.plan_id) return;

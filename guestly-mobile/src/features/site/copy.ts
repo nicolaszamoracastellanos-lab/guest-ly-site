@@ -42,6 +42,7 @@ const en = {
   chatPlanner: "Message the planner",
   photoOf: "{n} of {total}",
   close: "Close",
+  openPhoto: "Open photo",
   none: {
     hotels: "The couple has not added travel details yet.",
     gifts: "The couple has not shared gift details yet.",
@@ -68,7 +69,7 @@ const es: typeof en = {
     faq: "Preguntas",
     gallery: "Fotos",
     video: "Video",
-    chat: "¿Necesita ayuda?",
+    chat: "¿Necesitas ayuda?",
     countdown: "Para el gran día",
   },
   screens: {
@@ -93,10 +94,11 @@ const es: typeof en = {
   chatPlanner: "Escribir al planner",
   photoOf: "{n} de {total}",
   close: "Cerrar",
+  openPhoto: "Abrir foto",
   none: {
     hotels: "La pareja todavía no ha agregado detalles de viaje.",
     gifts: "La pareja todavía no ha compartido detalles de regalos.",
-    faq: "Todavía no hay preguntas y respuestas. Pregúntele lo que quiera al concierge.",
+    faq: "Todavía no hay preguntas y respuestas. Pregúntale lo que quieras al concierge.",
     gallery: "Todavía no hay fotos.",
     story: "La pareja todavía no ha escrito su historia.",
   },

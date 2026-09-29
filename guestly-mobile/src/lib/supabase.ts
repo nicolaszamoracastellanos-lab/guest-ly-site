@@ -21,6 +21,11 @@ export function supabase(): SupabaseClient {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        // PKCE: emailed sign-in links and Google come back to
+        // guestly://auth/callback?code=... (auth/callback.tsx exchanges it).
+        // The default, implicit, put the tokens in the #fragment instead and
+        // the callback screen never saw them.
+        flowType: "pkce",
       },
     });
     // Refresh tokens only while the app is in the foreground.

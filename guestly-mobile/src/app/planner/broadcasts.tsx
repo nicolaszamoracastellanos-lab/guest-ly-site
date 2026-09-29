@@ -24,7 +24,7 @@ export default function PlannerBroadcasts() {
   const history = data?.history ?? [];
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.planner.tabs.more} />}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={app.planner.tabs.more} />}>
       <BigTitle title={c.plannerTitle} sub={c.plannerSubtitle} />
       <Button label={c.plannerRequest} icon="megaphone" onPress={() => router.push({ pathname: "/planner/requests/new", params: { kind: "send_reminders" } })} style={{ marginTop: 18 }} />
       {data ? (

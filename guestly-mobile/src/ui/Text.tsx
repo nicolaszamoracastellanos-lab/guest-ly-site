@@ -10,7 +10,7 @@
 
 import React from "react";
 import { Text as RNText, type TextProps, type TextStyle, StyleSheet } from "react-native";
-import { colors, type, MIN_BODY, MIN_CAPTION } from "./tokens";
+import { colors, fonts, type, MIN_BODY, MIN_CAPTION } from "./tokens";
 
 type Variant = keyof typeof type;
 
@@ -34,7 +34,7 @@ export function T({ v = "body15", color = colors.ivory, center, size, italic, st
     fontSize = floor;
   }
   const lineHeight = size && base.lineHeight ? Math.round(size * ((base.lineHeight as number) / (base.fontSize as number))) : base.lineHeight;
-  const family = italic && v.startsWith("display") ? "CormorantGaramond_400Regular_Italic" : base.fontFamily;
+  const family = italic && v.startsWith("display") ? fonts.displayItalic : base.fontFamily;
   const policy = fontSize >= 40 ? 1.12 : fontSize >= 30 ? 1.2 : 1.3;
   const cap = Math.min(rest.maxFontSizeMultiplier && rest.maxFontSizeMultiplier > 0 ? rest.maxFontSizeMultiplier : policy, policy);
   return (

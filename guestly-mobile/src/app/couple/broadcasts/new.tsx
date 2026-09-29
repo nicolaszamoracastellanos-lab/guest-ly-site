@@ -1,18 +1,17 @@
 // New broadcast: audience, message, preview, then a typed confirmation.
 // Phones never reach the app; the server resolves the audience.
 
-import React, { useEffect, useMemo, useState } from "react";
-import { View, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View, FlatList } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { ApiFailure } from "@/lib/api";
+import { errorText, newSendKey, outcomeUnknown } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Card, Chip, ChipRow, Segmented, Input, Button, Badge, Banner, Sheet, Skeleton, Stack, SectionLabel, T, ListRow, Avatar, Hairline } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
-import { previewBroadcast, sendBroadcast, useBroadcasts, type AudienceFilter, type Composition, type Preview, type SendResult } from "@/features/broadcasts/hooks";
+import { previewBroadcast, sendBroadcast, useBroadcasts, type AudienceFilter, type BroadcastGuest, type Composition, type Preview, type SendResult } from "@/features/broadcasts/hooks";
 import { useSafeBack } from "@/lib/nav";
 import { useUserSession } from "@/lib/session";
 
@@ -22,7 +21,7 @@ type LangMode = "auto" | "es" | "en";
 export default function NewBroadcast() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
-  const router = useRouter();
+  const copyCommonError = useCopy().common.error;
   const back = useSafeBack();
   const user = useUserSession();
   const qc = useQueryClient();
@@ -45,11 +44,17 @@ export default function NewBroadcast() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SendResult | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  // One key per send attempt: minted when the confirm sheet opens, reused if
+  // Send is tapped again in the same sheet.
+  const [sendKey, setSendKey] = useState<string>("");
+  // The request left the phone but no answer came back: the send may have gone
+  // out, so Send is not armed again from this screen.
+  const [unknownOutcome, setUnknownOutcome] = useState(false);
 
-  const audiences = data?.audiences ?? [];
+  const audiences = useMemo(() => data?.audiences ?? [], [data?.audiences]);
   const templates = data?.templates ?? [];
   const template = templates.find((t) => t.key === templateKey) ?? templates[0] ?? null;
-  const guests = data?.guests ?? [];
+  const guests = useMemo(() => data?.guests ?? [], [data?.guests]);
 
   const audience: AudienceFilter | null = useMemo(() => {
     if (audienceKey === "picked") return picked.size ? { type: "guests", guest_ids: [...picked] } : null;
@@ -100,7 +105,7 @@ export default function NewBroadcast() {
       } catch (err) {
         if (alive) {
           setPreview(null);
-          setPreviewError(err instanceof ApiFailure ? err.messages[lang] : null);
+          setPreviewError(errorText(err, lang, copyCommonError));
         }
       }
     }, 350);
@@ -112,30 +117,82 @@ export default function NewBroadcast() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compositionKey, lang]);
 
-  const shownGuests = guests.filter((g) => (pickQuery ? g.name.toLowerCase().includes(pickQuery.toLowerCase()) : true)).slice(0, 80);
-  const canReview = !!composition && !!preview && preview.recipients_count > 0 && !busy;
+  const shownGuests = useMemo(() => {
+    const q = pickQuery.trim().toLowerCase();
+    return q ? guests.filter((g) => g.name.toLowerCase().includes(q)) : guests;
+  }, [guests, pickQuery]);
+  const canReview = !!composition && !!preview && preview.recipients_count > 0 && !busy && !unknownOutcome;
   const confirmOk = typed.trim().toUpperCase() === "SEND" || typed.trim().toUpperCase() === "ENVIAR";
 
+  const togglePick = useCallback((id: string) => {
+    setPicked((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }, []);
+
+  function openConfirm() {
+    setTyped("");
+    setSendError(null);
+    setSendKey(newSendKey());
+    setConfirmOpen(true);
+  }
+
   async function send() {
-    if (!composition || !confirmOk) return;
+    if (!composition || !confirmOk || busy || !sendKey) return;
     setBusy(true);
     setSendError(null);
     try {
-      const r = await sendBroadcast(composition, typed.trim().toUpperCase());
+      const r = await sendBroadcast(composition, typed.trim().toUpperCase(), sendKey);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(r);
       setConfirmOpen(false);
+      setTyped("");
       await qc.invalidateQueries({ queryKey: ["broadcasts"] });
     } catch (err) {
-      setSendError(err instanceof ApiFailure ? err.messages[lang] : c.confirmTitle);
+      if (outcomeUnknown(err)) {
+        setUnknownOutcome(true);
+        setConfirmOpen(false);
+        setTyped("");
+        void qc.invalidateQueries({ queryKey: ["broadcasts"] });
+      } else {
+        setSendError(errorText(err, lang, c.confirmTitle));
+      }
     } finally {
       setBusy(false);
     }
   }
 
+  // Leaving the result screen clears the whole composition, so the next
+  // "New broadcast" always starts from an empty composer.
+  function finish() {
+    setResult(null);
+    setUnknownOutcome(false);
+    setPicked(new Set());
+    setPickQuery("");
+    setCustom("");
+    setVars({});
+    setTyped("");
+    setSendKey("");
+    setPreview(null);
+    setAudienceKey("all");
+    back();
+  }
+
+  if (unknownOutcome) {
+    return (
+      <Screen header={<TopBar onBack={finish} title={c.title} />}>
+        <Banner icon="warning" title={c.sendUnknownTitle} body={c.sendUnknownBody} kind="amber" />
+        <Button label={c.viewSent} onPress={finish} style={{ marginTop: 28 }} />
+      </Screen>
+    );
+  }
+
   if (result) {
     return (
-      <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />}>
+      <Screen query={mainQuery} header={<TopBar onBack={finish} title={c.title} />}>
         <BigTitle label={c.sentTitle} title={fmt(c.sentOf, { sent: result.summary.sent, total: result.summary.total })} sub={fmt(c.sentBody, { sent: result.summary.sent, total: result.summary.total, failed: result.summary.failed })} size={38} />
         {result.failed_batches.length ? (
           <Stack gap={8} style={{ marginTop: 16 }}>
@@ -144,7 +201,7 @@ export default function NewBroadcast() {
             ))}
           </Stack>
         ) : null}
-        <Button label={c.done} onPress={() => router.replace("/couple/broadcasts")} style={{ marginTop: 28 }} />
+        <Button label={c.done} onPress={finish} style={{ marginTop: 28 }} />
       </Screen>
     );
   }
@@ -191,14 +248,14 @@ export default function NewBroadcast() {
                 {template?.vars.length ? (
                   <Stack gap={8} style={{ marginTop: 12 }}>
                     {template.vars.map((v) => (
-                      <Input key={v} value={vars[v] ?? ""} onChangeText={(t) => setVars((p) => ({ ...p, [v]: t }))} placeholder={`${c.fillIn}: ${v}`} />
+                      <Input accessibilityLabel={`${c.fillIn}: ${v}`} key={v} value={vars[v] ?? ""} onChangeText={(t) => setVars((p) => ({ ...p, [v]: t }))} placeholder={`${c.fillIn}: ${v}`} />
                     ))}
                   </Stack>
                 ) : null}
               </View>
             ) : (
               <View style={{ marginTop: 12 }}>
-                <Input value={custom} onChangeText={(t) => setCustom(t.slice(0, 1500))} placeholder={c.custom} multiline style={{ minHeight: 120, alignItems: "flex-start", paddingTop: 12 }} />
+                <Input accessibilityLabel={c.custom} value={custom} onChangeText={(t) => setCustom(t.slice(0, 1500))} placeholder={c.custom} multiline style={{ minHeight: 120, alignItems: "flex-start", paddingTop: 12 }} />
                 <T v="meta13" color={colors.amber} style={{ marginTop: 8 }}>
                   {c.customHint}
                 </T>
@@ -232,42 +289,31 @@ export default function NewBroadcast() {
               </Card>
             ) : null}
             {preview && preview.recipients_count === 0 ? <Banner icon="phone" title={c.noRecipients} /> : null}
-            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : c.review} onPress={() => { setTyped(""); setSendError(null); setConfirmOpen(true); }} disabled={!canReview || templateMismatch} style={{ marginTop: 20 }} />
+            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : c.review} onPress={openConfirm} disabled={!canReview || templateMismatch} style={{ marginTop: 20 }} />
           </>
         ) : null}
       </>
 
       <Sheet visible={pickOpen} onClose={() => setPickOpen(false)} top={90} scroll={false}>
         <View style={{ paddingHorizontal: 20, flex: 1 }}>
-          <Input icon="search" value={pickQuery} onChangeText={setPickQuery} placeholder={c.searchGuests} autoCorrect={false} />
+          <Input accessibilityLabel={c.searchGuests} icon="search" value={pickQuery} onChangeText={setPickQuery} placeholder={c.searchGuests} autoCorrect={false} />
           <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
             <Chip label={c.selectAll} onPress={() => setPicked((p) => new Set([...p, ...shownGuests.filter((g) => g.has_phone).map((g) => g.id)]))} />
             <Chip label={c.clear} onPress={() => setPicked(new Set())} />
           </View>
-          <ScrollView style={{ marginTop: 10 }} keyboardShouldPersistTaps="handled">
-            {shownGuests.map((g, i) => (
-              <ListRow
-                key={g.id}
-                leading={<Avatar initials={g.name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")} />}
-                title={g.name}
-                sub={`${g.lang.toUpperCase()}${g.has_phone ? "" : ` · ${c.noPhone}`}${g.tags.length ? ` · ${g.tags.slice(0, 2).join(", ")}` : ""}`}
-                trailing={<Badge label={picked.has(g.id) ? "✓" : ""} kind={picked.has(g.id) ? "gold" : "mute"} />}
-                chevron={false}
-                onPress={
-                  g.has_phone
-                    ? () =>
-                        setPicked((p) => {
-                          const n = new Set(p);
-                          if (n.has(g.id)) n.delete(g.id);
-                          else n.add(g.id);
-                          return n;
-                        })
-                    : undefined
-                }
-                last={i === shownGuests.length - 1}
-              />
-            ))}
-          </ScrollView>
+          <FlatList
+            style={{ marginTop: 10 }}
+            data={shownGuests}
+            keyExtractor={(g) => g.id}
+            extraData={picked}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            initialNumToRender={16}
+            windowSize={7}
+            renderItem={({ item, index }) => (
+              <PickRow guest={item} on={picked.has(item.id)} noPhone={c.noPhone} onToggle={togglePick} last={index === shownGuests.length - 1} />
+            )}
+          />
           <Button label={fmt(c.pickedGuests, { n: picked.size })} onPress={() => setPickOpen(false)} style={{ marginTop: 8 }} />
         </View>
       </Sheet>
@@ -282,7 +328,7 @@ export default function NewBroadcast() {
           <T v="meta13" color={colors.ivory55}>
             {preview ? fmt(c.sendTo, { n: preview.recipients_count }) : ""}
           </T>
-          <Input value={typed} onChangeText={setTyped} placeholder={c.confirmPlaceholder} autoCapitalize="characters" autoCorrect={false} style={{ marginTop: 12 }} />
+          <Input accessibilityLabel={c.confirmPlaceholder} value={typed} onChangeText={setTyped} placeholder={c.confirmPlaceholder} autoCapitalize="characters" autoCorrect={false} style={{ marginTop: 12 }} />
           {sendError ? (
             <T v="body15" color={colors.red} style={{ marginTop: 10 }}>
               {sendError}
@@ -295,3 +341,17 @@ export default function NewBroadcast() {
     </Screen>
   );
 }
+
+const PickRow = React.memo(function PickRow({ guest: g, on, noPhone, onToggle, last }: { guest: BroadcastGuest; on: boolean; noPhone: string; onToggle: (id: string) => void; last: boolean }) {
+  return (
+    <ListRow
+      leading={<Avatar initials={g.name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")} />}
+      title={g.name}
+      sub={`${g.lang.toUpperCase()}${g.has_phone ? "" : ` · ${noPhone}`}${g.tags.length ? ` · ${g.tags.slice(0, 2).join(", ")}` : ""}`}
+      trailing={<Badge label={on ? "✓" : ""} kind={on ? "gold" : "mute"} />}
+      chevron={false}
+      onPress={g.has_phone ? () => onToggle(g.id) : undefined}
+      last={last}
+    />
+  );
+});

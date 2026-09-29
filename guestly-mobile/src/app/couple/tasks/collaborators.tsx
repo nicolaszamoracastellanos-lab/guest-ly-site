@@ -50,7 +50,7 @@ export default function Collaborators() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -64,7 +64,7 @@ export default function Collaborators() {
       await invalidate();
       setRemoving(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }

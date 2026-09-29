@@ -20,7 +20,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Icon, type IconName } from "./Icon";
-import { colors, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, TAB_BAR_MAX_WIDTH, FILL } from "./tokens";
+import { useCovered } from "@/lib/lock";
+import { colors, fonts, TAB_BAR_HEIGHT, TAB_BAR_BOTTOM, TAB_BAR_MAX_WIDTH, FILL } from "./tokens";
 
 type TabsProps = React.ComponentProps<typeof Tabs>;
 type TabBarFn = NonNullable<TabsProps["tabBar"]>;
@@ -39,7 +40,11 @@ export function GlassTabBar({
   specs,
 }: BottomTabBarProps & { specs: TabSpec[] }) {
   const insets = useSafeAreaInsets();
+  const covered = useCovered();
   const bottom = Math.max(insets.bottom, 0) + TAB_BAR_BOTTOM;
+  // The bar floats above the screens, so it would sit on top of their lock
+  // cover (with its badge counts): it steps aside while the app is covered.
+  if (covered) return null;
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
       <View style={styles.bar}>
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 2,
   },
-  label: { fontFamily: "Jost_500Medium", fontSize: 10, letterSpacing: 0.4, alignSelf: "stretch", textAlign: "center" },
+  label: { fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 0.4, alignSelf: "stretch", textAlign: "center" },
   badge: {
     position: "absolute",
     top: -4,
@@ -140,7 +145,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    fontFamily: "Jost_600SemiBold",
+    fontFamily: fonts.bodySemibold,
     fontSize: 10,
     color: colors.night,
   },

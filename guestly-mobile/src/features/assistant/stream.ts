@@ -4,8 +4,8 @@
 // src/lib/api.ts so auth, language and tenant selection match every other
 // call.
 
-import { Platform } from "react-native";
-import { API_BASE, APP_VERSION, ApiFailure, getCredential } from "@/lib/api";
+import { API_BASE, ApiFailure, authHeaders } from "@/lib/api";
+import { relayAuthStatus } from "@/features/shared/requests";
 
 export type CardField = { label: { en: string; es: string }; before?: string | null; after: string | { en: string; es: string } };
 
@@ -46,26 +46,10 @@ export type ChatBody = {
   turn?: number;
 };
 
-function headers(lang: "en" | "es"): Record<string, string> {
-  const h: Record<string, string> = {
-    Accept: "text/event-stream, application/json",
-    "Content-Type": "application/json",
-    "x-gl-lang": lang,
-    "x-gl-platform": Platform.OS === "android" ? "android" : "ios",
-    "x-gl-app-version": APP_VERSION,
-  };
-  const credential = getCredential();
-  if (credential.kind === "guest") h.Authorization = `Guest ${credential.token}`;
-  if (credential.kind === "user") {
-    h.Authorization = `Bearer ${credential.jwt}`;
-    if (credential.tenantSlug) h["x-gl-tenant"] = credential.tenantSlug;
-  }
-  return h;
-}
 
 const GENERIC = {
   en: "The Coordinator could not finish that. Please try again.",
-  es: "El Coordinador no pudo terminar eso. Inténtelo de nuevo.",
+  es: "El Coordinador no pudo terminar eso. Inténtalo de nuevo.",
 };
 
 /**
@@ -125,9 +109,6 @@ export function streamPost(
       }
     };
 
-    xhr.open("POST", `${API_BASE}/api/mobile/v1${path}`);
-    const h = headers(opts.lang);
-    for (const k of Object.keys(h)) xhr.setRequestHeader(k, h[k]);
     xhr.timeout = opts.timeoutMs ?? 120_000;
 
     xhr.onprogress = () => {
@@ -137,6 +118,9 @@ export function streamPost(
     };
     xhr.onload = () => {
       const type = xhr.getResponseHeader("content-type") ?? "";
+      // Session expiry and a retired app version run the same handlers as
+      // every other API call.
+      relayAuthStatus(xhr.status);
       if (!type.includes("event-stream")) {
         let json: { ok?: boolean; error?: { code: string; message_en: string; message_es: string } } | null = null;
         try {
@@ -155,7 +139,7 @@ export function streamPost(
         new ApiFailure(0, {
           code: "offline",
           message_en: "You seem to be offline. Check the connection and try again.",
-          message_es: "Parece que no tiene conexión. Revise la conexión e inténtelo de nuevo.",
+          message_es: "Parece que no tienes conexión. Revisa la conexión e inténtalo de nuevo.",
         })
       );
     xhr.ontimeout = () => {
@@ -164,7 +148,16 @@ export function streamPost(
       finish({ ...outcome, ok: false, error: outcome.error ?? GENERIC });
     };
     xhr.onabort = () => finish({ ...outcome, ok: sawEvent, error: sawEvent ? undefined : GENERIC });
-    opts.signal?.addEventListener("abort", () => xhr.abort());
-    xhr.send(JSON.stringify(body));
+    opts.signal?.addEventListener("abort", () => {
+      if (xhr.readyState === XMLHttpRequest.UNSENT) finish({ ...outcome, ok: false, error: GENERIC });
+      else xhr.abort();
+    });
+    // The same headers as every API call, with a live (refreshed) token.
+    void authHeaders({ Accept: "text/event-stream, application/json", "x-gl-lang": opts.lang }).then((h) => {
+      if (settled || opts.signal?.aborted) return;
+      xhr.open("POST", `${API_BASE}/api/mobile/v1${path}`);
+      for (const k of Object.keys(h)) xhr.setRequestHeader(k, h[k]);
+      xhr.send(JSON.stringify(body));
+    });
   });
 }

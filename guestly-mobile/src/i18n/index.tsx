@@ -7,12 +7,13 @@
 // Steps 3 and 4 only ever apply on a phone set to a third language. They used to
 // override step 2, so an English phone could flip to Spanish after opening a wedding.
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getLocales } from "expo-localization";
 import { en, type Copy } from "./en";
 import { es } from "./es";
 import { setApiLanguage } from "@/lib/api";
+import { queryClient } from "@/lib/query";
 
 export type Lang = "en" | "es";
 
@@ -46,6 +47,10 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(deviceLang());
   const [explicit, setExplicit] = useState(false);
   const [ready, setReady] = useState(false);
+  // Read by applyTenantDefault through a ref so that callback never changes
+  // identity: the session's boot must not re-run when the person first taps
+  // a language (core review P1-13).
+  const explicitRef = useRef(false);
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
@@ -53,6 +58,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
         if (v === "en" || v === "es") {
           setLangState(v);
           setExplicit(true);
+          explicitRef.current = true;
         }
       })
       .catch(() => {})
@@ -63,20 +69,29 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
     setApiLanguage(lang);
   }, [lang]);
 
+  const langRef = useRef(lang);
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
+
   const setLang = useCallback((l: Lang) => {
+    if (langRef.current !== l) {
+      // Briefings, insight labels and audience names are localized by the
+      // server: refetch them in the new language (the header first).
+      setApiLanguage(l);
+      void queryClient.invalidateQueries();
+    }
     setLangState(l);
     setExplicit(true);
+    explicitRef.current = true;
     AsyncStorage.setItem(KEY, l).catch(() => {});
   }, []);
 
-  const applyTenantDefault = useCallback(
-    (l: Lang | string | null | undefined, guestLanguage?: string | null) => {
-      if (explicit || deviceLangExact()) return;
-      const pick = guestLanguage === "en" || guestLanguage === "es" ? guestLanguage : l;
-      if (pick === "en" || pick === "es") setLangState(pick);
-    },
-    [explicit]
-  );
+  const applyTenantDefault = useCallback((l: Lang | string | null | undefined, guestLanguage?: string | null) => {
+    if (explicitRef.current || deviceLangExact()) return;
+    const pick = guestLanguage === "en" || guestLanguage === "es" ? guestLanguage : l;
+    if (pick === "en" || pick === "es") setLangState(pick);
+  }, []);
 
   const value = useMemo<Ctx>(
     () => ({ lang, explicit, copy: DICT[lang], setLang, applyTenantDefault }),

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { get, post } from "@/lib/api";
+import { get } from "@/lib/api";
+import { postLong, postOnce } from "@/features/shared/requests";
 
 export type Lang = "en" | "es";
 export type RsvpState = "attending" | "declined" | "pending" | "none";
@@ -97,5 +98,10 @@ export const useBroadcast = (id: string) =>
   useQuery({ queryKey: ["broadcasts", id], queryFn: () => get<{ group: HistoryGroup; ledger_available: boolean }>(`/couple/broadcasts/${id}`), enabled: !!id });
 export const usePlannerBroadcasts = () => useQuery({ queryKey: ["planner-broadcasts"], queryFn: () => get<PlannerBroadcasts>("/planner/broadcasts") });
 
-export const previewBroadcast = (c: Composition) => post<Preview>("/couple/broadcasts/preview", c);
-export const sendBroadcast = (c: Composition, confirm: string) => post<SendResult>("/couple/broadcasts", { ...c, confirm });
+// The preview may translate the custom text, so it gets the model timeout.
+export const previewBroadcast = (c: Composition) => postLong<Preview>("/couple/broadcasts/preview", c);
+/** `sendKey` is minted once per send attempt (the confirm sheet opening) and
+ *  reused on any retry of that attempt, so the portal can answer a replay with
+ *  the first result instead of messaging every guest twice. */
+export const sendBroadcast = (c: Composition, confirm: string, sendKey: string) =>
+  postOnce<SendResult>("/couple/broadcasts", { ...c, confirm }, sendKey);

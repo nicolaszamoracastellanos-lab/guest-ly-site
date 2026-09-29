@@ -55,7 +55,7 @@ export default function Reminders() {
       await post("/couple/tasks/reminders", { enabled });
       await invalidate();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -73,9 +73,11 @@ export default function Reminders() {
     try {
       await post("/couple/tasks/feed/rotate", {});
       await invalidate();
+      // "Copied" referred to the old link, which no longer works.
+      setCopied(false);
       setConfirmRotate(false);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -92,11 +94,18 @@ export default function Reminders() {
             <Card kind="solid" padding={16}>
               <Row style={{ justifyContent: "space-between", minHeight: 44 }}>
                 <T v="body16">{copy.remindersSwitch}</T>
-                <Toggle value={board.settings.reminders_enabled} onChange={(v) => canEdit && !busy && setEnabled(v)} label={copy.remindersSwitch} />
+                <View pointerEvents={canEdit ? "auto" : "none"} style={canEdit ? undefined : { opacity: 0.5 }}>
+                  <Toggle value={board.settings.reminders_enabled} onChange={(v) => canEdit && !busy && setEnabled(v)} label={copy.remindersSwitch} />
+                </View>
               </Row>
               <T v="meta13" color={colors.ivory55} style={{ marginTop: 8 }}>
                 {copy.remindersBody} ({zoneLabel(board.tz)})
               </T>
+              {!canEdit ? (
+                <T v="meta13" color={colors.ivory55} style={{ marginTop: 8 }}>
+                  {copy.readOnly}
+                </T>
+              ) : null}
             </Card>
             <Card kind="solid" padding={16}>
               <SectionLabel color={colors.goldLight}>{copy.feedTitle}</SectionLabel>

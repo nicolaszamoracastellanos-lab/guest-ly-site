@@ -5,8 +5,9 @@ import { View, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeatureCopy } from "@/i18n/feature";
-import { relTime, useLang, useCopy } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { relTime, shortDate, useLang, useCopy } from "@/i18n";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, Input, Row, Stack, StatTile, SectionLabel, EmptyState, Skeleton, Gem } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -32,8 +33,10 @@ export default function Insights() {
   const [notice, setNotice] = useState<string | null>(null);
 
   function fail(err: unknown) {
-    Alert.alert(err instanceof ApiFailure ? err.messages[lang] : "");
+    Alert.alert(app.common.error, errorText(err, lang, app.common.errorBody));
   }
+  /** "whatsapp" reads as "WhatsApp", never the raw enum. */
+  const channelLabel = (ch: string | null | undefined) => (ch ? c.channels[ch] ?? c.channels.other : "");
   async function refresh() {
     await Promise.all([qc.invalidateQueries({ queryKey: INSIGHTS_KEY }), qc.invalidateQueries({ queryKey: BRAIN_KEY }), qc.invalidateQueries({ queryKey: ["couple-home"] })]);
   }
@@ -130,7 +133,7 @@ export default function Insights() {
               {g.question}
             </T>
             <Row gap={8} style={{ marginTop: 6 }}>
-              <Badge label={g.channel} kind="mute" />
+              <Badge label={channelLabel(g.channel)} kind="mute" />
               <T v="meta13" color={colors.ivory55}>
                 {c.asked(g.occurrences)} · {relTime(g.created_at, lang)}
               </T>
@@ -138,7 +141,7 @@ export default function Insights() {
             {canEdit ? (
               answering === g.question ? (
                 <Stack gap={8} style={{ marginTop: 12 }}>
-                  <Input value={answer} onChangeText={setAnswer} placeholder={c.answerPlaceholder} multiline autoFocus style={{ minHeight: 96, alignItems: "flex-start", paddingVertical: 12 }} />
+                  <Input accessibilityLabel={c.answerPlaceholder} value={answer} onChangeText={setAnswer} placeholder={c.answerPlaceholder} multiline autoFocus style={{ minHeight: 96, alignItems: "flex-start", paddingVertical: 12 }} />
                   <Row gap={8}>
                     <View style={{ flex: 1 }}>
                       <Button label={c.publishAnswer} small onPress={() => publishAnswer(g.question)} loading={busy === g.question} disabled={!answer.trim()} />
@@ -176,7 +179,7 @@ export default function Insights() {
                   {e.question}
                 </T>
                 <T v="meta13" color={colors.ivory55} style={{ marginTop: 4 }}>
-                  {[e.guest, e.channel, c.asked(e.occurrences), relTime(e.last_asked, lang)].filter(Boolean).join(" · ")}
+                  {[e.guest, channelLabel(e.channel), c.asked(e.occurrences), relTime(e.last_asked, lang)].filter(Boolean).join(" · ")}
                 </T>
               </View>
             </Row>
@@ -245,10 +248,10 @@ export default function Insights() {
             </Row>
             <Row style={{ justifyContent: "space-between", marginTop: 8 }}>
               <T v="meta13" color={colors.ivory40}>
-                {data.daily[0]?.day.slice(5)}
+                {shortDate(data.daily[0]?.day, lang)}
               </T>
               <T v="meta13" color={colors.ivory40}>
-                {data.daily[data.daily.length - 1]?.day.slice(5)}
+                {shortDate(data.daily[data.daily.length - 1]?.day, lang)}
               </T>
             </Row>
           </Card>

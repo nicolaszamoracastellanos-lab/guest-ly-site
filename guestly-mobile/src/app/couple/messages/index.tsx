@@ -6,26 +6,29 @@ import { View, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, ChipRow, ListRow, Avatar, Badge, Row, T, EmptyState, Skeleton, Stack, useTopInset, useBottomClearance, COLUMN, QueryError } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, ChipRow, ListRow, Avatar, Badge, Row, T, EmptyState, Skeleton, Stack, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
+import { COPY as INSIGHTS } from "@/features/insights/copy";
 import { useInboxList } from "@/features/inbox/hooks";
 
 const FILTERS = ["needs_you", "all", "whatsapp", "web", "app"] as const;
 
 export default function Inbox() {
   const c = useFeatureCopy(COPY);
+  const insightsTitle = useFeatureCopy(INSIGHTS).title;
   const { lang } = useLang();
   const router = useRouter();
   const { clearance } = useBottomClearance();
   const top = useTopInset();
+  const scrim = useScrimScroll();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("needs_you");
   const inbox = useInboxList(filter);
   const { data, isLoading } = inbox;
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar left={<Wordmark height={20} />} right={<IconButton name="sparkle" onPress={() => router.push("/couple/insights")} label={c.title} />} />
+      <TopBar left={<Wordmark height={20} />} right={<IconButton name="sparkle" onPress={() => router.push("/couple/insights")} label={insightsTitle} />} />
       <View style={{ marginTop: 18 }}>
         <BigTitle title={c.title} sub={c.subtitle} />
       </View>
@@ -40,8 +43,9 @@ export default function Inbox() {
   );
 
   return (
-    <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
+    <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
       <FlatList
+        {...scrim.listProps}
         data={data?.items ?? []}
         keyExtractor={(i) => i.id}
         ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}

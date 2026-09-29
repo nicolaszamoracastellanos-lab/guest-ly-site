@@ -29,3 +29,15 @@ export function slug(text: string): string {
       .slice(0, 40) || `q_${Date.now().toString(36)}`
   );
 }
+
+/** A slug id that is not already in `taken`: "diet", then "diet_2", "diet_3".
+ *  Two questions (or two options) with the same label used to share an id,
+ *  which merged their answers and duplicated React keys. */
+export function uniqueSlug(text: string, taken: Iterable<string>): string {
+  const used = new Set(taken);
+  const base = slug(text);
+  if (!used.has(base)) return base;
+  let n = 2;
+  while (used.has(`${base}_${n}`)) n += 1;
+  return `${base}_${n}`;
+}

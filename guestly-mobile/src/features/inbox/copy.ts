@@ -28,11 +28,12 @@ export const COPY = {
     viewGuest: "Open guest",
     started: (rel: string) => `Started ${rel}`,
     readOnly: "Read only: owners and admins reply.",
+    earlier: "Show earlier messages",
   },
   es: {
     title: "Mensajes",
     subtitle: "Cada conversación de los invitados con el concierge, en todos los canales.",
-    filters: { needs_you: "Le necesitan", all: "Todas", whatsapp: "WhatsApp", web: "Web", app: "App" } as Record<string, string>,
+    filters: { needs_you: "Te necesitan", all: "Todas", whatsapp: "WhatsApp", web: "Web", app: "App" } as Record<string, string>,
     channel: { whatsapp: "WhatsApp", web: "Web", app: "App", sms: "SMS" } as Record<string, string>,
     upset: "Molesto",
     frustrated: "Frustrado",
@@ -58,5 +59,6 @@ export const COPY = {
     viewGuest: "Ver invitado",
     started: (rel: string) => `Comenzó ${rel}`,
     readOnly: "Solo lectura: los dueños y administradores responden.",
+    earlier: "Ver mensajes anteriores",
   },
 };

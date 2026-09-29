@@ -3,6 +3,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { get, post, del } from "@/lib/api";
+import { postLong, AI_TIMEOUT_MS } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
 
 export type ItemStatus = "quoted" | "confirmed" | "pending" | "cancelled";
@@ -148,7 +149,13 @@ export function useBudgetSurface(budgetId?: string | null) {
 export function useBudgetWrites() {
   const base = useBudgetBase();
   const qc = useQueryClient();
-  const done = () => qc.invalidateQueries({ queryKey: [BUDGET_KEY] });
+  // Home shows "% paid" from the budget, so it refreshes with every write.
+  const done = () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: [BUDGET_KEY] }),
+      qc.invalidateQueries({ queryKey: ["couple-home"] }),
+      qc.invalidateQueries({ queryKey: ["planner-home"] }),
+    ]);
   const run = async <T>(p: Promise<T>): Promise<T> => {
     const r = await p;
     await done();
@@ -168,7 +175,8 @@ export function useBudgetWrites() {
     createPayment: (body: Record<string, unknown>) => run(post<{ id: string }>(`${base}/payments`, body)),
     deletePayment: (id: string) => run(del<{ id: string }>(`${base}/payments/${id}`)),
     addComment: (item_id: string, body: string, mentions: string[]) => run(post<{ item_id: string }>(`${base}/comments`, { item_id, body, mentions })),
-    extract: (body: { text?: string; file_base64?: string; filename?: string; mime?: string }) => post<{ extracted: ExtractedBudget }>(`${base}/import/extract`, body),
+    // A model read: normal latency is 25 to 50 s, past the 20 s default.
+    extract: (body: { text?: string; file_base64?: string; filename?: string; mime?: string }) => postLong<{ extracted: ExtractedBudget }>(`${base}/import/extract`, body, AI_TIMEOUT_MS),
     commit: (extracted: ExtractedBudget, target_budget_id: string | null) => run(post<{ budgetId: string; items: number; payments: number }>(`${base}/import/commit`, { extracted, target_budget_id })),
   };
 }

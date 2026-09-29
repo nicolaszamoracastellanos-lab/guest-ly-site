@@ -1,7 +1,7 @@
 // Seating: tables with their fill, the parties still without a seat, and the
 // explicit Save. The draft store is shared with the table detail screen.
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { View, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/lib/nav";
@@ -10,6 +10,7 @@ import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
+import { useUserSession } from "@/lib/session";
 import {
   Screen,
   TopBar,
@@ -45,6 +46,32 @@ import {
   type SeatingParty,
 } from "@/features/seating/hooks";
 
+const PAGE = 60;
+const PAGE_STEP = 100;
+
+const PartyRow = memo(function PartyRow({
+  party,
+  sub,
+  onPress,
+  last,
+}: {
+  party: SeatingParty;
+  sub: string;
+  onPress?: (p: SeatingParty) => void;
+  last: boolean;
+}) {
+  return (
+    <ListRow
+      leading={<Avatar initials={initialsOf(party.name)} />}
+      title={party.name}
+      sub={sub}
+      chevron={!!onPress}
+      onPress={onPress ? () => onPress(party) : undefined}
+      last={last}
+    />
+  );
+});
+
 export default function SeatingIndex() {
   const c = useFeatureCopy(COPY);
   const app = useCopy();
@@ -53,6 +80,7 @@ export default function SeatingIndex() {
   const goBack = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
+  const canEdit = useUserSession()?.me.can_edit ?? false;
   const mainQuery = useCoupleSeating();
   const { data, isLoading, error } = mainQuery;
   const draft = useDraft();
@@ -73,10 +101,23 @@ export default function SeatingIndex() {
     () => (data ? deriveDraft(data, draft) : null),
     [data, draft],
   );
-  const unseated =
-    view?.parties.filter((p) => p.confirmed && p.unseated > 0) ?? [];
-  const unconfirmed =
-    view?.parties.filter((p) => !p.confirmed && p.unseated > 0) ?? [];
+  const unseated = useMemo(
+    () => view?.parties.filter((p) => p.confirmed && p.unseated > 0) ?? [],
+    [view],
+  );
+  const unconfirmed = useMemo(
+    () => view?.parties.filter((p) => !p.confirmed && p.unseated > 0) ?? [],
+    [view],
+  );
+  // A 300-guest wedding lists every unseated party; render them in pages so
+  // one seat change does not rebuild hundreds of rows.
+  const [limit, setLimit] = useState(PAGE);
+  const [limitUnconfirmed, setLimitUnconfirmed] = useState(PAGE);
+  const hasTables = !!view?.tables.length;
+  const onParty = useCallback(
+    (p: SeatingParty) => (hasTables ? setPick(p) : setAddOpen(true)),
+    [hasTables],
+  );
   const pendingDb = error instanceof ApiFailure && error.code === "pending_db";
 
   function back() {
@@ -95,12 +136,13 @@ export default function SeatingIndex() {
   }
 
   async function onSave() {
+    if (saving || !canEdit) return;
     setSaving(true);
     try {
       await save();
       void qc.invalidateQueries({ queryKey: SEATING_KEY });
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
     } finally {
       setSaving(false);
     }
@@ -129,7 +171,7 @@ export default function SeatingIndex() {
           onBack={back}
           title={app.coupleHome.tabs.more}
           right={
-            draft.dirty ? (
+            draft.dirty && canEdit ? (
               <Button
                 label={c.savePlan}
                 small
@@ -166,6 +208,11 @@ export default function SeatingIndex() {
       ) : null}
       {view ? (
         <>
+          {!canEdit ? (
+            <T v="meta13" color={colors.ivory55} style={{ marginTop: 12 }}>
+              {c.readOnly}
+            </T>
+          ) : null}
           <Row gap={8} style={{ marginTop: 18 }}>
             <StatTile
               value={String(view.stats.seated)}
@@ -183,6 +230,7 @@ export default function SeatingIndex() {
             />
           </Row>
 
+          {canEdit ? (
           <Row gap={8} style={{ marginTop: 14 }}>
             <View style={{ flex: 1 }}>
               <Button
@@ -204,23 +252,26 @@ export default function SeatingIndex() {
               />
             </View>
           </Row>
+          ) : null}
 
           <Row style={{ justifyContent: "space-between", marginTop: 26 }}>
             <SectionLabel>
               {c.tables} · {view.stats.tables}
             </SectionLabel>
-            <Pressable
-              onPress={() => setAddOpen(true)}
-              accessibilityRole="button"
-              style={{ minHeight: 44, justifyContent: "center" }}
-            >
-              <Row gap={6}>
-                <Icon name="plus" size={16} color={colors.goldLight} />
-                <T v="meta13" color={colors.goldLight}>
-                  {c.addTable}
-                </T>
-              </Row>
-            </Pressable>
+            {canEdit ? (
+              <Pressable
+                onPress={() => setAddOpen(true)}
+                accessibilityRole="button"
+                style={{ minHeight: 44, justifyContent: "center" }}
+              >
+                <Row gap={6}>
+                  <Icon name="plus" size={16} color={colors.goldLight} />
+                  <T v="meta13" color={colors.goldLight}>
+                    {c.addTable}
+                  </T>
+                </Row>
+              </Pressable>
+            ) : null}
           </Row>
           {!view.tables.length ? (
             <T v="body15" color={colors.ivory55} style={{ marginTop: 10 }}>
@@ -285,23 +336,29 @@ export default function SeatingIndex() {
               padding={2}
               style={{ marginTop: 8, paddingHorizontal: 18 }}
             >
-              {unseated.map((p, i) => (
-                <ListRow
+              {unseated.slice(0, limit).map((p, i, list) => (
+                <PartyRow
                   key={p.rsvp_id}
-                  leading={<Avatar initials={initialsOf(p.name)} />}
-                  title={p.name}
+                  party={p}
                   sub={
                     p.table_ids.length
                       ? `${peopleLabel(p.unseated)} · ${fmt(c.splitAcross, { n: p.table_ids.length })}`
                       : peopleLabel(p.unseated)
                   }
-                  onPress={() =>
-                    view.tables.length ? setPick(p) : setAddOpen(true)
-                  }
-                  last={i === unseated.length - 1}
+                  onPress={canEdit ? onParty : undefined}
+                  last={i === list.length - 1}
                 />
               ))}
             </Card>
+          ) : null}
+          {unseated.length > limit ? (
+            <Button
+              label={fmt(c.showMore, { n: Math.min(PAGE_STEP, unseated.length - limit) })}
+              kind="text"
+              small
+              onPress={() => setLimit((n) => n + PAGE_STEP)}
+              style={{ marginTop: 6 }}
+            />
           ) : null}
 
           {unconfirmed.length ? (
@@ -321,25 +378,31 @@ export default function SeatingIndex() {
                     padding={2}
                     style={{ marginTop: 8, paddingHorizontal: 18 }}
                   >
-                    {unconfirmed.map((p, i) => (
-                      <ListRow
+                    {unconfirmed.slice(0, limitUnconfirmed).map((p, i, list) => (
+                      <PartyRow
                         key={p.rsvp_id}
-                        leading={<Avatar initials={initialsOf(p.name)} />}
-                        title={p.name}
+                        party={p}
                         sub={peopleLabel(p.unseated)}
-                        onPress={() =>
-                          view.tables.length ? setPick(p) : setAddOpen(true)
-                        }
-                        last={i === unconfirmed.length - 1}
+                        onPress={canEdit ? onParty : undefined}
+                        last={i === list.length - 1}
                       />
                     ))}
                   </Card>
+                  {unconfirmed.length > limitUnconfirmed ? (
+                    <Button
+                      label={fmt(c.showMore, { n: Math.min(PAGE_STEP, unconfirmed.length - limitUnconfirmed) })}
+                      kind="text"
+                      small
+                      onPress={() => setLimitUnconfirmed((n) => n + PAGE_STEP)}
+                      style={{ marginTop: 6 }}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </View>
           ) : null}
 
-          {draft.dirty ? (
+          {draft.dirty && canEdit ? (
             <Button
               label={c.savePlan}
               onPress={onSave}
@@ -351,11 +414,11 @@ export default function SeatingIndex() {
         </>
       ) : null}
 
-      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} top={220}>
+      <Sheet visible={addOpen && canEdit} onClose={() => setAddOpen(false)} top={220}>
         <Stack gap={12} style={{ paddingHorizontal: 20 }}>
           <T v="title26">{c.addTable}</T>
           <SectionLabel>{c.tableName}</SectionLabel>
-          <Input
+          <Input accessibilityLabel={c.tableName}
             value={name}
             onChangeText={setName}
             placeholder={c.tableNamePlaceholder.replace(
@@ -365,7 +428,7 @@ export default function SeatingIndex() {
             autoFocus
           />
           <SectionLabel>{c.seats}</SectionLabel>
-          <Input
+          <Input accessibilityLabel={c.seats}
             value={seats}
             onChangeText={(t) => setSeats(t.replace(/[^0-9]/g, "").slice(0, 2))}
             keyboardType="number-pad"
@@ -388,7 +451,7 @@ export default function SeatingIndex() {
         </Stack>
       </Sheet>
 
-      <Sheet visible={!!pick} onClose={() => setPick(null)} top={180}>
+      <Sheet visible={!!pick && canEdit} onClose={() => setPick(null)} top={180}>
         {pick && view ? (
           <Stack gap={10} style={{ paddingHorizontal: 20 }}>
             <T v="title26">{fmt(c.pickTable, { name: pick.name })}</T>

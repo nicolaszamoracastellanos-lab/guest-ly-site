@@ -2,7 +2,7 @@
 
 import React from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { useCoupleDayOf } from "@/lib/hooks";
 import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon } from "@/ui";
@@ -12,7 +12,8 @@ import { nightOrder } from "@/features/runsheet/list";
 export default function CoupleDayOf() {
   const copy = useCopy();
   const router = useRouter();
-  const mainQuery = useCoupleDayOf();
+  const focused = useIsFocused();
+  const mainQuery = useCoupleDayOf({ poll: focused });
   const { data, isLoading } = mainQuery;
   // Part 9 audit, D-038. The server marks a block done by the clock alone, so
   // six months before the wedding every block read DONE with a line through it.

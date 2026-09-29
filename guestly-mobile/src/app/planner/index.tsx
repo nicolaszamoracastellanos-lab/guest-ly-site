@@ -1,11 +1,11 @@
 // Planner home: greeting, needs you, two tiles, the weddings list.
 
 import React, { useRef } from "react";
-import { View } from "react-native";
+import { View, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, plural, useCopy, useLang, mediumDate } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
-import { useSession, useUserSession } from "@/lib/session";
+import { can, useSession, useUserSession } from "@/lib/session";
 import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, StatTile, SectionLabel, Skeleton, Card, ListRow, BriefingRow, useBubbleAvoid } from "@/ui";
 import { colors } from "@/ui/tokens";
 
@@ -14,13 +14,13 @@ export default function PlannerHome() {
   const { lang } = useLang();
   const router = useRouter();
   const user = useUserSession();
-  const { switchTenant } = useSession();
+  const { switchTenant, switchingTenant } = useSession();
   const mainQuery = usePlannerHome();
   const { data, isLoading } = mainQuery;
   const hour = new Date().getHours();
   const part = hour < 12 ? copy.planner.morning : hour < 19 ? copy.planner.afternoon : copy.planner.evening;
   const name = data?.greeting_name ?? user?.me.user.email.split("@")[0] ?? "";
-  const needs = (data?.briefing.length ?? 0) + (data?.weddings.reduce((s, w) => s + w.open_requests, 0) ?? 0);
+  const needs = needsPlanner(data);
   // Same fixer-round-3 fix as couple/index.tsx: the stat tiles and the
   // weddings list can sit right where the bubble rests at some window
   // heights (390 pt wide) even though the screen's own scroll ends clear.
@@ -28,7 +28,7 @@ export default function PlannerHome() {
   const bubbleAvoid = useBubbleAvoid(afterBriefing);
 
   return (
-    <Screen query={mainQuery} header={<TopBar left={<Row gap={8}><Wordmark height={20} /><Badge label={copy.settings.planner} kind="gold" /></Row>} right={<IconButton name="bell" badge={needs > 0} onPress={() => router.push("/planner/requests")} />} />}>
+    <Screen query={mainQuery} refresh header={<TopBar left={<Row gap={8}><Wordmark height={20} /><Badge label={copy.settings.planner} kind="gold" /></Row>} right={<IconButton name="bell" badge={needs > 0} onPress={() => router.push("/planner/requests")} label={copy.planner.tabs.requests} />} />}>
       <View style={{ marginTop: 18 }}>
         <T v="title42" size={38}>
           {fmt(copy.planner.greeting, { part, name: cap(name) })}
@@ -61,8 +61,8 @@ export default function PlannerHome() {
               key={w.slug}
               title={`${w.couple_names}${w.wedding_date ? ` · ${mediumDate(w.wedding_date, lang)}` : ""}`}
               sub={w.current ? `${copy.planner.current}${w.days_to_go !== null ? ` · ${w.days_to_go} ${copy.common.days}` : ""}` : w.days_to_go !== null && w.days_to_go < 30 ? `${copy.planner.nextUp} · ${w.days_to_go} ${copy.common.days}` : copy.planner.quiet}
-              trailing={<Badge label={plural(w.open_requests, copy.planner.open)} kind={w.open_requests ? "amber" : "mute"} />}
-              onPress={async () => { if (!w.current) await switchTenant(w.slug); }}
+              trailing={switchingTenant === w.slug ? <ActivityIndicator color={colors.goldLight} /> : <Badge label={plural(w.open_requests, copy.planner.open)} kind={w.open_requests ? "amber" : "mute"} />}
+              onPress={() => void openWedding(w.slug, w.current)}
               chevron={!w.current}
               last={i === arr.length - 1}
             />
@@ -71,6 +71,14 @@ export default function PlannerHome() {
       </View>
     </Screen>
   );
+
+  // Switching commits only when the new wedding answered; the screen then
+  // refetches everything for it (core review P0-2, P0-4).
+  async function openWedding(slug: string, current: boolean) {
+    if (current || switchingTenant) return;
+    const ok = await switchTenant(slug);
+    if (!ok) Alert.alert(copy.common.error, copy.core.switchFailed);
+  }
 
   function go(href: string) {
     const map: [string, string][] = [
@@ -85,8 +93,24 @@ export default function PlannerHome() {
       ["assistant", "/assistant"],
     ];
     const hit = map.find(([web]) => href.includes(web));
-    router.push((hit ? hit[1] : "/planner/more") as never);
+    // A tool that is off for this planner opens More instead of a refusal.
+    const tool = hit ? (hit[0] === "assistant" ? "coordinator" : hit[0] === "requests" ? null : hit[0]) : null;
+    router.push((hit && (!tool || can(user?.me, tool)) ? hit[1] : "/planner/more") as never);
   }
+}
+
+/**
+ * What waits on the planner, counted in one unit (briefing rows), never rows
+ * plus open requests (core review P2-31). Requests waiting on the couple do
+ * not count. The portal's planner rows about requests and due tasks both link
+ * to /planner/requests, so those are replaced by one row for the planner's own
+ * open tasks. A row the portal marks `needs_you` is trusted as is.
+ */
+function needsPlanner(data: { briefing: { href: string; needs_you?: boolean }[]; open_tasks: number } | undefined): number {
+  if (!data) return 0;
+  if (data.briefing.some((b) => typeof b.needs_you === "boolean")) return data.briefing.filter((b) => b.needs_you).length;
+  const other = data.briefing.filter((b) => !b.href.includes("/planner/requests")).length;
+  return other + (data.open_tasks > 0 ? 1 : 0);
 }
 
 function cap(s: string): string {

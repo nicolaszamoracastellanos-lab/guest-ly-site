@@ -1,16 +1,21 @@
 // Who is coming: attending or declined per person per event, then the
-// couple's questions, then submit. Same roster shape as the web wizard.
+// couple's questions, then submit. Same roster shape and the same question
+// rules as the web wizard: general questions are always asked, an event's
+// questions only while someone attends it, and required ones are checked here
+// before the server would refuse them.
 
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
 import { useGuestRsvp, type RsvpSummary } from "@/lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Segmented, Input, Button, Row, Stack, Skeleton, SectionLabel, Chip } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { guestErrorText, rsvpReason } from "@/features/guest/errors";
+import { MAX_ROSTER, answersToSend, bi, isSelect, missingRequired, relevantQuestions } from "@/features/guest/rsvp";
 
 type Answer = "attending" | "declined";
 
@@ -26,16 +31,18 @@ export default function RsvpAnswers() {
   const [seats, setSeats] = useState<Record<string, Answer>[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [showMissing, setShowMissing] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The server stores at most 20 people per answer.
+  const seatCount = payload ? Math.min(payload.maxParty, MAX_ROSTER) : 0;
 
   // Seed from the existing answer when the payload (or its version) changes.
   // State adjusted during render, keyed on the payload identity.
   const seedKey = payload ? `${payload.guestToken}:${payload.existing?.respondedAt ?? ""}:${payload.maxParty}` : null;
   const [seededFor, setSeededFor] = useState<string | null>(null);
   if (payload && seedKey !== seededFor) {
-    const count = payload.maxParty;
     const existing = payload.existing;
-    const initial: Record<string, Answer>[] = Array.from({ length: count }, (_, i) => {
+    const initial: Record<string, Answer>[] = Array.from({ length: seatCount }, (_, i) => {
       const comp = existing?.companions?.[i];
       if (comp?.events) {
         const out: Record<string, Answer> = {};
@@ -52,24 +59,36 @@ export default function RsvpAnswers() {
     setSeededFor(seedKey);
     setSeats(initial);
     setAnswers(existing?.questionAnswers ?? {});
+    setShowMissing(false);
+    setError(null);
   }
 
   const people = useMemo(() => {
     if (!payload) return [];
-    return Array.from({ length: payload.maxParty }, (_, i) => ({
+    return Array.from({ length: seatCount }, (_, i) => ({
       name: i === 0 ? payload.displayName : payload.members[i - 1] ?? fmt(copy.rsvp.guestN, { n: i + 1 }),
       tag: i === 0 ? copy.rsvp.you : copy.rsvp.partyMember,
       kind: i === 0 ? ("gold" as const) : ("mute" as const),
     }));
-  }, [payload, copy]);
+  }, [payload, copy, seatCount]);
 
-  const complete = payload ? seats.every((s) => payload.events.every((e) => s[e.id])) && seats.length === payload.maxParty : false;
-  const anyAttending = seats.some((s) => Object.values(s).some((v) => v === "attending"));
-  const questions = payload?.questions ?? [];
+  const complete = payload ? seats.length === seatCount && seats.every((s) => payload.events.every((e) => s[e.id])) : false;
+  const relevant = useMemo(() => relevantQuestions(payload?.questions ?? [], seats), [payload?.questions, seats]);
+  const missing = useMemo(() => new Set(missingRequired(relevant, answers).map((q) => q.id)), [relevant, answers]);
+
+  function setAnswer(id: string, v: string) {
+    setAnswers((a) => ({ ...a, [id]: v }));
+    if (error) setError(null);
+  }
 
   async function submit() {
     if (!payload || !complete) {
       setError(copy.rsvp.needsAnswer);
+      return;
+    }
+    if (missing.size) {
+      setShowMissing(true);
+      setError(copy.rsvp.requiredMissing);
       return;
     }
     setBusy(true);
@@ -78,12 +97,12 @@ export default function RsvpAnswers() {
       const events: Record<string, Answer> = {};
       for (const e of payload.events) events[e.id] = seats.some((s) => s[e.id] === "attending") ? "attending" : "declined";
       const companions = seats.map((s, i) => ({ name: i === 0 ? payload.displayName : payload.members[i - 1] ?? null, main: i === 0 ? true : undefined, events: s, attending: Object.values(s).some((v) => v === "attending") }));
-      const r = await post<{ summary: RsvpSummary }>("/guest/rsvp", { events, companions, answers });
-      await qc.invalidateQueries({ queryKey: ["guest-home"] });
-      await qc.invalidateQueries({ queryKey: ["guest-rsvp"] });
-      router.push({ pathname: "/guest/rsvp/confirm", params: { status: r.summary.status, hasContact: payload.hasContact ? "1" : "0" } });
+      const r = await post<{ summary: RsvpSummary }>("/guest/rsvp", { events, companions, answers: answersToSend(relevant, answers) });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["guest-home"] }), qc.invalidateQueries({ queryKey: ["guest-rsvp"] })]);
+      router.push({ pathname: "/guest/rsvp/confirm", params: { status: r.summary.status } });
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.messages[lang] : copy.common.error);
+      if (rsvpReason(err) === "missing_answers") setShowMissing(true);
+      setError(guestErrorText(err, copy, lang));
     } finally {
       setBusy(false);
     }
@@ -92,7 +111,7 @@ export default function RsvpAnswers() {
   const deadlinePassed = data?.summary.deadline_passed;
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={`${copy.guestHome.tabs.rsvp} · ${payload?.displayName ?? ""}`} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={back} title={`${copy.guestHome.tabs.rsvp} · ${payload?.displayName ?? ""}`} />} bottomInset={40} keyboard refresh>
       <>
         <BigTitle label={copy.rsvp.step2} title={copy.rsvp.whoIsComing} sub={copy.rsvp.perPerson} size={38} />
         {deadlinePassed ? (
@@ -115,54 +134,84 @@ export default function RsvpAnswers() {
                 <T v="name24" style={{ flexShrink: 1 }}>{p.name}</T>
                 <Badge label={p.tag} kind={p.kind} />
               </Row>
-              {payload?.events.map((e) => (
-                <Row key={e.id} style={{ justifyContent: "space-between", minHeight: 48 }}>
-                  <View style={{ flex: 1 }}>
-                    <T v="body16">{e.title[lang] || e.title.en}</T>
-                    {e.cost ? (
-                      <T v="meta13" color={colors.ivory55}>
-                        {e.cost}
-                      </T>
-                    ) : null}
-                  </View>
-                  <View style={{ width: 176 }}>
-                    <Segmented<Answer>
-                      value={seats[i]?.[e.id] ?? null}
-                      options={[
-                        { value: "attending", label: copy.rsvp.attending },
-                        { value: "declined", label: copy.rsvp.declined },
-                      ]}
-                      onChange={(v) => setSeats((prev) => prev.map((s, j) => (j === i ? { ...s, [e.id]: v } : s)))}
-                    />
-                  </View>
-                </Row>
-              ))}
+              {payload?.events.map((e) => {
+                const title = bi(e.title, lang);
+                return (
+                  <Row key={e.id} style={{ justifyContent: "space-between", minHeight: 48 }}>
+                    <View style={{ flex: 1 }}>
+                      <T v="body16">{title}</T>
+                      {e.cost ? (
+                        <T v="meta13" color={colors.ivory55}>
+                          {e.cost}
+                        </T>
+                      ) : null}
+                    </View>
+                    <View style={{ width: 176 }} accessibilityLabel={`${p.name}, ${title}`}>
+                      <Segmented<Answer>
+                        value={seats[i]?.[e.id] ?? null}
+                        options={[
+                          { value: "attending", label: copy.rsvp.attending },
+                          { value: "declined", label: copy.rsvp.declined },
+                        ]}
+                        onChange={(v) => {
+                          setSeats((prev) => prev.map((s, j) => (j === i ? { ...s, [e.id]: v } : s)));
+                          if (error) setError(null);
+                        }}
+                      />
+                    </View>
+                  </Row>
+                );
+              })}
             </Card>
           ))}
-          {questions.length && anyAttending ? (
+          {relevant.length ? (
             <Card kind="solid" padding={14}>
               <SectionLabel color={colors.goldLight}>{copy.rsvp.coupleAsks}</SectionLabel>
-              <Stack gap={12} style={{ marginTop: 8 }}>
-                {questions.map((q) => (
-                  <View key={q.id} style={{ gap: 8 }}>
-                    <T v="body16">{q.label[lang] ?? q.label.en ?? ""}</T>
-                    {q.options?.length ? (
+              <Stack gap={14} style={{ marginTop: 8 }}>
+                {relevant.map((q) => {
+                  const label = bi(q.label, lang);
+                  const flagged = showMissing && missing.has(q.id);
+                  return (
+                    <View key={q.id} style={{ gap: 8 }}>
                       <Row gap={8} style={{ flexWrap: "wrap" }}>
-                        {q.options.map((o) => (
-                          <Chip key={o.id} label={o.label[lang] ?? o.label.en ?? o.id} on={answers[q.id] === o.id} onPress={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))} />
-                        ))}
+                        <T v="body16" color={flagged ? colors.red : colors.ivory} style={{ flexShrink: 1 }}>
+                          {label}
+                        </T>
+                        {q.required ? <Badge label={copy.rsvp.required} kind={flagged ? "red" : "mute"} /> : null}
                       </Row>
-                    ) : (
-                      <Input value={answers[q.id] ?? ""} onChangeText={(t) => setAnswers((a) => ({ ...a, [q.id]: t.slice(0, 200) }))} placeholder={copy.rsvp.answerPlaceholder} style={{ minHeight: 48 }} />
-                    )}
-                  </View>
-                ))}
+                      {isSelect(q) ? (
+                        <Row gap={8} style={{ flexWrap: "wrap" }}>
+                          {(q.options ?? []).map((o) => {
+                            const on = answers[q.id] === o.id;
+                            return (
+                              <Chip
+                                key={o.id}
+                                label={bi(o.label, lang)}
+                                on={on}
+                                // An optional answer can be taken back by tapping it again.
+                                onPress={() => setAnswer(q.id, on && !q.required ? "" : o.id)}
+                              />
+                            );
+                          })}
+                        </Row>
+                      ) : (
+                        <Input
+                          value={answers[q.id] ?? ""}
+                          onChangeText={(t) => setAnswer(q.id, t.slice(0, 200))}
+                          placeholder={copy.rsvp.answerPlaceholder}
+                          accessibilityLabel={label}
+                          style={{ minHeight: 48, borderColor: flagged ? colors.red : undefined }}
+                        />
+                      )}
+                    </View>
+                  );
+                })}
               </Stack>
             </Card>
           ) : null}
         </Stack>
         {error ? (
-          <T v="body15" color={colors.red} style={{ marginTop: 12 }}>
+          <T v="body15" color={colors.red} style={{ marginTop: 12 }} accessibilityLiveRegion="polite" accessibilityRole="alert">
             {error}
           </T>
         ) : null}

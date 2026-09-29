@@ -65,7 +65,7 @@ export const COPY = {
       enabled: "Enviar recordatorios automáticamente",
       enabledHint: "Solo a invitados con teléfono registrado que aún no han respondido.",
       offsets: "Días antes de la boda",
-      offsetsHint: "Toque para agregar o quitar un día.",
+      offsetsHint: "Toca para agregar o quitar un día.",
       addDay: "Agregar un día",
       dayPlaceholder: "Días",
       window: "Horario de envío",

@@ -63,6 +63,8 @@ const en = {
   deleteBody: "Budget lines and tasks tied to it are kept; only the card goes.",
   confirm: "Confirm",
   offline: "You are offline. Changes need a connection.",
+  mixedCurrencies: "Totals count {currency} prices only. Cancelled vendors are left out.",
+  notFound: "This vendor is no longer in the directory.",
   taskStatus: { open: "Open", in_progress: "In progress", done: "Done" } as Record<string, string>,
 };
 
@@ -129,6 +131,8 @@ const es: typeof en = {
   deleteBody: "Las líneas del presupuesto y las tareas asociadas se conservan; solo se elimina la ficha.",
   confirm: "Confirmar",
   offline: "Estás sin conexión. Los cambios necesitan conexión.",
+  mixedCurrencies: "Los totales solo cuentan precios en {currency}. Los proveedores cancelados no se cuentan.",
+  notFound: "Este proveedor ya no está en el directorio.",
   taskStatus: { open: "Abierta", in_progress: "En curso", done: "Hecha" },
 };
 

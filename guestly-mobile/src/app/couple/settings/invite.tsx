@@ -5,7 +5,8 @@ import { Alert, Share } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Row, Gem, EmptyState, SectionLabel, ButtonRow } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -43,7 +44,7 @@ export default function InviteCode() {
             const r = await post<{ invite_code: string; invite_url: string }>("/couple/settings/invite-code", {});
             qc.setQueryData<CoupleSettings>(SETTINGS_KEY, (old) => (old ? { ...old, invite_code: r.invite_code, invite_url: r.invite_url } : old));
           } catch (err) {
-            Alert.alert(c.title, err instanceof ApiFailure ? err.messages[lang] : "");
+            Alert.alert(c.title, errorText(err, lang, app.common.errorBody));
           } finally {
             setBusy(false);
           }

@@ -6,6 +6,8 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCopy, useLang } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { COPY as SIGNUP_COPY } from "@/features/signup/copy";
 import { T, Button, Wordmark, LangToggle, Row, Stack, useTopInset } from "@/ui";
 import { colors, FILL, COLUMN } from "@/ui/tokens";
 
@@ -13,6 +15,7 @@ const hero = require("../../assets/photos/walk.jpg");
 
 export default function Entrance() {
   const copy = useCopy();
+  const signup = useFeatureCopy(SIGNUP_COPY).signUp;
   const { lang, setLang } = useLang();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -49,6 +52,7 @@ export default function Entrance() {
           </View>
           <Button testID="entrance-guest" label={copy.entrance.openInvitation} onPress={() => router.push("/invite")} />
           <Button testID="entrance-couple" label={copy.entrance.coupleOrPlanner} kind="glass" onPress={() => router.push("/sign-in")} />
+          <Button testID="entrance-create" label={signup.entrance} kind="text" small full={false} haptic={false} onPress={() => router.push("/sign-up")} style={{ alignSelf: "center", marginTop: -4 }} />
           <Row gap={12} style={{ justifyContent: "space-between" }}>
             <LangToggle value={lang} onChange={setLang} />
             <T v="meta13" color={colors.ivory40} numberOfLines={2} style={{ flex: 1, textAlign: "right" }}>

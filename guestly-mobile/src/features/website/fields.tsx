@@ -2,15 +2,19 @@
 // inputs side by side), a photo field that picks and uploads, and the
 // up / down / remove controls for lists.
 
-import React, { useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { View, Image, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useLang } from "@/i18n";
-import { ApiFailure } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { Input, T, Row, Icon, Button } from "@/ui";
 import { colors, radius, FILL } from "@/ui/tokens";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "./copy";
 import { pickAndUpload, type Bilingual } from "./hooks";
+
+/** True inside a screen opened by a read-only role: every field below shows
+ *  its value but cannot be changed. */
+export const ReadOnlyContext = createContext(false);
 
 export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -29,9 +33,11 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 
 export function TextField({ label, value, onChange, placeholder, multiline, hint, keyboardType }: { label: string; value: string | null; onChange: (v: string | null) => void; placeholder?: string; multiline?: boolean; hint?: string; keyboardType?: "default" | "url" | "phone-pad" | "email-address" }) {
+  const readOnly = useContext(ReadOnlyContext);
   return (
     <Field label={label} hint={hint}>
       <Input
+        editable={!readOnly}
         value={value ?? ""}
         onChangeText={(t) => onChange(t.length ? t : null)}
         placeholder={placeholder}
@@ -49,6 +55,7 @@ export function TextField({ label, value, onChange, placeholder, multiline, hint
 /** EN and ES inputs for one bilingual value. The site falls back across languages. */
 export function BiField({ label, value, onChange, multiline, placeholder }: { label: string; value: Bilingual; onChange: (v: Bilingual) => void; multiline?: boolean; placeholder?: Bilingual }) {
   const c = useFeatureCopy(COPY);
+  const readOnly = useContext(ReadOnlyContext);
   return (
     <Field label={label}>
       <View style={{ gap: 8 }}>
@@ -59,7 +66,7 @@ export function BiField({ label, value, onChange, multiline, placeholder }: { la
             </T>
           </View>
           <View style={{ flex: 1 }}>
-            <Input value={value.en ?? ""} onChangeText={(t) => onChange({ ...value, en: t.length ? t : null })} placeholder={placeholder?.en ?? c.en} placeholderTextColor={colors.ivory40} multiline={multiline} style={multiline ? { minHeight: 96, alignItems: "flex-start", paddingTop: 12 } : undefined} />
+            <Input editable={!readOnly} value={value.en ?? ""} onChangeText={(t) => onChange({ ...value, en: t.length ? t : null })} placeholder={placeholder?.en ?? c.en} placeholderTextColor={colors.ivory40} multiline={multiline} style={multiline ? { minHeight: 96, alignItems: "flex-start", paddingTop: 12 } : undefined} />
           </View>
         </Row>
         <Row gap={8} align="flex-start">
@@ -69,7 +76,7 @@ export function BiField({ label, value, onChange, multiline, placeholder }: { la
             </T>
           </View>
           <View style={{ flex: 1 }}>
-            <Input value={value.es ?? ""} onChangeText={(t) => onChange({ ...value, es: t.length ? t : null })} placeholder={placeholder?.es ?? c.es} placeholderTextColor={colors.ivory40} multiline={multiline} style={multiline ? { minHeight: 96, alignItems: "flex-start", paddingTop: 12 } : undefined} />
+            <Input editable={!readOnly} value={value.es ?? ""} onChangeText={(t) => onChange({ ...value, es: t.length ? t : null })} placeholder={placeholder?.es ?? c.es} placeholderTextColor={colors.ivory40} multiline={multiline} style={multiline ? { minHeight: 96, alignItems: "flex-start", paddingTop: 12 } : undefined} />
           </View>
         </Row>
       </View>
@@ -81,6 +88,7 @@ export function BiField({ label, value, onChange, multiline, placeholder }: { la
 export function PhotoField({ label, path, uri, onChange, height = 160 }: { label: string; path: string | null; uri: string | null; onChange: (path: string | null, signedUrl?: string) => void; height?: number }) {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
+  const readOnly = useContext(ReadOnlyContext);
   const [busy, setBusy] = useState(false);
   async function pick() {
     setBusy(true);
@@ -88,7 +96,7 @@ export function PhotoField({ label, path, uri, onChange, height = 160 }: { label
       const picked = await pickAndUpload();
       if (picked && picked[0]) onChange(picked[0].path, picked[0].url);
     } catch (err) {
-      Alert.alert(c.fields.photo, err instanceof ApiFailure ? err.messages[lang] : c.errors.pickFailed);
+      Alert.alert(c.fields.photo, errorText(err, lang, c.errors.pickFailed));
     } finally {
       setBusy(false);
     }
@@ -103,23 +111,33 @@ export function PhotoField({ label, path, uri, onChange, height = 160 }: { label
           </View>
         ) : null}
       </View>
-      <Row gap={8} style={{ marginTop: 4 }}>
-        <View style={{ flex: 1 }}>
-          <Button label={path ? c.fields.replacePhoto : c.fields.choosePhoto} small kind="glass" icon="photo" onPress={pick} loading={busy} />
-        </View>
-        {path ? (
+      {readOnly ? null : (
+        <Row gap={8} style={{ marginTop: 4 }}>
           <View style={{ flex: 1 }}>
-            <Button label={c.fields.removePhoto} small kind="ghost" icon="x" onPress={() => onChange(null)} disabled={busy} />
+            <Button label={path ? c.fields.replacePhoto : c.fields.choosePhoto} small kind="glass" icon="photo" onPress={pick} loading={busy} />
           </View>
-        ) : null}
-      </Row>
+          {path ? (
+            <View style={{ flex: 1 }}>
+              <Button label={c.fields.removePhoto} small kind="ghost" icon="x" onPress={() => onChange(null)} disabled={busy} />
+            </View>
+          ) : null}
+        </Row>
+      )}
     </Field>
   );
+}
+
+/** Renders its children only for roles that can edit (Add buttons). */
+export function EditOnly({ children }: { children: React.ReactNode }) {
+  const readOnly = useContext(ReadOnlyContext);
+  return readOnly ? null : <>{children}</>;
 }
 
 /** Up, down and remove for a row in an ordered list. */
 export function RowControls({ onUp, onDown, onRemove }: { onUp?: () => void; onDown?: () => void; onRemove: () => void }) {
   const c = useFeatureCopy(COPY);
+  const readOnly = useContext(ReadOnlyContext);
+  if (readOnly) return null;
   const btn = (name: "down" | "x" | "back", label: string, onPress?: () => void, rotate?: string) => (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ width: 44, height: 44, alignItems: "center", justifyContent: "center", opacity: !onPress ? 0.25 : pressed ? 0.6 : 1 })}>
       <View style={rotate ? { transform: [{ rotate }] } : undefined}>
@@ -145,8 +163,9 @@ export function move<T>(arr: T[], from: number, to: number): T[] {
 }
 
 export function SwitchRow({ label, value, onChange, hint }: { label: string; value: boolean; onChange: (v: boolean) => void; hint?: string }) {
+  const readOnly = useContext(ReadOnlyContext);
   return (
-    <Pressable onPress={() => onChange(!value)} accessibilityRole="switch" accessibilityState={{ checked: value }} style={{ minHeight: 52, flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 }}>
+    <Pressable onPress={() => onChange(!value)} disabled={readOnly} accessibilityRole="switch" accessibilityState={{ checked: value, disabled: readOnly }} style={{ minHeight: 52, flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6, opacity: readOnly ? 0.6 : 1 }}>
       <View style={{ flex: 1, gap: 2 }}>
         <T v="body15">{label}</T>
         {hint ? (

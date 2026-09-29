@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { useFeatureCopy } from "@/i18n/feature";
-import { useLang } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { useLang, useCopy } from "@/i18n";
+import { postLong, errorText } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Card, T, Input, Button, Segmented, Stack, Avatar, Row } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
@@ -16,6 +16,7 @@ type Mode = "live" | "draft";
 
 export default function BrainPreview() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const draft = useDraft();
@@ -28,15 +29,17 @@ export default function BrainPreview() {
 
   async function ask() {
     const q = question.trim();
-    if (!q) return;
+    if (!q || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const r = await post<{ reply: string }>("/couple/brain/preview", { question: q, mode, facts: mode === "draft" ? draft.facts : undefined });
+      // A model call: normal latency is 5 to 50 s, past the default 20 s timeout.
+      const facts = draft.loadedVersion !== null ? draft.facts : data?.facts;
+      const r = await postLong<{ reply: string }>("/couple/brain/preview", { question: q, mode, facts: mode === "draft" ? facts : undefined });
       setTurns((t) => [{ q, a: r.reply, mode }, ...t]);
       setQuestion("");
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.messages[lang] : c.publishFailed);
+      setError(errorText(err, lang, app.common.error));
     } finally {
       setBusy(false);
     }
@@ -55,7 +58,7 @@ export default function BrainPreview() {
           {mode === "live" ? c.liveHint : c.draftHint}
         </T>
         <Stack gap={10} style={{ marginTop: 16 }}>
-          <Input value={question} onChangeText={setQuestion} placeholder={c.askPlaceholder} multiline style={{ minHeight: 72, alignItems: "flex-start", paddingVertical: 12 }} returnKeyType="send" onSubmitEditing={ask} />
+          <Input accessibilityLabel={c.askPlaceholder} value={question} onChangeText={setQuestion} placeholder={c.askPlaceholder} multiline style={{ minHeight: 72, alignItems: "flex-start", paddingVertical: 12 }} returnKeyType="send" onSubmitEditing={ask} />
           <Button label={busy ? c.asking : c.ask} onPress={ask} loading={busy} disabled={!question.trim()} icon="sparkle" />
           {error ? (
             <T v="body15" color={colors.red}>

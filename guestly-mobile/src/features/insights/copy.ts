@@ -33,6 +33,7 @@ export const COPY = {
     whatsapp: "WhatsApp",
     statsUnavailable: "Metrics are not available right now; the lists below still work.",
     readOnly: "Read only: owners and admins act on gaps.",
+    channels: { web: "Website", whatsapp: "WhatsApp", app: "App", other: "Other" } as Record<string, string>,
   },
   es: {
     title: "Métricas del concierge",
@@ -68,5 +69,6 @@ export const COPY = {
     whatsapp: "WhatsApp",
     statsUnavailable: "Las métricas no están disponibles ahora; las listas de abajo sí funcionan.",
     readOnly: "Solo lectura: los dueños y administradores actúan sobre los pendientes.",
+    channels: { web: "Sitio web", whatsapp: "WhatsApp", app: "App", other: "Otro" } as Record<string, string>,
   },
 };

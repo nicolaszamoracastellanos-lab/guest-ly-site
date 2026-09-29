@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { View, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field } from "@/ui";
 import { useSafeBack } from "@/lib/nav";
 
@@ -34,7 +35,7 @@ export default function NewGuest() {
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
       back();
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(false);
     }

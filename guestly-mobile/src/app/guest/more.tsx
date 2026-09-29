@@ -1,6 +1,7 @@
 // Guest more: the wedding site sections (all in the app), language, notifications, leave.
 
 import React, { useState } from "react";
+import { unregisterPush } from "@/lib/push";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useCopy, useLang } from "@/i18n";
@@ -10,16 +11,37 @@ import { useGuestSession, useSession } from "@/lib/session";
 import { useGuestHome, useGuestSchedule } from "@/lib/hooks";
 import { Screen, BigTitle, Card, ListRow, Icon, LangToggle, Toggle, Footer, Stack, T } from "@/ui";
 import { colors } from "@/ui/tokens";
+import { useFeatureCopy } from "@/i18n/feature";
+import { TOUR_COPY, startTour } from "@/features/tour";
 
 export default function GuestMore() {
   const copy = useCopy();
   const { lang, setLang } = useLang();
   const router = useRouter();
+  const tour = useFeatureCopy(TOUR_COPY);
   const session = useGuestSession();
-  const { signOut, pushToken } = useSession();
+  const { signOut, pushToken, setPushToken } = useSession();
   const { data: home } = useGuestHome();
   const { data: schedule } = useGuestSchedule();
-  const [notif, setNotif] = useState(!!pushToken);
+  // The switch shows what the server has: on only while a token is saved.
+  const notif = !!pushToken;
+  const [notifBusy, setNotifBusy] = useState(false);
+  async function toggleNotifications(v: boolean) {
+    if (notifBusy) return;
+    if (v) {
+      router.push({ pathname: "/notify", params: { surface: "guest", from: "more" } });
+      return;
+    }
+    if (!pushToken) return;
+    setNotifBusy(true);
+    try {
+      // Off means off: the server stops sending before the switch moves.
+      if (await unregisterPush("guest", pushToken)) setPushToken(null);
+      else Alert.alert(copy.common.error);
+    } finally {
+      setNotifBusy(false);
+    }
+  }
   // While the couple has not published their website, the pages behind these
   // rows only say "not published yet". The rows wait until there is something
   // to open (Part 9 audit, D-004).
@@ -48,13 +70,14 @@ export default function GuestMore() {
           <ListRow
             leading={<Icon name="bell" size={22} color={colors.goldLight} />}
             title={copy.guestMore.notifications}
-            trailing={<Toggle value={notif} label={copy.guestMore.notifications} onChange={(v) => { setNotif(v); if (v) router.push({ pathname: "/notify", params: { surface: "guest" } }); }} />}
+            trailing={<Toggle value={notif} label={copy.guestMore.notifications} onChange={(v) => void toggleNotifications(v)} />}
             chevron={false}
             last
           />
         </Card>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           <ListRow leading={<Icon name="chat" size={22} color={colors.goldLight} />} title={copy.messages.title} onPress={() => router.push("/guest/messages")} />
+          <ListRow testID="guest-tour" leading={<Icon name="sparkle" size={22} color={colors.goldLight} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} />
           <ListRow
             leading={<Icon name="signout" size={22} color={colors.goldLight} />}
             title={copy.guestMore.leave}

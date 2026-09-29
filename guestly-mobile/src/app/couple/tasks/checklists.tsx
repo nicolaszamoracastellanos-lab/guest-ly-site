@@ -7,6 +7,7 @@ import { fmt, useLang, shortDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
+import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Button, Stack, Banner, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
@@ -20,6 +21,7 @@ export default function Checklists() {
   const back = useSafeBack();
   const qc = useQueryClient();
   const online = useOnline();
+  const canEdit = useUserSession()?.me.can_edit ?? false;
   const mainQuery = useTasksBoard();
   const { data: board, isLoading } = mainQuery;
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -39,7 +41,7 @@ export default function Checklists() {
   }
 
   async function apply() {
-    if (!selected.size) return;
+    if (!selected.size || busy || !canEdit) return;
     setBusy(true);
     try {
       const r = await post<{ created: number }>("/couple/tasks/checklist", { template_keys: Array.from(selected) });
@@ -48,7 +50,7 @@ export default function Checklists() {
       Alert.alert(fmt(copy.checklistAddedToast, { n: r.created }));
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -66,6 +68,12 @@ export default function Checklists() {
           ))}
         </ChipRow>
       </View>
+      {canEdit ? null : (
+        <T v="meta13" color={colors.ivory55} style={{ marginTop: 12 }}>
+          {copy.checklistReadOnly}
+        </T>
+      )}
+      {canEdit ? (
       <Row gap={16} style={{ marginTop: 12 }}>
         <Pressable onPress={() => setSelected(new Set(open.map((t) => t.template_key)))} accessibilityRole="button" style={{ minHeight: 44, justifyContent: "center" }}>
           <T v="meta13" color={colors.goldLight}>
@@ -78,6 +86,7 @@ export default function Checklists() {
           </T>
         </Pressable>
       </Row>
+      ) : null}
       <Stack gap={10} style={{ marginTop: 6 }}>
         {isLoading && !board ? (
           <>
@@ -88,7 +97,7 @@ export default function Checklists() {
         {templates.map((t) => {
           const on = selected.has(t.template_key);
           return (
-            <Pressable key={t.template_key} onPress={() => !t.applied && toggle(t.template_key)} accessibilityRole="checkbox" accessibilityState={{ checked: on, disabled: t.applied }} disabled={t.applied}>
+            <Pressable key={t.template_key} onPress={() => !t.applied && toggle(t.template_key)} accessibilityRole="checkbox" accessibilityState={{ checked: on, disabled: t.applied || !canEdit }} disabled={t.applied || !canEdit}>
               <Card kind="solid" padding={14} border={on ? colors.goldBorder : undefined} style={t.applied ? { opacity: 0.55 } : undefined}>
                 <Row gap={12} align="flex-start">
                   <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: on ? colors.gold : colors.ivory25, backgroundColor: on ? colors.gold : "transparent", alignItems: "center", justifyContent: "center", marginTop: 2 }}>
@@ -116,7 +125,7 @@ export default function Checklists() {
       <SectionLabel style={{ marginTop: 20 }} color={colors.ivory40}>
         {open.length} · {copy.filters.open}
       </SectionLabel>
-      <Button label={fmt(copy.checklistApply, { n: selected.size })} onPress={apply} loading={busy} disabled={!selected.size || !online} style={{ marginTop: 16 }} />
+      {canEdit ? <Button label={fmt(copy.checklistApply, { n: selected.size })} onPress={apply} loading={busy} disabled={!selected.size || !online || busy} style={{ marginTop: 16 }} /> : null}
     </Screen>
   );
 }

@@ -42,7 +42,7 @@ export default function CoupleHome() {
         <LinearGradient colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.7, 1]} style={FILL} />
         <Row style={[styles.top, { top }]}>
           <Wordmark height={20} />
-          <IconButton name="bell" badge={(data?.needs_you ?? 0) > 0} onPress={() => router.push("/couple/messages")} />
+          <IconButton name="bell" badge={(data?.needs_you ?? 0) > 0} onPress={() => router.push("/couple/messages")} label={copy.coupleHome.tabs.messages} />
         </Row>
         <View style={styles.headline}>
           <SectionLabel color={colors.goldLight}>
@@ -61,7 +61,7 @@ export default function CoupleHome() {
       <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
         {!online ? <Banner icon="wifi-off" title={copy.common.offline} body={copy.common.offlineDetail} /> : null}
         {dayOf ? (
-          <Pressable onPress={() => router.push("/couple/dayof")} style={{ marginBottom: 12 }}>
+          <Pressable onPress={() => router.push("/couple/dayof")} accessibilityRole="button" accessibilityLabel={`${copy.coupleDayOf.title}, ${copy.coupleHome.dayOfBanner}`} style={{ marginBottom: 12 }}>
             <Banner icon="clock" title={copy.coupleDayOf.title} body={copy.coupleHome.dayOfBanner} kind="gold" action={<Icon name="chev" size={18} color={colors.ivory40} />} />
           </Pressable>
         ) : null}

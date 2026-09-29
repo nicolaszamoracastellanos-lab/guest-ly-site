@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { View, Pressable, Alert } from "react-native";
-import { ApiFailure } from "@/lib/api";
-import { useLang } from "@/i18n";
+import { useCopy, useLang } from "@/i18n";
+import { errorText } from "@/features/shared/requests";
 import { T, Row, Badge, Button, Sheet, Input, Field as KitField } from "@/ui";
 import { colors } from "@/ui/tokens";
 import type { ItemStatus } from "./hooks";
@@ -68,22 +68,22 @@ export function Field({ label, children }: { label: string; children: React.Reac
   );
 }
 
-export function TextField({ label, value, onChange, placeholder, keyboardType, multiline, autoCapitalize }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboardType?: "default" | "numeric" | "decimal-pad" | "number-pad" | "email-address" | "url" | "phone-pad"; multiline?: boolean; autoCapitalize?: "none" | "sentences" | "words" | "characters" }) {
+export function TextField({ label, value, onChange, placeholder, keyboardType, multiline, autoCapitalize, editable = true }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboardType?: "default" | "numeric" | "decimal-pad" | "number-pad" | "email-address" | "url" | "phone-pad"; multiline?: boolean; autoCapitalize?: "none" | "sentences" | "words" | "characters"; editable?: boolean }) {
   return (
     <Field label={label}>
-      <Input value={value} onChangeText={onChange} placeholder={placeholder ?? label} keyboardType={keyboardType} multiline={multiline} autoCapitalize={autoCapitalize} style={multiline ? { borderRadius: 18, minHeight: 88 } : undefined} />
+      <Input value={value} onChangeText={onChange} placeholder={editable ? (placeholder ?? label) : undefined} editable={editable} keyboardType={keyboardType} multiline={multiline} autoCapitalize={autoCapitalize} style={multiline ? { borderRadius: 18, minHeight: 88 } : undefined} />
     </Field>
   );
 }
 
 /** Row of selectable options (status, kind, category). */
-export function Options<TValue extends string>({ value, options, onChange }: { value: TValue | null; options: { value: TValue; label: string }[]; onChange: (v: TValue) => void }) {
+export function Options<TValue extends string>({ value, options, onChange, disabled }: { value: TValue | null; options: { value: TValue; label: string }[]; onChange: (v: TValue) => void; disabled?: boolean }) {
   return (
     <Row gap={8} style={{ flexWrap: "wrap" }}>
       {options.map((o) => {
         const on = o.value === value;
         return (
-          <Pressable key={o.value} onPress={() => onChange(o.value)} accessibilityRole="button" accessibilityState={{ selected: on }} style={{ minHeight: 44, paddingHorizontal: 16, borderRadius: 999, justifyContent: "center", borderWidth: 1, borderColor: on ? colors.gold : colors.ivory14, backgroundColor: on ? "rgba(201,169,110,0.16)" : "transparent" }}>
+          <Pressable key={o.value} onPress={() => onChange(o.value)} disabled={disabled} accessibilityRole="button" accessibilityState={{ selected: on, disabled: !!disabled }} style={{ minHeight: 44, paddingHorizontal: 16, borderRadius: 999, justifyContent: "center", borderWidth: 1, borderColor: on ? colors.gold : colors.ivory14, backgroundColor: on ? "rgba(201,169,110,0.16)" : "transparent" }}>
             <T v="body15" color={on ? colors.goldLight : colors.ivory70}>
               {o.label}
             </T>
@@ -97,15 +97,18 @@ export function Options<TValue extends string>({ value, options, onChange }: { v
 /** Runs a write, surfaces the bilingual server error, reports busy state. */
 export function useAction() {
   const { lang } = useLang();
+  const common = useCopy().common;
   const [busy, setBusy] = useState(false);
   async function act(fn: () => Promise<unknown>, onDone?: () => void, fallback = "") {
+    if (busy) return false;
     setBusy(true);
     try {
       await fn();
       onDone?.();
       return true;
     } catch (err) {
-      Alert.alert(err instanceof ApiFailure ? err.messages[lang] : fallback);
+      // Never a blank alert: the API's own message, else a plain retry line.
+      Alert.alert(errorText(err, lang, fallback || common.error));
       return false;
     } finally {
       setBusy(false);

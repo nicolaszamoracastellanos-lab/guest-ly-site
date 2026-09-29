@@ -18,7 +18,10 @@ type State = {
 let state: State = { facts: {}, saved: {}, loadedVersion: null, status: "idle", error: null };
 const listeners = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | null = null;
-let onSaved: ((version: number) => void) | null = null;
+const savedListeners = new Set<(version: number) => void>();
+/** Bumped by resetBrainDraft so a save still in flight cannot land in the
+ *  next wedding's draft. */
+let generation = 0;
 
 function emit(next: Partial<State>) {
   state = { ...state, ...next };
@@ -28,11 +31,35 @@ function emit(next: Partial<State>) {
 export function initDraft(facts: WeddingFacts, version: number | null) {
   // Keep unsaved local edits when the same version is re-fetched.
   if (state.loadedVersion === version && isDirty()) return;
+  // Versions only grow. A cached copy older than what this draft last saved
+  // must not replace it (it would show, and later save, stale facts).
+  if (state.loadedVersion !== null && version !== null && version < state.loadedVersion) return;
   emit({ facts: clone(facts), saved: clone(facts), loadedVersion: version, status: "idle", error: null });
 }
 
-export function setSavedListener(fn: ((version: number) => void) | null) {
-  onSaved = fn;
+/** Forgets the draft: sign-out or a switch to another wedding. A pending
+ *  save is cancelled so nothing is written into the next wedding. */
+export function resetBrainDraft() {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  generation += 1;
+  emit({ facts: {}, saved: {}, loadedVersion: null, status: "idle", error: null });
+}
+
+/** Called after every accepted draft save; returns the unsubscribe. */
+export function addSavedListener(fn: (version: number) => void): () => void {
+  savedListeners.add(fn);
+  return () => {
+    savedListeners.delete(fn);
+  };
+}
+
+/** True once a server draft has been loaded into the store. Edits and saves
+ *  before that would post a near-empty draft over the real one. */
+export function isLoaded(): boolean {
+  return state.loadedVersion !== null;
 }
 
 export function isDirty(): boolean {
@@ -66,6 +93,7 @@ export function replaceFacts(facts: WeddingFacts) {
 }
 
 function scheduleSave() {
+  if (state.loadedVersion === null) return;
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => void saveNow(), 900);
 }
@@ -75,18 +103,22 @@ export async function saveNow(): Promise<boolean> {
     clearTimeout(timer);
     timer = null;
   }
+  if (state.loadedVersion === null) return false;
   if (!isDirty()) {
     emit({ status: "idle" });
     return true;
   }
   const snapshot = clone(state.facts);
+  const gen = generation;
   emit({ status: "saving", error: null });
   try {
     const r = await post<{ version: number; unchanged: boolean }>("/couple/brain/draft", { facts: snapshot });
+    if (gen !== generation) return false;
     emit({ saved: snapshot, status: "saved", loadedVersion: r.version });
-    onSaved?.(r.version);
+    for (const fn of savedListeners) fn(r.version);
     return true;
   } catch (err) {
+    if (gen !== generation) return false;
     emit({ status: "error", error: err instanceof Error ? err.message : "error" });
     return false;
   }

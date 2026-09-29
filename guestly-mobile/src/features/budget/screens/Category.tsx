@@ -177,7 +177,7 @@ export function BudgetCategoryScreen() {
         </View>
       ) : null}
 
-      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} top={70}>
+      <Sheet visible={addOpen && (data?.can_edit ?? false)} onClose={() => setAddOpen(false)} top={70}>
         <View style={{ paddingHorizontal: 24, gap: 12 }}>
           <T v="title26">{copy.addItem}</T>
           <TextField label={copy.itemTitle} value={form.title} onChange={(v) => setForm({ ...form, title: v })} autoCapitalize="sentences" />

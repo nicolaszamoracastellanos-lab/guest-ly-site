@@ -1,17 +1,19 @@
 // One brain section. Edits land in the shared draft and auto-save.
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useLang, mediumDate } from "@/i18n";
+import { useLang, mediumDate, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner, DateEcho, SectionLabel } from "@/ui";
+import { useQueryClient } from "@tanstack/react-query";
+import { Screen, TopBar, BigTitle, Card, T, Input, Button, Toggle, Row, Stack, Hairline, Banner, SectionLabel, Skeleton, QueryError } from "@/ui";
+import { DateInput } from "@/ui/Pickers";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
-import { useDraft, setPath, getPath, replaceFacts } from "@/features/brain/draft";
+import { useDraft, setPath, getPath, replaceFacts, initDraft, addSavedListener, getFacts } from "@/features/brain/draft";
 import { SECTIONS, EVENT_FIELDS, type Field } from "@/features/brain/sections";
-import type { ItineraryEvent, WeddingFacts } from "@/features/brain/hooks";
+import { useBrain, BRAIN_KEY, type ItineraryEvent, type WeddingFacts } from "@/features/brain/hooks";
 import { useSafeBack } from "@/lib/nav";
 
 export default function BrainSection() {
@@ -20,7 +22,20 @@ export default function BrainSection() {
   const { key, gap } = useLocalSearchParams<{ key: string; gap?: string }>();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
+  const app = useCopy();
+  const qc = useQueryClient();
+  const brain = useBrain();
+  const { data } = brain;
   const draft = useDraft();
+  // This screen can be the first brain screen of the session ("Add to brain"
+  // from a conversation), so it loads the server draft itself. Until that has
+  // happened nothing is editable: an edit on an empty store would save a
+  // near-empty draft over the real one.
+  const loaded = draft.loadedVersion !== null;
+  useEffect(() => {
+    if (data) initDraft(data.facts, data.head_version);
+  }, [data, loaded]);
+  useEffect(() => addSavedListener(() => void qc.invalidateQueries({ queryKey: BRAIN_KEY })), [qc]);
   const section = SECTIONS.find((s) => s.key === key) ?? SECTIONS[0];
   const title = c.section[section.key] ?? section.key;
   const status = draft.status === "saving" ? c.saving : draft.status === "saved" ? c.saved : draft.status === "error" ? c.saveFailed : null;
@@ -35,14 +50,28 @@ export default function BrainSection() {
           </T>
         ) : null}
         {gap ? <View style={{ marginTop: 14 }}><Banner icon="warning" title={c.gapBanner} kind="amber" /></View> : null}
-        <Stack gap={14} style={{ marginTop: 20 }}>
-          {section.kind === "itinerary" ? <ItineraryEditor facts={draft.facts} disabled={!canEdit} /> : null}
-          {section.kind === "hotels" ? <HotelsEditor facts={draft.facts} disabled={!canEdit} /> : null}
-          {section.kind === "faq" ? <FaqEditor facts={draft.facts} disabled={!canEdit} prefill={gap} /> : null}
-          {section.fields.map((f) => (
-            <FieldEditor key={f.path} field={f} facts={draft.facts} disabled={!canEdit} />
-          ))}
-        </Stack>
+        {!loaded ? (
+          brain.isError && !data ? (
+            <View style={{ marginTop: 20 }}>
+              <QueryError onRetry={() => void brain.refetch()} message={app.common.errorBody} />
+            </View>
+          ) : (
+            <Stack gap={12} style={{ marginTop: 20 }}>
+              <Skeleton h={56} r={14} />
+              <Skeleton h={120} r={14} />
+              <Skeleton h={56} r={14} />
+            </Stack>
+          )
+        ) : (
+          <Stack gap={14} style={{ marginTop: 20 }}>
+            {section.kind === "itinerary" ? <ItineraryEditor facts={draft.facts} disabled={!canEdit} /> : null}
+            {section.kind === "hotels" ? <HotelsEditor facts={draft.facts} disabled={!canEdit} /> : null}
+            {section.kind === "faq" ? <FaqEditor facts={draft.facts} disabled={!canEdit} prefill={gap} /> : null}
+            {section.fields.map((f) => (
+              <FieldEditor key={f.path} field={f} facts={draft.facts} disabled={!canEdit} />
+            ))}
+          </Stack>
+        )}
         {status ? (
           <T v="meta13" color={draft.status === "error" ? colors.red : colors.ivory55} style={{ marginTop: 16 }}>
             {status}
@@ -58,10 +87,17 @@ function FieldEditor({ field, facts, disabled, base }: { field: Field; facts: We
   const path = base ? `${base}.${field.path}` : field.path;
   const raw = getPath(facts, path);
   const value = field.kind === "list" ? (Array.isArray(raw) ? (raw as string[]).join("\n") : "") : typeof raw === "string" ? raw : "";
+  const label = c.fields[field.label] ?? field.label;
+  // Dates on the system calendar (ui/Pickers), still stored as YYYY-MM-DD.
+  const isDate = field.kind === "text" && /(^|[._])date$/.test(field.path);
   return (
     <View style={{ gap: 6 }}>
-      <SectionLabel>{c.fields[field.label] ?? field.label}</SectionLabel>
+      <SectionLabel>{label}</SectionLabel>
+      {isDate ? (
+        <DateInput label={label} value={value || null} onChange={(v) => setPath(path, v ?? "")} disabled={disabled} />
+      ) : (
       <Input
+        accessibilityLabel={label}
         value={value}
         editable={!disabled}
         onChangeText={(t) => setPath(path, field.kind === "list" ? t.split("\n").map((s) => s.trim()).filter(Boolean) : t)}
@@ -71,7 +107,7 @@ function FieldEditor({ field, facts, disabled, base }: { field: Field; facts: We
         placeholder={field.kind === "list" ? c.oneEntryPerLine : undefined}
         style={field.kind === "text" ? undefined : { minHeight: 96, alignItems: "flex-start", paddingVertical: 12 }}
       />
-      {/(^|[._])date$/.test(field.path) ? <DateEcho value={value} /> : null}
+      )}
       {field.hint ? (
         <T v="meta13" color={colors.ivory55}>
           {c.fields[field.hint] ?? ""}
@@ -181,13 +217,18 @@ function HotelsEditor({ facts, disabled }: { facts: WeddingFacts; disabled: bool
 function FaqEditor({ facts, disabled, prefill }: { facts: WeddingFacts; disabled: boolean; prefill?: string }) {
   const c = useFeatureCopy(COPY);
   const faq = facts.custom_faq ?? [];
-  const [seeded, setSeeded] = useState(false);
-  if (prefill && !seeded && !disabled) {
-    setSeeded(true);
-    if (!faq.some((q) => q.question.trim().toLowerCase() === prefill.trim().toLowerCase())) {
-      replaceFacts({ ...facts, custom_faq: [{ question: prefill, answer: "" }, ...faq] });
+  // Keyed on the question itself, so a second "Add to brain" with another
+  // question is added too. Runs after render, on the store's latest facts.
+  const seeded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!prefill || disabled || seeded.current === prefill) return;
+    seeded.current = prefill;
+    const latest = getFacts();
+    const list = latest.custom_faq ?? [];
+    if (!list.some((q) => q.question.trim().toLowerCase() === prefill.trim().toLowerCase())) {
+      replaceFacts({ ...latest, custom_faq: [{ question: prefill, answer: "" }, ...list] });
     }
-  }
+  }, [prefill, disabled]);
   function update(next: { question: string; answer: string }[]) {
     replaceFacts({ ...facts, custom_faq: next });
   }

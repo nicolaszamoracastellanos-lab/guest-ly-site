@@ -1,7 +1,7 @@
 // Guest-ly component kit. Direction A: night background, ivory type, gold
 // accents, glass surfaces, one paper (ivory) card per screen at most.
 
-import React, { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   View,
   Pressable,
@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
   ScrollView,
+  RefreshControl,
   type ViewStyle,
   type ImageStyle,
   type StyleProp,
@@ -20,16 +21,24 @@ import {
   KeyboardAvoidingView,
   useWindowDimensions,
   type TextStyle,
+  type NativeScrollEvent,
+  type LayoutChangeEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import Animated, { Extrapolation, SlideInDown, interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from "react-native-reanimated";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { useCopy, useLang, longDate } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
-import { colors, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COVER, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
-import { useBottomClearance, useBubbleLift, useTabBarTop } from "./chrome";
+import { colors, fonts, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COVER, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
+import { useBottomClearance, useBubbleDock, useBubbleLift, useTabBarTop, DOCK_SLACK } from "./chrome";
+import { LockCover } from "./LockCover";
+import { useOnline } from "@/lib/query";
+import { useNavigation, useRoute } from "expo-router";
 
 export { T } from "./Text";
 export { renderInlineBold } from "./MarkdownText";
@@ -37,6 +46,7 @@ export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { colors, radius, space, COLUMN } from "./tokens";
 export { useBottomClearance, useBubbleLift, useBubbleAvoid, useBubbleHide, useTabBarTop } from "./chrome";
+export { LockCover } from "./LockCover";
 
 // ---------------------------------------------------------------- layout
 
@@ -62,9 +72,10 @@ export function Screen({
   header,
   style,
   contentStyle,
-  keyboard,
   topInset = true,
   query,
+  refresh = false,
+  scrollY,
 }: {
   children: ReactNode;
   scroll?: boolean;
@@ -73,6 +84,8 @@ export function Screen({
   header?: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
+  /** Kept for the call sites: every screen now insets for the keyboard and
+   *  lets a drag put it away. */
   keyboard?: boolean;
   /** False for list screens whose list header carries the top inset itself. */
   topInset?: boolean;
@@ -81,14 +94,55 @@ export function Screen({
    *  (never a false empty state, never a blank screen); with cached content it
    *  shows the offline banner above it (Part 9 audit, D-023). */
   query?: QueryLike | null;
+  /** Pull to refresh the main query (scrolling screens only). */
+  refresh?: boolean;
+  /** For a screen that scrolls its own list (`scroll={false}`): the offset
+   *  from `useScrimScroll()`, so the status bar backdrop follows that list. */
+  scrollY?: SharedValue<number>;
 }) {
   const insets = useSafeAreaInsets();
+  const [pulling, setPulling] = useState(false);
+  const onPull = useCallback(async () => {
+    setPulling(true);
+    try {
+      await query?.refetch();
+    } finally {
+      setPulling(false);
+    }
+  }, [query]);
   const top = useTopInset();
   const { lang } = useLang();
   const { clearance } = useBottomClearance();
   const bottom = scroll ? Math.max(clearance, bottomInset + insets.bottom) : bottomInset + insets.bottom;
+  const online = useOnline();
+  const edgeBack = useEdgeBack();
+  const ownY = useSharedValue(0);
+  // The assistant bubble docks into the gutter while content runs on below
+  // the visible area (chrome.ts, useBubbleDock). Worked out on the UI thread;
+  // JS hears only the crossings.
+  const dock = useBubbleDock();
+  const below = useSharedValue(-1);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    ownY.value = e.contentOffset.y;
+    const b = e.contentSize.height - (e.contentOffset.y + e.layoutMeasurement.height) > DOCK_SLACK ? 1 : 0;
+    if (b !== below.value) {
+      below.value = b;
+      runOnJS(dock)(b === 1);
+    }
+  });
+  // Before the first scroll event: from the sizes.
+  const sizes = useRef({ content: 0, view: 0 });
+  const measureDock = useCallback(() => {
+    const { content, view } = sizes.current;
+    if (!content || !view) return;
+    const b = content - (ownY.get() + view) > DOCK_SLACK ? 1 : 0;
+    below.set(b);
+    dock(b === 1);
+  }, [below, dock, ownY]);
   const failed = !!query?.isError && query.data === undefined;
-  const stale = !!query?.isError && query.data !== undefined;
+  // Offline, a query pauses instead of failing, so the banner also follows
+  // the connection itself (core review P1-12).
+  const stale = (!!query?.isError && query.data !== undefined) || (!!query && !online && !failed);
   const inner = (
     <View style={[styles.column, padded && styles.padded, !scroll && styles.fill, { paddingTop: header || !topInset ? 0 : top, paddingBottom: bottom }, contentStyle]}>
       {failed ? (
@@ -108,6 +162,7 @@ export function Screen({
     </View>
   );
   return (
+    <BackSlot.Provider value={edgeBack.slot}>
     <View style={[styles.screen, style]}>
       <LinearGradient
         colors={[colors.navy, colors.night, colors.nightDeep]}
@@ -124,20 +179,137 @@ export function Screen({
       />
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
       {scroll ? (
-        <ScrollView
+        <Animated.ScrollView
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          onContentSizeChange={(_w, h) => {
+            sizes.current.content = h;
+            measureDock();
+          }}
+          onLayout={(e) => {
+            sizes.current.view = e.nativeEvent.layout.height;
+            measureDock();
+          }}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={keyboard ? "interactive" : "none"}
+          // Every screen: a drag down the content puts the keyboard away (QA Sep 29:
+          // fields on screens without `keyboard` could not be left otherwise).
+          keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
+          refreshControl={refresh && query ? <RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={colors.goldLight} colors={[colors.gold]} progressBackgroundColor={colors.night} /> : undefined}
         >
           {inner}
-        </ScrollView>
+        </Animated.ScrollView>
       ) : (
         <View style={styles.fill}>{inner}</View>
       )}
+      {/* A fixed header keeps the content below the status bar on its own. */}
+      {header ? null : scroll ? <StatusScrim y={ownY} /> : scrollY ? <StatusScrim y={scrollY} /> : null}
+      {edgeBack.strip}
+      <LockCover />
     </View>
+    </BackSlot.Provider>
   );
+}
+
+/** Where a screen's TopBar leaves its back action for the edge swipe. */
+const BackSlot = createContext<{ set: (fn: (() => void) | null) => void } | null>(null);
+
+/**
+ * iOS edge swipe back where the native one cannot work: the first screen of a
+ * section opened from More (tasks, vendors, budget...) is the root of its own
+ * stack inside the tabs, and screens declared straight in the tabs have no
+ * stack at all, so a swipe from the left edge did nothing (QA Sep 29). On
+ * those screens a thin strip on the left edge runs the TopBar's back action
+ * on a rightward swipe. Pushed screens keep the native gesture untouched.
+ */
+function useEdgeBack(): { slot: { set: (fn: (() => void) | null) => void }; strip: ReactNode } {
+  const navigation = useNavigation();
+  const [back, setBack] = useState<(() => void) | null>(null);
+  const slot = React.useMemo(() => ({ set: (fn: (() => void) | null) => setBack(() => fn) }), []);
+  const route = useRoute();
+  // Pushed onto a stack (not its first screen): the native gesture works there.
+  const state = navigation.getState() as { type?: string; routes?: { key: string }[] } | undefined;
+  const nativeSwipe = state?.type === "stack" && (state.routes?.findIndex((r) => r.key === route.key) ?? 0) > 0;
+  const hasBack = !!back;
+  const pan = React.useMemo(() => {
+    const run = () => back?.();
+    return Gesture.Pan()
+      .activeOffsetX(14)
+      .failOffsetY([-14, 14])
+      .onEnd((e) => {
+        if (e.translationX > 64 || e.velocityX > 600) runOnJS(run)();
+      });
+  }, [back]);
+  const strip = Platform.OS === "ios" && hasBack && !nativeSwipe ? (
+    <GestureDetector gesture={pan}>
+      <View style={styles.edge} />
+    </GestureDetector>
+  ) : null;
+  return { slot, strip };
+}
+
+/** Backdrop under the status bar for content scrolled up into it: the clock,
+ *  the battery and the Dynamic Island never sit on text (QA Sep 29: guest
+ *  Schedule, Day-of, couple Guests). Invisible at rest, it fades in over the
+ *  first 16 pt of scroll, the way an iOS bar gains its scroll edge. Glass like
+ *  the tab bar, with a hairline. Without an offset (a list screen that has not
+ *  passed one) it stays on, which is still better than text under the clock. */
+export function StatusScrim({ y }: { y?: SharedValue<number> }) {
+  const insets = useSafeAreaInsets();
+  const fade = useAnimatedStyle(() => ({ opacity: y ? interpolate(y.value, [0, 16], [0, 1], Extrapolation.CLAMP) : 1 }));
+  if (insets.top <= 0) return null;
+  return (
+    <Animated.View pointerEvents="none" style={[styles.statusScrim, { height: insets.top }, fade]}>
+      <BlurView intensity={40} tint="dark" style={FILL} blurMethod="dimezisBlurView" />
+      <View style={[COVER, { backgroundColor: "rgba(13,17,23,0.62)" }]} />
+      <View style={styles.scrimEdge} />
+    </Animated.View>
+  );
+}
+
+/** For list screens that scroll their own FlatList inside `<Screen scroll={false}>`:
+ *  spread `listProps` on the list and pass `scrollY` to the Screen. The status
+ *  bar backdrop follows the list and the assistant bubble docks while rows run
+ *  on below the visible area, as on a scrolling Screen. FlatList already
+ *  reports its offset to JS for windowing, so this costs nothing extra. */
+export function useScrimScroll(): {
+  scrollY: SharedValue<number>;
+  listProps: {
+    onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+    scrollEventThrottle: number;
+    onContentSizeChange: (w: number, h: number) => void;
+    onLayout: (e: LayoutChangeEvent) => void;
+  };
+} {
+  const scrollY = useSharedValue(0);
+  const dock = useBubbleDock();
+  const sizes = useRef({ y: 0, content: 0, view: 0 });
+  const listProps = React.useMemo(() => {
+    const update = () => {
+      const { y, content, view } = sizes.current;
+      if (content && view) dock(content - (y + view) > DOCK_SLACK);
+    };
+    return {
+      onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+        scrollY.set(contentOffset.y);
+        sizes.current = { y: contentOffset.y, content: contentSize.height, view: layoutMeasurement.height };
+        update();
+      },
+      scrollEventThrottle: 16,
+      onContentSizeChange: (_w: number, h: number) => {
+        sizes.current.content = h;
+        update();
+      },
+      onLayout: (e: LayoutChangeEvent) => {
+        sizes.current.view = e.nativeEvent.layout.height;
+        update();
+      },
+    };
+  }, [dock, scrollY]);
+  return { scrollY, listProps };
 }
 
 /** The part of a react-query result the kit needs. */
@@ -353,11 +525,15 @@ export function Button({
       ]}
     >
       {loading ? <ActivityIndicator color={fg} /> : icon ? <Icon name={icon} size={small ? 18 : 20} color={fg} /> : null}
-      {/* A call to action never ends in an ellipsis: the label shrinks a little
-          first (iOS and Android), then wraps to a second line and the button
-          grows. flexShrink lets the text wrap inside the row instead of
-          pushing the icon out. */}
-      <T v="button17" color={fg} size={small ? 15 : 17} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} center style={{ flexShrink: 1 }}>
+      {/* A call to action never ends in an ellipsis and never shrinks: the
+          label wraps at its spaces and the button grows. No
+          adjustsFontSizeToFit: iOS sizes it against the text's first layout
+          width, which inside a row or next to an icon can be about 0, and
+          the label came out near invisible (QA Sep 29, guest drawer, website
+          sections, the update screen). ButtonRow gives each button enough
+          room for its longest word, and stacks the buttons when it cannot.
+          flexShrink lets the text wrap instead of pushing the icon out. */}
+      <T v="button17" color={fg} size={small ? 16 : 17} center style={{ flexShrink: 1 }}>
         {label}
       </T>
     </Pressable>
@@ -373,12 +549,39 @@ function useIconLabel(name: IconName, label?: string): string {
   return map[name] ?? c.button;
 }
 
-/** Two or three buttons side by side with equal heights, so a label that wraps
- *  to two lines does not leave its neighbour shorter. */
+/** Room a Button needs so its label never breaks inside a word and never runs
+ *  past two lines: the longest word, or half the label, plus the padding and
+ *  the icon. An estimate from the label (Jost averages about 0.56 em per
+ *  character), scaled with Dynamic Type. */
+function buttonBasis(child: ReactNode, fontScale: number): number {
+  if (!React.isValidElement(child)) return 0;
+  const p = child.props as { label?: unknown; icon?: unknown; loading?: unknown; small?: unknown };
+  if (typeof p.label !== "string") return 0;
+  const size = 17 * Math.min(Math.max(fontScale, 1), 1.3);
+  const em = size * 0.56;
+  const words = p.label.trim().split(/\s+/);
+  const longest = Math.max(...words.map((w) => w.length)) * em;
+  const half = (p.label.trim().length * em) / 2;
+  const chrome = (p.small ? 32 : 44) + 2 + (p.icon || p.loading ? (p.small ? 18 : 20) + 8 : 0);
+  return Math.ceil(Math.max(longest, half) + chrome);
+}
+
+/** Two or three buttons side by side with equal widths and heights, so a label
+ *  that wraps to two lines does not leave its neighbour shorter. When the
+ *  labels do not fit side by side (long Spanish labels, larger text, a narrow
+ *  phone) the row wraps and the buttons stack full width: a label never
+ *  shrinks and never breaks inside a word. */
 export function ButtonRow({ children, gap = 8, style }: { children: ReactNode; gap?: number; style?: StyleProp<ViewStyle> }) {
+  const { fontScale } = useWindowDimensions();
+  const items = React.Children.toArray(children).filter(Boolean);
+  const basis = Math.max(96, ...items.map((c) => buttonBasis(c, fontScale)));
   return (
-    <View style={[{ flexDirection: "row", alignItems: "stretch", gap }, style]}>
-      {React.Children.map(children, (child) => (child ? <View style={{ flex: 1, minWidth: 0 }}>{child}</View> : null))}
+    <View style={[{ flexDirection: "row", flexWrap: "wrap", alignItems: "stretch", gap }, style]}>
+      {items.map((child, i) => (
+        <View key={i} style={{ flexGrow: 1, flexShrink: 1, flexBasis: basis, minWidth: 0 }}>
+          {child}
+        </View>
+      ))}
     </View>
   );
 }
@@ -410,6 +613,18 @@ export function IconButton({ name, onPress, badge, style, label, testID }: { nam
 
 export function TopBar({ title, onBack, right, left }: { title?: string; onBack?: () => void; right?: ReactNode; left?: ReactNode }) {
   const copy = useCopy();
+  // The screen's edge swipe runs the same back action (see useEdgeBack).
+  const slot = useContext(BackSlot);
+  const latest = useRef(onBack);
+  useEffect(() => {
+    latest.current = onBack;
+  });
+  const has = !!onBack;
+  useEffect(() => {
+    if (!slot || !has) return;
+    slot.set(() => latest.current?.());
+    return () => slot.set(null);
+  }, [slot, has]);
   return (
     <View style={styles.topBar}>
       <Row gap={10} style={{ flex: 1, minWidth: 0 }}>
@@ -474,7 +689,7 @@ export function Chip({ label, on, onPress, testID }: { label: string; on?: boole
       style={({ pressed }) => [styles.chipHit, pressed && { opacity: 0.8 }]}
     >
       <View style={[styles.chip, on && styles.chipOn]}>
-        <T v="meta13" color={on ? colors.goldLight : colors.ivory70} style={{ fontFamily: "Jost_500Medium" }}>
+        <T v="meta13" color={on ? colors.goldLight : colors.ivory70} style={{ fontFamily: fonts.bodyMedium }}>
           {label}
         </T>
       </View>
@@ -535,12 +750,29 @@ export function ToggleRow({ label, hint, value, onChange }: { label: string; hin
  *  full-width rows, because three long Spanish labels do not fit side by side
  *  (Part 9 audit, D-014). */
 export function Segmented<TValue extends string>({ value, options, onChange, stack }: { value: TValue | null; options: { value: TValue; label: string }[]; onChange: (v: TValue) => void; stack?: boolean }) {
-  const { width } = useWindowDimensions();
-  const longest = options.reduce((n, o) => Math.max(n, o.label.length), 0);
-  const perSegment = (Math.min(width, 560) - 2 * space.screen) / Math.max(options.length, 1);
-  const vertical = stack ?? longest * 7.6 + 20 > perSegment * 1.9;
+  const { width: windowWidth, fontScale } = useWindowDimensions();
+  // Its own width, not the window's: inside a card the control is 40 pt
+  // narrower, and the registry's three options were cut to "Link to a…"
+  // (QA Sep 29). Until measured, the window column stands in.
+  const [measured, setMeasured] = useState<number | null>(null);
+  const width = measured ?? Math.min(windowWidth, 560) - 2 * space.screen;
+  // Side by side only while every label fits its segment in two lines and
+  // its longest word fits one line; otherwise a vertical list of full rows.
+  const em = 15 * 0.56 * Math.min(Math.max(fontScale, 1), 1.3);
+  const textWidth = (width - 4) / Math.max(options.length, 1) - 16;
+  const fits = options.every((o) => {
+    const longestWord = Math.max(...o.label.split(/\s+/).map((w) => w.length)) * em;
+    return longestWord <= textWidth && o.label.length * em <= textWidth * 1.8;
+  });
+  const vertical = stack ?? !fits;
   return (
-    <View style={[styles.segmented, vertical && styles.segmentedStack]}>
+    <View
+      style={[styles.segmented, vertical && styles.segmentedStack]}
+      onLayout={(e) => {
+        const w = Math.round(e.nativeEvent.layout.width);
+        if (w > 0 && w !== measured) setMeasured(w);
+      }}
+    >
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -555,7 +787,7 @@ export function Segmented<TValue extends string>({ value, options, onChange, sta
             accessibilityState={{ selected: on }}
             style={[styles.segment, vertical && styles.segmentStack, on && { backgroundColor: colors.gold }]}
           >
-            <T v="meta13" color={on ? colors.night : colors.ivory55} center numberOfLines={2} style={{ fontFamily: "Jost_500Medium" }}>
+            <T v="meta13" color={on ? colors.night : colors.ivory55} center style={{ fontFamily: fonts.bodyMedium }}>
               {o.label}
             </T>
           </Pressable>
@@ -587,17 +819,23 @@ export function LangToggle({ value, onChange, dark = true }: { value: "en" | "es
 /** Text field. Dark keyboard (the app is dark only), the same 1.3 text size cap
  *  as the Text component, and a card radius when multiline so a tall field does
  *  not read as a blob. */
-export function Input({ icon, style, right, ...props }: Omit<TextInputProps, "style"> & { icon?: IconName; right?: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Input({ icon, style, right, ref, ...props }: Omit<TextInputProps, "style"> & { icon?: IconName; right?: ReactNode; style?: StyleProp<ViewStyle>; ref?: React.Ref<TextInput> }) {
+  // Inside a Field the field's visible label names the input for VoiceOver
+  // and TalkBack; alone, its placeholder does. A call site's own label wins.
+  const field = useContext(FieldContext);
   return (
     <View style={[styles.input, props.multiline && styles.inputMultiline, style]}>
       {icon ? <Icon name={icon} size={20} color={colors.ivory55} /> : null}
       <TextInput
+        ref={ref}
+        accessibilityLabel={field?.label ?? (typeof props.placeholder === "string" ? props.placeholder : undefined)}
+        accessibilityHint={field?.hint ?? undefined}
         placeholderTextColor={colors.ivory55}
         selectionColor={colors.goldLight}
         keyboardAppearance="dark"
         maxFontSizeMultiplier={1.3}
         {...props}
-        style={[{ flex: 1, color: colors.ivory, fontFamily: "Jost_400Regular", fontSize: 16, paddingVertical: 12 }, props.multiline && { minHeight: 90, textAlignVertical: "top" }]}
+        style={[{ flex: 1, color: colors.ivory, fontFamily: fonts.body, fontSize: 16, paddingVertical: 12 }, props.multiline && { minHeight: 90, textAlignVertical: "top" }]}
       />
       {right}
     </View>
@@ -621,11 +859,22 @@ export function DateEcho({ value, style }: { value: string | null | undefined; s
 
 /** A form field: visible label above the control, optional hint below.
  *  Placeholder-only fields lose their name once something is typed. */
+const FieldContext = createContext<{ label: string; hint?: string | null } | null>(null);
+
+/** The label of the Field a control sits in (for date pickers and other
+ *  controls that name themselves). */
+export function useFieldLabel(): string | null {
+  return useContext(FieldContext)?.label ?? null;
+}
+
 export function Field({ label, hint, children, style }: { label: string; hint?: string | null; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const ctx = React.useMemo(() => ({ label, hint }), [label, hint]);
   return (
     <View style={[{ gap: 6 }, style]}>
+      {/* Stays readable on its own: a Field can hold chips or a segmented
+          control, which do not read the label from the context. */}
       <SectionLabel color={colors.ivory55}>{label}</SectionLabel>
-      {children}
+      <FieldContext.Provider value={ctx}>{children}</FieldContext.Provider>
       {hint ? (
         <T v="meta13" color={colors.ivory55}>
           {hint}
@@ -639,7 +888,7 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
   return (
     <View style={{ width: size, height: size, borderRadius: size, backgroundColor: colors.navy, borderWidth: 1, borderColor: colors.goldBorder, alignItems: "center", justifyContent: "center" }}>
       {gem ? <Gem size={Math.round(size * 0.3)} /> : (
-        <T v="name24" size={Math.round(size * 0.42)} color={colors.goldLight} style={{ fontFamily: "CormorantGaramond_600SemiBold" }}>
+        <T v="name24" size={Math.round(size * 0.42)} color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
           {initials ?? ""}
         </T>
       )}
@@ -650,7 +899,15 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
 /** `below` puts a badge (or anything) under the title instead of beside it:
  *  a wide status badge in `trailing` squeezed long titles to one word per line
  *  on a 375 pt phone (Part 9 audit, D-012). */
-export function ListRow({ leading, title, sub, trailing, below, onPress, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; chevron?: boolean; last?: boolean; testID?: string }) {
+/** A secondary action for the ListRow(s) inside, for rows rendered by a
+ *  component that does not take one (e.g. a feature's row). ListRow reads it
+ *  when it has no `onLongPress` of its own. */
+export const ListRowLongPress = createContext<{ onLongPress: () => void; label: string } | null>(null);
+
+export function ListRow({ leading, title, sub, trailing, below, onPress, onLongPress, longPressLabel, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; /** Held press; also offered to VoiceOver and TalkBack as a named action. */ onLongPress?: () => void; longPressLabel?: string; chevron?: boolean; last?: boolean; testID?: string }) {
+  const ctx = useContext(ListRowLongPress);
+  const held = onLongPress ?? ctx?.onLongPress;
+  const heldLabel = longPressLabel ?? ctx?.label;
   const inner = (
     <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
       {leading}
@@ -669,9 +926,19 @@ export function ListRow({ leading, title, sub, trailing, below, onPress, chevron
       {chevron && onPress ? <Icon name="chev" size={18} color={colors.ivory40} /> : null}
     </View>
   );
-  if (!onPress) return inner;
+  if (!onPress && !held) return inner;
   return (
-    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={sub ? `${title}, ${sub}` : title} style={({ pressed }) => pressed && { opacity: 0.7 }}>
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      onLongPress={held ? () => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); held(); } : undefined}
+      delayLongPress={350}
+      accessibilityRole="button"
+      accessibilityLabel={sub ? `${title}, ${sub}` : title}
+      accessibilityActions={held && heldLabel ? [{ name: "longpress", label: heldLabel }] : undefined}
+      onAccessibilityAction={held ? (e) => { if (e.nativeEvent.actionName === "longpress") held(); } : undefined}
+      style={({ pressed }) => pressed && { opacity: 0.7 }}
+    >
       {inner}
     </Pressable>
   );
@@ -743,7 +1010,7 @@ export function ActionTile({ icon, label, onPress }: { icon: IconName; label: st
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.75 }]}>
       <Icon name={icon} size={20} color={colors.goldLight} />
-      <T v="meta13" color={colors.ivory} center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontFamily: "Jost_400Regular" }}>
+      <T v="meta13" color={colors.ivory} center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontFamily: fonts.body }}>
         {label}
       </T>
     </Pressable>
@@ -855,21 +1122,45 @@ export function Sheet({ visible, onClose, children, top = 150, scroll = true }: 
   const maxHeight = height - Math.max(insets.top, 20) - 24;
   const fixed = Math.min(Math.max(height - top, 320), maxHeight);
   const wide = width >= WIDE_BREAKPOINT;
+  // The scrim fades while the sheet itself slides up; dragging the grabber
+  // band down dismisses it, as the grabber promises (core review P2-35).
+  const drag = useSharedValue(0);
+  useEffect(() => {
+    if (visible) drag.set(0);
+  }, [visible, drag]);
+  const pan = Gesture.Pan()
+    .activeOffsetY(6)
+    .onUpdate((e) => {
+      drag.set(Math.max(0, e.translationY));
+    })
+    .onEnd((e) => {
+      if (e.translationY > 90 || e.velocityY > 900) runOnJS(onClose)();
+      else drag.set(withSpring(0, { damping: 20, stiffness: 220 }));
+    });
+  const dragStyle = useAnimatedStyle(() => ({ transform: [{ translateY: drag.value }] }));
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable testID="sheet-scrim" style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={copy.common.close} />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} pointerEvents="box-none" style={styles.sheetHost}>
-        <View style={[styles.sheet, { maxHeight }, !scroll && { height: fixed }, wide && styles.sheetWide]}>
-          <View style={styles.grabber} />
-          {scroll ? (
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
-              {children}
-            </ScrollView>
-          ) : (
-            <View style={{ flex: 1, paddingBottom: insets.bottom + 16 }}>{children}</View>
-          )}
-        </View>
-      </KeyboardAvoidingView>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Pressable testID="sheet-scrim" style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={copy.common.close} />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} pointerEvents="box-none" style={styles.sheetHost}>
+          <Animated.View entering={SlideInDown.duration(260)} style={[styles.sheet, { maxHeight }, !scroll && { height: fixed }, wide && styles.sheetWide, dragStyle]}>
+            <GestureDetector gesture={pan}>
+              <View style={styles.grabberBand} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <View style={styles.grabber} />
+              </View>
+            </GestureDetector>
+            {scroll ? (
+              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
+                {children}
+              </ScrollView>
+            ) : (
+              <View style={{ flex: 1, paddingBottom: insets.bottom + 16 }}>{children}</View>
+            )}
+          </Animated.View>
+        </KeyboardAvoidingView>
+        {/* A Modal sits above the root layout's lock cover: it draws its own. */}
+        <LockCover />
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -970,9 +1261,13 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
   actionTile: { flex: 1, minHeight: 72, paddingHorizontal: 6, paddingVertical: 10, borderRadius: radius.chip, backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", justifyContent: "center", gap: 5 },
   scrim: { ...{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, backgroundColor: colors.scrim },
+  edge: { position: "absolute", left: 0, top: 0, bottom: 0, width: 16 },
+  statusScrim: { position: "absolute", top: 0, left: 0, right: 0, overflow: "hidden" },
+  scrimEdge: { position: "absolute", left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth, backgroundColor: colors.ivory14 },
   sheetWide: { maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", width: "100%", borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.goldBorder },
   sheet: { flexShrink: 1, backgroundColor: colors.night, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, borderTopWidth: 1, borderTopColor: colors.goldBorder, paddingHorizontal: 24 },
-  grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(247,243,236,0.2)", marginTop: 10, marginBottom: 14 },
+  grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(247,243,236,0.2)" },
+  grabberBand: { alignSelf: "stretch", paddingTop: 10, paddingBottom: 14, marginHorizontal: -24, alignItems: "center" },
   briefRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 },
 });
 

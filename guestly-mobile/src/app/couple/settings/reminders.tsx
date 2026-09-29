@@ -1,10 +1,11 @@
 // Automatic RSVP reminder settings: switch, days before, send window, gap.
 
 import React, { useState } from "react";
-import { View, Alert, Pressable } from "react-native";
+import { View, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy, zoneLabel } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Input, Row, SectionLabel, EmptyState, Chip } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -46,7 +47,7 @@ export default function ReminderSettings() {
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
     } catch (err) {
-      Alert.alert(c.title, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.title, errorText(err, lang, app.common.errorBody));
     } finally {
       setBusy(false);
     }
@@ -93,14 +94,13 @@ export default function ReminderSettings() {
               </T>
               <Row gap={8} style={{ flexWrap: "wrap", marginTop: 10 }}>
                 {draft.offsets_days.map((d) => (
-                  <Pressable key={d} onPress={() => setDraft({ ...draft, offsets_days: draft.offsets_days.filter((x) => x !== d) })} accessibilityRole="button">
-                    <Chip label={`${d}`} on />
-                  </Pressable>
+                  // One pressable per chip: a Chip inside a Pressable swallowed the tap.
+                  <Chip key={d} label={`${d}  ×`} on onPress={data?.can_edit ? () => setDraft({ ...draft, offsets_days: draft.offsets_days.filter((x) => x !== d) }) : undefined} />
                 ))}
               </Row>
               <Row gap={8} style={{ marginTop: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Input value={newDay} onChangeText={setNewDay} placeholder={c.dayPlaceholder} placeholderTextColor={colors.ivory40} keyboardType="number-pad" onSubmitEditing={addDay} />
+                  <Input accessibilityLabel={c.addDay} value={newDay} onChangeText={setNewDay} placeholder={c.dayPlaceholder} placeholderTextColor={colors.ivory40} keyboardType="number-pad" onSubmitEditing={addDay} />
                 </View>
                 <Button label={c.addDay} small kind="glass" icon="plus" full={false} onPress={addDay} disabled={!newDay} />
               </Row>

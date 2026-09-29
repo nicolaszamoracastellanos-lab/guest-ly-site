@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Badge, Sheet, ListRow, Skeleton, SectionLabel, Icon, Hairline, ActionTile } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Badge, Sheet, ListRow, Skeleton, SectionLabel, Icon, Hairline, ActionTile, EmptyState } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useVendors, useVendorWrites, useVendorsBase, waDigits, websiteHref, instagramHref } from "../hooks";
@@ -51,6 +51,7 @@ export function VendorDetailScreen() {
           <Skeleton h={160} r={18} />
         </Stack>
       ) : null}
+      {data && !vendor ? <EmptyState title={copy.notFound} /> : null}
       {vendor ? (
         <>
           <BigTitle title={vendor.name} sub={copy.categories[vendor.category] ?? vendor.category} size={34} />

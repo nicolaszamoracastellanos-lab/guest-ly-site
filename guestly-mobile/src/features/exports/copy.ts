@@ -24,7 +24,7 @@ export const COPY = {
   es: {
     menu: "Herramientas de la lista",
     import: "Importar invitados",
-    importSub: "Pegue una lista o elija una hoja de cálculo",
+    importSub: "Pega una lista o elige una hoja de cálculo",
     export: "Exportar a Excel",
     exportSub: "El libro con tu marca, compartido desde el teléfono",
     presets: {

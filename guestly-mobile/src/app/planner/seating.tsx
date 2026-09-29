@@ -39,7 +39,7 @@ export default function PlannerSeating() {
     n === 1 ? c.person : fmt(c.people, { n });
 
   return (
-    <Screen query={mainQuery}
+    <Screen query={mainQuery} refresh
       header={<TopBar onBack={back} title={app.planner.tabs.more} />}
       bottomInset={40}
     >

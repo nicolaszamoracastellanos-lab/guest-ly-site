@@ -6,8 +6,10 @@ import { View, StyleSheet, Pressable, Alert, Linking } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
+import { useIsFocused } from "expo-router";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
-import { ApiFailure, get } from "@/lib/api";
+import { get } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
@@ -24,7 +26,10 @@ export default function DoorCheckin() {
   const qc = useQueryClient();
   const online = useOnline();
   const [permission, requestPermission] = useCameraPermissions();
-  const { data: dayof } = useCoupleDayOf();
+  // The camera runs only while this screen is on top: the iOS indicator goes
+  // off, and a pass passing the lens on another screen checks no one in.
+  const focused = useIsFocused();
+  const { data: dayof } = useCoupleDayOf({ poll: focused });
   const [queued, setQueued] = useState(0);
   const [typing, setTyping] = useState(false);
   const [q, setQ] = useState("");
@@ -71,7 +76,7 @@ export default function DoorCheckin() {
       void qc.invalidateQueries({ queryKey: ["couple-dayof"] });
     } catch (err) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(false);
     }
@@ -108,7 +113,7 @@ export default function DoorCheckin() {
 
   return (
     <View style={styles.root}>
-      {permission?.granted ? (
+      {permission?.granted && focused ? (
         <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={typing ? undefined : onScan} />
       ) : (
         <View style={[FILL, { backgroundColor: colors.night }]} />
@@ -148,7 +153,7 @@ export default function DoorCheckin() {
       <View style={{ paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 12 }}>
         {typing ? (
           <Card kind="glass" blur padding={10}>
-            <Input icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} />
+            <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} />
             {results.map((g, i) => (
               <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : undefined} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
             ))}

@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang, useCopy } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -32,7 +33,7 @@ export default function NotificationSettings() {
       await post("/couple/settings", { [key]: v });
     } catch (err) {
       qc.setQueryData(SETTINGS_KEY, prev);
-      Alert.alert(c.title, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.title, errorText(err, lang, app.common.errorBody));
     } finally {
       setBusy(false);
     }

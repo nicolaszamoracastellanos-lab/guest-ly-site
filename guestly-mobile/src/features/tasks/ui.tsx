@@ -9,13 +9,16 @@ import { fmt, relTime, shortDate, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, del, ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
-import { useCoupleGuests, usePlannerGuests } from "@/lib/hooks";
+import { usePlannerGuests } from "@/lib/hooks";
+import { useGuestPages } from "@/features/guests/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Input, Button, Avatar, ListRow, Sheet, EmptyState, Skeleton, SectionLabel, Row, Stack, Hairline, Icon, Banner, DateEcho } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Input, Button, Avatar, ListRow, Sheet, EmptyState, Skeleton, SectionLabel, Row, Stack, Hairline, Icon, Banner } from "@/ui";
 import { colors, HIT_TARGET } from "@/ui/tokens";
 import { COPY } from "./copy";
-import { addDays, addMonths, ISO_DAY, TASK_INVALIDATE, useSharedTask, type Board, type BoardStatus, type BoardTask, type TaskCategory, type TaskPriority, type TaskRecurrence, type TaskStatus, type TaskView } from "./hooks";
+import { addDays, addMonths, TASK_INVALIDATE, useSharedTask, type Board, type BoardStatus, type BoardTask, type TaskCategory, type TaskPriority, type TaskRecurrence, type TaskStatus, type TaskView } from "./hooks";
 import { useSafeBack } from "@/lib/nav";
+import { useUnsavedGuard } from "@/lib/unsaved";
+import { DateInput } from "@/ui/Pickers";
 
 type Lang = "en" | "es";
 
@@ -44,12 +47,12 @@ export function priorityKind(p: TaskPriority): "red" | "gold" | "mute" {
 }
 
 export function errorText(err: unknown, lang: Lang, fallback: string): string {
-  return err instanceof ApiFailure ? err.messages[lang] : fallback;
+  return (err instanceof ApiFailure ? err.messages[lang] : "") || fallback;
 }
 
 // ---------------------------------------------------------------- task row
 
-export function TaskRowItem({ task, onToggle, onPress, last }: { task: TaskView; onToggle: () => void; onPress: () => void; last?: boolean }) {
+export function TaskRowItem({ task, onToggle, onPress, last, readOnly }: { task: TaskView; onToggle: () => void; onPress: () => void; last?: boolean; readOnly?: boolean }) {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const done = task.status === "done";
@@ -62,8 +65,9 @@ export function TaskRowItem({ task, onToggle, onPress, last }: { task: TaskView;
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onToggle();
         }}
+        disabled={readOnly}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: done }}
+        accessibilityState={{ checked: done, disabled: !!readOnly }}
         accessibilityLabel={done ? copy.reopen : copy.markDone}
         style={styles.checkHit}
       >
@@ -89,54 +93,42 @@ export function TaskRowItem({ task, onToggle, onPress, last }: { task: TaskView;
 
 // ---------------------------------------------------------------- pickers
 
-export function OptionChips<TValue extends string>({ value, options, labels, onChange }: { value: TValue; options: readonly TValue[]; labels: Record<TValue, string>; onChange: (v: TValue) => void }) {
+export function OptionChips<TValue extends string>({ value, options, labels, onChange, disabled }: { value: TValue; options: readonly TValue[]; labels: Record<TValue, string>; onChange: (v: TValue) => void; disabled?: boolean }) {
   return (
     <ChipRow>
       {options.map((o) => (
-        <Chip key={o} label={labels[o]} on={o === value} onPress={() => onChange(o)} />
+        <Chip key={o} label={labels[o]} on={o === value} onPress={disabled ? undefined : () => onChange(o)} />
       ))}
     </ChipRow>
   );
 }
 
-export function DateField({ value, today, onChange }: { value: string | null; today: string; onChange: (v: string | null) => void }) {
+export function DateField({ value, today, onChange, disabled, onInvalid }: { value: string | null; today: string; onChange: (v: string | null) => void; disabled?: boolean; onInvalid?: (invalid: boolean) => void }) {
   const copy = useFeatureCopy(COPY);
-  const [text, setText] = useState(value ?? "");
-  const [seeded, setSeeded] = useState(value);
-  if (value !== seeded) {
-    setSeeded(value);
-    setText(value ?? "");
-  }
-  const invalid = text.length > 0 && !ISO_DAY.test(text);
+  // The system calendar (ui/Pickers): the value is always a whole date or
+  // nothing, so the form is never held by a half-typed one.
+  const pick = (v: string | null) => {
+    onInvalid?.(false);
+    onChange(v);
+  };
   return (
     <View style={{ gap: 8 }}>
-      <Input
-        value={text}
-        onChangeText={(v) => {
-          const clean = v.replace(/[^0-9-]/g, "").slice(0, 10);
-          setText(clean);
-          if (!clean) onChange(null);
-          else if (ISO_DAY.test(clean)) onChange(clean);
-        }}
-        placeholder={copy.fields.dueHint}
-        keyboardType="numbers-and-punctuation"
-        autoCorrect={false}
-        style={invalid ? { borderColor: "rgba(240,162,162,0.6)" } : undefined}
-      />
-      <DateEcho value={text} />
-      <ChipRow>
-        <Chip label={copy.dateChips.none} on={!value} onPress={() => onChange(null)} />
-        <Chip label={copy.dateChips.today} on={value === today} onPress={() => onChange(today)} />
-        <Chip label={copy.dateChips.week} on={value === addDays(today, 7)} onPress={() => onChange(addDays(today, 7))} />
-        <Chip label={copy.dateChips.month} on={value === addMonths(today, 1)} onPress={() => onChange(addMonths(today, 1))} />
-      </ChipRow>
+      <DateInput value={value} onChange={pick} disabled={disabled} placeholder={copy.fields.dueHint} initial={today} testID="task-due" />
+      {disabled ? null : (
+        <ChipRow>
+          <Chip label={copy.dateChips.none} on={!value} onPress={() => pick(null)} />
+          <Chip label={copy.dateChips.today} on={value === today} onPress={() => pick(today)} />
+          <Chip label={copy.dateChips.week} on={value === addDays(today, 7)} onPress={() => pick(addDays(today, 7))} />
+          <Chip label={copy.dateChips.month} on={value === addMonths(today, 1)} onPress={() => pick(addMonths(today, 1))} />
+        </ChipRow>
+      )}
     </View>
   );
 }
 
 const OFFSET_OPTIONS = [30, 14, 7, 3, 1, 0];
 
-export function OffsetChips({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
+export function OffsetChips({ value, onChange, disabled }: { value: number[]; onChange: (v: number[]) => void; disabled?: boolean }) {
   return (
     <ChipRow>
       {OFFSET_OPTIONS.map((n) => {
@@ -146,7 +138,7 @@ export function OffsetChips({ value, onChange }: { value: number[]; onChange: (v
             key={n}
             label={n === 0 ? "0" : String(n)}
             on={on}
-            onPress={() => {
+            onPress={disabled ? undefined : () => {
               const next = on ? value.filter((x) => x !== n) : [...value, n];
               if (next.length > 5) return;
               onChange(next.sort((a, b) => b - a));
@@ -160,7 +152,7 @@ export function OffsetChips({ value, onChange }: { value: number[]; onChange: (v
 
 export type AssigneeValue = { kind: "user" | "collaborator"; id: string } | null;
 
-export function AssigneePicker({ board, value, onChange }: { board: Board | undefined; value: AssigneeValue; onChange: (v: AssigneeValue) => void }) {
+export function AssigneePicker({ board, value, onChange, disabled }: { board: Board | undefined; value: AssigneeValue; onChange: (v: AssigneeValue) => void; disabled?: boolean }) {
   const copy = useFeatureCopy(COPY);
   const [open, setOpen] = useState(false);
   const current = value
@@ -170,12 +162,12 @@ export function AssigneePicker({ board, value, onChange }: { board: Board | unde
     : null;
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} accessibilityRole="button" style={styles.pickerRow}>
+      <Pressable onPress={() => setOpen(true)} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} style={styles.pickerRow}>
         <Avatar initials={initials(current ?? "")} size={34} gem={!current} />
         <T v="body16" color={current ? colors.ivory : colors.ivory55} style={{ flex: 1 }}>
           {current ?? copy.fields.noOwner}
         </T>
-        <Icon name="down" size={18} color={colors.ivory40} />
+        {disabled ? null : <Icon name="down" size={18} color={colors.ivory40} />}
       </Pressable>
       <Sheet visible={open} onClose={() => setOpen(false)} top={120} scroll={false}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
@@ -287,29 +279,31 @@ export function formFromTask(t: TaskView): TaskFormValue {
   };
 }
 
-export function TaskForm({ board, value, onChange, showStatus }: { board: Board | undefined; value: TaskFormValue; onChange: (v: TaskFormValue) => void; showStatus?: boolean }) {
+export function TaskForm({ board, value, onChange, showStatus, disabled, onValidityChange }: { board: Board | undefined; value: TaskFormValue; onChange: (v: TaskFormValue) => void; showStatus?: boolean; /** Read-only role: shows the task, changes nothing. */ disabled?: boolean; /** False while a field holds text that is not a valid value yet. */ onValidityChange?: (ok: boolean) => void }) {
   const copy = useFeatureCopy(COPY);
   const [more, setMore] = useState(false);
-  const set = <K extends keyof TaskFormValue>(k: K, v: TaskFormValue[K]) => onChange({ ...value, [k]: v });
+  const set = <K extends keyof TaskFormValue>(k: K, v: TaskFormValue[K]) => {
+    if (!disabled) onChange({ ...value, [k]: v });
+  };
   const today = board?.today ?? new Date().toISOString().slice(0, 10);
   const categories = board?.options.categories ?? (["legal", "venue", "vendors", "guests", "budget", "travel", "attire", "ceremony", "day_of", "other"] as TaskCategory[]);
   return (
     <Stack gap={18}>
       <Field label={copy.fields.title}>
-        <Input value={value.title} onChangeText={(v) => set("title", v.slice(0, 120))} placeholder={copy.fields.title} autoFocus={!value.title} />
+        <Input value={value.title} onChangeText={(v) => set("title", v.slice(0, 120))} placeholder={copy.fields.title} autoFocus={!value.title && !disabled} editable={!disabled} />
       </Field>
       <Field label={copy.fields.dueDate}>
-        <DateField value={value.due_date} today={today} onChange={(v) => set("due_date", v)} />
+        <DateField value={value.due_date} today={today} onChange={(v) => set("due_date", v)} disabled={disabled} onInvalid={(bad) => onValidityChange?.(!bad)} />
       </Field>
       <Field label={copy.fields.owner}>
-        <AssigneePicker board={board} value={value.assignee} onChange={(v) => set("assignee", v)} />
+        <AssigneePicker board={board} value={value.assignee} onChange={(v) => set("assignee", v)} disabled={disabled} />
       </Field>
       <Field label={copy.fields.category}>
-        <OptionChips value={value.category} options={categories} labels={copy.categories} onChange={(v) => set("category", v)} />
+        <OptionChips value={value.category} options={categories} labels={copy.categories} onChange={(v) => set("category", v)} disabled={disabled} />
       </Field>
       {showStatus ? (
         <Field label={copy.fields.status}>
-          <OptionChips value={value.status} options={board?.options.statuses ?? (["todo", "doing", "blocked", "done"] as TaskStatus[])} labels={copy.statuses} onChange={(v) => set("status", v)} />
+          <OptionChips value={value.status} options={board?.options.statuses ?? (["todo", "doing", "blocked", "done"] as TaskStatus[])} labels={copy.statuses} onChange={(v) => set("status", v)} disabled={disabled} />
         </Field>
       ) : null}
       <Pressable onPress={() => setMore((m) => !m)} accessibilityRole="button" style={{ minHeight: HIT_TARGET, justifyContent: "center" }}>
@@ -323,16 +317,16 @@ export function TaskForm({ board, value, onChange, showStatus }: { board: Board 
       {more ? (
         <>
           <Field label={copy.fields.notes}>
-            <Input value={value.notes} onChangeText={(v) => set("notes", v.slice(0, 2000))} placeholder={copy.fields.notes} multiline style={{ minHeight: 96, alignItems: "flex-start" }} />
+            <Input value={value.notes} onChangeText={(v) => set("notes", v.slice(0, 2000))} placeholder={copy.fields.notes} multiline editable={!disabled} style={{ minHeight: 96, alignItems: "flex-start" }} />
           </Field>
           <Field label={copy.fields.priority}>
-            <OptionChips value={value.priority} options={board?.options.priorities ?? (["low", "normal", "high"] as TaskPriority[])} labels={copy.priorities} onChange={(v) => set("priority", v)} />
+            <OptionChips value={value.priority} options={board?.options.priorities ?? (["low", "normal", "high"] as TaskPriority[])} labels={copy.priorities} onChange={(v) => set("priority", v)} disabled={disabled} />
           </Field>
           <Field label={copy.fields.recurrence}>
-            <OptionChips value={value.recurrence} options={board?.options.recurrences ?? (["none", "weekly", "monthly"] as TaskRecurrence[])} labels={copy.recurrences} onChange={(v) => set("recurrence", v)} />
+            <OptionChips value={value.recurrence} options={board?.options.recurrences ?? (["none", "weekly", "monthly"] as TaskRecurrence[])} labels={copy.recurrences} onChange={(v) => set("recurrence", v)} disabled={disabled} />
           </Field>
           <Field label={copy.fields.reminders} hint={copy.fields.remindersHint}>
-            <OffsetChips value={value.remind_offsets_days} onChange={(v) => set("remind_offsets_days", v)} />
+            <OffsetChips value={value.remind_offsets_days} onChange={(v) => set("remind_offsets_days", v)} disabled={disabled} />
           </Field>
         </>
       ) : null}
@@ -380,8 +374,13 @@ export function SharedTaskRow({ task, onPress, last }: { task: BoardTask; onPres
   );
 }
 
-/** Detail of one shared task: fields, status, comments. */
+/** Detail of one shared task: fields, status, comments. Keyed by id, so the
+ *  unsaved title, detail and comment of one task never show on another. */
 export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner"; id: string }) {
+  return <SharedTaskDetail key={`${surface}:${id}`} surface={surface} id={id} />;
+}
+
+function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: string }) {
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const back = useSafeBack();
@@ -411,7 +410,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
       setTitle(null);
       setDetail(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -419,14 +418,14 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
 
   async function sendComment() {
     const text = comment.trim();
-    if (!text) return;
+    if (!text || busy) return;
     setBusy(true);
     try {
       await post(`${base}/${id}/comments`, { text });
       setComment("");
       await invalidate();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -438,18 +437,20 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
       await del(`${base}/${id}`);
       await invalidate();
       setConfirm(false);
+      leave.release();
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
   }
 
   const dirty = (title !== null && title !== task?.title) || (detail !== null && detail !== task?.detail);
+  const leave = useUnsavedGuard(dirty && canEdit);
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.segments.board} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={() => leave(back)} title={copy.segments.board} />} bottomInset={40} keyboard>
       {isLoading && !task ? <Skeleton h={160} r={18} /> : null}
       {task ? (
         <Stack gap={18}>
@@ -533,6 +534,11 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
             />
           ) : null}
           {surface === "couple" && canEdit ? <Button label={copy.delete} kind="ghost" onPress={() => setConfirm(true)} style={{ marginTop: 8 }} /> : null}
+          {!canEdit ? (
+            <T v="meta13" color={colors.ivory55} center>
+              {copy.readOnly}
+            </T>
+          ) : null}
         </Stack>
       ) : null}
       <ConfirmSheet visible={confirm} title={copy.deleteConfirmTitle} body={copy.deleteConfirmBody} confirmLabel={copy.delete} onConfirm={remove} onClose={() => setConfirm(false)} busy={busy} />
@@ -551,20 +557,26 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [assignedTo, setAssignedTo] = useState<"couple" | "planner">(surface);
-  const [guestIds, setGuestIds] = useState<string[]>([]);
+  // Picked guests keep their names here: the search list changes with every
+  // query, and a chip must not vanish when its guest is no longer in it.
+  const [picked, setPicked] = useState<{ id: string; name: string }[]>([]);
+  const guestIds = useMemo(() => picked.map((p) => p.id), [picked]);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const slug = user?.me.tenant.slug ?? "";
-  const coupleGuests = useCoupleGuests(surface === "couple" ? q : "", "all");
+  // Searches every guest server-side (paged, debounced), not just the first page.
+  const coupleGuests = useGuestPages(q, "all", { enabled: surface === "couple" && q.trim().length >= 2 });
   const plannerGuests = usePlannerGuests(surface === "planner" ? slug : "");
   const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const candidates = useMemo(() => {
-    if (surface === "couple") return (coupleGuests.data?.items ?? []).map((g) => ({ id: g.id, name: g.name }));
+    if (surface === "couple") return coupleGuests.items.map((g) => ({ id: g.id, name: g.name }));
     return (plannerGuests.data?.guests ?? []).filter((g) => (q ? fold(g.name).includes(fold(q)) : true)).map((g) => ({ id: g.id, name: g.name }));
-  }, [surface, coupleGuests.data, plannerGuests.data, q]);
-  const chosen = candidates.filter((c) => guestIds.includes(c.id));
+  }, [surface, coupleGuests.items, plannerGuests.data, q]);
+  const chosen = picked;
+  const leave = useUnsavedGuard(!!title.trim() || !!detail.trim() || picked.length > 0);
 
   async function submit() {
+    if (busy) return;
     if (!title.trim()) {
       Alert.alert(copy.errorTitle);
       return;
@@ -573,16 +585,17 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
     try {
       await post(boardBase(surface), { title: title.trim(), detail: detail.trim(), assigned_to: assignedTo, guest_ids: guestIds });
       for (const k of TASK_INVALIDATE) await qc.invalidateQueries({ queryKey: [k] });
+      leave.release();
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.newBoardTask} />} bottomInset={40} keyboard>
+    <Screen header={<TopBar onBack={() => leave(back)} title={copy.newBoardTask} />} bottomInset={40} keyboard>
       <Stack gap={18}>
         {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
         <Field label={copy.fields.title}>
@@ -605,7 +618,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
           {chosen.length ? (
             <ChipRow>
               {chosen.map((c) => (
-                <Chip key={c.id} label={c.name} on onPress={() => setGuestIds((ids) => ids.filter((x) => x !== c.id))} />
+                <Chip key={c.id} label={`${c.name} ×`} on onPress={() => setPicked((list) => list.filter((x) => x.id !== c.id))} />
               ))}
             </ChipRow>
           ) : null}
@@ -619,7 +632,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
                   chevron={false}
                   trailing={guestIds.includes(c.id) ? <Icon name="check" size={18} color={colors.goldLight} /> : undefined}
                   onPress={() => {
-                    setGuestIds((ids) => (ids.includes(c.id) ? ids.filter((x) => x !== c.id) : ids.length < 10 ? [...ids, c.id] : ids));
+                    setPicked((list) => (list.some((x) => x.id === c.id) ? list.filter((x) => x.id !== c.id) : list.length < 10 ? [...list, c] : list));
                     setQ("");
                   }}
                   last={i === Math.min(candidates.length, 6) - 1}
@@ -628,7 +641,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
             </Card>
           ) : null}
         </Field>
-        <Button label={copy.addBoard} onPress={submit} loading={busy} disabled={!online} style={{ marginTop: 8 }} />
+        <Button label={copy.addBoard} onPress={submit} loading={busy} disabled={!online || busy} style={{ marginTop: 8 }} />
       </Stack>
     </Screen>
   );

@@ -3,12 +3,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCopy, useLang } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { fmt, useCopy, useLang } from "@/i18n";
+import { post } from "@/lib/api";
 import type { TenantSummary } from "@/lib/session";
 import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel } from "@/ui";
-import { colors, radius, FILL } from "@/ui/tokens";
+import { colors, fonts, radius, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { extractInviteCode } from "@/features/guest/format";
+import { guestErrorText } from "@/features/guest/errors";
 
 const suite = require("../../assets/photos/suite.jpg");
 const LEN = 6;
@@ -19,10 +21,13 @@ export default function InviteCode() {
   const router = useRouter();
   const back = useSafeBack();
   const params = useLocalSearchParams<{ code?: string }>();
-  const [code, setCode] = useState((params.code ?? "").toUpperCase().slice(0, LEN));
+  const [code, setCode] = useState(() => extractInviteCode(params.code ?? "", LEN));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const input = useRef<TextInput>(null);
+  // A ref, not the busy state: the auto-open effect and a tap on Open can
+  // land in the same frame, before a re-render.
+  const inFlight = useRef(false);
 
   useEffect(() => {
     if (code.length === LEN) void open(code);
@@ -30,15 +35,17 @@ export default function InviteCode() {
   }, [code]);
 
   async function open(value: string) {
-    if (busy) return;
+    if (inFlight.current || value.length !== LEN) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
       const r = await post<{ tenant: TenantSummary }>("/auth/guest/open", { invite_code: value });
       router.push({ pathname: "/find", params: { code: value, tenant: JSON.stringify(r.tenant) } });
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.messages[lang] : copy.common.error);
+      setError(guestErrorText(err, copy, lang));
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
@@ -68,10 +75,17 @@ export default function InviteCode() {
             {copy.invite.intro}
           </T>
         </Stack>
-        <Pressable onPress={() => input.current?.focus()} style={styles.cells} accessibilityLabel={copy.invite.title}>
+        {/* VoiceOver reads the characters typed so far, one by one. */}
+        <Pressable
+          onPress={() => input.current?.focus()}
+          style={styles.cells}
+          accessibilityLabel={copy.invite.title}
+          accessibilityValue={{ text: code ? fmt(copy.invite.codeValue, { code: code.split("").join(" ") }) : copy.invite.codeEmpty }}
+          accessibilityHint={copy.invite.intro}
+        >
           {cells.map((c, i) => (
             <View key={i} style={[styles.cell, i === code.length && styles.cellActive]}>
-              <T v="title30" size={32} color={colors.goldLight} style={{ fontFamily: "CormorantGaramond_600SemiBold" }}>
+              <T v="title30" size={32} color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
                 {c}
               </T>
             </View>
@@ -80,11 +94,15 @@ export default function InviteCode() {
             testID="invite-input"
             ref={input}
             value={code}
-            onChangeText={(t) => setCode(t.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, LEN))}
+            // No maxLength: iOS cut a paste such as "ABC-123" to five characters
+            // before it could be cleaned. The six characters are picked here.
+            onChangeText={(t) => {
+              setCode(extractInviteCode(t, LEN));
+              if (error) setError(null);
+            }}
             autoCapitalize="characters"
             autoCorrect={false}
             autoFocus
-            maxLength={LEN}
             style={styles.hidden}
             keyboardAppearance="dark"
             accessibilityLabel={copy.invite.title}

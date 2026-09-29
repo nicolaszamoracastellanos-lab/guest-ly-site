@@ -11,7 +11,8 @@ import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Button, Banner, EmptyState, Skeleton, Stack, SectionLabel, Segmented, Input, Toggle, Chip, ChipRow, Sheet, T, Row, IconButton } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/rsvp-questions/copy";
-import { saveRsvpQuestions, slug, useRsvpQuestions, type RsvpQuestion } from "@/features/rsvp-questions/hooks";
+import { saveRsvpQuestions, uniqueSlug, useRsvpQuestions, type RsvpQuestion } from "@/features/rsvp-questions/hooks";
+import { WEBSITE_KEY } from "@/features/website/hooks";
 import { useSafeBack } from "@/lib/nav";
 
 type Draft = RsvpQuestion;
@@ -43,11 +44,14 @@ export default function RsvpQuestions() {
     try {
       const r = await saveRsvpQuestions(next);
       qc.setQueryData(["rsvp-questions"], { questions: r.questions, events });
+      // The questions live in the website config: the builder must build its
+      // next save on these, not on the copy it loaded earlier.
+      void qc.invalidateQueries({ queryKey: WEBSITE_KEY });
       setSavedTick(true);
       setTimeout(() => setSavedTick(false), 1500);
       return true;
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.messages[lang] : c.needLabel);
+      setError(err instanceof ApiFailure ? err.messages[lang] : app.common.error);
       return false;
     } finally {
       setBusy(false);
@@ -55,6 +59,7 @@ export default function RsvpQuestions() {
   }
 
   function move(i: number, dir: -1 | 1) {
+    if (busy) return;
     const j = i + dir;
     if (j < 0 || j >= questions.length) return;
     const next = [...questions];
@@ -71,18 +76,26 @@ export default function RsvpQuestions() {
       setError(c.needLabel);
       return;
     }
-    const options =
+    const kept =
       d.kind === "select"
         ? d.options
             .map((o) => ({ ...o, label: { en: o.label.en?.trim() || null, es: o.label.es?.trim() || null } }))
             .filter((o) => o.label.en || o.label.es)
-            .map((o) => ({ id: o.id || slug(o.label.en ?? o.label.es ?? ""), label: o.label }))
         : [];
+    // Options that already have an id keep it; new ones get one no sibling uses.
+    const optionIds = kept.map((o) => o.id).filter(Boolean);
+    const options = kept.map((o) => {
+      if (o.id) return { id: o.id, label: o.label };
+      const id = uniqueSlug(o.label.en ?? o.label.es ?? "", optionIds);
+      optionIds.push(id);
+      return { id, label: o.label };
+    });
     if (d.kind === "select" && options.length < 2) {
       setError(c.needOptions);
       return;
     }
-    const clean: RsvpQuestion = { id: d.id || slug(en || es), kind: d.kind, label: { en: en || null, es: es || null }, options, event_id: d.event_id, required: d.required };
+    const otherIds = questions.filter((_, i) => i !== editing.index).map((q) => q.id);
+    const clean: RsvpQuestion = { id: d.id || uniqueSlug(en || es, otherIds), kind: d.kind, label: { en: en || null, es: es || null }, options, event_id: d.event_id, required: d.required };
     const next = [...questions];
     if (editing.index === null) next.push(clean);
     else next[editing.index] = clean;
@@ -139,8 +152,8 @@ export default function RsvpQuestions() {
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
               <T v="title26">{c.edit}</T>
               <Stack gap={10} style={{ marginTop: 14 }}>
-                <Input value={d.label.en ?? ""} onChangeText={(t) => setD({ label: { ...d.label, en: t.slice(0, 160) } })} placeholder={c.labelEn} />
-                <Input value={d.label.es ?? ""} onChangeText={(t) => setD({ label: { ...d.label, es: t.slice(0, 160) } })} placeholder={c.labelEs} />
+                <Input accessibilityLabel={c.labelEn} value={d.label.en ?? ""} onChangeText={(t) => setD({ label: { ...d.label, en: t.slice(0, 160) } })} placeholder={c.labelEn} />
+                <Input accessibilityLabel={c.labelEs} value={d.label.es ?? ""} onChangeText={(t) => setD({ label: { ...d.label, es: t.slice(0, 160) } })} placeholder={c.labelEs} />
               </Stack>
               <SectionLabel style={{ marginTop: 16 }}>{c.kind}</SectionLabel>
               <View style={{ marginTop: 8 }}>
@@ -153,10 +166,10 @@ export default function RsvpQuestions() {
                     {d.options.map((o, i) => (
                       <Row key={i} gap={8}>
                         <View style={{ flex: 1 }}>
-                          <Input value={o.label.en ?? ""} onChangeText={(t) => setD({ options: d.options.map((x, j) => (j === i ? { ...x, label: { ...x.label, en: t.slice(0, 80) } } : x)) })} placeholder={c.optionEn} />
+                          <Input accessibilityLabel={c.optionEn} value={o.label.en ?? ""} onChangeText={(t) => setD({ options: d.options.map((x, j) => (j === i ? { ...x, label: { ...x.label, en: t.slice(0, 80) } } : x)) })} placeholder={c.optionEn} />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Input value={o.label.es ?? ""} onChangeText={(t) => setD({ options: d.options.map((x, j) => (j === i ? { ...x, label: { ...x.label, es: t.slice(0, 80) } } : x)) })} placeholder={c.optionEs} />
+                          <Input accessibilityLabel={c.optionEs} value={o.label.es ?? ""} onChangeText={(t) => setD({ options: d.options.map((x, j) => (j === i ? { ...x, label: { ...x.label, es: t.slice(0, 80) } } : x)) })} placeholder={c.optionEs} />
                         </View>
                         <IconButton name="x" label={c.delete} onPress={() => setD({ options: d.options.filter((_, j) => j !== i) })} />
                       </Row>

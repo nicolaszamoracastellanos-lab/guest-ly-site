@@ -87,6 +87,10 @@ export const COPY = {
     error: "Something went wrong. Please try again.",
     photoDenied: "Guest-ly needs access to your photos for this.",
     cameraDenied: "Guest-ly needs the camera for this.",
+    tableNotFound: "This table is no longer on the plan.",
+    showMore: "Show {n} more",
+    photoTooBig: "That photo is too large even after shrinking it. Try a closer shot of the plan.",
+    readMaybeDone: "The read is taking longer than usual. It may still finish: check the tables in a minute before reading again.",
   },
   es: {
     title: "Mesas",
@@ -111,7 +115,7 @@ export const COPY = {
     seatedOf: "{seated} de {capacity} sentados",
     overCapacity: "Sobre capacidad",
     unseated: "Sin asiento",
-    unseatedHint: "Toque un grupo para asignarle una mesa.",
+    unseatedHint: "Toca un grupo para asignarle una mesa.",
     unconfirmed: "Aún sin confirmar",
     unconfirmedHint:
       "Grupos sin respuesta de asistencia. Puedes sentarlos a partir de una estimación.",
@@ -141,7 +145,7 @@ export const COPY = {
     suggestIntro:
       "La misma regla determinista de la web: los grupos no se separan, y luego la relación, las etiquetas y el apellido deciden quién se sienta cerca de quién. Nadie ya sentado se mueve.",
     criteria: "Prioridad",
-    criteriaHint: "Toque para subir una regla.",
+    criteriaHint: "Toca para subir una regla.",
     criterion: {
       party: "Grupos",
       relationship: "Relación",
@@ -176,5 +180,9 @@ export const COPY = {
     error: "Algo salió mal. Inténtalo de nuevo.",
     photoDenied: "Guest-ly necesita acceso a tus fotos para esto.",
     cameraDenied: "Guest-ly necesita la cámara para esto.",
+    tableNotFound: "Esta mesa ya no está en el plano.",
+    showMore: "Mostrar {n} más",
+    photoTooBig: "Esa foto sigue siendo muy grande después de reducirla. Prueba una toma más cercana del plano.",
+    readMaybeDone: "La lectura está tardando más de lo normal. Puede que aún termine: revisa las mesas en un minuto antes de leer otra vez.",
   },
 };

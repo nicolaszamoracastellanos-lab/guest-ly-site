@@ -3,7 +3,7 @@
 // protocol as the web page. Reads and proposals only: an action card does
 // nothing until Confirm, and broadcasts need the typed word.
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -75,12 +75,7 @@ export default function AssistantScreen() {
     return () => clearTimeout(t);
   }, [items, busy]);
 
-  const notEnabledText = useMemo(() => {
-    if (enabled) return null;
-    return lang === "es"
-      ? "El Coordinador no está activado para esta boda. Escríbanos a hello@guest-ly.com y lo activaremos."
-      : "The Coordinator is not switched on for this wedding. Write to hello@guest-ly.com and we will enable it.";
-  }, [enabled, lang]);
+  const notEnabledText = enabled ? null : copy.notEnabledBody;
 
   const adoptSession = useCallback(
     (id: string) => {
@@ -114,6 +109,12 @@ export default function AssistantScreen() {
           setItems((prev) => [...prev, { kind: "card", card: event.card }]);
           break;
         case "executed":
+          // An executed card changed the wedding (a guest, an RSVP, a
+          // reminder, the brain): everything else on screen refetches.
+          void qc.invalidateQueries({ predicate: (q) => !String(q.queryKey[0] ?? "").startsWith("assistant") });
+          setNow(Date.now());
+          setItems((prev) => prev.map((it) => (it.kind === "card" && it.card.id === event.card.id ? { kind: "card", card: event.card } : it)));
+          break;
         case "card_status":
           setNow(Date.now());
           setItems((prev) => prev.map((it) => (it.kind === "card" && it.card.id === event.card.id ? { kind: "card", card: event.card } : it)));
@@ -122,7 +123,7 @@ export default function AssistantScreen() {
           break;
       }
     },
-    [adoptSession]
+    [adoptSession, qc]
   );
 
   async function run(body: Parameters<typeof streamPost>[1], on: (e: StreamEvent) => void): Promise<StreamOutcome> {
@@ -275,7 +276,7 @@ export default function AssistantScreen() {
           </View>
         ) : (
           <>
-            <ScrollView ref={scroll} style={{ flex: 1, overflow: "hidden" }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 }} keyboardShouldPersistTaps="handled">
+            <ScrollView ref={scroll} style={{ flex: 1, overflow: "hidden" }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
               {sessionId && !detailQ.data && detailQ.isLoading ? (
                 <Stack gap={10}>
                   <Skeleton h={48} r={18} />
@@ -499,7 +500,7 @@ function Item({
         {proposed && !expired ? (
           <Stack gap={8} style={{ marginTop: 14 }}>
             {card.requiresTypedConfirm ? (
-              <Input value={typed[card.id] ?? ""} onChangeText={(t) => setTyped((p) => ({ ...p, [card.id]: t }))} placeholder={copy.typedPlaceholder} autoCapitalize="characters" autoCorrect={false} />
+              <Input accessibilityLabel={copy.typedHint} value={typed[card.id] ?? ""} onChangeText={(t) => setTyped((p) => ({ ...p, [card.id]: t }))} placeholder={copy.typedPlaceholder} autoCapitalize="characters" autoCorrect={false} />
             ) : null}
             {err ? (
               <T v="meta13" color={colors.red}>

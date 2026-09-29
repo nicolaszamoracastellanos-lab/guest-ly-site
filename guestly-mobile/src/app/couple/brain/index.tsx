@@ -6,13 +6,14 @@ import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeatureCopy } from "@/i18n/feature";
 import { relTime, useLang, useCopy } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Gem, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
 import { useBrain, BRAIN_KEY } from "@/features/brain/hooks";
-import { initDraft, useDraft, isDirty, saveNow, setSavedListener } from "@/features/brain/draft";
+import { initDraft, useDraft, isDirty, isLoaded, saveNow, addSavedListener, getFacts } from "@/features/brain/draft";
 import { SECTIONS, sectionFill } from "@/features/brain/sections";
 import { useSafeBack } from "@/lib/nav";
 
@@ -31,28 +32,30 @@ export default function BrainHome() {
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Re-seeds on fresh data, and again after the draft is reset (another
+  // wedding or account), when loadedVersion goes back to null.
+  const loaded = draft.loadedVersion !== null;
   useEffect(() => {
     if (data) initDraft(data.facts, data.head_version);
-  }, [data]);
+  }, [data, loaded]);
 
-  useEffect(() => {
-    setSavedListener(() => void qc.invalidateQueries({ queryKey: BRAIN_KEY }));
-    return () => setSavedListener(null);
-  }, [qc]);
+  useEffect(() => addSavedListener(() => void qc.invalidateQueries({ queryKey: BRAIN_KEY })), [qc]);
 
   const dirty = isDirty();
   const differs = dirty || draft.status === "saving" || (data?.draft_differs ?? false);
 
   async function publish() {
+    if (!isLoaded()) return;
     setPublishing(true);
     setNotice(null);
     try {
       await saveNow();
-      const r = await post<{ version: number }>("/couple/brain/publish", { facts: draft.facts });
+      // The store's facts, not this render's copy: a save may just have landed.
+      const r = await post<{ version: number }>("/couple/brain/publish", { facts: getFacts() });
       setNotice(c.published(r.version));
       await refetch();
     } catch (err) {
-      Alert.alert(c.publishFailed, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.publishFailed, errorText(err, lang, app.common.errorBody));
     } finally {
       setPublishing(false);
     }
@@ -91,7 +94,7 @@ export default function BrainHome() {
                 {notice}
               </T>
             ) : null}
-            {canEdit ? <Button label={publishing ? c.publishing : c.publish} onPress={publish} loading={publishing} disabled={!differs && !!data?.published_version} style={{ marginTop: 6 }} /> : null}
+            {canEdit ? <Button label={publishing ? c.publishing : c.publish} onPress={publish} loading={publishing} disabled={!loaded || (!differs && !!data?.published_version)} style={{ marginTop: 6 }} /> : null}
             {!canEdit ? (
               <T v="meta13" color={colors.ivory55}>
                 {c.readOnly}

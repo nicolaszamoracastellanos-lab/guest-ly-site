@@ -2,7 +2,7 @@
 // to disk so the home screens open instantly offline.
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { get, post } from "@/lib/api";
+import { ApiFailure, get, post } from "@/lib/api";
 
 // ---- guest
 export type ScheduleEvent = {
@@ -31,16 +31,18 @@ export type DayOf = {
 export type GuestPayload = {
   guestToken: string; displayName: string; maxParty: number; members: string[]; language: string | null;
   hasContact: boolean; events: { id: string; title: { en: string; es: string }; date: string | null; time: string | null; location: string | null; cost: string | null }[];
-  questions: { id: string; label: { en: string | null; es: string | null }; type: string; required?: boolean; options?: { id: string; label: { en: string | null; es: string | null } }[]; event_id: string | null }[];
+  // The portal field is `kind`; `type` is kept only for older payloads.
+  questions: { id: string; label: { en: string | null; es: string | null }; kind?: "select" | "text"; type?: string; required?: boolean; options?: { id: string; label: { en: string | null; es: string | null } }[]; event_id: string | null }[];
   existing: { answers: Record<string, string>; questionAnswers: Record<string, string>; partySize: number | null; companions: { name: string | null; attending: boolean; main?: boolean; events?: Record<string, string> }[]; notes: string | null; respondedAt: string | null } | null;
 };
 export type ThreadMessage = { id: string; role: "guest" | "bot" | "couple"; text: string; created_at: string; needs_couple: boolean; replied_at: string | null };
 
 export const useGuestHome = () => useQuery({ queryKey: ["guest-home"], queryFn: () => get<GuestHome>("/guest/home") });
 export const useGuestSchedule = () => useQuery({ queryKey: ["guest-schedule"], queryFn: () => get<{ wedding_date: string | null; timezone: string; events: ScheduleEvent[]; arrival_advice: string | null }>("/guest/schedule") });
-export const useGuestDayOf = () => useQuery({ queryKey: ["guest-dayof"], queryFn: () => get<DayOf>("/guest/dayof"), refetchInterval: 60_000 });
+// `poll` false stops the interval while the screen is not visible (tabs stay mounted).
+export const useGuestDayOf = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["guest-dayof"], queryFn: () => get<DayOf>("/guest/dayof"), refetchInterval: opts?.poll === false ? false : 60_000 });
 export const useGuestRsvp = () => useQuery({ queryKey: ["guest-rsvp"], queryFn: () => get<{ payload: GuestPayload; summary: RsvpSummary }>("/guest/rsvp") });
-export const useGuestMessages = () => useQuery({ queryKey: ["guest-messages"], queryFn: () => get<{ pending: boolean; conversation_id?: string; messages: ThreadMessage[] }>("/guest/messages"), refetchInterval: 30_000 });
+export const useGuestMessages = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["guest-messages"], queryFn: () => get<{ pending: boolean; conversation_id?: string; messages: ThreadMessage[] }>("/guest/messages"), refetchInterval: opts?.poll === false ? false : 30_000 });
 
 // ---- couple
 export type Totals = { parties: number; people_expected: number; attending_parties: number; attending_seats: number; declined_parties: number; declined_seats: number; pending_parties: number };
@@ -76,7 +78,9 @@ export type GuestDetail = {
 export type RequestRow = {
   id: string; kind: string; status: "open" | "approved" | "declined" | "cancelled"; guest_ids: string[]; payload: Record<string, unknown>;
   note: string; created_by_email: string; created_by_role: string; lang: "en" | "es"; resolution: Record<string, unknown>;
-  resolved_at: string | null; created_at: string; updated_at: string; guest_names?: string[]; thread?: { id: string; author_role: string; author_email: string; body: string; created_at: string }[];
+  resolved_at: string | null; created_at: string; updated_at: string; guest_names?: string[];
+  /** `event: "edited"` marks the entry the portal adds when a planner edits an open request. */
+  thread?: { id: string; author_role: string; author_email: string; body: string; created_at: string; event?: string }[];
 };
 export type TaskRow = { id: string; title: string; detail: string; status: "open" | "in_progress" | "done"; assigned_to: "planner" | "couple"; guest_ids: string[]; created_at: string; updated_at: string };
 
@@ -86,7 +90,9 @@ export const useCoupleGuests = (q: string, filter: string) =>
 export const useGuestDetail = (id: string) => useQuery({ queryKey: ["couple-guest", id], queryFn: () => get<GuestDetail>(`/couple/guests/${id}`), enabled: !!id });
 export const useCoupleRsvps = (filter: string) => useQuery({ queryKey: ["couple-rsvps", filter], queryFn: () => get<{ items: RsvpListItem[]; totals: Totals; deadline: string | null }>(`/couple/rsvps?filter=${filter}`), placeholderData: (prev) => prev });
 export const useInbox = (filter: string) => useQuery({ queryKey: ["couple-inbox", filter], queryFn: () => get<{ items: InboxItem[]; needs_you: number }>(`/couple/messages?filter=${filter}`), refetchInterval: 30_000, placeholderData: (prev) => prev });
-export const useCoupleDayOf = () => useQuery({ queryKey: ["couple-dayof"], queryFn: () => get<CoupleDayOf>("/couple/dayof"), refetchInterval: 30_000 });
+/** Polls only while `poll` is true: screens pass useIsFocused(), so a day-of or
+ *  door screen left behind in a tab stops asking the server every 30 s. */
+export const useCoupleDayOf = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["couple-dayof"], queryFn: () => get<CoupleDayOf>("/couple/dayof"), refetchInterval: opts?.poll === false ? false : 30_000 });
 export const useMore = () => useQuery({ queryKey: ["couple-more"], queryFn: () => get<{ entries: Record<string, MoreEntry>; site_slug: string; tier: string }>("/couple/more") });
 export const useCoupleRequests = () => useQuery({ queryKey: ["couple-requests"], queryFn: () => get<{ pending: boolean; requests: RequestRow[] }>("/couple/requests") });
 
@@ -94,7 +100,8 @@ export const useCoupleRequests = () => useQuery({ queryKey: ["couple-requests"],
 export type PlannerHome = {
   greeting_name: string;
   weddings: { slug: string; couple_names: string; wedding_date: string | null; days_to_go: number | null; open_requests: number; status: string; current: boolean }[];
-  briefing: { text: string; href: string; tone: "risk" | "warn" | "info" }[];
+  /** `needs_you`: set by newer portals; false for rows that only inform. */
+  briefing: { text: string; href: string; tone: "risk" | "warn" | "info"; needs_you?: boolean }[];
   totals: { attending_seats: number; pending_parties: number; parties: number };
   open_tasks: number;
 };
@@ -103,6 +110,24 @@ export type PlannerGuest = { id: string; name: string; initials: string; party_s
 export const usePlannerHome = () => useQuery({ queryKey: ["planner-home"], queryFn: () => get<PlannerHome>("/planner/home") });
 export const usePlannerGuests = (slug: string) => useQuery({ queryKey: ["planner-guests", slug], queryFn: () => get<{ guests: PlannerGuest[]; count: number }>(`/planner/weddings/${slug}/guests`), enabled: !!slug });
 export const usePlannerRequests = () => useQuery({ queryKey: ["planner-requests"], queryFn: () => get<{ pending: boolean; requests: RequestRow[]; tasks: TaskRow[]; tasks_pending: boolean }>("/planner/requests") });
+/** One request by id (deep links, pushes, and after an edit). Starts from the
+ *  list's copy when there is one; a 404 reads as null, never as an error. */
+export function usePlannerRequest(id: string) {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: ["planner-request", id],
+    enabled: !!id,
+    queryFn: async () => {
+      try {
+        return (await get<{ request: RequestRow }>(`/planner/requests/${encodeURIComponent(id)}`)).request;
+      } catch (err) {
+        if (err instanceof ApiFailure && err.status === 404) return null;
+        throw err;
+      }
+    },
+    placeholderData: () => qc.getQueryData<{ requests: RequestRow[] }>(["planner-requests"])?.requests.find((r) => r.id === id),
+  });
+}
 export const usePlannerTasks = () => useQuery({ queryKey: ["planner-tasks"], queryFn: () => get<{ pending: boolean; tasks: TaskRow[] }>("/planner/tasks") });
 
 /** Mutation that invalidates the given keys on success. */

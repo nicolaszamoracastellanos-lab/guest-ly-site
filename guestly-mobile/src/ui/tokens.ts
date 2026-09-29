@@ -6,6 +6,8 @@
 // (#0D1B2A / #FAF6F0 / #B8965A); Nico confirmed the artifact look on
 // 5 Sep 2026, so the artifact and portal values ship. See BUILD-LOG.md.
 
+import { Platform } from "react-native";
+
 export const colors = {
   night: "#0d1117",
   nightDeep: "#080b10",
@@ -59,13 +61,20 @@ export const radius = {
   pill: 9999,
 } as const;
 
+// The six faces are embedded in the binary by the expo-font config plugin
+// (app.config.ts), so nothing loads them at runtime and first paint never waits
+// on them. iOS names an embedded font by its PostScript name; Android by its
+// file name. Web still loads them with useFonts under the file names.
+// Always use these constants, never a family string: "Jost_500Medium" does not
+// exist on iOS and would fall back to the system font.
+const IOS = Platform.OS === "ios";
 export const fonts = {
-  display: "CormorantGaramond_500Medium",
-  displayItalic: "CormorantGaramond_400Regular_Italic",
-  displaySemibold: "CormorantGaramond_600SemiBold",
-  body: "Jost_400Regular",
-  bodyMedium: "Jost_500Medium",
-  bodySemibold: "Jost_600SemiBold",
+  display: IOS ? "CormorantGaramond-Medium" : "CormorantGaramond_500Medium",
+  displayItalic: IOS ? "CormorantGaramond-Italic" : "CormorantGaramond_400Regular_Italic",
+  displaySemibold: IOS ? "CormorantGaramond-SemiBold" : "CormorantGaramond_600SemiBold",
+  body: IOS ? "Jost-Regular" : "Jost_400Regular",
+  bodyMedium: IOS ? "Jost-Medium" : "Jost_500Medium",
+  bodySemibold: IOS ? "Jost-SemiBold" : "Jost_600SemiBold",
 } as const;
 
 /** Type scale. Body copy never renders below 16, captions never below 14.

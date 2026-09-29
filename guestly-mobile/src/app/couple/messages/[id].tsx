@@ -4,20 +4,22 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { View, Linking, Alert, ScrollView } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useIsFocused, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang, relTime } from "@/i18n";
+import { useCopy, useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card, KeyboardFill, useKeyboardOpen, useBottomClearance, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
-import { useConversation, type TranscriptLine } from "@/features/inbox/hooks";
+import { fetchEarlier, useConversation, type TranscriptLine } from "@/features/inbox/hooks";
 import { useSafeBack } from "@/lib/nav";
 
 export default function Conversation() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -25,13 +27,39 @@ export default function Conversation() {
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const { id } = useLocalSearchParams<{ id: string }>();
-  const mainQuery = useConversation(id);
+  const focused = useIsFocused();
+  const mainQuery = useConversation(id, { poll: focused });
   const { data, isLoading, refetch } = mainQuery;
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [handling, setHandling] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const scroll = useRef<ScrollView>(null);
+  // Older pages of a long thread. The query keeps polling the newest lines;
+  // earlier ones are fetched on request and kept in front of them.
+  const [earlier, setEarlier] = useState<TranscriptLine[]>([]);
+  const [earlierMore, setEarlierMore] = useState<boolean | null>(null);
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const recent = data?.messages ?? [];
+  const recentIds = new Set(recent.map((m) => m.id));
+  const lines = [...earlier.filter((m) => !recentIds.has(m.id)), ...recent];
+  const hasEarlier = earlierMore ?? data?.has_more ?? false;
+
+  async function loadEarlier() {
+    const first = lines[0];
+    if (!first || loadingEarlier) return;
+    setLoadingEarlier(true);
+    try {
+      const r = await fetchEarlier(id, first.created_at);
+      const known = new Set(lines.map((m) => m.id));
+      setEarlier((prev) => [...r.messages.filter((m) => !known.has(m.id)), ...prev]);
+      setEarlierMore(!!r.has_more && r.messages.length > 0);
+    } catch (err) {
+      Alert.alert(app.common.error, errorText(err, lang, app.common.errorBody));
+    } finally {
+      setLoadingEarlier(false);
+    }
+  }
 
   useEffect(() => {
     if (data?.messages.length) setTimeout(() => scroll.current?.scrollToEnd({ animated: false }), 50);
@@ -58,7 +86,7 @@ export default function Conversation() {
       }
       await invalidate();
     } catch (err) {
-      Alert.alert(err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(app.common.error, errorText(err, lang, app.common.errorBody));
     } finally {
       setBusy(false);
     }
@@ -71,7 +99,7 @@ export default function Conversation() {
       setNote(c.handledDone);
       await Promise.all([refetch(), invalidate()]);
     } catch (err) {
-      Alert.alert(err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(app.common.error, errorText(err, lang, app.common.errorBody));
     } finally {
       setHandling(false);
     }
@@ -85,7 +113,7 @@ export default function Conversation() {
   return (
     <Screen query={mainQuery} scroll={false} padded={false} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
       <KeyboardFill>
-        <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           {isLoading && !data ? (
             <Stack gap={10}>
               <Skeleton h={56} />
@@ -116,7 +144,8 @@ export default function Conversation() {
               {canEdit && data.open_events > 0 ? <Button label={c.handled} kind="glass" small full={false} icon="check" loading={handling} onPress={markHandled} /> : null}
             </Row>
           ) : null}
-          {(data?.messages ?? []).map((m) => (
+          {data && hasEarlier ? <Button label={c.earlier} kind="text" small loading={loadingEarlier} onPress={() => void loadEarlier()} /> : null}
+          {lines.map((m) => (
             <Bubble key={m.id} m={m} name={data?.name ?? ""} onAddToBrain={(q) => router.push({ pathname: "/couple/brain/section/[key]", params: { key: "faq", gap: q } })} />
           ))}
           {note ? (
@@ -144,7 +173,7 @@ export default function Conversation() {
                     {c.whatsappHint}
                   </T>
                 ) : null}
-                <Input
+                <Input accessibilityLabel={c.replyPlaceholder}
                   value={text}
                   onChangeText={setText}
                   placeholder={c.replyPlaceholder}

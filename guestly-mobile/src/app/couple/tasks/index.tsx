@@ -1,7 +1,7 @@
 // Tasks: the couple's own list grouped by date, plus the board shared with
 // the planner. Web parity for /tasks and the tasks half of /requests.
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { View, FlatList, Alert, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,10 +10,10 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skeleton, Stack, SectionLabel, T, Row, Icon, Banner, useTopInset, useBottomClearance, COLUMN, QueryError, DockedActions } from "@/ui";
+import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skeleton, Stack, SectionLabel, T, Row, Icon, Banner, useTopInset, useBottomClearance, COLUMN, QueryError, DockedActions, useScrimScroll } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
-import { useTasksBoard, useSharedBoard, TASK_INVALIDATE, type TaskGroup, type TaskView, type BoardTask } from "@/features/tasks/hooks";
+import { useTasksBoard, useSharedBoard, KEYS, TASK_INVALIDATE, type Board, type TaskGroup, type TaskView, type BoardTask } from "@/features/tasks/hooks";
 import { TaskRowItem, SharedTaskRow, EmptyList, errorText } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 
@@ -30,6 +30,7 @@ export default function CoupleTasks() {
   const { clearance } = useBottomClearance();
   const [dock, setDock] = useState(0);
   const top = useTopInset();
+  const scrim = useScrimScroll();
   const online = useOnline();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
@@ -57,14 +58,27 @@ export default function CoupleTasks() {
     return out;
   }, [segment, data, group, shared.data, boardFilter, copy]);
 
+  // One status change per task at a time. A double tap sent two "done"
+  // requests and the portal cloned a repeating task twice.
+  const inFlight = useRef(new Set<string>());
+
   async function toggle(task: TaskView) {
-    if (!canEdit) return;
+    if (!canEdit || inFlight.current.has(task.id)) return;
+    inFlight.current.add(task.id);
+    const next = task.status === "done" ? "todo" : "done";
+    const before = { status: task.status, completed_at: task.completed_at };
+    // Tick the box at once; the refetch below regroups the list.
+    await qc.cancelQueries({ queryKey: KEYS.board });
+    qc.setQueryData<Board>(KEYS.board, (b) => (b ? patchTask(b, task.id, { status: next, completed_at: next === "done" ? new Date().toISOString() : null }) : b));
     try {
-      const r = await post<{ task: TaskView; clone: TaskView | null }>(`/couple/tasks/${task.id}/status`, { status: task.status === "done" ? "todo" : "done" });
+      const r = await post<{ task: TaskView; clone: TaskView | null }>(`/couple/tasks/${task.id}/status`, { status: next });
       for (const k of TASK_INVALIDATE) void qc.invalidateQueries({ queryKey: [k] });
       if (r.clone?.due_date) Alert.alert(fmt(copy.repeatCloned, { date: r.clone.due_date }));
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, ""));
+      qc.setQueryData<Board>(KEYS.board, (b) => (b ? patchTask(b, task.id, before) : b));
+      Alert.alert(copy.error, errorText(err, lang, copy.error));
+    } finally {
+      inFlight.current.delete(task.id);
     }
   }
 
@@ -135,8 +149,9 @@ export default function CoupleTasks() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }}>
+      <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
         <FlatList
+          {...scrim.listProps}
           data={rows}
           keyExtractor={(r) => r.key}
           ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
@@ -169,7 +184,7 @@ export default function CoupleTasks() {
               </View>
             ) : item.kind === "task" ? (
               <View style={{ paddingHorizontal: 24 }}>
-                <TaskRowItem task={item.task} last={item.last} onToggle={() => toggle(item.task)} onPress={() => router.push({ pathname: "/couple/tasks/[id]", params: { id: item.task.id } })} />
+                <TaskRowItem task={item.task} last={item.last} readOnly={!canEdit} onToggle={() => void toggle(item.task)} onPress={() => router.push({ pathname: "/couple/tasks/[id]", params: { id: item.task.id } })} />
               </View>
             ) : (
               <View style={{ paddingHorizontal: 24 }}>
@@ -186,6 +201,17 @@ export default function CoupleTasks() {
       ) : null}
     </View>
   );
+}
+
+/** The board with one task's status changed everywhere it is listed, and the
+ *  progress count kept in step. */
+function patchTask(b: Board, id: string, patch: Pick<TaskView, "status" | "completed_at">): Board {
+  const was = b.tasks.find((t) => t.id === id);
+  if (!was) return b;
+  const map = (t: TaskView) => (t.id === id ? { ...t, ...patch } : t);
+  const delta = (patch.status === "done" ? 1 : 0) - (was.status === "done" ? 1 : 0);
+  const groups = Object.fromEntries(Object.entries(b.groups).map(([g, list]) => [g, list.map(map)])) as Board["groups"];
+  return { ...b, tasks: b.tasks.map(map), groups, progress: { ...b.progress, done: Math.max(0, b.progress.done + delta) } };
 }
 
 function QuickAction({ icon, label, onPress }: { icon: "list" | "contacts" | "bell"; label: string; onPress: () => void }) {

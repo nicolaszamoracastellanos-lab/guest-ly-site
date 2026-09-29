@@ -6,7 +6,7 @@
 // tab bar and the bubble rested on top of toggles, badges and buttons. The
 // rule now lives in one place instead of a magic number per screen.
 
-import { useCallback, useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWindowDimensions, type View } from "react-native";
@@ -200,5 +200,70 @@ export function useBubbleHide(active: boolean) {
         recomputeHide();
       };
     }, [id, active])
+  );
+}
+
+// While the focused screen has content running on below the visible area,
+// the bubble docks: it slides into the right (or left) screen gutter and
+// shows only a sliver, so it never rests on a row's badge, pill or button
+// in the middle of a list (QA Sep 29: RSVPs, vendors, tasks, guest Day-of).
+// At the end of the content, where every screen keeps the bubble's band
+// free (useBottomClearance), and on short screens it comes back in full.
+// Keyed per screen and tied to focus like the lift, since tab screens stay
+// mounted.
+const docks = new Map<string, boolean>();
+let docked = false;
+const dockListeners = new Set<() => void>();
+function recomputeDock() {
+  const next = Array.from(docks.values()).some(Boolean);
+  if (next === docked) return;
+  docked = next;
+  dockListeners.forEach((l) => l());
+}
+function subscribeDock(l: () => void) {
+  dockListeners.add(l);
+  return () => {
+    dockListeners.delete(l);
+  };
+}
+
+/** Read by the bubble. */
+export function useBubbleDocked(): boolean {
+  return useSyncExternalStore(subscribeDock, () => docked, () => false);
+}
+
+/** Content left below the visible area before the bubble docks: less than
+ *  this and the band the screen keeps free is in view. */
+export const DOCK_SLACK = 24;
+
+/** For a scrolling screen: returns a setter that says whether content still
+ *  runs on below the visible area. Cleared when the screen loses focus and
+ *  restored when it regains it. */
+export function useBubbleDock(): (below: boolean) => void {
+  const id = useId();
+  // Refs, not state: a scroll crossing the threshold must not re-render the screen.
+  const value = useRef(false);
+  const focused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      focused.current = true;
+      docks.set(id, value.current);
+      recomputeDock();
+      return () => {
+        focused.current = false;
+        docks.delete(id);
+        recomputeDock();
+      };
+    }, [id])
+  );
+  return useCallback(
+    (below: boolean) => {
+      if (value.current === below) return;
+      value.current = below;
+      if (!focused.current) return;
+      docks.set(id, below);
+      recomputeDock();
+    },
+    [id]
   );
 }

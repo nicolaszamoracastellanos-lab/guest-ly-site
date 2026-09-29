@@ -1,19 +1,26 @@
 // Import guests: paste or pick a file, review what was recognized, confirm.
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { ApiFailure } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Card, Segmented, Input, Button, Badge, Banner, Stack, SectionLabel, T, ListRow, Avatar, Row } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/import/copy";
 import { commitImport, parseImport, type ParsePreview } from "@/features/import/hooks";
 import { useSafeBack } from "@/lib/nav";
+
+// The portal names detected columns with English labels ("Party size") or
+// raw field ids; both are shown in the app language.
+const FIELD_IDS: Record<string, string> = {
+  name: "name", phone: "phone", email: "email", "party size": "party_size", party_size: "party_size", tags: "tags",
+  "language tag": "language", language: "language", "companions (members + notes)": "companions", companions: "companions",
+  "kids (notes)": "kids", kids: "kids", "rsvp status": "rsvp", rsvp: "rsvp", notes: "notes",
+};
 
 type Way = "paste" | "file";
 
@@ -25,7 +32,6 @@ export default function ImportGuests() {
   const c = useFeatureCopy(COPY);
   const app = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
   const back = useSafeBack();
   const qc = useQueryClient();
   const [way, setWay] = useState<Way>("paste");
@@ -65,14 +71,14 @@ export default function ImportGuests() {
       setPreview(p);
       setKept(new Set(p.guests.map((g, i) => (g.duplicate ? -1 : i)).filter((i) => i >= 0)));
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.messages[lang] : c.error);
+      setError(errorText(err, lang, c.error));
     } finally {
       setBusy(false);
     }
   }
 
   async function commit() {
-    if (!preview) return;
+    if (!preview || busy) return;
     const guests = preview.guests.filter((_, i) => kept.has(i)).map(({ duplicate: _d, ...g }) => g);
     if (!guests.length) {
       setError(c.nothingKept);
@@ -87,26 +93,29 @@ export default function ImportGuests() {
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
       await qc.invalidateQueries({ queryKey: ["couple-rsvps"] });
     } catch (err) {
-      setError(err instanceof ApiFailure ? err.messages[lang] : c.error);
+      setError(errorText(err, lang, c.error));
     } finally {
       setBusy(false);
     }
   }
 
-  function toggle(i: number) {
+  const toggle = useCallback((i: number) => {
     setKept((p) => {
       const n = new Set(p);
       if (n.has(i)) n.delete(i);
       else n.add(i);
       return n;
     });
-  }
+  }, []);
+
+  const fieldLabel = (f: string) => c.fields[FIELD_IDS[f.trim().toLowerCase()] ?? ""] ?? f;
+  const rsvpLabel = (v: string) => c.rsvpValues[v.trim().toLowerCase()] ?? v;
 
   if (result) {
     return (
       <Screen header={<TopBar onBack={back} title={app.guests.title} />}>
         <BigTitle label={c.doneTitle} title={fmt(c.preview, { n: result.imported })} sub={fmt(c.doneBody, { guests: result.imported, rsvps: result.rsvpsRecorded })} size={38} />
-        <Button label={c.done} onPress={() => router.replace("/couple/guests")} style={{ marginTop: 28 }} />
+        <Button label={c.done} onPress={back} style={{ marginTop: 28 }} />
       </Screen>
     );
   }
@@ -125,7 +134,7 @@ export default function ImportGuests() {
                 <T v="meta13" color={colors.ivory55}>
                   {c.pasteHint}
                 </T>
-                <Input value={text} onChangeText={setText} placeholder={c.pastePlaceholder} multiline autoCorrect={false} style={{ minHeight: 160, alignItems: "flex-start", paddingTop: 12, marginTop: 10 }} />
+                <Input accessibilityLabel={c.paste} value={text} onChangeText={setText} placeholder={c.pastePlaceholder} multiline autoCorrect={false} style={{ minHeight: 160, alignItems: "flex-start", paddingTop: 12, marginTop: 10 }} />
               </View>
             ) : (
               <View style={{ marginTop: 14 }}>
@@ -147,23 +156,23 @@ export default function ImportGuests() {
                 <SectionLabel>{c.mapping}</SectionLabel>
                 <Row gap={6} style={{ flexWrap: "wrap", marginTop: 6 }}>
                   {Object.entries(preview.mapping).map(([col, field]) => (
-                    <Badge key={col} label={`${col} → ${field}`} kind="mute" />
+                    <Badge key={col} label={`${col} → ${fieldLabel(field)}`} kind="mute" />
                   ))}
                 </Row>
               </View>
             ) : null}
             <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 16 }}>
               {preview.guests.map((g, i) => (
-                <Pressable key={`${g.name}-${i}`} onPress={() => toggle(i)} accessibilityRole="checkbox" accessibilityState={{ checked: kept.has(i) }}>
-                  <ListRow
-                    leading={<Avatar initials={initials(g.name)} />}
-                    title={g.name}
-                    sub={[g.party_size > 1 ? fmt(c.party, { n: g.party_size }) : null, g.phone ?? c.noPhone, g.rsvp ? `${c.rsvp}: ${g.rsvp}` : null, g.duplicate ? c.alreadyOnList : null].filter(Boolean).join(" · ")}
-                    trailing={<Badge label={kept.has(i) ? c.keep : ""} kind={kept.has(i) ? "gold" : "mute"} />}
-                    chevron={false}
-                    last={i === preview.guests.length - 1}
-                  />
-                </Pressable>
+                <PreviewRow
+                  key={`${g.name}-${i}`}
+                  index={i}
+                  name={g.name}
+                  sub={[g.party_size > 1 ? fmt(c.party, { n: g.party_size }) : null, g.phone ?? c.noPhone, g.rsvp ? `${c.rsvp}: ${rsvpLabel(g.rsvp)}` : null, g.duplicate ? c.alreadyOnList : null].filter(Boolean).join(" · ")}
+                  on={kept.has(i)}
+                  keepLabel={c.keep}
+                  onToggle={toggle}
+                  last={i === preview.guests.length - 1}
+                />
               ))}
             </Card>
             {error ? <Banner icon="warning" title={error} kind="red" /> : null}
@@ -177,3 +186,12 @@ export default function ImportGuests() {
     </Screen>
   );
 }
+
+// Memoized: toggling one row of a 500-row preview re-renders that row only.
+const PreviewRow = React.memo(function PreviewRow({ index, name, sub, on, keepLabel, onToggle, last }: { index: number; name: string; sub: string; on: boolean; keepLabel: string; onToggle: (i: number) => void; last: boolean }) {
+  return (
+    <Pressable onPress={() => onToggle(index)} accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={sub ? `${name}, ${sub}` : name}>
+      <ListRow leading={<Avatar initials={initials(name)} />} title={name} sub={sub} trailing={<Badge label={on ? keepLabel : ""} kind={on ? "gold" : "mute"} />} chevron={false} last={last} />
+    </Pressable>
+  );
+});

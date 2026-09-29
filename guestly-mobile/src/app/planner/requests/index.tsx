@@ -19,7 +19,7 @@ export default function PlannerRequests() {
   const label = (s: string) => (s === "open" ? copy.planner.awaiting : s === "approved" ? copy.planner.approved : s === "declined" ? copy.planner.declined : copy.planner.cancelled);
 
   return (
-    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="plus" onPress={() => router.push("/planner/requests/new")} label={copy.planner.newRequest} />} />}>
+    <Screen query={mainQuery} refresh header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="plus" onPress={() => router.push("/planner/requests/new")} label={copy.planner.newRequest} />} />}>
       <View style={{ marginTop: 18 }}>
         <BigTitle title={copy.planner.requests} sub={copy.planner.footer} />
       </View>

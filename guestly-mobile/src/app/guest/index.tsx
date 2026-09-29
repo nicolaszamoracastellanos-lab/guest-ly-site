@@ -1,16 +1,19 @@
 // Guest home: the invitation. Full-bleed photo, the names at 60px, the
 // countdown as type, one glass card for the RSVP, four quick actions.
 
-import React, { useEffect } from "react";
-import { View, StyleSheet, Image, ScrollView, Linking, Pressable } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy, useLang, longDate, shortDate, mediumDate } from "@/i18n";
 import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { T, Card, Button, Badge, Countdown, ActionTile, Row, Gem, IconButton, Banner, Skeleton, Stack, SectionLabel, QueryError, StaleBanner, useBottomClearance, useTopInset, COLUMN } from "@/ui";
+import { T, Card, Button, Badge, Countdown, ActionTile, Row, Gem, IconButton, Banner, Skeleton, Stack, SectionLabel, QueryError, StaleBanner, useBottomClearance, useTopInset, COLUMN, StatusScrim, useScrimScroll } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
+import { splitNames } from "@/features/guest/format";
+import { openMaps } from "@/features/guest/links";
 
 const fallback = require("../../../assets/photos/bluehour.jpg");
 
@@ -23,6 +26,17 @@ export default function GuestHome() {
   const online = useOnline();
   const mainQuery = useGuestHome();
   const { data, isLoading, refetch } = mainQuery;
+  // Pull to refresh. Its own flag, not isRefetching, so a background refetch
+  // never shows the spinner.
+  const [pulling, setPulling] = useState(false);
+  const onPull = useCallback(async () => {
+    setPulling(true);
+    try {
+      await refetch();
+    } finally {
+      setPulling(false);
+    }
+  }, [refetch]);
 
   useEffect(() => {
     if (data?.day_of) router.replace("/guest/dayof");
@@ -32,6 +46,7 @@ export default function GuestHome() {
   const [n1, n2] = splitNames(couple);
   const hero = data?.hero_image_url ?? session?.tenant.hero_image_url ?? null;
   const top = useTopInset();
+  const scrim = useScrimScroll();
   const failed = mainQuery.isError && !data;
   const when = data?.wedding_date ?? session?.tenant.wedding_date ?? null;
   const city = data?.city ?? session?.tenant.city ?? "";
@@ -44,14 +59,32 @@ export default function GuestHome() {
     status === "pending"
       ? fmt(deadline ? copy.guestHome.rsvpPrompt : copy.guestHome.rsvpPromptNoDeadline, { name, deadline, seats })
       : fmt(deadline ? copy.guestHome.rsvpDone : copy.guestHome.rsvpDoneNoDeadline, { deadline });
+  const married = !!data?.countdown?.passed && !data.day_of;
+  const directions = data?.quick_links.directions_url ?? null;
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={{ paddingBottom: clearance }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        {...scrim.listProps}
+        contentContainerStyle={{ paddingBottom: clearance }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={colors.goldLight} colors={[colors.gold]} progressBackgroundColor={colors.night} />}
+      >
         <View style={styles.hero}>
           {/* COVER wrapper: the hero has bottom padding (see tokens.ts). */}
           <View style={COVER}>
-            <Image source={hero ? { uri: hero } : fallback} style={FILL} resizeMode="cover" />
+            {/* expo-image: disk cache, so the couple's photo is there on a cold
+                start instead of popping in over the fallback every time. */}
+            <Image
+              source={hero ? { uri: hero } : fallback}
+              placeholder={fallback}
+              placeholderContentFit="cover"
+              cachePolicy="memory-disk"
+              transition={250}
+              style={FILL}
+              contentFit="cover"
+              accessible={false}
+            />
             <LinearGradient
               colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.08)", "rgba(13,17,23,0.55)", colors.night]}
               locations={[0, 0.26, 0.5, 1]}
@@ -85,7 +118,16 @@ export default function GuestHome() {
         </View>
 
         <View style={[COLUMN, { paddingHorizontal: 24, marginTop: -60 }]}>
-          {data?.countdown ? (
+          {married ? (
+            <View accessible accessibilityRole="text">
+              <T v="display44" color={colors.goldLight}>
+                {copy.guestHome.married}
+              </T>
+              <T v="body15" color={colors.ivory70} style={{ marginTop: 4 }}>
+                {copy.guestHome.marriedBody}
+              </T>
+            </View>
+          ) : data?.countdown ? (
             <Countdown days={data.countdown.days} hours={data.countdown.hours} minutes={data.countdown.minutes} labels={{ days: copy.common.days, hours: copy.common.hours, min: copy.common.min }} />
           ) : isLoading ? (
             <Skeleton w={220} h={44} />
@@ -141,25 +183,14 @@ export default function GuestHome() {
 
         <Row gap={8} align="stretch" style={[COLUMN, { paddingHorizontal: 20, marginTop: 12 }]}>
           <ActionTile icon="calendar" label={copy.guestHome.schedule} onPress={() => router.push("/guest/schedule")} />
-          <ActionTile
-            icon="pin"
-            label={copy.guestHome.directions}
-            onPress={() => data?.quick_links.directions_url && Linking.openURL(data.quick_links.directions_url)}
-          />
+          {directions ? <ActionTile icon="pin" label={copy.guestHome.directions} onPress={() => openMaps(directions, copy.common.linkFailed)} /> : null}
           <ActionTile icon="hanger" label={copy.guestHome.dressCode} onPress={() => router.push("/guest/more")} />
           <ActionTile icon="sparkle" label={copy.guestHome.concierge} onPress={() => router.push("/guest/concierge")} />
         </Row>
-        <Pressable onPress={() => refetch()} style={{ height: 1 }} accessibilityElementsHidden />
       </ScrollView>
+      <StatusScrim y={scrim.scrollY} />
     </View>
   );
-}
-
-/** "Camila & Andrés" becomes two display lines: "Camila" and "& Andrés". */
-export function splitNames(names: string): [string, string] {
-  const m = names.match(/^(.*?)\s*(&|y|and)\s+(.*)$/i);
-  if (!m) return [names, ""];
-  return [m[1], `& ${m[3]}`];
 }
 
 const styles = StyleSheet.create({

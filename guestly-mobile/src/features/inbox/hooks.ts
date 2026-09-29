@@ -44,7 +44,10 @@ export type ConversationDetail = {
   open_events: number;
   whatsapp_link: string | null;
   can_reply_in_app: boolean;
+  /** The newest lines (up to 300), oldest first. */
   messages: TranscriptLine[];
+  /** More lines exist before the first one: fetch with ?before=. */
+  has_more?: boolean;
 };
 
 export const useInboxList = (filter: string) =>
@@ -55,5 +58,9 @@ export const useInboxList = (filter: string) =>
     placeholderData: (prev) => prev,
   });
 
-export const useConversation = (id: string) =>
-  useQuery({ queryKey: ["couple-conversation", id], queryFn: () => get<ConversationDetail>(`/couple/messages/${id}`), refetchInterval: 20_000, enabled: !!id });
+/** Lines older than `before` (an ISO time), oldest first. */
+export const fetchEarlier = (id: string, before: string) =>
+  get<ConversationDetail>(`/couple/messages/${id}?before=${encodeURIComponent(before)}`);
+
+export const useConversation = (id: string, opts?: { poll?: boolean }) =>
+  useQuery({ queryKey: ["couple-conversation", id], queryFn: () => get<ConversationDetail>(`/couple/messages/${id}`), refetchInterval: opts?.poll === false ? false : 20_000, enabled: !!id });

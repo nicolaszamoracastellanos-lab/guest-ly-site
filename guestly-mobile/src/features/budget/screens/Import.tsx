@@ -10,7 +10,8 @@ import * as DocumentPicker from "expo-document-picker";
 import { readAsStringAsync } from "expo-file-system/legacy";
 import { useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { ApiFailure } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
+import { prepareImageForUpload } from "@/features/shared/images";
 import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Input, Banner, Icon, Hairline, Chip, ChipRow } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -41,10 +42,11 @@ export function BudgetImportScreen() {
   const [target, setTarget] = useState<string | null>(params.b ?? null);
 
   function fail(err: unknown) {
-    Alert.alert(err instanceof ApiFailure ? err.messages[lang] : copy.nothingRead);
+    Alert.alert(errorText(err, lang, copy.nothingRead));
   }
 
   async function read(body: { text?: string; file_base64?: string; filename?: string; mime?: string }) {
+    if (reading) return;
     setReading(true);
     try {
       const r = await writes.extract(body);
@@ -63,19 +65,40 @@ export function BudgetImportScreen() {
       Alert.alert(copy.permission);
       return;
     }
-    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.8, base64: true, allowsEditing: false };
+    // No base64 from the picker: the photo is shrunk to a 2048 px JPEG on the
+    // phone first, so a 48 MP shot never goes up as a 10 MB request.
+    const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 1, base64: false, allowsEditing: false };
     const res = library ? await ImagePicker.launchImageLibraryAsync(opts) : await ImagePicker.launchCameraAsync(opts);
-    if (res.canceled || !res.assets?.[0]?.base64) return;
-    const asset = res.assets[0];
-    const mime = asset.mimeType ?? "image/jpeg";
-    const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
-    await read({ file_base64: asset.base64!, filename: `photo.${ext}`, mime });
+    if (res.canceled || !res.assets?.[0]) return;
+    await readImage(res.assets[0]);
+  }
+
+  async function readImage(src: { uri: string; width?: number | null; height?: number | null }) {
+    setReading(true);
+    let img: Awaited<ReturnType<typeof prepareImageForUpload>>;
+    try {
+      img = await prepareImageForUpload(src);
+    } catch {
+      setReading(false);
+      Alert.alert(copy.nothingRead);
+      return;
+    }
+    setReading(false);
+    if (!img.base64 || img.base64.length > 4_000_000) {
+      Alert.alert(copy.photoTooBig);
+      return;
+    }
+    await read({ file_base64: img.base64, filename: "photo.jpg", mime: img.mime });
   }
 
   async function fromFile() {
     const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false, type: ["text/csv", "text/tab-separated-values", "text/plain", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel.sheet.macroEnabled.12", "image/*"] });
     if (res.canceled || !res.assets?.[0]) return;
     const f = res.assets[0];
+    if (f.mimeType?.startsWith("image/")) {
+      await readImage({ uri: f.uri });
+      return;
+    }
     try {
       const base64 = await readAsStringAsync(f.uri, { encoding: "base64" });
       await read({ file_base64: base64, filename: f.name, mime: f.mimeType ?? undefined });
@@ -95,7 +118,7 @@ export function BudgetImportScreen() {
   }
 
   async function commit() {
-    if (!extracted) return;
+    if (!extracted || saving) return;
     setSaving(true);
     try {
       const r = await writes.commit(extracted, target);
@@ -123,7 +146,7 @@ export function BudgetImportScreen() {
 
         {!extracted ? (
           <Stack gap={10} style={{ marginTop: 20 }}>
-            <Input value={text} onChangeText={setText} placeholder={copy.pastePlaceholder} multiline style={{ borderRadius: 18, minHeight: 140 }} />
+            <Input accessibilityLabel={copy.pastePlaceholder} value={text} onChangeText={setText} placeholder={copy.pastePlaceholder} multiline style={{ borderRadius: 18, minHeight: 140 }} />
             <Button label={reading ? copy.reading : copy.read} onPress={() => read({ text })} loading={reading} disabled={!text.trim() || !online} />
             <Row gap={8} style={{ marginTop: 6 }}>
               <View style={{ flex: 1 }}>
@@ -154,10 +177,10 @@ export function BudgetImportScreen() {
                 <View key={it.key || String(i)}>
                   <Row gap={8} align="flex-start" style={{ paddingVertical: 6 }}>
                     <View style={{ flex: 1, gap: 6 }}>
-                      <Input value={it.title} onChangeText={(v) => update(i, { title: v })} style={{ minHeight: 44 }} />
+                      <Input accessibilityLabel={copy.itemTitle} value={it.title} onChangeText={(v) => update(i, { title: v })} style={{ minHeight: 44 }} />
                       <Row gap={8}>
                         <View style={{ flex: 1 }}>
-                          <Input value={lineTotal(it) === null ? "" : String(lineTotal(it))} onChangeText={(v) => update(i, { amount_override: v.trim() ? parseAmount(v) : null, qty: null, unit_price: null })} placeholder={copy.amount} keyboardType="decimal-pad" style={{ minHeight: 44 }} />
+                          <Input accessibilityLabel={copy.amount} value={lineTotal(it) === null ? "" : String(lineTotal(it))} onChangeText={(v) => update(i, { amount_override: v.trim() ? parseAmount(v) : null, qty: null, unit_price: null })} placeholder={copy.amount} keyboardType="decimal-pad" style={{ minHeight: 44 }} />
                         </View>
                         <View style={{ flex: 1, justifyContent: "center" }}>
                           <T v="meta13" color={colors.ivory55} numberOfLines={2}>

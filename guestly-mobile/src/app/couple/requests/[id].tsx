@@ -7,11 +7,13 @@ import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import type { Copy } from "@/i18n/en";
-import { post, ApiFailure } from "@/lib/api";
-import { useCoupleGuests, useCoupleRequests } from "@/lib/hooks";
+import { post } from "@/lib/api";
+import { useGuestsByIds } from "@/features/guests/hooks";
+import { errorText } from "@/features/shared/requests";
+import { useCoupleRequests } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricPrompt } from "@/lib/biometric";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, IconButton } from "@/ui";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, IconButton, EmptyState } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "./index";
 import { useSafeBack } from "@/lib/nav";
@@ -34,42 +36,45 @@ export default function RequestDetail() {
   const needsTyped = r?.kind === "send_reminders" && (r.guest_ids.length > 1);
 
   async function act(kind: "approve" | "decline") {
-    if (!r) return;
+    if (!r || busy) return;
     if (kind === "approve" && biometricEnabled) {
       const ok = await biometricPrompt(copy.requests.approveWith, copy.common.cancel);
       if (!ok) return;
     }
     setBusy(kind);
     try {
-      await post(`/couple/requests/${r.id}/${kind}`, { note: note || undefined, confirm: confirm || undefined });
+      // The comment box is its own draft: an unsent question is never sent as
+      // the approval or decline note.
+      await post(`/couple/requests/${r.id}/${kind}`, { confirm: confirm || undefined });
       await qc.invalidateQueries({ queryKey: ["couple-requests"] });
       await qc.invalidateQueries({ queryKey: ["couple-guests"] });
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
       back();
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(null);
     }
   }
 
   async function comment() {
-    if (!r || !note.trim()) return;
+    if (!r || !note.trim() || !canEdit || busy) return;
     setBusy("comment");
     try {
       await post(`/planner/requests/${r.id}/comment`, { text: note.trim() });
       setNote("");
       await qc.invalidateQueries({ queryKey: ["couple-requests"] });
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(null);
     }
   }
 
-  // The couple's payload has guest ids only; names come from the guest list.
-  const guestList = useCoupleGuests("", "all");
-  const names = r ? (r.guest_names?.length ? r.guest_names : r.guest_ids.map((g) => guestList.data?.items.find((x) => x.id === g)?.name ?? "").filter(Boolean)) : [];
+  // Names come with the request on current servers; otherwise one `?ids=`
+  // lookup, not a search through the first page of the guest list.
+  const lookup = useGuestsByIds(r && !r.guest_names?.length ? r.guest_ids : []);
+  const names = r ? (r.guest_names?.length ? r.guest_names : r.guest_ids.map((g) => lookup.data?.find((x) => x.id === g)?.name ?? "").filter(Boolean)) : [];
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, names, copy.requests.changeWords, copy.requests.changeFields) : [];
 
   return (
@@ -119,19 +124,24 @@ export default function RequestDetail() {
                   </View>
                 </Row>
               ))}
-              <Input value={note} onChangeText={setNote} placeholder={copy.requests.askQuestion} right={<IconButton name="chev" label={copy.concierge.send} onPress={comment} />} onSubmitEditing={comment} returnKeyType="send" />
+              {canEdit ? (
+                <Input accessibilityLabel={copy.requests.askQuestion} value={note} onChangeText={setNote} editable={busy !== "comment"} placeholder={copy.requests.askQuestion} right={<IconButton name="chev" label={copy.concierge.send} onPress={() => void comment()} />} onSubmitEditing={() => void comment()} returnKeyType="send" />
+              ) : null}
             </Stack>
-            {needsTyped && r.status === "open" ? <Input value={confirm} onChangeText={setConfirm} placeholder={copy.rsvps.remindTyped} autoCapitalize="characters" style={{ marginTop: 10 }} /> : null}
+            {canEdit && needsTyped && r.status === "open" ? <Input accessibilityLabel={copy.rsvps.remindTyped} value={confirm} onChangeText={setConfirm} placeholder={copy.rsvps.remindTyped} autoCapitalize="characters" style={{ marginTop: 10 }} /> : null}
             {canEdit && r.status === "open" ? (
               <ButtonRow style={{ marginTop: 22 }}>
-                <Button label={copy.requests.decline} kind="ghost" onPress={() => act("decline")} loading={busy === "decline"} />
-                <Button label={copy.requests.approve} onPress={() => act("approve")} loading={busy === "approve"} icon={biometricEnabled ? "lock" : undefined} />
+                <Button label={copy.requests.decline} kind="ghost" onPress={() => void act("decline")} loading={busy === "decline"} disabled={!!busy} />
+                <Button label={copy.requests.approve} onPress={() => void act("approve")} loading={busy === "approve"} disabled={!!busy} icon={biometricEnabled ? "lock" : undefined} />
               </ButtonRow>
             ) : null}
             <T v="meta13" color={colors.ivory40} center style={{ marginTop: 14 }}>
               {copy.requests.always}
             </T>
           </>
+        ) : data ? (
+          // Gone from the list (resolved elsewhere, or a stale link).
+          <EmptyState title={copy.requests.empty} action={<Button label={copy.common.back} small onPress={back} />} />
         ) : null}
       </>
     </Screen>

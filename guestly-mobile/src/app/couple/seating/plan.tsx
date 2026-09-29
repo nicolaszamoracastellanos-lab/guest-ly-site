@@ -6,9 +6,12 @@ import { View, Alert } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { get, post, ApiFailure } from "@/lib/api";
+import { get } from "@/lib/api";
+import { useUserSession } from "@/lib/session";
+import { prepareImageForUpload } from "@/features/shared/images";
+import { postLong, outcomeUnknown, AI_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, errorText } from "@/features/shared/requests";
 import {
   Screen,
   TopBar,
@@ -33,7 +36,9 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function SeatingPlan() {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
+  const canEdit = useUserSession()?.me.can_edit ?? false;
   const back = useSafeBack();
   const qc = useQueryClient();
   const mainQuery = useCoupleSeating();
@@ -54,48 +59,58 @@ export default function SeatingPlan() {
       Alert.alert(fromCamera ? c.cameraDenied : c.photoDenied);
       return;
     }
+    // No base64 from the picker: a 12 to 48 MP photo went up as 5 to 12 MB
+    // of JSON, past the host's request limit. It is shrunk to a 2048 px JPEG
+    // on the phone first.
     const opts: ImagePicker.ImagePickerOptions = {
       mediaTypes: ["images"],
-      quality: 0.85,
-      base64: true,
+      quality: 1,
+      base64: false,
       allowsEditing: false,
     };
     const res = fromCamera
       ? await ImagePicker.launchCameraAsync(opts)
       : await ImagePicker.launchImageLibraryAsync(opts);
-    if (res.canceled || !res.assets?.[0]?.base64) return;
+    if (res.canceled || !res.assets?.[0]) return;
     const a = res.assets[0];
-    const mime =
-      a.mimeType &&
-      ["image/jpeg", "image/png", "image/webp"].includes(a.mimeType)
-        ? a.mimeType
-        : "image/jpeg";
     setBusy("upload");
     try {
-      await post("/couple/seating/upload", {
-        image_base64: a.base64,
-        mime,
-        width: a.width,
-        height: a.height,
-      });
+      const img = await prepareImageForUpload(a);
+      if (!img.base64 || img.base64.length > 4_000_000) {
+        Alert.alert(c.photoTooBig);
+        return;
+      }
+      await postLong(
+        "/couple/seating/upload",
+        {
+          image_base64: img.base64,
+          mime: img.mime,
+          width: img.width,
+          height: img.height,
+        },
+        UPLOAD_TIMEOUT_MS,
+      );
       await Promise.all([
         image.refetch(),
         qc.invalidateQueries({ queryKey: SEATING_KEY }),
       ]);
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.error, errorText(err, lang, app.common.errorBody));
     } finally {
       setBusy(null);
     }
   }
 
   async function read() {
+    if (busy) return;
     setBusy("read");
     try {
-      const r = await post<{
+      // A vision read takes 25 to 50 s. It writes tables server-side, so a
+      // timeout is never retried automatically (that would read twice).
+      const r = await postLong<{
         analysis: { tables_found?: number; tables?: unknown[] };
         surface: SeatingSurface;
-      }>("/couple/seating/analyze", { mode: "detect_tables" });
+      }>("/couple/seating/analyze", { mode: "detect_tables" }, AI_TIMEOUT_MS);
       qc.setQueryData(SEATING_KEY, r.surface);
       seedDraft(r.surface, true);
       const found =
@@ -105,7 +120,12 @@ export default function SeatingPlan() {
           : r.surface.tables.filter((t) => t.source === "ai").length);
       setLastRead(found);
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      if (outcomeUnknown(err)) {
+        Alert.alert(c.readMaybeDone);
+        void qc.invalidateQueries({ queryKey: SEATING_KEY });
+      } else {
+        Alert.alert(c.error, errorText(err, lang, app.common.errorBody));
+      }
     } finally {
       setBusy(null);
     }
@@ -147,6 +167,12 @@ export default function SeatingPlan() {
         )}
       </Card>
       {busy === "upload" ? <Loading label={c.uploading} /> : null}
+      {!canEdit ? (
+        <T v="meta13" color={colors.ivory55} style={{ marginTop: 14 }}>
+          {c.readOnly}
+        </T>
+      ) : null}
+      {canEdit ? (
       <Row gap={8} style={{ marginTop: 14 }}>
         <View style={{ flex: 1 }}>
           <Button
@@ -169,8 +195,9 @@ export default function SeatingPlan() {
           />
         </View>
       </Row>
+      ) : null}
 
-      {url || data?.has_floor_plan ? (
+      {canEdit && (url || data?.has_floor_plan) ? (
         <Stack gap={10} style={{ marginTop: 26 }}>
           <T v="meta13" color={colors.ivory55}>
             {c.readPlanHint}

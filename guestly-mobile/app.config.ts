@@ -30,7 +30,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: "./assets/brand/icon.png",
   primaryColor: "#0d1117",
   backgroundColor: "#0d1117",
-  runtimeVersion: { policy: "appVersion" },
+  // Fingerprint: the runtime changes whenever native code or config changes
+  // (a new native module, a font, a plugin), so an OTA update can never reach
+  // a binary that lacks what the JS expects. "appVersion" only changed when
+  // someone remembered to bump the version.
+  runtimeVersion: { policy: "fingerprint" },
   updates: {
     url: "https://u.expo.dev/1c6ed3fa-7393-40e1-be3d-6fd64f0e1056",
     fallbackToCacheTimeout: 0,
@@ -54,7 +58,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "Guest-ly sends schedule changes, replies from the couple and RSVP reminders.",
       CFBundleAllowMixedLocalizations: true,
       CFBundleLocalizations: ["en", "es"],
-      UIBackgroundModes: ["remote-notification"],
+      // No UIBackgroundModes: every push the portal sends is a visible alert
+      // (no content-available), and the app runs no background task.
     },
     privacyManifests: {
       NSPrivacyTracking: false,
@@ -146,6 +151,22 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
+    [
+      // Only the six faces the app uses, embedded in the binary: no runtime
+      // font load gates first paint, and the 22 unused files of the two
+      // families stay out of the bundle. Names in src/ui/tokens.ts (fonts).
+      "expo-font",
+      {
+        fonts: [
+          "./node_modules/@expo-google-fonts/cormorant-garamond/400Regular_Italic/CormorantGaramond_400Regular_Italic.ttf",
+          "./node_modules/@expo-google-fonts/cormorant-garamond/500Medium/CormorantGaramond_500Medium.ttf",
+          "./node_modules/@expo-google-fonts/cormorant-garamond/600SemiBold/CormorantGaramond_600SemiBold.ttf",
+          "./node_modules/@expo-google-fonts/jost/400Regular/Jost_400Regular.ttf",
+          "./node_modules/@expo-google-fonts/jost/500Medium/Jost_500Medium.ttf",
+          "./node_modules/@expo-google-fonts/jost/600SemiBold/Jost_600SemiBold.ttf",
+        ],
+      },
+    ],
     "expo-secure-store",
     "expo-localization",
     "expo-apple-authentication",
@@ -170,6 +191,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-splash-screen",
       { backgroundColor: "#0d1117", image: "./assets/brand/splash.png", imageWidth: 120 },
     ],
+    // Native date and time pickers (task dates, runsheet times, budget due
+    // dates). The plugin only themes the Android dialog; iOS needs nothing.
+    "@react-native-community/datetimepicker",
     [
       "expo-build-properties",
       { ios: { deploymentTarget: "16.4" }, android: { minSdkVersion: 26, compileSdkVersion: 36, targetSdkVersion: 36 } },

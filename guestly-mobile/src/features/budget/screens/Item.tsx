@@ -3,16 +3,18 @@
 import React, { useState } from "react";
 import { View, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useLang, relTime } from "@/i18n";
+import { fmt, useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Sheet, Skeleton, SectionLabel, Toggle, Input, Icon, Hairline, ListRow, Avatar, DateEcho } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Sheet, Skeleton, SectionLabel, Toggle, Input, Icon, Hairline, ListRow, Avatar, EmptyState, Field } from "@/ui";
+import { DateInput } from "@/ui/Pickers";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, findComputedItem, type ItemStatus, type PaymentKind, type ItemRow } from "../hooks";
 import { formatMoney, formatDay, parseAmount, numText, todayIso, isIsoDate } from "../money";
 import { StatusBadge, TextField, Options, ConfirmSheet, KeyValue, useAction } from "../ui";
 import { useSafeBack } from "@/lib/nav";
+import { useUnsavedGuard } from "@/lib/unsaved";
 
 const STATUSES: ItemStatus[] = ["quoted", "confirmed", "pending", "cancelled"];
 const KINDS: PaymentKind[] = ["paid", "planned"];
@@ -47,7 +49,10 @@ export function BudgetItemScreen() {
 
   const active = data?.active ?? null;
   const currency = active?.budget.currency ?? "USD";
-  const canEdit = (data?.can_edit ?? false) && online;
+  // The role decides whether fields are editable at all; the connection only
+  // holds the write buttons.
+  const mayEdit = data?.can_edit ?? false;
+  const canEdit = mayEdit && online;
   const found = findComputedItem(active?.computed, params.id);
   const item = found?.item ?? null;
   const row = item?.row ?? null;
@@ -67,6 +72,7 @@ export function BudgetItemScreen() {
   const [pay, setPay] = useState({ amount: "", paid_on: todayIso(), kind: "paid" as PaymentKind, method: "", paid_by: "", reimbursable: false, note: "" });
   const [sub, setSub] = useState({ title: "", qty: "", unit_price: "", amount_override: "" });
   const [comment, setComment] = useState("");
+  const [payDelete, setPayDelete] = useState<{ id: string; label: string } | null>(null);
 
   async function save() {
     if (!active || !row || !form) return;
@@ -135,11 +141,14 @@ export function BudgetItemScreen() {
     );
   }
 
+  // Typed changes to the line not saved yet ask before leaving (lib/unsaved).
+  const leave = useUnsavedGuard(!!(mayEdit && row && form && seeded === row.id && JSON.stringify(form) !== JSON.stringify(formFrom(row))));
+
   const payments = item?.payments ?? [];
   const comments = row?.comments ?? [];
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={found?.group.category?.name ?? copy.uncategorized} />} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={() => leave(back)} title={found?.group.category?.name ?? copy.uncategorized} />} keyboard>
       <>
         {isLoading && !data ? (
           <Stack gap={10} style={{ marginTop: 8 }}>
@@ -148,6 +157,7 @@ export function BudgetItemScreen() {
           </Stack>
         ) : null}
 
+        {data && !row && !isLoading ? <EmptyState title={copy.notFound} /> : null}
         {row && item && form ? (
           <>
             <BigTitle title={row.title} sub={item.totalBase === null ? copy.noPrice : formatMoney(item.totalBase, currency, lang)} size={34} />
@@ -164,33 +174,38 @@ export function BudgetItemScreen() {
 
             <SectionLabel style={{ marginTop: 22, marginBottom: 8 }}>{copy.items}</SectionLabel>
             <Stack gap={10}>
-              <TextField label={copy.itemTitle} value={form.title} onChange={(v) => setForm({ ...form, title: v })} autoCapitalize="sentences" />
-              <TextField label={copy.vendor} value={form.vendor} onChange={(v) => setForm({ ...form, vendor: v })} autoCapitalize="words" />
+              <TextField label={copy.itemTitle} value={form.title} onChange={(v) => setForm({ ...form, title: v })} autoCapitalize="sentences" editable={mayEdit} />
+              <TextField label={copy.vendor} value={form.vendor} onChange={(v) => setForm({ ...form, vendor: v })} autoCapitalize="words" editable={mayEdit} />
               <Row gap={8}>
                 <View style={{ flex: 1 }}>
-                  <TextField label={copy.qty} value={form.qty} onChange={(v) => setForm({ ...form, qty: v })} keyboardType="decimal-pad" />
+                  <TextField label={copy.qty} value={form.qty} onChange={(v) => setForm({ ...form, qty: v })} keyboardType="decimal-pad" editable={mayEdit} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <TextField label={copy.unitPrice} value={form.unit_price} onChange={(v) => setForm({ ...form, unit_price: v })} keyboardType="decimal-pad" />
+                  <TextField label={copy.unitPrice} value={form.unit_price} onChange={(v) => setForm({ ...form, unit_price: v })} keyboardType="decimal-pad" editable={mayEdit} />
                 </View>
               </Row>
               <Row gap={8}>
                 <View style={{ flex: 1 }}>
-                  <TextField label={copy.unitLabel} value={form.unit_label} onChange={(v) => setForm({ ...form, unit_label: v })} />
+                  <TextField label={copy.unitLabel} value={form.unit_label} onChange={(v) => setForm({ ...form, unit_label: v })} editable={mayEdit} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <TextField label={copy.currency} value={form.currency} onChange={(v) => setForm({ ...form, currency: v.toUpperCase().slice(0, 3) })} autoCapitalize="characters" />
+                  <TextField label={copy.currency} value={form.currency} onChange={(v) => setForm({ ...form, currency: v.toUpperCase().slice(0, 3) })} autoCapitalize="characters" editable={mayEdit} />
                 </View>
               </Row>
-              <TextField label={copy.amountOverride} value={form.amount_override} onChange={(v) => setForm({ ...form, amount_override: v })} keyboardType="decimal-pad" />
+              <TextField label={copy.amountOverride} value={form.amount_override} onChange={(v) => setForm({ ...form, amount_override: v })} keyboardType="decimal-pad" editable={mayEdit} />
               <View style={{ gap: 6 }}>
                 <T v="meta13" color={colors.ivory55}>
                   {copy.status}
                 </T>
-                <Options<ItemStatus> value={form.status} options={STATUSES.map((s) => ({ value: s, label: copy.statuses[s] }))} onChange={(v) => setForm({ ...form, status: v })} />
+                <Options<ItemStatus> value={form.status} options={STATUSES.map((s) => ({ value: s, label: copy.statuses[s] }))} onChange={(v) => setForm({ ...form, status: v })} disabled={!mayEdit} />
               </View>
-              <TextField label={copy.note} value={form.note} onChange={(v) => setForm({ ...form, note: v })} multiline />
+              <TextField label={copy.note} value={form.note} onChange={(v) => setForm({ ...form, note: v })} multiline editable={mayEdit} />
               {canEdit ? <Button label={copy.save} onPress={save} loading={busy} disabled={!form.title.trim()} /> : null}
+              {!mayEdit ? (
+                <T v="meta13" color={colors.ivory55}>
+                  {copy.readOnly}
+                </T>
+              ) : null}
             </Stack>
 
             {item.children.length || canEdit ? (
@@ -246,7 +261,7 @@ export function BudgetItemScreen() {
                       </T>
                     </View>
                     {canEdit ? (
-                      <Pressable onPress={() => act(() => writes.deletePayment(p.id))} accessibilityRole="button" accessibilityLabel={copy.deletePayment} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+                      <Pressable onPress={() => setPayDelete({ id: p.id, label: formatMoney(p.amount, p.currency ?? currency, lang) })} accessibilityRole="button" accessibilityLabel={copy.deletePayment} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
                         <Icon name="x" size={18} color={colors.ivory55} />
                       </Pressable>
                     ) : null}
@@ -275,7 +290,7 @@ export function BudgetItemScreen() {
               {canEdit ? (
                 <Row gap={8} style={{ marginTop: comments.length ? 10 : 0 }}>
                   <View style={{ flex: 1 }}>
-                    <Input value={comment} onChangeText={setComment} placeholder={copy.commentPlaceholder} />
+                    <Input accessibilityLabel={copy.commentPlaceholder} value={comment} onChangeText={setComment} placeholder={copy.commentPlaceholder} />
                   </View>
                   <Button
                     label={copy.send}
@@ -302,15 +317,11 @@ export function BudgetItemScreen() {
       <Sheet visible={payOpen} onClose={() => setPayOpen(false)} top={90}>
         <View style={{ paddingHorizontal: 24, gap: 12 }}>
           <T v="title26">{copy.addPayment}</T>
-          <Row gap={8}>
-            <View style={{ flex: 1 }}>
-              <TextField label={copy.amount} value={pay.amount} onChange={(v) => setPay({ ...pay, amount: v })} keyboardType="decimal-pad" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <TextField label={copy.paidOn} value={pay.paid_on} onChange={(v) => setPay({ ...pay, paid_on: v })} keyboardType="numeric" />
-              <DateEcho value={pay.paid_on} />
-            </View>
-          </Row>
+          <TextField label={copy.amount} value={pay.amount} onChange={(v) => setPay({ ...pay, amount: v })} keyboardType="decimal-pad" />
+          {/* The system calendar (ui/Pickers), stored as YYYY-MM-DD. */}
+          <Field label={copy.paidOn}>
+            <DateInput value={pay.paid_on} onChange={(v) => setPay({ ...pay, paid_on: v ?? todayIso() })} clearable={false} testID="payment-date" />
+          </Field>
           <Options<PaymentKind> value={pay.kind} options={KINDS.map((k) => ({ value: k, label: copy.kinds[k] }))} onChange={(v) => setPay({ ...pay, kind: v })} />
           <TextField label={copy.method} value={pay.method} onChange={(v) => setPay({ ...pay, method: v })} />
           <TextField label={copy.paidBy} value={pay.paid_by} onChange={(v) => setPay({ ...pay, paid_by: v })} autoCapitalize="words" />
@@ -350,7 +361,17 @@ export function BudgetItemScreen() {
         </View>
       </Sheet>
 
-      <ConfirmSheet visible={deleteOpen} title={copy.deleteItem} body={copy.deleteItemBody} confirmLabel={copy.delete} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => row && act(() => writes.deleteItem(row.id), () => back())} />
+      <ConfirmSheet
+        visible={!!payDelete}
+        title={copy.deletePayment}
+        body={payDelete ? fmt(copy.deletePaymentBody, { amount: payDelete.label }) : undefined}
+        confirmLabel={copy.deletePayment}
+        cancelLabel={copy.cancel}
+        busy={busy}
+        onClose={() => setPayDelete(null)}
+        onConfirm={() => payDelete && act(() => writes.deletePayment(payDelete.id), () => setPayDelete(null))}
+      />
+      <ConfirmSheet visible={deleteOpen} title={copy.deleteItem} body={copy.deleteItemBody} confirmLabel={copy.delete} cancelLabel={copy.cancel} busy={busy} onClose={() => setDeleteOpen(false)} onConfirm={() => row && act(() => writes.deleteItem(row.id), () => { leave.release(); back(); })} />
     </Screen>
   );
 }

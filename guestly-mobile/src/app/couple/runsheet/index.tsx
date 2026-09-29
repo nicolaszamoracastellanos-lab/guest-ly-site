@@ -63,7 +63,7 @@ export default function CoupleRunsheet() {
     try {
       await post(`/couple/runsheet/${b.id}/status`, { status });
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
     } finally {
       void qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
     }
@@ -75,7 +75,7 @@ export default function CoupleRunsheet() {
       const next = await post<RunsheetSurface>("/couple/runsheet/seed", {});
       qc.setQueryData(RUNSHEET_KEY, next);
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
     } finally {
       setSeeding(false);
     }

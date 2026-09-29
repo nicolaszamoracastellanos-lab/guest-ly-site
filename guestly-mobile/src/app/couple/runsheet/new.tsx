@@ -1,6 +1,7 @@
 // Add a runsheet block. The day defaults to the wedding date.
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -19,6 +20,7 @@ import {
   type BlockForm,
 } from "@/features/runsheet/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { useUnsavedGuard } from "@/lib/unsaved";
 
 export default function NewBlock() {
   const c = useFeatureCopy(COPY);
@@ -32,6 +34,20 @@ export default function NewBlock() {
   const [error, setError] = useState<string | null>(null);
   const current =
     form ?? emptyForm(data?.days[0]?.day ?? data?.wedding_date ?? null);
+  // Anything typed asks before leaving (lib/unsaved).
+  const leave = useUnsavedGuard(
+    form !== null && JSON.stringify(form) !== JSON.stringify(emptyForm(data?.days[0]?.day ?? data?.wedding_date ?? null)),
+  );
+  // Every visit starts from a blank block, never the last one added.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        setForm(null);
+        setError(null);
+      },
+      [],
+    ),
+  );
 
   async function save() {
     const v = validate(current, c);
@@ -41,6 +57,8 @@ export default function NewBlock() {
     try {
       await post("/couple/runsheet", toBody(current));
       await qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
+      setForm(null);
+      leave.release();
       back();
     } catch (err) {
       setError(err instanceof ApiFailure ? err.messages[lang] : c.error);
@@ -51,7 +69,7 @@ export default function NewBlock() {
 
   return (
     <Screen
-      header={<TopBar onBack={back} title={c.title} />}
+      header={<TopBar onBack={() => leave(back)} title={c.title} />}
       bottomInset={40}
       keyboard
     >
@@ -71,7 +89,7 @@ export default function NewBlock() {
           label={c.save}
           onPress={save}
           loading={busy}
-          disabled={!online}
+          disabled={!online || busy}
           style={{ marginTop: 22 }}
         />
       </>

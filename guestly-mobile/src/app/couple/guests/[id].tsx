@@ -6,12 +6,14 @@ import { View, Linking, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, localized, useCopy, useLang, relTime } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { post } from "@/lib/api";
+import { errorText } from "@/features/shared/requests";
 import { useGuestDetail } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Footer, Field, ButtonRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { useUnsavedGuard } from "@/lib/unsaved";
 
 export default function GuestDetailScreen() {
   const copy = useCopy();
@@ -33,10 +35,18 @@ export default function GuestDetailScreen() {
 
   const status = d?.rsvp?.status ?? "pending";
   const statusLabel = status === "attending" ? copy.guests.filters.attending : status === "declined" ? copy.guests.filters.declined : copy.guests.filters.pending;
-  const channel = d?.rsvp ? (copy.rsvps.channelNames as Record<string, string>)["app"] : "";
+  // The real channel of the answer when the API sends it; "via" is left out
+  // rather than guessed.
+  const rsvpChannel = (d?.rsvp as { channel?: string | null; source?: string | null } | null | undefined) ?? null;
+  const channelKey = rsvpChannel?.source ?? rsvpChannel?.channel ?? null;
+  const channel = channelKey ? ((copy.rsvps.channelNames as Record<string, string>)[channelKey] ?? channelKey) : "";
   const table = d?.seats?.[0]?.table ?? null;
   const phone = d?.scope === "full" ? d.phone : null;
   const email = d?.scope === "full" ? d.email : null;
+
+  // Edits typed in the form and not saved ask before leaving (lib/unsaved).
+  const initialForm = d ? { name: d.name, party_size: String(d.partySize), phone: phone ?? "", email: email ?? "", notes: d.notes ?? "", members: d.members.join("\n") } : null;
+  const leave = useUnsavedGuard(editing && !!form && JSON.stringify(form) !== JSON.stringify(initialForm));
 
   function startEdit() {
     if (!d) return;
@@ -44,23 +54,41 @@ export default function GuestDetailScreen() {
     setEditing(true);
   }
 
+  // A contact field is sent only when it changed: the new text, or null when
+  // it was emptied (clears it). A scrubbed contact the viewer never saw is
+  // never touched.
+  function contactChange(before: string | null | undefined, after: string): string | null | undefined {
+    if (d?.scope !== "full") return undefined;
+    const next = after.trim();
+    if (next === (before ?? "").trim()) return undefined;
+    return next ? next : null;
+  }
+
   async function saveEdit() {
-    if (!form) return;
+    if (!form || busy) return;
     setBusy(true);
     try {
-      await post(`/couple/guests/${id}`, {
-        name: form.name,
+      const body: Record<string, unknown> = {
+        name: form.name.trim(),
         party_size: Math.max(1, parseInt(form.party_size, 10) || 1),
-        phone: form.phone || undefined,
-        email: form.email || undefined,
         notes: form.notes,
         members: form.members.split("\n").map((s) => s.trim()).filter(Boolean),
-      });
-      await qc.invalidateQueries({ queryKey: ["couple-guest", id] });
-      await qc.invalidateQueries({ queryKey: ["couple-guests"] });
+      };
+      const nextPhone = contactChange(phone, form.phone);
+      const nextEmail = contactChange(email, form.email);
+      if (nextPhone !== undefined) body.phone = nextPhone;
+      if (nextEmail !== undefined) body.email = nextEmail;
+      await post(`/couple/guests/${id}`, body);
+      // Party size moves the RSVP and home totals too.
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["couple-guest", id] }),
+        qc.invalidateQueries({ queryKey: ["couple-guests"] }),
+        qc.invalidateQueries({ queryKey: ["couple-rsvps"] }),
+        qc.invalidateQueries({ queryKey: ["couple-home"] }),
+      ]);
       setEditing(false);
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(false);
     }
@@ -80,14 +108,14 @@ export default function GuestDetailScreen() {
       await qc.invalidateQueries({ queryKey: ["couple-inbox"] });
       Alert.alert(copy.inbox.reply, fmt(copy.inbox.sent, { name: d?.name ?? "" }));
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.guests.title} />} keyboard>
+    <Screen query={mainQuery} header={<TopBar onBack={() => leave(back)} title={copy.guests.title} />} keyboard>
         <>
           {isLoading && !d ? (
             <Stack gap={12} style={{ marginTop: 20 }}>
@@ -113,7 +141,7 @@ export default function GuestDetailScreen() {
 
               {!editing ? (
                 <View style={{ marginTop: 18 }}>
-                  <DetailRow icon="check" iconColor={status === "attending" ? colors.greenText : colors.goldLight} title={d.events.length ? d.events.map((e) => `${eventTitle(e.title)}: ${answerLabel(e.answer)}`).join(" · ") : copy.guests.detail.ceremonyReception} sub={d.rsvp?.updatedAt ? fmt(copy.guests.detail.answered, { when: relTime(d.rsvp.updatedAt, lang), channel }) : copy.guests.detail.notAnswered} />
+                  <DetailRow icon="check" iconColor={status === "attending" ? colors.greenText : colors.goldLight} title={d.events.length ? d.events.map((e) => `${eventTitle(e.title)}: ${answerLabel(e.answer)}`).join(" · ") : copy.guests.detail.ceremonyReception} sub={d.rsvp?.updatedAt ? (channel ? fmt(copy.guests.detail.answered, { when: relTime(d.rsvp.updatedAt, lang), channel }) : relTime(d.rsvp.updatedAt, lang)) : copy.guests.detail.notAnswered} />
                   {d.members.length ? <DetailRow icon="guests" title={d.members.join(", ")} sub={copy.rsvp.partyMember} /> : null}
                   <DetailRow icon="grid" title={table ? `${copy.guests.detail.table} ${table}` : copy.guests.detail.noTable} sub={d.seats[0]?.plan ?? null} />
                   {d.answers.length ? <DetailRow icon="info" title={d.answers.map((a) => a.answer).join(", ")} sub={d.answers.map((a) => a.question).join(" · ")} /> : null}
@@ -137,7 +165,7 @@ export default function GuestDetailScreen() {
                         </Row>
                         {canEdit ? (
                           <Row gap={8} style={{ marginTop: 10 }}>
-                            <Input value={reply} onChangeText={setReply} placeholder={copy.inbox.replyPlaceholder} style={{ flex: 1, minHeight: 48 }} />
+                            <Input accessibilityLabel={copy.inbox.replyPlaceholder} value={reply} onChangeText={setReply} placeholder={copy.inbox.replyPlaceholder} style={{ flex: 1, minHeight: 48 }} />
                             <Button label={copy.guests.detail.reply} small full={false} onPress={sendReply} loading={busy} disabled={!reply.trim()} />
                           </Row>
                         ) : null}

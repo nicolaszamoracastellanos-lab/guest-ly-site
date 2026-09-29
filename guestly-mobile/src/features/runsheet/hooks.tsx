@@ -15,8 +15,8 @@ import {
   Row,
   Chip,
   ChipRow,
-  DateEcho,
 } from "@/ui";
+import { DateInput, TimeInput } from "@/ui/Pickers";
 import { colors } from "@/ui/tokens";
 import { COPY } from "./copy";
 
@@ -127,6 +127,8 @@ export function validate(f: BlockForm, c: (typeof COPY)["en"]): string | null {
   if (!f.title.trim()) return c.errorTitle;
   if (!isDay(f.day)) return c.errorDay;
   if (!isTime(f.starts_at)) return c.errorStart;
+  // A half-typed end time used to be dropped to null without a word.
+  if (f.ends_at.trim() && !isTime(f.ends_at)) return c.errorEnd;
   return null;
 }
 
@@ -148,57 +150,52 @@ export function BlockFormFields({
   form,
   onChange,
   vendors,
+  disabled = false,
 }: {
   form: BlockForm;
   onChange: (f: BlockForm) => void;
   vendors: { id: string; name: string }[];
+  /** Read-only role: the fields show the block but do not change. */
+  disabled?: boolean;
 }) {
   const c = useFeatureCopy(COPY);
   const [vendorOpen, setVendorOpen] = useState(false);
-  const set = (patch: Partial<BlockForm>) => onChange({ ...form, ...patch });
+  const set = (patch: Partial<BlockForm>) => {
+    if (!disabled) onChange({ ...form, ...patch });
+  };
   const vendorName =
     vendors.find((v) => v.id === form.vendor_id)?.name ?? c.noVendor;
   return (
     <Stack gap={14} style={{ marginTop: 14 }}>
       <View>
         <SectionLabel>{c.titleField}</SectionLabel>
-        <Input
+        <Input accessibilityLabel={c.titleField}
+          editable={!disabled}
           value={form.title}
           onChangeText={(t) => set({ title: t.slice(0, 120) })}
           style={{ marginTop: 6 }}
         />
       </View>
-      <Row gap={10} align="flex-start">
-        <View style={{ flex: 1.3 }}>
-          <SectionLabel>{c.day}</SectionLabel>
-          <Input
-            value={form.day}
-            onChangeText={(t) => set({ day: maskDay(t) })}
-            placeholder={c.dayHint}
-            keyboardType="number-pad"
-            style={{ marginTop: 6 }}
-          />
-          <DateEcho value={form.day} style={{ marginTop: 6 }} />
+      {/* System calendar and wheel (ui/Pickers); the strings stay YYYY-MM-DD
+          and HH:MM, exactly what the portal stores. */}
+      <View>
+        <SectionLabel>{c.day}</SectionLabel>
+        <View style={{ marginTop: 6 }}>
+          <DateInput label={c.day} value={form.day || null} onChange={(v) => set({ day: v ?? "" })} clearable={false} disabled={disabled} testID="runsheet-day" />
         </View>
+      </View>
+      <Row gap={10} align="flex-start">
         <View style={{ flex: 1 }}>
           <SectionLabel>{c.start}</SectionLabel>
-          <Input
-            value={form.starts_at}
-            onChangeText={(t) => set({ starts_at: maskTime(t) })}
-            placeholder={c.timeHint}
-            keyboardType="number-pad"
-            style={{ marginTop: 6 }}
-          />
+          <View style={{ marginTop: 6 }}>
+            <TimeInput label={c.start} value={form.starts_at || null} onChange={(v) => set({ starts_at: v ?? "" })} clearable={false} disabled={disabled} testID="runsheet-start" />
+          </View>
         </View>
         <View style={{ flex: 1 }}>
           <SectionLabel>{c.end}</SectionLabel>
-          <Input
-            value={form.ends_at}
-            onChangeText={(t) => set({ ends_at: maskTime(t) })}
-            placeholder={c.timeHint}
-            keyboardType="number-pad"
-            style={{ marginTop: 6 }}
-          />
+          <View style={{ marginTop: 6 }}>
+            <TimeInput label={c.end} value={form.ends_at || null} onChange={(v) => set({ ends_at: v ?? "" })} initial={form.starts_at || null} disabled={disabled} testID="runsheet-end" />
+          </View>
         </View>
       </Row>
       <View>
@@ -216,7 +213,8 @@ export function BlockFormFields({
       </View>
       <View>
         <SectionLabel>{c.location}</SectionLabel>
-        <Input
+        <Input accessibilityLabel={c.location}
+          editable={!disabled}
           value={form.location}
           onChangeText={(t) => set({ location: t.slice(0, 200) })}
           style={{ marginTop: 6 }}
@@ -224,7 +222,8 @@ export function BlockFormFields({
       </View>
       <View>
         <SectionLabel>{c.owner}</SectionLabel>
-        <Input
+        <Input accessibilityLabel={c.owner}
+          editable={!disabled}
           value={form.owner}
           onChangeText={(t) => set({ owner: t.slice(0, 120) })}
           placeholder={c.ownerHint}
@@ -261,7 +260,7 @@ export function BlockFormFields({
               <Chip
                 label={vendorName}
                 on={!!form.vendor_id}
-                onPress={() => setVendorOpen(true)}
+                onPress={disabled ? undefined : () => setVendorOpen(true)}
               />
             )}
           </View>
@@ -269,7 +268,8 @@ export function BlockFormFields({
       ) : null}
       <View>
         <SectionLabel>{c.detail}</SectionLabel>
-        <Input
+        <Input accessibilityLabel={c.detail}
+          editable={!disabled}
           value={form.detail}
           onChangeText={(t) => set({ detail: t.slice(0, 2000) })}
           multiline

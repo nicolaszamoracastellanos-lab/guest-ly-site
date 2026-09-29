@@ -1,16 +1,20 @@
 // Settings: wedding switcher, language, notifications, day-of mode,
 // biometric unlock, plan line (no link), legal, delete account, sign out.
 
-import React, { useEffect, useState } from "react";
-import { View, Alert, Linking } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import { View, Alert, Linking, Platform, ActivityIndicator } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import * as Notifications from "expo-notifications";
+import { unregisterPush } from "@/lib/push";
 import { fmt, useCopy, useLang, shortDate } from "@/i18n";
-import { post } from "@/lib/api";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricAvailable, biometricPrompt } from "@/lib/biometric";
 import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { useFeatureCopy } from "@/i18n/feature";
+import { DeleteCancelled, deleteMyAccount } from "@/features/signup/account";
+import { TOUR_COPY, startTour } from "@/features/tour";
 
 /** The plan arrives as the raw tier id ("standard"). Known ids read from the copy;
  *  an unknown one is shown with a capital, never as a bare lowercase id. */
@@ -24,8 +28,9 @@ export default function Settings() {
   const { lang, setLang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
+  const tour = useFeatureCopy(TOUR_COPY);
   const user = useUserSession();
-  const { signOut, switchTenant, biometricEnabled, setBiometricEnabled, dayOfManual, setDayOfManual, pushToken } = useSession();
+  const { signOut, switchTenant, switchingTenant, biometricEnabled, setBiometricEnabled, dayOfManual, setDayOfManual, pushToken, setPushToken } = useSession();
   const [bioAvailable, setBioAvailable] = useState(false);
   const [switching, setSwitching] = useState(false);
   useEffect(() => {
@@ -44,6 +49,39 @@ export default function Settings() {
     await setBiometricEnabled(v);
   }
 
+  // The switch shows what really happens: on only while this device's token
+  // is registered AND the OS still allows notifications (re-read on focus, so
+  // a revoke in iOS Settings shows here). Off deletes the token server-side.
+  const [osPush, setOsPush] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === "web") return;
+      Notifications.getPermissionsAsync()
+        .then((p) => setOsPush(p.status === "granted"))
+        .catch(() => {});
+    }, [])
+  );
+  async function togglePush(on: boolean) {
+    if (on) {
+      router.push({ pathname: "/notify", params: { surface, from: "settings" } });
+      return;
+    }
+    if (!pushToken) return;
+    const ok = await unregisterPush(surface, pushToken);
+    if (ok) setPushToken(null);
+    else Alert.alert(copy.common.error, copy.core.pushOffFailed);
+  }
+
+  // Nothing changes unless the new wedding answered; the sheet stays open
+  // with an explanation otherwise (core review P0-4).
+  async function pickWedding(slug: string) {
+    if (switchingTenant) return;
+    if (slug === me?.tenant.slug) return setSwitching(false);
+    const ok = await switchTenant(slug);
+    if (ok) setSwitching(false);
+    else Alert.alert(copy.common.error, copy.core.switchFailed);
+  }
+
   function deleteAccount() {
     Alert.alert(copy.settings.deleteAccount, copy.settings.deleteConfirm, [
       { text: copy.common.cancel, style: "cancel" },
@@ -51,12 +89,15 @@ export default function Settings() {
         text: copy.settings.deleteAccount,
         style: "destructive",
         onPress: async () => {
+          // Deletes for real (portal lib/account-deletion); Sign in with
+          // Apple accounts are asked for a fresh Apple code first so the
+          // Apple token can be revoked. Cancelling that sheet deletes nothing.
           try {
-            await post("/auth/delete-account", {});
-            Alert.alert(copy.settings.deleteAccount, copy.settings.deleteRequested);
+            await deleteMyAccount();
             await signOut();
-          } catch {
-            Alert.alert(copy.common.error);
+            Alert.alert(copy.settings.deleteAccount, copy.settings.deleteRequested);
+          } catch (err) {
+            if (!(err instanceof DeleteCancelled)) Alert.alert(copy.common.error);
           }
         },
       },
@@ -91,7 +132,7 @@ export default function Settings() {
             leading={<Icon name="bell" size={22} color={colors.goldLight} />}
             title={copy.settings.notifications}
             sub={copy.settings.notificationsDetail}
-            trailing={<Toggle value={!!pushToken} onChange={(v) => v && router.push({ pathname: "/notify", params: { surface } })} />}
+            trailing={<Toggle value={!!pushToken && osPush} onChange={(v) => void togglePush(v)} label={copy.settings.notifications} />}
             chevron={false}
           />
           {surface === "couple" ? (
@@ -119,6 +160,7 @@ export default function Settings() {
           {fmt(copy.settings.plan, { tier: tierLabel(me?.tenant.tier, copy.settings.tiers) })}
         </T>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
+          <ListRow testID="settings-tour" leading={<Icon name="sparkle" size={22} color={colors.goldLight} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} />
           <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.privacy} onPress={() => Linking.openURL("https://guest-ly.com/privacy")} />
           <ListRow leading={<Icon name="book" size={22} color={colors.goldLight} />} title={copy.settings.terms} onPress={() => Linking.openURL("https://guest-ly.com/terms")} />
           <ListRow testID="settings-delete" leading={<Icon name="warning" size={22} color={colors.goldLight} />} title={copy.settings.deleteAccount} onPress={deleteAccount} chevron={false} />
@@ -130,7 +172,14 @@ export default function Settings() {
         <T v="title30">{copy.settings.wedding}</T>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 14 }}>
           {(me?.tenants ?? []).map((t, i, arr) => (
-            <ListRow key={t.slug} title={t.couple_names} trailing={t.slug === me?.tenant.slug ? <Badge label={copy.planner.current} kind="gold" /> : undefined} onPress={async () => { await switchTenant(t.slug); setSwitching(false); }} last={i === arr.length - 1} chevron={false} />
+            <ListRow
+              key={t.slug}
+              title={t.couple_names}
+              trailing={switchingTenant === t.slug ? <ActivityIndicator color={colors.goldLight} /> : t.slug === me?.tenant.slug ? <Badge label={copy.planner.current} kind="gold" /> : undefined}
+              onPress={() => void pickWedding(t.slug)}
+              last={i === arr.length - 1}
+              chevron={false}
+            />
           ))}
         </Card>
       </Sheet>

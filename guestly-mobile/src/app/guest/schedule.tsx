@@ -2,13 +2,19 @@
 // calendar link per event (ICS from the portal).
 
 import React from "react";
-import { View, StyleSheet, Image, Linking } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCopy, useLang, longDate } from "@/i18n";
-import { useGuestSchedule } from "@/lib/hooks";
+import { useGuestSchedule, type ScheduleEvent } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { Screen, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel, useTopInset, Button } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
+import { clockLabel } from "@/features/guest/format";
+import { openMaps, openUrlSafe } from "@/features/guest/links";
+
+// Fields the portal may add (guest-authorised calendar links, an ISO start).
+// Read tolerantly so the screen works before and after that deploy.
+type ScheduleData = { events: ScheduleEvent[]; ics_all_url?: string | null };
 
 const photo = require("../../../assets/photos/ceremony.jpg");
 
@@ -20,9 +26,17 @@ export default function GuestSchedule() {
   const mainQuery = useGuestSchedule();
   const { data, isLoading } = mainQuery;
   const events = data?.events ?? [];
+  // "Add all" must add all: one calendar with every dated event. Until the
+  // portal sends that link, a single dated event can use its own; otherwise
+  // the button stays hidden rather than adding only the first event.
+  const dated = events.filter((e) => e.date);
+  const allUrl = (data as ScheduleData | undefined)?.ics_all_url ?? (dated.length === 1 ? dated[0].ics_url : null);
+  // Events on more than one day get a date line above each new day.
+  const multiDay = new Set(dated.map((e) => e.date!.slice(0, 10))).size > 1;
+  const failLink = copy.common.linkFailed;
 
   return (
-    <Screen query={mainQuery} padded={false} topInset={false}>
+    <Screen query={mainQuery} padded={false} topInset={false} refresh>
       {/* Flow layout: the title block pushes the hero taller instead of sitting at
           a fixed offset where large text ran into the first event (D-016, D-031).
           The scrim is darker behind the title, which sat on the brightest part of
@@ -43,7 +57,7 @@ export default function GuestSchedule() {
               {longDate(data?.wedding_date ?? session?.tenant.wedding_date, lang)}
             </T>
           </Row>
-          {events.length ? <IconButton name="calendar-plus" onPress={() => Linking.openURL(events[0].ics_url)} label={copy.schedule.addAll} /> : null}
+          {allUrl ? <IconButton name="calendar-plus" onPress={() => openUrlSafe(allUrl, failLink)} label={copy.schedule.addAll} /> : null}
         </Row>
         <View style={styles.title}>
           <T v="title42">{copy.schedule.title}</T>
@@ -60,11 +74,22 @@ export default function GuestSchedule() {
             <Skeleton h={80} />
           </Stack>
         ) : null}
-        {events.map((e, i) => (
-          <Row key={e.id} gap={16} align="flex-start">
-            <View style={{ width: 62, alignItems: "flex-end", paddingTop: 2 }}>
-              <T v="title26" size={22} color={colors.goldLight} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
-                {clockLabel(e.time)}
+        {events.map((e, i) => {
+          const day = e.date?.slice(0, 10) ?? null;
+          const newDay = multiDay && day && day !== events[i - 1]?.date?.slice(0, 10);
+          return (
+          <View key={e.id}>
+          {newDay ? (
+            <SectionLabel color={colors.goldLight} style={{ marginBottom: 12, marginTop: i === 0 ? 0 : 4 }}>
+              {longDate(day, lang)}
+            </SectionLabel>
+          ) : null}
+          <Row gap={16} align="flex-start">
+            {/* English times carry am/pm, so the column is wider than the
+                24-hour Spanish one. */}
+            <View style={{ width: lang === "en" ? 78 : 62, alignItems: "flex-end", paddingTop: 2 }}>
+              <T v="title26" size={22} color={colors.goldLight} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                {clockLabel(e.start_minutes, e.time, lang)}
               </T>
             </View>
             <View style={{ width: 12, alignItems: "center", alignSelf: "stretch" }}>
@@ -78,7 +103,7 @@ export default function GuestSchedule() {
                 {e.title}
               </T>
               {e.location ? (
-                <T v="meta13" color={colors.ivory55} onPress={() => e.maps_url && Linking.openURL(e.maps_url)}>
+                <T v="meta13" color={colors.ivory55} onPress={e.maps_url ? () => openMaps(e.maps_url, failLink) : undefined}>
                   {e.location}
                 </T>
               ) : null}
@@ -94,12 +119,15 @@ export default function GuestSchedule() {
               ) : null}
               {/* 44 pt buttons, not 20 pt text links (D-024). */}
               <Row gap={4} style={{ marginTop: 2, flexWrap: "wrap", marginLeft: -8 }}>
-                <Button label={copy.rsvp.addCalendar} kind="text" small full={false} haptic={false} onPress={() => Linking.openURL(e.ics_url)} />
-                {e.maps_url ? <Button label={copy.dayof.openMaps} kind="text" small full={false} haptic={false} onPress={() => Linking.openURL(e.maps_url!)} /> : null}
+                {/* A dateless event has no calendar entry to make. */}
+                {e.date && e.ics_url ? <Button label={copy.rsvp.addCalendar} kind="text" small full={false} haptic={false} onPress={() => openUrlSafe(e.ics_url, failLink)} /> : null}
+                {e.maps_url ? <Button label={copy.dayof.openMaps} kind="text" small full={false} haptic={false} onPress={() => openMaps(e.maps_url, failLink)} /> : null}
               </Row>
             </View>
           </Row>
-        ))}
+          </View>
+          );
+        })}
         {data?.arrival_advice ? (
           <Stack gap={6} style={{ marginTop: 8 }}>
             <SectionLabel>{copy.schedule.arrive}</SectionLabel>
@@ -111,14 +139,6 @@ export default function GuestSchedule() {
       </View>
     </Screen>
   );
-}
-
-/** "4:00 pm" to "4:00"; "16:30" stays. Unknown stays as written. */
-export function clockLabel(time: string | null): string {
-  if (!time) return "";
-  const m = time.match(/(\d{1,2})(?::(\d{2}))?/);
-  if (!m) return time;
-  return `${m[1]}:${m[2] ?? "00"}`;
 }
 
 const styles = StyleSheet.create({

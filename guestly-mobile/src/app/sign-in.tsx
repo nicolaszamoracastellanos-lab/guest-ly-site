@@ -1,34 +1,48 @@
 // Couples and planners: Sign in with Apple, Google (Supabase OAuth), emailed
 // sign-in link by default, password as a fallback. The JWT is the only thing
-// this screen produces; everything else comes from /auth/me.
+// this screen produces; everything else comes from /auth/me. An account with
+// no wedding yet (a new couple, a first Apple or Google sign-in) is routed to
+// /setup by the session provider. New couples can also start at /sign-up.
 
-import React, { useState } from "react";
-import { View, StyleSheet, Image, Platform, useWindowDimensions } from "react-native";
+import React, { useRef, useState } from "react";
+import { View, StyleSheet, Image, useWindowDimensions, type TextInput } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import * as AppleAuthentication from "expo-apple-authentication";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
-import * as Crypto from "expo-crypto";
+import { useRouter } from "expo-router";
 import { useCopy, useLang } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { COPY as SIGNUP_COPY } from "@/features/signup/copy";
+import { appleAvailable, authErrorKind, authRedirectUrl, signInWithApple, signInWithGoogle } from "@/features/signup/social";
 
 WebBrowser.maybeCompleteAuthSession();
 const suite = require("../../assets/photos/suite.jpg");
 
+// The typed address outlives this screen: if it is remounted (a session
+// event, a back and forth), or the person switches between link and password,
+// they never have to type it again.
+let rememberedEmail = "";
+
 export default function SignIn() {
   const copy = useCopy();
+  const su = useFeatureCopy(SIGNUP_COPY).signUp;
   const { lang, setLang } = useLang();
   const back = useSafeBack();
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const [email, setEmailState] = useState(() => rememberedEmail);
+  const setEmail = (v: string) => {
+    rememberedEmail = v;
+    setEmailState(v);
+  };
   const [password, setPassword] = useState("");
   const [usePassword, setUsePassword] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const redirectTo = Linking.createURL("auth/callback");
+  const passwordRef = useRef<TextInput>(null);
 
   async function withBusy(key: string, fn: () => Promise<void>) {
     if (busy) return;
@@ -46,63 +60,29 @@ export default function SignIn() {
   }
 
   function signInMessage(err: unknown): string | null {
-    const e = (err ?? {}) as { message?: string; status?: number; code?: string; name?: string };
-    const text = `${e.code ?? ""} ${e.message ?? ""} ${e.name ?? ""}`.toLowerCase();
-    if (text.includes("err_request_canceled") || text.includes("cancel")) return null; // the person closed the Apple or Google sheet
-    if (e.code === "gl_email_invalid") return copy.signIn.emailInvalid;
-    if (e.status === 429 || text.includes("rate limit") || text.includes("too many")) return copy.signIn.errRate;
-    if (text.includes("invalid login") || text.includes("invalid_credentials") || text.includes("invalid_grant")) return copy.signIn.errInvalid;
-    if (text.includes("signups not allowed") || text.includes("user not found") || text.includes("otp_disabled")) return copy.signIn.errNoAccount;
-    if (e.status === 0 || text.includes("network") || text.includes("fetch") || text.includes("timeout") || text.includes("offline")) return copy.signIn.errNetwork;
-    return copy.signIn.errUnknown;
-  }
-
-  async function apple() {
-    const nonce = Crypto.randomUUID();
-    const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
-    const cred = await AppleAuthentication.signInAsync({
-      requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL, AppleAuthentication.AppleAuthenticationScope.FULL_NAME],
-      nonce: hashed,
-    });
-    if (!cred.identityToken) throw new Error(copy.common.error);
-    const { error: e } = await supabase().auth.signInWithIdToken({ provider: "apple", token: cred.identityToken, nonce });
-    if (e) throw e;
-  }
-
-  async function google() {
-    const { data, error: e } = await supabase().auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo, skipBrowserRedirect: true, queryParams: { prompt: "select_account" } },
-    });
-    if (e || !data.url) throw e ?? new Error(copy.common.error);
-    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (res.type !== "success") return;
-    await exchangeFromUrl(res.url);
-  }
-
-  async function exchangeFromUrl(url: string) {
-    const parsed = Linking.parse(url);
-    const code = typeof parsed.queryParams?.code === "string" ? parsed.queryParams.code : null;
-    if (code) {
-      const { error: e } = await supabase().auth.exchangeCodeForSession(code);
-      if (e) throw e;
-      return;
-    }
-    // Implicit-flow fallback: tokens in the fragment.
-    const frag = url.split("#")[1] ?? "";
-    const p = new URLSearchParams(frag);
-    const access = p.get("access_token");
-    const refresh = p.get("refresh_token");
-    if (access && refresh) {
-      const { error: e } = await supabase().auth.setSession({ access_token: access, refresh_token: refresh });
-      if (e) throw e;
+    if ((err as { code?: string } | null)?.code === "gl_email_invalid") return copy.signIn.emailInvalid;
+    switch (authErrorKind(err)) {
+      case "cancel":
+        return null; // the person closed the Apple or Google sheet
+      case "signup_disabled":
+        return su.errSocialNew;
+      case "rate":
+        return copy.signIn.errRate;
+      case "invalid":
+        return copy.signIn.errInvalid;
+      case "no_account":
+        return copy.signIn.errNoAccount;
+      case "network":
+        return copy.signIn.errNetwork;
+      default:
+        return copy.signIn.errUnknown;
     }
   }
 
   async function magicLink() {
     const clean = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw Object.assign(new Error("email"), { code: "gl_email_invalid" });
-    const { error: e } = await supabase().auth.signInWithOtp({ email: clean, options: { emailRedirectTo: redirectTo, shouldCreateUser: false } });
+    const { error: e } = await supabase().auth.signInWithOtp({ email: clean, options: { emailRedirectTo: authRedirectUrl(), shouldCreateUser: false } });
     if (e) throw e;
     setNote(copy.signIn.linkSent);
   }
@@ -144,16 +124,41 @@ export default function SignIn() {
           </T>
         </View>
         <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 26 }}>
-          {Platform.OS === "ios" ? <Button testID="signin-apple" label={copy.signIn.apple} kind="glass" icon="apple" onPress={() => withBusy("apple", apple)} loading={busy === "apple"} /> : null}
-          <Button testID="signin-google" label={copy.signIn.google} kind="glass" icon="google" onPress={() => withBusy("google", google)} loading={busy === "google"} />
+          {appleAvailable ? <Button testID="signin-apple" label={copy.signIn.apple} kind="glass" icon="apple" onPress={() => withBusy("apple", signInWithApple)} loading={busy === "apple"} /> : null}
+          <Button testID="signin-google" label={copy.signIn.google} kind="glass" icon="google" onPress={() => withBusy("google", signInWithGoogle)} loading={busy === "google"} />
           <Row gap={12} style={{ marginVertical: 8 }}>
             <Hairline style={{ flex: 1 }} />
             <SectionLabel color={colors.ivory40}>{copy.signIn.orEmail}</SectionLabel>
             <Hairline style={{ flex: 1 }} />
           </Row>
-          <Input testID="signin-email" icon="mail" value={email} onChangeText={setEmail} placeholder={copy.signIn.emailPlaceholder} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" />
+          <Input
+            testID="signin-email"
+            icon="mail"
+            value={email}
+            onChangeText={setEmail}
+            placeholder={copy.signIn.emailPlaceholder}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            returnKeyType={usePassword ? "next" : "send"}
+            onSubmitEditing={() => (usePassword ? passwordRef.current?.focus() : void withBusy("link", magicLink))}
+          />
           {usePassword ? (
-            <Input testID="signin-password" icon="lock" value={password} onChangeText={setPassword} placeholder={copy.signIn.passwordPlaceholder} secureTextEntry textContentType="password" />
+            <Input
+              ref={passwordRef}
+              testID="signin-password"
+              icon="lock"
+              value={password}
+              onChangeText={setPassword}
+              placeholder={copy.signIn.passwordPlaceholder}
+              secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={() => void withBusy("pw", passwordSignIn)}
+            />
           ) : null}
           {usePassword ? (
             <Button testID="signin-submit" label={copy.signIn.signInPassword} onPress={() => withBusy("pw", passwordSignIn)} loading={busy === "pw"} disabled={!configured} />
@@ -184,6 +189,9 @@ export default function SignIn() {
             label={usePassword ? copy.signIn.sendLink : copy.signIn.usePassword}
             onPress={() => {
               setUsePassword((v) => !v);
+              // Leaving password mode drops a typed password, so iOS does not
+              // offer to save a password that was never accepted.
+              setPassword("");
               setNote(null);
               setError(null);
             }}
@@ -191,6 +199,13 @@ export default function SignIn() {
             full={false}
             haptic={false}
           />
+          <Hairline style={{ marginTop: 10 }} />
+          <Row gap={6} style={{ justifyContent: "center", flexWrap: "wrap" }}>
+            <T v="body15" color={colors.ivory55}>
+              {su.newHere}
+            </T>
+            <Button testID="signin-create" kind="text" small label={su.createLink} onPress={() => router.push("/sign-up")} full={false} haptic={false} />
+          </Row>
         </Stack>
       </>
     </Screen>

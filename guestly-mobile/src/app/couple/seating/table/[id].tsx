@@ -4,10 +4,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Alert, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { fmt, useLang } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
+import { useUserSession } from "@/lib/session";
 import {
   Screen,
   TopBar,
@@ -25,6 +26,7 @@ import {
   Sheet,
   Icon,
   EmptyState,
+  Skeleton,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
@@ -39,12 +41,20 @@ import {
 } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
 
+// Keyed by table id: the typed name, seat count and search of one table are
+// never shown on, or committed to, another table.
 export default function SeatingTable() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return <SeatingTableScreen key={id} id={id} />;
+}
+
+function SeatingTableScreen({ id }: { id: string }) {
   const c = useFeatureCopy(COPY);
+  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const online = useOnline();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const canEdit = useUserSession()?.me.can_edit ?? false;
   const mainQuery = useCoupleSeating();
   const { data } = mainQuery;
   const draft = useDraft();
@@ -99,13 +109,13 @@ export default function SeatingTable() {
   }, [table]);
 
   function commitLabel() {
-    if (!table) return;
+    if (!table || !canEdit) return;
     const v = labelValue.trim();
     if (v && v !== table.label)
       draftActions.updateTable(table.id, { label: v.slice(0, 60) });
   }
   function commitSeats() {
-    if (!table) return;
+    if (!table || !canEdit) return;
     const n = Math.min(
       50,
       Math.max(1, parseInt(seatsValue, 10) || table.capacity),
@@ -116,13 +126,14 @@ export default function SeatingTable() {
   }
 
   async function onSave() {
+    if (saving || !canEdit) return;
     commitLabel();
     commitSeats();
     setSaving(true);
     try {
       await save();
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
     } finally {
       setSaving(false);
     }
@@ -153,7 +164,7 @@ export default function SeatingTable() {
           onBack={back}
           title={table?.label ?? c.title}
           right={
-            draft.dirty ? (
+            draft.dirty && canEdit ? (
               <Button
                 label={c.savePlan}
                 small
@@ -168,15 +179,26 @@ export default function SeatingTable() {
       }
       bottomInset={40}
     >
-      {!table ? (
-        <EmptyState title={c.error} />
+      {!data ? (
+        <Stack gap={10} style={{ marginTop: 8 }}>
+          <Skeleton h={56} r={14} />
+          <Skeleton h={180} r={18} />
+        </Stack>
+      ) : !table ? (
+        <EmptyState title={c.tableNotFound} />
       ) : (
         <>
+          {!canEdit ? (
+            <T v="meta13" color={colors.ivory55} style={{ marginTop: 4, marginBottom: 4 }}>
+              {c.readOnly}
+            </T>
+          ) : null}
           <Row gap={10} style={{ marginTop: 8 }}>
             <View style={{ flex: 1 }}>
               <SectionLabel>{c.tableName}</SectionLabel>
-              <Input
+              <Input accessibilityLabel={c.tableName}
                 value={labelValue}
+                editable={canEdit}
                 onChangeText={setLabel}
                 onBlur={commitLabel}
                 style={{ marginTop: 6 }}
@@ -184,8 +206,9 @@ export default function SeatingTable() {
             </View>
             <View style={{ width: 110 }}>
               <SectionLabel>{c.seats}</SectionLabel>
-              <Input
+              <Input accessibilityLabel={c.seats}
                 value={seatsValue}
+                editable={canEdit}
                 onChangeText={(t) =>
                   setSeats(t.replace(/[^0-9]/g, "").slice(0, 2))
                 }
@@ -202,12 +225,13 @@ export default function SeatingTable() {
                 { value: "round", label: c.round },
                 { value: "rect", label: c.rect },
               ]}
-              onChange={(v) => draftActions.updateTable(table.id, { shape: v })}
+              onChange={(v) => canEdit && draftActions.updateTable(table.id, { shape: v })}
             />
           </View>
           {table.source === "ai" &&
           table.confidence !== undefined &&
-          table.confidence < 1 ? (
+          table.confidence < 1 &&
+          canEdit ? (
             <Row
               gap={10}
               style={{ marginTop: 12, justifyContent: "space-between" }}
@@ -283,6 +307,7 @@ export default function SeatingTable() {
                         <Badge label={c.unconfirmed} kind="mute" />
                       ) : null}
                     </Row>
+                    {canEdit ? (
                     <Pressable
                       onPress={() =>
                         draftActions.unseatParty(g.rsvp_id, table.id)
@@ -293,6 +318,7 @@ export default function SeatingTable() {
                     >
                       <Icon name="x" size={18} color={colors.ivory55} />
                     </Pressable>
+                    ) : null}
                   </Row>
                   {g.rows.map((r, ri) => (
                     <Row
@@ -311,6 +337,7 @@ export default function SeatingTable() {
                       <T v="body15" color={colors.ivory70}>
                         {r.person}
                       </T>
+                      {canEdit ? (
                       <Pressable
                         onPress={() =>
                           draftActions.unseatPerson(table.id, r.index)
@@ -323,6 +350,7 @@ export default function SeatingTable() {
                           {c.remove}
                         </T>
                       </Pressable>
+                      ) : null}
                     </Row>
                   ))}
                 </View>
@@ -334,35 +362,39 @@ export default function SeatingTable() {
             </T>
           )}
 
-          <Button
-            label={c.assign}
-            icon="plus"
-            kind="glass"
-            onPress={() => setAddOpen(true)}
-            style={{ marginTop: 16 }}
-          />
-          {draft.dirty ? (
-            <Button
-              label={c.savePlan}
-              onPress={onSave}
-              loading={saving}
-              disabled={!online}
-              style={{ marginTop: 10 }}
-            />
+          {canEdit ? (
+            <>
+              <Button
+                label={c.assign}
+                icon="plus"
+                kind="glass"
+                onPress={() => setAddOpen(true)}
+                style={{ marginTop: 16 }}
+              />
+              {draft.dirty ? (
+                <Button
+                  label={c.savePlan}
+                  onPress={onSave}
+                  loading={saving}
+                  disabled={!online}
+                  style={{ marginTop: 10 }}
+                />
+              ) : null}
+              <Button
+                label={c.deleteTable}
+                kind="ghost"
+                onPress={remove}
+                style={{ marginTop: 18 }}
+              />
+            </>
           ) : null}
-          <Button
-            label={c.deleteTable}
-            kind="ghost"
-            onPress={remove}
-            style={{ marginTop: 18 }}
-          />
         </>
       )}
 
-      <Sheet visible={addOpen} onClose={() => setAddOpen(false)} top={140} scroll={false}>
+      <Sheet visible={addOpen && canEdit} onClose={() => setAddOpen(false)} top={140} scroll={false}>
         <Stack gap={10} style={{ paddingHorizontal: 20, flex: 1 }}>
           <T v="title26">{c.unseated}</T>
-          <Input
+          <Input accessibilityLabel={app.guests.search}
             icon="search"
             value={q}
             onChangeText={setQ}

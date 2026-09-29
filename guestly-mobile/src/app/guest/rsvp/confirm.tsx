@@ -1,8 +1,8 @@
 // Confirmation: the one paper card on the guest side.
 
-import React from "react";
-import { View, StyleSheet, Image, Linking } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback } from "react";
+import { View, StyleSheet, Image } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestSession } from "@/lib/session";
@@ -10,6 +10,8 @@ import { useGuestRsvp, useGuestSchedule } from "@/lib/hooks";
 import { Screen, TopBar, T, Card, Button, Row, Stack, Icon, SectionLabel } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { answerRows, bi } from "@/features/guest/rsvp";
+import { openUrlSafe } from "@/features/guest/links";
 
 const photo = require("../../../../assets/photos/toast.jpg");
 
@@ -17,23 +19,53 @@ export default function RsvpConfirm() {
   const copy = useCopy();
   const { lang } = useLang();
   const router = useRouter();
+  const navigation = useNavigation();
   const back = useSafeBack();
   const session = useGuestSession();
-  const { status, hasContact } = useLocalSearchParams<{ status?: string; hasContact?: string }>();
+  const { status: statusParam } = useLocalSearchParams<{ status?: string }>();
   const { data } = useGuestRsvp();
   const { data: schedule } = useGuestSchedule();
   const payload = data?.payload;
   const first = session?.guest.name.split(" ")[0] ?? "";
+  const status = statusParam ?? data?.summary.status;
   const declined = status === "declined";
   const roster = payload?.existing?.companions?.length
     ? payload.existing.companions
     : [{ name: payload?.displayName ?? "", attending: !declined, events: payload?.existing?.answers ?? {} }];
-  const eventTitle = (id: string) => payload?.events.find((e) => e.id === id)?.title[lang] ?? id;
-  const dietary = Object.values(payload?.existing?.questionAnswers ?? {}).filter(Boolean).join(", ");
-  const ics = schedule?.events.find((e) => e.invited)?.ics_url;
+  // Never an internal event id on the card: a title in either language, or nothing.
+  const eventTitle = (id: string) => bi(payload?.events.find((e) => e.id === id)?.title, lang);
+  const rows = answerRows(payload?.questions ?? [], payload?.existing?.questionAnswers, lang);
+
+  // One calendar with every event when the portal offers it; a single dated
+  // event can use its own link; several without an "all" link go to the
+  // schedule, where each has its own button.
+  const invitedDated = (schedule?.events ?? []).filter((e) => e.invited && e.date);
+  const allUrl = (schedule as { ics_all_url?: string | null } | undefined)?.ics_all_url ?? (invitedDated.length === 1 ? invitedDated[0].ics_url : null);
+  const addToCalendar = () => (allUrl ? openUrlSafe(allUrl, copy.common.linkFailed) : router.navigate("/guest/schedule"));
+
+  // Leaving: take the RSVP stack back to the form first, so the next visit to
+  // the RSVP tab opens the form and not this card (REPLACE from a nested
+  // stack only jumps tabs and left [form, confirm] behind).
+  const leave = useCallback(() => {
+    if (router.canDismiss()) router.dismissAll();
+    router.navigate("/guest");
+  }, [router]);
+  // The same when the guest leaves through the tab bar instead of Done.
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        try {
+          const nav = navigation as unknown as { getState?: () => { index?: number } | undefined; popToTop?: () => void };
+          if ((nav.getState?.()?.index ?? 0) > 0) nav.popToTop?.();
+        } catch {
+          // The stack is already gone (signed out): nothing to reset.
+        }
+      };
+    }, [navigation])
+  );
 
   return (
-    <Screen padded={false} bottomInset={40} header={<TopBar onBack={() => router.replace("/guest")} title={copy.guestHome.tabs.rsvp} />}>
+    <Screen padded={false} bottomInset={40} header={<TopBar onBack={leave} title={copy.guestHome.tabs.rsvp} />}>
       <View style={styles.hero}>
         {/* COVER wrapper: the hero has padding (see tokens.ts). */}
         <View style={COVER}>
@@ -45,11 +77,12 @@ export default function RsvpConfirm() {
           <View style={styles.check}>
             <Icon name="check" size={26} color={colors.night} strokeWidth={2} />
           </View>
-          <T v="title42" style={{ marginTop: 14 }}>
+          <T v="title42" style={{ marginTop: 14 }} accessibilityRole="header">
             {fmt(declined ? copy.rsvp.declinedTitle : copy.rsvp.onTheList, { name: first })}
           </T>
           <T v="body15" color="rgba(247,243,236,0.8)" style={{ marginTop: 8 }}>
-            {fmt(hasContact === "1" ? copy.rsvp.confirmBody : copy.rsvp.confirmBodyNoEmail, { couple: session?.tenant.couple_names ?? "" })}
+            {/* No confirmation email is sent to guests, so the card never claims one. */}
+            {fmt(copy.rsvp.confirmBodyNoEmail, { couple: session?.tenant.couple_names ?? "" })}
           </T>
         </View>
       </View>
@@ -60,12 +93,14 @@ export default function RsvpConfirm() {
             const evs = Object.entries(p.events ?? {})
               .filter(([, v]) => v === "attending")
               .map(([k]) => eventTitle(k))
+              .filter(Boolean)
               .join(" · ");
+            const name = p.name || (i === 0 ? payload?.displayName : "") || fmt(copy.rsvp.guestN, { n: i + 1 });
             return (
-              <Row key={i} style={[styles.paperRow, i === roster.length - 1 && !dietary && { borderBottomWidth: 0 }]}>
+              <Row key={i} style={[styles.paperRow, i === roster.length - 1 && !rows.length && { borderBottomWidth: 0 }]}>
                 <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
                   <T v="body16" color={colors.ink}>
-                    {p.name ?? ""}
+                    {name}
                   </T>
                   <T v="meta13" color={colors.muted}>
                     {evs || copy.rsvp.declined}
@@ -79,30 +114,35 @@ export default function RsvpConfirm() {
               </Row>
             );
           })}
-          {dietary ? (
-            <Row style={{ minHeight: 48, justifyContent: "space-between" }}>
+          {/* One row per answered question, under its own label. */}
+          {rows.map((r, i) => (
+            <View key={r.id} style={[styles.answerRow, i === rows.length - 1 && { borderBottomWidth: 0 }]}>
               <T v="meta13" color={colors.muted}>
-                {copy.rsvp.dietary}
+                {r.label}
               </T>
               <T v="body15" color={colors.ink}>
-                {dietary}
+                {r.value}
               </T>
-            </Row>
-          ) : null}
+            </View>
+          ))}
         </Card>
         <Card kind="solid" padding={16} style={{ marginTop: 14 }}>
-          <SectionLabel color={colors.goldLight}>{copy.rsvp.nextLabel}</SectionLabel>
-          <T v="body16" style={{ marginTop: 6 }}>
-            {copy.rsvp.addCalendarBody}
-          </T>
+          {declined ? null : (
+            <>
+              <SectionLabel color={colors.goldLight}>{copy.rsvp.nextLabel}</SectionLabel>
+              <T v="body16" style={{ marginTop: 6 }}>
+                {copy.rsvp.addCalendarBody}
+              </T>
+            </>
+          )}
           {/* Stacked: side by side both Spanish labels were cut with an ellipsis (D-006). */}
-          <Stack gap={8} style={{ marginTop: 12 }}>
-            <Button label={copy.rsvp.addCalendar} small icon="calendar-plus" onPress={() => ics && Linking.openURL(ics)} disabled={!ics} />
+          <Stack gap={8} style={{ marginTop: declined ? 0 : 12 }}>
+            {declined ? null : <Button label={copy.rsvp.addCalendar} small icon="calendar-plus" onPress={addToCalendar} disabled={!schedule} />}
             <Button label={copy.guestHome.changeAnswer} small kind="ghost" onPress={() => back()} />
           </Stack>
         </Card>
         <Stack style={{ marginTop: 20 }}>
-          <Button label={copy.common.done} kind="text" onPress={() => router.replace("/guest")} />
+          <Button label={copy.common.done} kind="text" onPress={leave} />
         </Stack>
       </View>
     </Screen>
@@ -114,5 +154,6 @@ const styles = StyleSheet.create({
   headline: { paddingHorizontal: 24 },
   check: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
   paperRow: { minHeight: 52, justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 },
+  answerRow: { minHeight: 48, justifyContent: "center", gap: 2, borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: 8 },
   pill: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
 });

@@ -1,17 +1,29 @@
-// One planner request: changes, conversation, reply, withdraw.
+// One planner request: changes, conversation, reply, withdraw, change.
+//
+// Fetched by id (GET /planner/requests/{id}), starting from the list's copy
+// when there is one, so a push or deep link opens it directly. Loading shows a
+// skeleton; a request this wedding does not have says so with a way back
+// (core review P1-15). An edit shows in the conversation as its own line. Reply is
+// guarded against a double send, withdraw asks first (P2-24), and only the
+// planner who filed a request is offered withdraw and change (the portal
+// refuses anyone else).
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { View, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
-import { usePlannerRequests } from "@/lib/hooks";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow } from "@/ui";
+import { usePlannerRequest } from "@/lib/hooks";
+import { useUserSession } from "@/lib/session";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "@/app/couple/requests/index";
 import { describeChanges } from "@/app/couple/requests/[id]";
 import { useSafeBack } from "@/lib/nav";
+
+/** Kinds the new-request form can rebuild, so they can be changed. */
+const EDITABLE_KINDS = ["plus_one", "edit_guest", "guest_help", "custom", "send_reminders"];
 
 export default function PlannerRequestDetail() {
   const copy = useCopy();
@@ -19,25 +31,42 @@ export default function PlannerRequestDetail() {
   const router = useRouter();
   const back = useSafeBack();
   const qc = useQueryClient();
+  const user = useUserSession();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const mainQuery = usePlannerRequests();
-  const { data } = mainQuery;
-  const r = data?.requests.find((x) => x.id === id);
+  const mainQuery = usePlannerRequest(id ?? "");
+  const { data: r, isLoading } = mainQuery;
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: ["planner-request", id] });
+    await qc.invalidateQueries({ queryKey: ["planner-requests"] });
+  };
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<"reply" | "cancel" | null>(null);
+  // A ref, not state: Return and a tap in the same frame both see it.
+  const sending = useRef(false);
+  const mine = !!r && (!r.created_by_email || r.created_by_email.toLowerCase() === (user?.me.user.email ?? "").toLowerCase());
 
   async function reply() {
-    if (!r || !text.trim()) return;
+    if (!r || !text.trim() || sending.current) return;
+    sending.current = true;
     setBusy("reply");
     try {
       await post(`/planner/requests/${r.id}/comment`, { text: text.trim() });
       setText("");
-      await qc.invalidateQueries({ queryKey: ["planner-requests"] });
+      await refresh();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
+      sending.current = false;
       setBusy(null);
     }
+  }
+
+  function confirmWithdraw() {
+    if (!r || busy) return;
+    Alert.alert(copy.core.withdrawTitle, copy.core.withdrawBody, [
+      { text: copy.common.cancel, style: "cancel" },
+      { text: copy.planner.withdraw, style: "destructive", onPress: () => void withdraw() },
+    ]);
   }
 
   async function withdraw() {
@@ -45,7 +74,8 @@ export default function PlannerRequestDetail() {
     setBusy("cancel");
     try {
       await post(`/planner/requests/${r.id}/cancel`, {});
-      await qc.invalidateQueries({ queryKey: ["planner-requests"] });
+      await refresh();
+      await qc.invalidateQueries({ queryKey: ["planner-home"] });
       back();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
@@ -57,8 +87,16 @@ export default function PlannerRequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? [], copy.requests.changeWords, copy.requests.changeFields) : [];
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
       <>
+        {!r && isLoading ? (
+          <Stack gap={12}>
+            <Skeleton h={24} w="40%" />
+            <Skeleton h={34} w="80%" />
+            <Skeleton h={120} r={18} />
+          </Stack>
+        ) : null}
+        {r === null ? <EmptyState title={copy.core.requestMissingTitle} body={copy.core.requestMissingBody} action={<Button label={copy.common.back} kind="glass" small full={false} onPress={back} />} /> : null}
         {r ? (
           <>
             <Row gap={8} style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
@@ -94,7 +132,13 @@ export default function PlannerRequestDetail() {
             ) : null}
             <SectionLabel style={{ marginTop: 22 }}>{copy.planner.conversation}</SectionLabel>
             <Stack gap={8} style={{ marginTop: 8 }}>
-              {(r.thread ?? []).map((t) => (
+              {(r.thread ?? []).map((t) =>
+                t.event === "edited" ? (
+                  // The portal's own line for an edit: centered, not a bubble.
+                  <T key={t.id} v="meta13" color={colors.ivory55} center style={{ paddingVertical: 4 }}>
+                    {`${copy.core.editedEntry} · ${relTime(t.created_at, lang)}`}
+                  </T>
+                ) : (
                 <Row key={t.id} style={{ justifyContent: t.author_role === "planner" ? "flex-end" : "flex-start" }}>
                   <View style={{ maxWidth: "84%", borderRadius: 18, padding: 12, backgroundColor: t.author_role === "planner" ? colors.gold : colors.glassSolidFill, borderWidth: t.author_role === "planner" ? 0 : 1, borderColor: "rgba(247,243,236,0.12)" }}>
                     <T v="body15" color={t.author_role === "planner" ? colors.night : colors.ivory90}>
@@ -102,14 +146,19 @@ export default function PlannerRequestDetail() {
                     </T>
                   </View>
                 </Row>
-              ))}
-              <Input value={text} onChangeText={setText} placeholder={copy.planner.replyToCouple} onSubmitEditing={reply} returnKeyType="send" />
-              <Button label={copy.planner.sendReply} small kind="glass" onPress={reply} loading={busy === "reply"} disabled={!text.trim()} />
+                )
+              )}
+              <Input accessibilityLabel={copy.planner.replyToCouple} value={text} onChangeText={setText} placeholder={copy.planner.replyToCouple} onSubmitEditing={() => void reply()} returnKeyType="send" editable={busy !== "reply"} />
+              <Button label={copy.planner.sendReply} small kind="glass" onPress={() => void reply()} loading={busy === "reply"} disabled={!text.trim() || busy !== null} />
             </Stack>
-            {r.status === "open" ? (
+            {r.status === "open" && mine ? (
               <ButtonRow style={{ marginTop: 22 }}>
-                <Button label={copy.planner.withdraw} kind="ghost" onPress={withdraw} loading={busy === "cancel"} />
-                <Button label={copy.planner.editRequest} onPress={() => router.push({ pathname: "/planner/requests/new", params: { from: r.id } })} />
+                <Button label={copy.planner.withdraw} kind="ghost" onPress={confirmWithdraw} loading={busy === "cancel"} disabled={busy !== null} />
+                {EDITABLE_KINDS.includes(r.kind) ? (
+                  // No edit endpoint exists: the form sends a new version and
+                  // withdraws this one, and says so before it does (P1-14).
+                  <Button label={copy.planner.editRequest} onPress={() => router.push({ pathname: "/planner/requests/new", params: { from: r.id } })} disabled={busy !== null} />
+                ) : null}
               </ButtonRow>
             ) : null}
             <T v="meta13" color={colors.ivory40} center style={{ marginTop: 14 }}>

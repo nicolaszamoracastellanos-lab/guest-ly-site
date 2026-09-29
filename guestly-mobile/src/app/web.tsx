@@ -22,7 +22,7 @@ import { WebView, type WebViewNavigation } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLang } from "@/i18n";
 import { ApiFailure } from "@/lib/api";
-import { TopBar, IconButton, T, EmptyState, Button, useTopInset } from "@/ui";
+import { TopBar, IconButton, T, EmptyState, Button, useTopInset, LockCover } from "@/ui";
 import { colors, COLUMN } from "@/ui/tokens";
 import { allowedSignedInPath, isPortalUrl, isWithin, signedInUrl } from "@/features/webview/bridge";
 import { useSafeBack } from "@/lib/nav";
@@ -157,6 +157,8 @@ export default function InAppWeb() {
           </T>
         </View>
       ) : null}
+      {/* A presented modal: the root lock cover sits behind it (core review P0-3). */}
+      <LockCover />
     </View>
   );
 }

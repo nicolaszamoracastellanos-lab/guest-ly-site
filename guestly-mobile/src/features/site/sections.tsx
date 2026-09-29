@@ -3,7 +3,7 @@
 // a full-screen modal owned by SiteBody so every image on the page opens it.
 
 import React, { useMemo, useState } from "react";
-import { View, StyleSheet, Pressable, Linking, Modal, FlatList, useWindowDimensions, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Modal, FlatList, useWindowDimensions, ScrollView } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { WebView } from "react-native-webview";
@@ -13,11 +13,12 @@ import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { T, Row, Stack, Card, Button, Badge, Gem, Hairline, Countdown, Avatar, Icon, IconButton, SectionLabel } from "@/ui";
+import { T, Row, Stack, Card, Button, Badge, Gem, Hairline, Countdown, Avatar, Icon, IconButton, SectionLabel, LockCover } from "@/ui";
 import { colors, FILL, radius } from "@/ui/tokens";
 import { COPY } from "./copy";
 import type { GuestSite, SiteSection, SectionType } from "./hooks";
 import { useSafeBack } from "@/lib/nav";
+import { openUrlSafe } from "@/features/guest/links";
 
 type Viewer = { images: { url: string; caption: string | null }[]; index: number } | null;
 
@@ -112,9 +113,10 @@ function Section({ heading, children, fallback }: { heading: string | null; chil
   );
 }
 
-function Photo({ url, height = 220, onPress, style }: { url: string; height?: number; onPress?: () => void; style?: object }) {
+function Photo({ url, height = 220, onPress, style, label }: { url: string; height?: number; onPress?: () => void; style?: object; label?: string | null }) {
+  const copy = useFeatureCopy(COPY);
   return (
-    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "imagebutton" : "image"}>
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "imagebutton" : "image"} accessibilityLabel={label || copy.openPhoto}>
       <View style={[{ height, borderRadius: radius.card, overflow: "hidden", borderWidth: 1, borderColor: colors.ivory09, backgroundColor: colors.navySoft }, style]}>
         <Image source={{ uri: url }} style={FILL} contentFit="cover" transition={250} />
       </View>
@@ -123,8 +125,9 @@ function Photo({ url, height = 220, onPress, style }: { url: string; height?: nu
 }
 
 function Accent({ url, onPress }: { url: string; onPress: () => void }) {
+  const copy = useFeatureCopy(COPY);
   return (
-    <Pressable onPress={onPress} accessibilityRole="imagebutton">
+    <Pressable onPress={onPress} accessibilityRole="imagebutton" accessibilityLabel={copy.openPhoto}>
       <View style={{ height: 240, marginTop: 34, overflow: "hidden" }}>
         <Image source={{ uri: url }} style={FILL} contentFit="cover" transition={250} />
         <LinearGradient colors={["rgba(13,17,23,0.35)", "rgba(13,17,23,0)", "rgba(13,17,23,0.35)"]} style={FILL} />
@@ -135,7 +138,9 @@ function Accent({ url, onPress }: { url: string; onPress: () => void }) {
 
 function openExternal(url: string) {
   void Haptics.selectionAsync();
-  void Linking.openURL(url);
+  // Couple-entered links can lack a scheme; a failed open must never reject
+  // unhandled (guest review #28).
+  openUrlSafe(url);
 }
 
 /* ------------------------------------------------------------------ */
@@ -213,7 +218,7 @@ function Party({ s, onOpen }: { s: Extract<SiteSection, { type: "party" }>; onOp
           <Card key={m.id} kind="solid" padding={16} style={styles.gridCell}>
             <View style={{ alignItems: "center", gap: 8 }}>
               {m.photo_url ? (
-                <Pressable onPress={() => onOpen([{ url: m.photo_url!, caption: m.name }], 0)} accessibilityRole="imagebutton">
+                <Pressable onPress={() => onOpen([{ url: m.photo_url!, caption: m.name }], 0)} accessibilityRole="imagebutton" accessibilityLabel={`${copy.openPhoto}, ${m.name}`}>
                   <View style={styles.memberPhoto}>
                     <Image source={{ uri: m.photo_url }} style={FILL} contentFit="cover" transition={250} />
                   </View>
@@ -282,7 +287,7 @@ function Schedule({ s, onOpen }: { s: Extract<SiteSection, { type: "schedule" }>
                 </T>
               </Row>
             ) : null}
-            {e.image_url ? <Photo url={e.image_url} height={180} style={{ marginTop: 12 }} onPress={() => onOpen([{ url: e.image_url!, caption: e.title }], 0)} /> : null}
+            {e.image_url ? <Photo url={e.image_url} height={180} style={{ marginTop: 12 }} onPress={() => onOpen([{ url: e.image_url!, caption: e.title }], 0)} label={e.title} /> : null}
             {e.maps_url ? (
               <Row gap={8} style={{ marginTop: 12 }}>
                 <Button label={copy.maps} icon="map" small kind="glass" full={false} onPress={() => openExternal(e.maps_url!)} />
@@ -531,7 +536,7 @@ function Custom({ s, onOpen }: { s: Extract<SiteSection, { type: "custom" }>; on
           {s.body}
         </T>
       ) : null}
-      {s.image_url ? <Photo url={s.image_url} height={240} style={{ marginTop: 16 }} onPress={() => onOpen([{ url: s.image_url!, caption: s.heading }], 0)} /> : null}
+      {s.image_url ? <Photo url={s.image_url} height={240} style={{ marginTop: 16 }} onPress={() => onOpen([{ url: s.image_url!, caption: s.heading }], 0)} label={s.heading} /> : null}
     </Section>
   );
 }
@@ -582,6 +587,8 @@ function GalleryViewer({ viewer, onClose, copy }: { viewer: Viewer; onClose: () 
             </T>
           </View>
         ) : null}
+        {/* A Modal sits above the root layout's lock cover: it draws its own. */}
+        <LockCover />
       </View>
     </Modal>
   );

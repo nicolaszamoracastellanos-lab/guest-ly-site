@@ -1,37 +1,36 @@
 // Day-of: the critical fact in the top 320px, then the runsheet for guests.
 
 import React from "react";
-import { View, StyleSheet, Image, Linking, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { View, StyleSheet, Image } from "react-native";
+import { useIsFocused, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { fmt, useCopy } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestDayOf } from "@/lib/hooks";
 import { Screen, T, Row, Gem, IconButton, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
-import { clockLabel } from "./schedule";
+import { clockLabel } from "@/features/guest/format";
+import { openMaps, openUrlSafe } from "@/features/guest/links";
+import { useRefetchOnRefocus } from "@/features/guest/focus";
 
 const photo = require("../../../assets/photos/courtyard.jpg");
 
 export default function GuestDayOf() {
   const copy = useCopy();
+  const { lang } = useLang();
   const router = useRouter();
   const top = useTopInset();
-  const mainQuery = useGuestDayOf();
+  // Polls every minute only while this screen is on top; tabs stay mounted.
+  const focused = useIsFocused();
+  const mainQuery = useGuestDayOf({ poll: focused });
+  useRefetchOnRefocus(focused, mainQuery.refetch);
   const { data, isLoading } = mainQuery;
   const now = data?.now_local;
   const focus = data?.current ?? data?.next ?? data?.events[0] ?? null;
 
-  function openMaps(url: string | null) {
-    if (!url) return;
-    if (Platform.OS === "ios" && url.includes("google.com/maps")) {
-      const q = new URL(url).searchParams.get("query");
-      if (q) return Linking.openURL(`maps://?q=${encodeURIComponent(q)}`);
-    }
-    return Linking.openURL(url);
-  }
+  const failLink = copy.common.linkFailed;
 
   return (
-    <Screen query={mainQuery} padded={false} topInset={false}>
+    <Screen query={mainQuery} padded={false} topInset={false} refresh>
       {/* The hero grows with its text. It had a fixed height with the text pinned
           inside, so a five-line sentence ran under the buttons (Part 9 audit, D-015). */}
       <View style={[styles.hero, { paddingTop: top + 64 }]}>
@@ -44,7 +43,8 @@ export default function GuestDayOf() {
           <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
             <Gem />
             <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={1} style={{ letterSpacing: 2, flexShrink: 1 }}>
-              {copy.common.today} · {now ? `${now.hour}:${String(now.minute).padStart(2, "0")}` : ""}
+              {copy.common.today}
+              {now ? ` · ${clockLabel(now.hour * 60 + now.minute, null, lang)}` : ""}
             </T>
           </Row>
           <IconButton name="bell" label={copy.messages.title} onPress={() => router.push("/guest/messages")} />
@@ -59,7 +59,7 @@ export default function GuestDayOf() {
                 {fmt(copy.dayof.headTo, { event: focus.title })}
               </T>
               <T v="body15" color="rgba(247,243,236,0.85)" style={{ marginTop: 8 }}>
-                {[focus.location, focus.time ? `${clockLabel(focus.time)}` : null, focus.notes].filter(Boolean).join(". ")}
+                {[focus.location, clockLabel(focus.start_minutes, focus.time, lang) || null, focus.notes].filter(Boolean).join(". ")}
               </T>
             </>
           ) : (
@@ -72,14 +72,14 @@ export default function GuestDayOf() {
       {/* One action. The Shuttle button next to it did nothing when pressed; the
           shuttle details are in the Getting there card right below. */}
       <View style={{ paddingHorizontal: 24, marginTop: -24 }}>
-        <Button label={copy.dayof.openMaps} small icon="map" onPress={() => openMaps(focus?.maps_url ?? null)} disabled={!focus?.maps_url} />
+        <Button label={copy.dayof.openMaps} small icon="map" onPress={() => openMaps(focus?.maps_url, failLink)} disabled={!focus?.maps_url} />
       </View>
       <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           {(data?.events ?? []).map((e, i) => (
             <Row key={e.id} gap={14} style={[styles.runRow, i === (data?.events.length ?? 0) - 1 && { borderBottomWidth: 0 }]}>
-              <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 66 }}>
-                {clockLabel(e.time)}
+              <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: lang === "en" ? 78 : 62 }}>
+                {clockLabel(e.start_minutes, e.time, lang)}
               </T>
               <T
                 v="body15"
@@ -121,7 +121,7 @@ export default function GuestDayOf() {
         ) : null}
         {data?.planner_whatsapp ? (
           <Stack style={{ marginTop: 12 }}>
-            <Button label={copy.dayof.planner} kind="ghost" small icon="phone" onPress={() => Linking.openURL(`https://wa.me/${data.planner_whatsapp!.replace(/\D/g, "")}`)} />
+            <Button label={copy.dayof.planner} kind="ghost" small icon="phone" onPress={() => openUrlSafe(`https://wa.me/${data.planner_whatsapp!.replace(/\D/g, "")}`, failLink)} />
           </Stack>
         ) : null}
       </View>

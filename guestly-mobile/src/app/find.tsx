@@ -1,17 +1,21 @@
 // Find your name: names only, minimum 3 letters, party members only once
 // the guest picks a row (the API returns the host name as party_of).
 
-import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCopy, useLang, mediumDate } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { useSession, type TenantSummary, type GuestIdentity } from "@/lib/session";
-import { Screen, TopBar, T, Input, Card, ListRow, Avatar, Stack, BigTitle } from "@/ui";
+import { Screen, TopBar, T, Input, Card, ListRow, Avatar, Stack, BigTitle, Loading } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+import { guestErrorText } from "@/features/guest/errors";
 
 type Candidate = { id: string; name: string; party_of: string | null };
+
+/** Case, accents and spacing do not make a new search. */
+const normalize = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
 
 export default function FindName() {
   const copy = useCopy();
@@ -19,51 +23,98 @@ export default function FindName() {
   const router = useRouter();
   const back = useSafeBack();
   const { signInGuest } = useSession();
-  const params = useLocalSearchParams<{ code: string; tenant: string }>();
-  const tenant = JSON.parse(params.tenant) as TenantSummary;
+  const params = useLocalSearchParams<{ code?: string; tenant?: string }>();
+  // guestly://find with no wedding (an old link, a typo) used to throw here.
+  const tenant = useMemo(() => {
+    try {
+      const t = JSON.parse(params.tenant ?? "") as TenantSummary | null;
+      return t && typeof t === "object" && typeof t.slug === "string" ? t : null;
+    } catch {
+      return null;
+    }
+  }, [params.tenant]);
+  const code = typeof params.code === "string" && params.code.length === 6 ? params.code : null;
   const [q, setQ] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [hint, setHint] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [picking, setPicking] = useState<string | null>(null);
+  // Only the newest search may write results: an older response that lands
+  // late must not replace newer ones.
+  const seq = useRef(0);
+  const lastTerm = useRef("");
 
   useEffect(() => {
-    applyTenantDefault(tenant.locale_default);
-  }, [tenant.locale_default, applyTenantDefault]);
+    if (!tenant || !code) router.replace("/invite");
+  }, [tenant, code, router]);
 
   useEffect(() => {
+    if (tenant) applyTenantDefault(tenant.locale_default);
+  }, [tenant, applyTenantDefault]);
+
+  useEffect(() => {
+    if (!code) return;
     const term = q.trim();
+    const norm = normalize(term);
+    if (term.length < 3) {
+      // Too short: results and hints hide (see `short`); any search still in
+      // flight is ignored when it lands.
+      seq.current++;
+      lastTerm.current = "";
+      return;
+    }
+    // A trailing space or a case change is not a new name.
+    if (norm === lastTerm.current) return;
+    // Searches run once typing pauses, so a name typed letter by letter is one
+    // request (the server allows a few misses per wedding and network).
     const t = setTimeout(async () => {
-      if (term.length < 3) {
-        setCandidates([]);
-        setHint(null);
-        return;
-      }
+      const id = ++seq.current;
+      lastTerm.current = norm;
+      setSearching(true);
       try {
-        const r = await post<{ candidates: Candidate[] }>("/auth/guest/identify", { invite_code: params.code, query: term });
+        const r = await post<{ candidates: Candidate[] }>("/auth/guest/identify", { invite_code: code, query: term });
+        if (id !== seq.current) return;
         setCandidates(r.candidates);
-        setHint(null);
+        setHint(r.candidates.length ? null : copy.find.noMatch);
       } catch (err) {
+        if (id !== seq.current) return;
         setCandidates([]);
-        if (err instanceof ApiFailure && err.code === "too_many_matches") setHint(copy.find.moreLetters);
-        else if (err instanceof ApiFailure && err.code === "not_found") setHint(null);
-        else setHint(err instanceof ApiFailure ? err.messages[lang] : copy.common.error);
+        if (err instanceof ApiFailure && err.code === "not_found") setHint(copy.find.noMatch);
+        else {
+          // Let the same text be searched again after a failure.
+          lastTerm.current = "";
+          setHint(guestErrorText(err, copy, lang));
+        }
+      } finally {
+        if (id === seq.current) setSearching(false);
       }
-    }, 320);
+    }, 500);
     return () => clearTimeout(t);
-  }, [q, params.code, copy, lang]);
+  }, [q, code, copy, lang]);
 
   async function pick(c: Candidate) {
-    if (busy) return;
-    setBusy(true);
+    if (picking || !tenant || !code) return;
+    setPicking(c.id + c.name);
+    setHint(null);
     try {
-      const r = await post<{ token: string; guest: GuestIdentity }>("/auth/guest/session", { invite_code: params.code, guest_id: c.id });
-      await signInGuest({ token: r.token, tenant, guest: r.guest, inviteCode: params.code });
+      const r = await post<{ token: string; guest: GuestIdentity }>("/auth/guest/session", { invite_code: code, guest_id: c.id });
+      await signInGuest({ token: r.token, tenant, guest: r.guest, inviteCode: code });
       router.replace({ pathname: "/notify", params: { surface: "guest" } });
     } catch (err) {
-      setHint(err instanceof ApiFailure ? err.messages[lang] : copy.common.error);
+      setHint(guestErrorText(err, copy, lang));
     } finally {
-      setBusy(false);
+      setPicking(null);
     }
+  }
+
+  const short = q.trim().length < 3;
+
+  if (!tenant || !code) {
+    return (
+      <Screen>
+        <Loading label={copy.common.loading} />
+      </Screen>
+    );
   }
 
   return (
@@ -75,28 +126,37 @@ export default function FindName() {
         value={q}
         onChangeText={setQ}
         placeholder={copy.find.placeholder}
+        accessibilityLabel={copy.find.placeholder}
         autoFocus
         autoCorrect={false}
         autoCapitalize="words"
+        textContentType="name"
+        returnKeyType="search"
+        right={searching && !short ? <ActivityIndicator color={colors.goldLight} style={{ marginRight: 12 }} /> : undefined}
         style={{ marginTop: 22, borderColor: q ? "rgba(201,169,110,0.5)" : undefined }}
       />
-      {candidates.length ? (
+      {candidates.length && !short ? (
         <Card kind="solid" padding={4} style={{ marginTop: 14, paddingHorizontal: 18 }}>
-          {candidates.map((c, i) => (
-            <ListRow
-              testID={`find-row-${i}`}
-              key={c.id + c.name}
-              leading={<Avatar initials={initials(c.name)} />}
-              title={c.name}
-              sub={c.party_of ? `${copy.find.partyOf} ${c.party_of}` : null}
-              onPress={() => pick(c)}
-              last={i === candidates.length - 1}
-            />
-          ))}
+          {candidates.map((c, i) => {
+            const busy = picking === c.id + c.name;
+            return (
+              <ListRow
+                testID={`find-row-${i}`}
+                key={c.id + c.name}
+                leading={<Avatar initials={initials(c.name)} />}
+                title={c.name}
+                sub={c.party_of ? `${copy.find.partyOf} ${c.party_of}` : null}
+                trailing={busy ? <ActivityIndicator color={colors.goldLight} /> : undefined}
+                chevron={!busy}
+                onPress={() => pick(c)}
+                last={i === candidates.length - 1}
+              />
+            );
+          })}
         </Card>
       ) : null}
-      {hint ? (
-        <T v="body15" color={colors.amber} style={{ marginTop: 14 }}>
+      {hint && !short ? (
+        <T v="body15" color={colors.amber} style={{ marginTop: 14 }} accessibilityLiveRegion="polite">
           {hint}
         </T>
       ) : null}
