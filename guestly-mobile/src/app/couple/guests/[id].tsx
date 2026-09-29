@@ -48,6 +48,17 @@ export default function GuestDetailScreen() {
   const initialForm = d ? { name: d.name, party_size: String(d.partySize), phone: phone ?? "", email: email ?? "", notes: d.notes ?? "", members: d.members.join("\n") } : null;
   const leave = useUnsavedGuard(editing && !!form && JSON.stringify(form) !== JSON.stringify(initialForm));
 
+  // This sheet is a native modal: a push to another tab lands under it, so
+  // Message looked dead for guests without a phone. Close the sheet first.
+  function openMessages() {
+    if (phone) {
+      void Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`).catch(() => {});
+      return;
+    }
+    if (router.canDismiss()) router.dismiss();
+    router.push("/couple/messages");
+  }
+
   function startEdit() {
     if (!d) return;
     setForm({ name: d.name, party_size: String(d.partySize), phone: phone ?? "", email: email ?? "", notes: d.notes ?? "", members: d.members.join("\n") });
@@ -141,7 +152,7 @@ export default function GuestDetailScreen() {
 
               {!editing ? (
                 <View style={{ marginTop: 18 }}>
-                  <DetailRow icon="check" iconColor={status === "attending" ? colors.greenText : colors.goldLight} title={d.events.length ? d.events.map((e) => `${eventTitle(e.title)}: ${answerLabel(e.answer)}`).join(" · ") : copy.guests.detail.ceremonyReception} sub={d.rsvp?.updatedAt ? (channel ? fmt(copy.guests.detail.answered, { when: relTime(d.rsvp.updatedAt, lang), channel }) : relTime(d.rsvp.updatedAt, lang)) : copy.guests.detail.notAnswered} />
+                  <DetailRow icon={status === "attending" ? "check" : status === "declined" ? "x" : "clock"} iconColor={status === "attending" ? colors.greenText : status === "declined" ? colors.ivory55 : colors.goldLight} title={d.events.length ? d.events.map((e) => `${eventTitle(e.title)}: ${answerLabel(e.answer)}`).join(" · ") : copy.guests.detail.ceremonyReception} sub={d.rsvp?.updatedAt ? (channel ? fmt(copy.guests.detail.answered, { when: relTime(d.rsvp.updatedAt, lang), channel }) : relTime(d.rsvp.updatedAt, lang)) : copy.guests.detail.notAnswered} />
                   {d.members.length ? <DetailRow icon="guests" title={d.members.join(", ")} sub={copy.rsvp.partyMember} /> : null}
                   <DetailRow icon="grid" title={table ? `${copy.guests.detail.table} ${table}` : copy.guests.detail.noTable} sub={d.seats[0]?.plan ?? null} />
                   {d.answers.length ? <DetailRow icon="info" title={d.answers.map((a) => a.answer).join(", ")} sub={d.answers.map((a) => a.question).join(" · ")} /> : null}
@@ -174,7 +185,7 @@ export default function GuestDetailScreen() {
                   ) : null}
 
                   <ButtonRow style={{ marginTop: 28 }}>
-                    <Button label={copy.guests.detail.message} icon="chat" onPress={() => (phone ? Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`) : router.push("/couple/messages"))} />
+                    <Button label={copy.guests.detail.message} icon="chat" onPress={openMessages} />
                     {canEdit ? <Button label={copy.guests.detail.edit} icon="edit" kind="ghost" onPress={startEdit} /> : null}
                   </ButtonRow>
                 </View>

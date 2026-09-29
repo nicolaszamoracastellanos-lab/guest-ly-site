@@ -167,6 +167,13 @@ function Gate() {
     // A planner whose Coordinator is switched off gets no bubble for it.
     (state.status === "user" && !can(state.me, "coordinator"));
 
+  // A link into a couple or planner screen that arrives while nobody is signed
+  // in (a push or a shared link opened on the sign-in screen, or while the
+  // password is being checked) is held here and opened once that session is
+  // in, instead of being dropped for the surface home. The welcome tour then
+  // draws on top of it. Held for ten minutes at most.
+  const heldLink = useRef<{ path: string; at: number } | null>(null);
+
   // Route by session state. Entrance screens live at the root; each surface
   // owns a folder. A signed-in user who lands on an entrance screen is moved.
   useEffect(() => {
@@ -183,7 +190,17 @@ function Gate() {
     // and Settings. A guest (or nobody) who lands there is moved before a
     // screen can call a couple endpoint.
     const accountOnly = head === "assistant" || head === "web" || head === "settings";
-    if (state.status === "none" && (inSurface || accountOnly || signupOnly)) router.replace("/");
+    if (state.status === "none" && (inSurface || accountOnly || signupOnly)) {
+      if ((head === "couple" || head === "planner") && pathname.split("/").filter(Boolean).length >= 2) {
+        heldLink.current = { path: pathname, at: Date.now() };
+        // Opened over the sign-in screen: step back to it, typing intact.
+        if (router.canGoBack()) {
+          router.back();
+          return;
+        }
+      }
+      router.replace("/");
+    }
     // "find" is left alone for guests: it has just created the session and is
     // about to show the notification step. Moving the guest to /guest first
     // meant people who typed their code were never asked (Part 9 audit, D-030).
@@ -194,9 +211,16 @@ function Gate() {
     } else if (state.status === "user") {
       const want = state.me.surface === "planner" ? "planner" : "couple";
       const wrongSurface = inSurface && head !== want;
-      if (onEntrance || wrongSurface || head === "guest" || signupOnly) router.replace(`/${want}`);
+      const held = heldLink.current;
+      heldLink.current = null;
+      if (onEntrance || wrongSurface || head === "guest" || signupOnly) {
+        const fresh = held && Date.now() - held.at < 10 * 60_000 && held.path.startsWith(`/${want}/`);
+        router.replace((fresh ? held.path : `/${want}`) as never);
+      }
     }
     routedOnce.current = true;
+    // pathname is read, not a trigger: the route effect runs on state and segments.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, segments, router]);
 
   // Push taps route to the right screen, each tap exactly once (core review
@@ -227,6 +251,13 @@ function Gate() {
         const tenant = tenantOf(data);
         if (s.status === "user" && tenant && tenant !== s.me.tenant.slug && s.me.tenants.some((t) => t.slug === tenant)) {
           await switchTenant(tenant);
+        }
+        // A sheet (guest drawer, record an RSVP, a request) is a native modal:
+        // a route pushed into another tab would open under it, out of sight.
+        try {
+          if (router.canDismiss()) router.dismissAll();
+        } catch {
+          // nothing presented
         }
         router.push(routeFor(data, surface) as never);
       })();

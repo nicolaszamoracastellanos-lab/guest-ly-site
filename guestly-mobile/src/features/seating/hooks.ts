@@ -323,3 +323,10 @@ export function initialsOf(name: string): string {
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+/** The portal names every unnamed companion "Acompañante", whatever the
+ *  language. On screen it reads in the app's language; the stored name is
+ *  left as it is, so saving never rewrites it. */
+export function seatLabel(p: { person: string; kind: "main" | "companion" }, partyMember: string): string {
+  return p.kind === "companion" && p.person.trim() === "Acompañante" ? partyMember : p.person;
+}

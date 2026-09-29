@@ -35,6 +35,12 @@ const MARGIN = BUBBLE_MARGIN;
 const STORAGE_KEY = "assistant-bubble";
 /** How much of the bubble shows while docked: inside the 24 pt screen gutter. */
 const SLIVER = 18;
+/** The band under the status bar that holds every screen's header controls
+ *  (back, title actions, the tour's Skip). The bubble never rests in it. */
+const HEADER_BAND = 60;
+/** A tap within this long of the bubble appearing is ignored: it was aimed at
+ *  whatever was on top a moment ago (the tour's Skip, a closing sheet). */
+const APPEAR_GRACE_MS = 600;
 
 type Saved = { side: "left" | "right"; y: number };
 
@@ -58,7 +64,11 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   // Null until the person drags the bubble somewhere: then it rests in the band.
   const [chosenY, setChosenY] = useState<number | null>(null);
 
-  const minY = Math.max(insets.top, 54) + MARGIN;
+  // Below the header band. Dragged to the very top, the bubble used to rest
+  // exactly under the welcome tour's Skip button and on the header's right
+  // control, so the second tap of a double tap on Skip (or a tap that landed
+  // as the tour faded) opened the Coordinator by itself.
+  const minY = Math.max(insets.top, 20) + HEADER_BAND + MARGIN;
   const floorY = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - MARGIN;
   const maxY = Math.max(minY, floorY - lift);
   // On a wide window the bubble keeps to the edges of the centered content
@@ -128,9 +138,17 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   }, [docked, leftDockX, leftX, rightDockX, rightX, onRight, x, dock]);
 
   const visible = !hidden && !keyboard;
+  // Taps count only once the bubble has been on screen for a moment.
+  const armed = useSharedValue(0);
   useEffect(() => {
     shown.set(withTiming(visible ? 1 : 0, { duration: 180 }));
-  }, [visible, shown]);
+    if (!visible) {
+      armed.set(0);
+      return;
+    }
+    const t = setTimeout(() => armed.set(1), APPEAR_GRACE_MS);
+    return () => clearTimeout(t);
+  }, [visible, shown, armed]);
 
   // The label hides itself; the effect owns the timer.
   useEffect(() => {
@@ -178,7 +196,8 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const tap = Gesture.Tap()
     .maxDuration(300)
     .onEnd((_e, success) => {
-      if (success) runOnJS(open)();
+      // A tap right after the bubble appeared was meant for what covered it.
+      if (success && armed.get() === 1) runOnJS(open)();
     });
 
   const longPress = Gesture.LongPress()

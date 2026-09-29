@@ -155,7 +155,13 @@ export function describeChanges(p: Record<string, unknown>, names: string[], wor
   const out: { label: string; value: string }[] = [];
   const who = names.filter(Boolean).join(", ") || words.guest;
   const field = (k: string) => (fields as Record<string, string>)[k] ?? k.replace(/_/g, " ");
-  if (p.kind === "plus_one") out.push({ label: who, value: `+${typeof p.add_seats === "number" ? p.add_seats : typeof p.seats === "number" ? p.seats : 1}` });
+  // The portal stores the seat count as additional_seats (the only key it
+  // validates); add_seats and seats are older spellings. Reading only those
+  // showed every request as +1, so a couple approving "+1" could add three.
+  if (p.kind === "plus_one") {
+    const n = [p.additional_seats, p.add_seats, p.seats].find((v) => typeof v === "number" && v > 0) as number | undefined;
+    out.push({ label: who, value: `+${n ?? 1}` });
+  }
   if (p.kind === "edit_guest" && p.patch && typeof p.patch === "object") {
     for (const [k, v] of Object.entries(p.patch as Record<string, unknown>)) out.push({ label: `${who} · ${field(k)}`, value: String(v) });
   }

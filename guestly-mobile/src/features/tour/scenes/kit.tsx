@@ -88,8 +88,14 @@ export function SceneBox({
     const { width, height } = e.nativeEvent.layout;
     setBox((b) => (b && Math.abs(b.w - width) < 1 && Math.abs(b.h - height) < 1 ? b : { w: width, h: height }));
   }, []);
-  const hintRoom = tryIt ? 44 : 0;
-  const scale = box ? Math.max(0.5, Math.min((box.h - hintRoom) / CANVAS_H, box.w / CANVAS_W, 1.3)) : 0;
+  // At the largest text sizes on a 6.1 inch phone the step's words leave the
+  // scene less room than the canvas at half size plus the "Tap ..." pill, and
+  // the pill used to spill over the step label below. The scene now shrinks
+  // further, the pill gives up its room first, and nothing draws outside
+  // the box (VoiceOver keeps the try action either way).
+  const hint = !!tryIt && !!box && (box.h - 44) / CANVAS_H >= 0.4;
+  const hintRoom = hint ? 44 : 0;
+  const scale = box ? Math.max(0.25, Math.min((box.h - hintRoom) / CANVAS_H, box.w / CANVAS_W, 1.3)) : 0;
   const run = () => {
     action.current?.();
     setTried(true);
@@ -113,7 +119,7 @@ export function SceneBox({
               {children}
             </View>
           </View>
-          {tryIt ? <TryNudge label={tryIt} visible={!tried} active={active} reduced={reduced} /> : null}
+          {tryIt && hint ? <TryNudge label={tryIt} visible={!tried} active={active} reduced={reduced} /> : null}
         </TryContext.Provider>
       ) : null}
     </View>
@@ -301,7 +307,7 @@ export const sceneStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  box: { flex: 1, alignItems: "center", justifyContent: "center", minHeight: 120 },
+  box: { flex: 1, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   nudgeWrap: { height: 44, justifyContent: "flex-end", alignItems: "center", maxWidth: "100%" },
   nudge: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 34, borderRadius: 17, borderWidth: 1, borderColor: "rgba(201,169,110,0.4)", backgroundColor: "rgba(201,169,110,0.08)", maxWidth: "100%" },
   dotWrap: { width: 10, height: 10, alignItems: "center", justifyContent: "center" },

@@ -91,10 +91,12 @@ export default function CoupleHome() {
 
         <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
           <Pressable onPress={() => router.push("/assistant" as never)} accessibilityRole="button">
-            <Card kind="glass" padding={0} radiusKey="pill" style={{ height: 52, justifyContent: "center", paddingHorizontal: 18 }}>
+            {/* At least 52 high, and it grows with large text instead of
+                cutting the line off at the right edge. */}
+            <Card kind="glass" padding={0} radiusKey="pill" style={{ minHeight: 52, paddingVertical: 12, justifyContent: "center", paddingHorizontal: 18 }}>
               <Row gap={10}>
                 <Icon name="sparkle" size={20} color={colors.goldLight} />
-                <T v="body15" color={colors.ivory55}>
+                <T v="body15" color={colors.ivory55} style={{ flex: 1 }}>
                   {copy.coupleHome.ask}
                 </T>
               </Row>

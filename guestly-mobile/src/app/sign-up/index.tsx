@@ -124,6 +124,7 @@ export default function SignUp() {
               if (error) setError(null);
             }}
             placeholder={c.emailPlaceholder}
+            accessibilityLabel={c.emailLabel}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -142,6 +143,7 @@ export default function SignUp() {
               if (error) setError(null);
             }}
             placeholder={c.passwordPlaceholder}
+            accessibilityLabel={c.passwordLabel}
             secureTextEntry={!show}
             autoCapitalize="none"
             autoCorrect={false}

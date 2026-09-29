@@ -34,7 +34,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-g
 import { useCopy, useLang, longDate } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
-import { colors, fonts, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COVER, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT } from "./tokens";
+import { colors, fonts, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COVER, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT, MIN_BODY } from "./tokens";
 import { useBottomClearance, useBubbleDock, useBubbleLift, useTabBarTop, DOCK_SLACK } from "./chrome";
 import { LockCover } from "./LockCover";
 import { useOnline } from "@/lib/query";
@@ -164,19 +164,13 @@ export function Screen({
   return (
     <BackSlot.Provider value={edgeBack.slot}>
     <View style={[styles.screen, style]}>
-      <LinearGradient
-        colors={[colors.navy, colors.night, colors.nightDeep]}
-        locations={[0, 0.42, 1]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={FILL}
-      />
-      <LinearGradient
-        colors={["rgba(201,169,110,0.13)", "rgba(201,169,110,0)"]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0.3, y: 0.55 }}
-        style={FILL}
-      />
+      {/* The night backdrop (navy to night to deep night, with the gold wash
+          from the top right) as one small baked image, stretched. It used to
+          be two full-screen gradient layers per screen: every screen kept in
+          the tabs held about 50 MB of drawing (QA Sep 29: 130 MB at launch,
+          860 MB after visiting each section once). One decoded bitmap is
+          now shared by every screen. */}
+      <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" />
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
       {scroll ? (
         <Animated.ScrollView
@@ -382,6 +376,9 @@ export function Row({ children, gap = space.md, style, align = "center" }: { chi
 export function Stack({ children, gap = space.md, style }: { children: ReactNode; gap?: number; style?: StyleProp<ViewStyle> }) {
   return <View style={[{ gap }, style]}>{children}</View>;
 }
+
+// Baked from the screen gradient: see Screen. 201 x 437 px, about 350 KB decoded.
+const SCREEN_BACKDROP = require("../../assets/brand/screen-backdrop.png");
 
 export function Spacer({ h = space.lg }: { h?: number }) {
   return <View style={{ height: h }} />;
@@ -888,7 +885,7 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
   return (
     <View style={{ width: size, height: size, borderRadius: size, backgroundColor: colors.navy, borderWidth: 1, borderColor: colors.goldBorder, alignItems: "center", justifyContent: "center" }}>
       {gem ? <Gem size={Math.round(size * 0.3)} /> : (
-        <T v="name24" size={Math.round(size * 0.42)} color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
+        <T v="name24" size={Math.max(MIN_BODY, Math.round(size * 0.42))} color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
           {initials ?? ""}
         </T>
       )}
@@ -1010,7 +1007,9 @@ export function ActionTile({ icon, label, onPress }: { icon: IconName; label: st
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.75 }]}>
       <Icon name={icon} size={20} color={colors.goldLight} />
-      <T v="meta13" color={colors.ivory} center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontFamily: fonts.body }}>
+      {/* A one-word label keeps to one line and shrinks to fit: with two lines
+          allowed, iOS broke "Vestimenta" mid-word on a 390 pt phone. */}
+      <T v="meta13" color={colors.ivory} center numberOfLines={/\s/.test(label.trim()) ? 2 : 1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: fonts.body }}>
         {label}
       </T>
     </Pressable>

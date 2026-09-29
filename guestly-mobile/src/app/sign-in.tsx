@@ -100,9 +100,14 @@ export default function SignIn() {
   // and the button are on screen without scrolling (Part 9 audit, D-035).
   // The photo has to end about half way down the window, where the background
   // reaches the night colour it fades into; the text starts higher on it.
+  // On a 6.1 to 6.9 inch phone the text starts as high on the photo as it
+  // needs to for the whole form, down to "Create an account", to fit without
+  // scrolling (at 240 pt the password switch was cut in half at the bottom
+  // edge of a 17 Pro). 754 is the height of everything from the wordmark down.
   const compact = height < 700;
-  const heroH = compact ? Math.max(210, Math.round(height * 0.52) - 86) : 420;
-  const overlap = heroH - (compact ? 118 : 240);
+  const textTop = compact ? 118 : Math.max(118, Math.min(240, height - 754));
+  const heroH = compact ? Math.max(210, Math.round(height * 0.52) - 86) : textTop + 180;
+  const overlap = heroH - textTop;
 
   return (
     <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>
@@ -137,6 +142,7 @@ export default function SignIn() {
             value={email}
             onChangeText={setEmail}
             placeholder={copy.signIn.emailPlaceholder}
+            accessibilityLabel={copy.signIn.emailLabel}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -153,6 +159,7 @@ export default function SignIn() {
               value={password}
               onChangeText={setPassword}
               placeholder={copy.signIn.passwordPlaceholder}
+              accessibilityLabel={copy.signIn.passwordLabel}
               secureTextEntry
               autoComplete="current-password"
               textContentType="password"

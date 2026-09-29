@@ -23,7 +23,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "Guest-ly",
   slug: "guestly",
   owner: "nzamoras-team",
-  version: "1.0.0",
+  // 1.1.0: the portal serves self-serve signup and the pending-wedding
+  // states only to builds at 1.1.0 or later (lib/mobile/auth isLegacyApp).
+  // At 1.0.0 a new account was answered "unauthorized" after its code and
+  // stayed on the verify screen.
+  version: "1.1.0",
   orientation: "portrait",
   scheme: "guestly",
   userInterfaceStyle: "dark",

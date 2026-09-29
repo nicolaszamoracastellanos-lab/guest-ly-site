@@ -48,7 +48,7 @@ export default function WebsiteThemeScreen() {
           return (
             <Pressable key={t.key} onPress={() => void choose(t.key)} disabled={!canEdit || busy !== null} accessibilityRole="button" accessibilityState={{ selected: on, disabled: !canEdit }} style={({ pressed }) => [{ borderRadius: radius.card, overflow: "hidden", borderWidth: 2, borderColor: on ? colors.gold : colors.ivory14, opacity: pressed || busy === t.key ? 0.7 : 1 }]}>
               <View style={{ backgroundColor: t.bg, padding: 20, minHeight: 130, justifyContent: "flex-end" }}>
-                <View style={{ position: "absolute", top: 14, right: 14 }}>{on ? <Badge label={c.done} kind="gold" /> : null}</View>
+                <View style={{ position: "absolute", top: 14, right: 14 }}>{on ? <Badge label={c.inUse} kind="gold" /> : null}</View>
                 <View style={{ width: 8, height: 8, backgroundColor: t.accent, transform: [{ rotate: "45deg" }], marginBottom: 12 }} />
                 <T v="title30" color={t.text}>
                   {c.themes[t.key]}

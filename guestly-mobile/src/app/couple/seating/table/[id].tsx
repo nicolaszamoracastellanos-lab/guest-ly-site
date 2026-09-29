@@ -38,6 +38,7 @@ import {
   deriveDraft,
   useSavePlan,
   initialsOf,
+  seatLabel,
 } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
 
@@ -335,7 +336,7 @@ function SeatingTableScreen({ id }: { id: string }) {
                       }}
                     >
                       <T v="body15" color={colors.ivory70}>
-                        {r.person}
+                        {seatLabel(r, app.rsvp.partyMember)}
                       </T>
                       {canEdit ? (
                       <Pressable

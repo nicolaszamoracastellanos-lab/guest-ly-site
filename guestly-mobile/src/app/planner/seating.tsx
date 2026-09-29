@@ -23,7 +23,7 @@ import {
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
-import { usePlannerSeating, initialsOf } from "@/features/seating/hooks";
+import { usePlannerSeating, initialsOf, seatLabel } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerSeating() {
@@ -99,7 +99,7 @@ export default function PlannerSeating() {
                         v="body15"
                         color={colors.ivory70}
                       >
-                        {p.person}
+                        {seatLabel(p, app.rsvp.partyMember)}
                         {p.person !== p.party_name ? ` · ${p.party_name}` : ""}
                       </T>
                     ))}
