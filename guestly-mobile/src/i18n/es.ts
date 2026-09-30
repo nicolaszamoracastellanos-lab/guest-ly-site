@@ -440,6 +440,7 @@ export const es: Copy = {
     noteForCouple: "Nota para la pareja (opcional)",
     sendReply: "Enviar",
     greeting: "{part}, {name}.",
+    greetingNoName: "{part}.",
     morning: "Buenos días",
     afternoon: "Buenas tardes",
     evening: "Buenas noches",

@@ -19,7 +19,8 @@ export default function PlannerHome() {
   const { data, isLoading } = mainQuery;
   const hour = new Date().getHours();
   const part = hour < 12 ? copy.planner.morning : hour < 19 ? copy.planner.afternoon : copy.planner.evening;
-  const name = data?.greeting_name ?? user?.me.user.email.split("@")[0] ?? "";
+  // Never derived from the email: without a profile name the greeting has no name.
+  const name = (data?.greeting_name ?? "").trim();
   const needs = needsPlanner(data);
   // Same fixer-round-3 fix as couple/index.tsx: the stat tiles and the
   // weddings list can sit right where the bubble rests at some window
@@ -31,7 +32,7 @@ export default function PlannerHome() {
     <Screen query={mainQuery} refresh header={<TopBar left={<Row gap={8}><Wordmark height={20} /><Badge label={copy.settings.planner} kind="gold" /></Row>} right={<IconButton name="bell" badge={needs > 0} onPress={() => router.push("/planner/requests")} label={copy.planner.tabs.requests} />} />}>
       <View style={{ marginTop: 18 }}>
         <T v="title42" size={38}>
-          {fmt(copy.planner.greeting, { part, name: cap(name) })}
+          {name ? fmt(copy.planner.greeting, { part, name: cap(name) }) : fmt(copy.planner.greetingNoName, { part })}
         </T>
         <T v="body15" color={colors.ivory55} style={{ marginTop: 6 }}>
           {fmt(copy.planner.subtitle, { weddings: plural(data?.weddings.length ?? user?.me.tenants.length ?? 0, copy.planner.weddingsCount), needs: plural(needs, copy.planner.needsCount) })}

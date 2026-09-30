@@ -430,6 +430,7 @@ export const en = {
     noteForCouple: "Note for the couple (optional)",
     sendReply: "Send",
     greeting: "Good {part}, {name}.",
+    greetingNoName: "Good {part}.",
     morning: "morning",
     afternoon: "afternoon",
     evening: "evening",
