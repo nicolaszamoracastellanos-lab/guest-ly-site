@@ -1,0 +1,328 @@
+{
+ "screens": {
+  "en": {
+   "guest-home": "g-en-home",
+   "rsvp": "g-en-rsvp",
+   "concierge": "g-en-conc2",
+   "messages": "g-en-messages2",
+   "dayof": "g-en-dayof",
+   "rsvps": "c-en-rsvps",
+   "seating": "c-en-seating",
+   "checkin": "c-en-checkin-scan",
+   "signup": "en-signup",
+   "couple-request": "c-en-request"
+  },
+  "es": {
+   "guest-home": "g-es-home",
+   "rsvp": "g-es-rsvp",
+   "concierge": "g-es-conc2",
+   "messages": "g-es-messages2",
+   "dayof": "g-es-dayof",
+   "rsvps": "c-es-rsvps",
+   "seating": "c-es-seating",
+   "checkin": "c-es-checkin-scan",
+   "signup": "es-signup",
+   "couple-request": "c-es-request"
+  }
+ },
+ "crops": {
+  "en": {
+   "answer-shuttle": {
+    "src": "g-en-conc2",
+    "box": [
+     130,
+     1670,
+     1090,
+     2080
+    ],
+    "tight": true
+   },
+   "answer-parking": {
+    "src": "g-en-conc2",
+    "box": [
+     130,
+     815,
+     1090,
+     1440
+    ],
+    "tight": true
+   },
+   "rsvp-grant": {
+    "src": "g-en-rsvp",
+    "box": [
+     40,
+     1450,
+     1285,
+     2262
+    ],
+    "tight": true
+   },
+   "couple-reply": {
+    "src": "g-en-messages2",
+    "box": [
+     40,
+     1915,
+     1100,
+     2262
+    ],
+    "tight": true,
+    "extend_top": 78
+   },
+   "getting-there": {
+    "src": "g-en-dayof",
+    "box": [
+     40,
+     1690,
+     1285,
+     2075
+    ],
+    "tight": true
+   },
+   "checkin-card": {
+    "src": "c-en-checkin-card",
+    "box": [
+     60,
+     1139,
+     1260,
+     1627
+    ]
+   },
+   "planner-card": {
+    "src": "p-en-requests",
+    "box": [
+     40,
+     720,
+     1285,
+     1040
+    ],
+    "tight": true
+   },
+   "seat-stat-0": {
+    "src": "c-en-seating",
+    "box": [
+     50,
+     585,
+     462,
+     872
+    ],
+    "tight": true
+   },
+   "seat-stat-1": {
+    "src": "c-en-seating",
+    "box": [
+     456,
+     585,
+     862,
+     872
+    ],
+    "tight": true
+   },
+   "seat-stat-2": {
+    "src": "c-en-seating",
+    "box": [
+     852,
+     585,
+     1275,
+     872
+    ],
+    "tight": true
+   },
+   "guest-question": {
+    "src": "g-en-messages2",
+    "box": [
+     253,
+     1141,
+     1258,
+     1361
+    ]
+   },
+   "rsvp-stats": {
+    "src": "c-en-rsvps",
+    "box": [
+     44,
+     634,
+     1276,
+     1064
+    ]
+   },
+   "question-shuttle": {
+    "src": "g-en-conc2",
+    "box": [
+     452,
+     1444,
+     1258,
+     1664
+    ]
+   },
+   "signup-apple": {
+    "src": "en-signup",
+    "box": [
+     40,
+     1480,
+     1285,
+     1700
+    ],
+    "tight": true
+   },
+   "signup-google": {
+    "src": "en-signup",
+    "box": [
+     40,
+     1695,
+     1285,
+     1905
+    ],
+    "tight": true
+   }
+  },
+  "es": {
+   "answer-shuttle": {
+    "src": "g-es-conc2",
+    "box": [
+     130,
+     1680,
+     1100,
+     2080
+    ],
+    "tight": true
+   },
+   "rsvp-grant": {
+    "src": "g-es-rsvp",
+    "box": [
+     40,
+     1235,
+     1285,
+     1835
+    ],
+    "tight": true
+   },
+   "couple-reply": {
+    "src": "g-es-messages2",
+    "box": [
+     40,
+     1925,
+     1100,
+     2262
+    ],
+    "tight": true,
+    "extend_top": 78
+   },
+   "getting-there": {
+    "src": "g-es-dayof",
+    "box": [
+     40,
+     1690,
+     1285,
+     2075
+    ],
+    "tight": true
+   },
+   "checkin-card": {
+    "src": "c-es-checkin-card",
+    "box": [
+     60,
+     1139,
+     1260,
+     1627
+    ]
+   },
+   "planner-card": {
+    "src": "p-es-requests",
+    "box": [
+     40,
+     720,
+     1285,
+     1040
+    ],
+    "tight": true
+   },
+   "seat-stat-0": {
+    "src": "c-es-seating",
+    "box": [
+     50,
+     585,
+     462,
+     872
+    ],
+    "tight": true
+   },
+   "seat-stat-1": {
+    "src": "c-es-seating",
+    "box": [
+     456,
+     585,
+     862,
+     872
+    ],
+    "tight": true
+   },
+   "seat-stat-2": {
+    "src": "c-es-seating",
+    "box": [
+     852,
+     585,
+     1275,
+     872
+    ],
+    "tight": true
+   },
+   "guest-question": {
+    "src": "g-es-messages2",
+    "box": [
+     261,
+     996,
+     1258,
+     1146
+    ]
+   },
+   "rsvp-stats": {
+    "src": "c-es-rsvps",
+    "box": [
+     44,
+     634,
+     1276,
+     1064
+    ]
+   },
+   "question-shuttle": {
+    "src": "g-es-conc2",
+    "box": [
+     452,
+     1444,
+     1258,
+     1664
+    ]
+   },
+   "answer-parking": {
+    "src": "g-es-conc2",
+    "box": [
+     130,
+     560,
+     1090,
+     1440
+    ],
+    "tight": true
+   },
+   "signup-apple": {
+    "src": "es-signup",
+    "box": [
+     40,
+     1480,
+     1285,
+     1700
+    ],
+    "tight": true
+   },
+   "signup-google": {
+    "src": "es-signup",
+    "box": [
+     40,
+     1695,
+     1285,
+     1905
+    ],
+    "tight": true
+   }
+  }
+ }
+}

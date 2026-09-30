@@ -1,0 +1,13 @@
+{
+  "name": "guestly-store-screenshots",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "assets": "python3 tools/prepare.py",
+    "render": "node render.mjs all",
+    "sheets": "python3 tools/sheets.py ."
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}

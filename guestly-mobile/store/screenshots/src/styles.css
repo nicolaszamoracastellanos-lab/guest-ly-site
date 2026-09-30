@@ -1,0 +1,151 @@
+/* Guest-ly App Store set v2. One long strip, sliced into 1320 x 2868 panels. */
+
+@font-face { font-family: "Jost"; font-weight: 400; src: url("assets/fonts/Jost_400Regular.ttf"); }
+@font-face { font-family: "Jost"; font-weight: 500; src: url("assets/fonts/Jost_500Medium.ttf"); }
+@font-face { font-family: "Jost"; font-weight: 600; src: url("assets/fonts/Jost_600SemiBold.ttf"); }
+@font-face { font-family: "Jost"; font-weight: 700; src: url("assets/fonts/Jost_700Bold.ttf"); }
+@font-face { font-family: "Cormorant"; font-weight: 500; src: url("assets/fonts/CormorantGaramond_500Medium.ttf"); }
+@font-face { font-family: "Cormorant"; font-weight: 500; font-style: italic; src: url("assets/fonts/CormorantGaramond_500Medium_Italic.ttf"); }
+@font-face { font-family: "Cormorant"; font-weight: 600; src: url("assets/fonts/CormorantGaramond_600SemiBold.ttf"); }
+
+:root {
+  --ink: #090b10;
+  --night: #0d1117;
+  --navy: #16213a;
+  --ivory: #f7f3ec;
+  --ivory-2: rgba(247, 243, 236, 0.8);
+  --gold: #c9a96e;
+  --gold-light: #e2c892;
+  --gold-dim: #8a6d3e;
+  --pw: 1320px;
+  --ph: 2868px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--ink); }
+body { width: calc(var(--pw) * var(--n)); height: var(--ph); overflow: hidden; }
+
+#strip { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--ink); }
+
+/* ---------- backdrop: photos that run across neighbouring panels ---------- */
+.backdrop { position: absolute; top: 0; overflow: hidden; }
+.backdrop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.backdrop::after { content: ""; position: absolute; inset: 0; }
+
+/* warm light pooled behind each device, and a cool falloff to the corners */
+.glow { position: absolute; pointer-events: none; border-radius: 50%; filter: blur(40px); }
+
+.grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.075; mix-blend-mode: overlay;
+  background-size: 360px 360px;
+}
+
+/* ---------- panel frame ---------- */
+.panel { position: absolute; top: 0; width: var(--pw); height: var(--ph); overflow: hidden; }
+.copy { position: absolute; left: 0; right: 0; top: 0; text-align: center; padding: 0 92px; z-index: 30; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 22px;
+  font: 600 38px/1 "Jost", sans-serif; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold-light);
+}
+.eyebrow .gem { width: 20px; height: 20px; }
+
+.title {
+  font: 600 128px/1.03 "Jost", sans-serif; letter-spacing: -0.028em; color: var(--ivory);
+  text-wrap: balance; margin-top: 38px;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45);
+}
+.sub {
+  font: 400 53px/1.3 "Jost", sans-serif; color: var(--ivory-2); letter-spacing: -0.005em;
+  text-wrap: balance; margin: 34px auto 0; max-width: 1120px;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- the drawn gem (never a typed character) ---------- */
+.gem {
+  display: inline-block; transform: rotate(45deg); border-radius: 12%;
+  background: linear-gradient(135deg, #f1dcaa 0%, #c9a96e 45%, #8a6d3e 100%);
+  box-shadow: 0 0 18px rgba(226, 200, 146, 0.35);
+  flex: none;
+}
+
+/* ---------- wordmark: "Guest" + drawn gem + italic "ly" ---------- */
+.wordmark {
+  display: inline-flex; align-items: baseline; color: var(--ivory);
+  font-family: "Cormorant", serif; font-weight: 500; letter-spacing: -0.01em; line-height: 1;
+}
+.wordmark .wm-gem { align-self: center; margin: 0 0.2em 0 0.22em; width: 0.24em !important; height: 0.24em !important; position: relative; top: 0.02em; }
+.wordmark em { font-style: italic; font-weight: 500; }
+.wordmark sup { font-family: "Jost", sans-serif; font-size: 0.16em; font-weight: 500; letter-spacing: 0; margin-left: 0.18em; align-self: flex-start; position: relative; top: 0.35em; color: var(--ivory-2); }
+
+/* ---------- device: iPhone 17 Pro Max style, drawn in CSS ---------- */
+.device { position: absolute; z-index: 10; }
+.device .frame {
+  position: relative; border-radius: var(--r-out); padding: var(--t);
+  background:
+    linear-gradient(135deg, #b9bcc2 0%, #5d6168 12%, #2d3036 30%, #474a51 52%, #2a2c31 74%, #8f9299 94%, #cfd2d7 100%);
+  box-shadow:
+    0 90px 160px rgba(0, 0, 0, 0.62),
+    0 30px 60px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.28),
+    inset 0 0 6px rgba(0, 0, 0, 0.6);
+}
+.device .bezel { position: relative; background: #000; border-radius: var(--r-mid); padding: var(--b); }
+.device .screen { position: relative; border-radius: var(--r-in); overflow: hidden; background: #000; }
+.device .screen img { display: block; width: 100%; height: auto; }
+.device .island {
+  position: absolute; left: 50%; transform: translateX(-50%); background: #000; border-radius: 999px; z-index: 3;
+}
+.device .island::after { /* camera lens glint */
+  content: ""; position: absolute; top: 50%; right: 22%; width: 28%; height: 44%; transform: translateY(-50%);
+  border-radius: 999px; background: radial-gradient(circle at 70% 50%, rgba(40, 50, 80, 0.9) 0 18%, transparent 19%);
+}
+.device .soft {
+  position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none;
+  backdrop-filter: blur(9px) brightness(0.42) saturate(0.8);
+  -webkit-backdrop-filter: blur(9px) brightness(0.42) saturate(0.8);
+}
+.device .fade { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.device .glass { /* faint reflection across the screen */
+  position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: var(--r-in);
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 38%);
+}
+.device .btn {
+  position: absolute; width: var(--bw); border-radius: 3px;
+  background: linear-gradient(90deg, #3c3f45, #9a9da3 45%, #3c3f45);
+}
+
+/* ---------- lifted callouts cut from the real screens ---------- */
+.callout { position: absolute; z-index: 20; }
+.callout .lift {
+  border-radius: var(--cr); overflow: hidden; background: #111;
+  box-shadow:
+    0 60px 110px rgba(0, 0, 0, 0.62),
+    0 18px 36px rgba(0, 0, 0, 0.45),
+    0 0 0 1.5px rgba(226, 200, 146, 0.28);
+}
+.callout img { display: block; width: 100%; height: auto; }
+
+/* ---------- ivory chapter panels (couples, planners): rhythm in a dark set ---------- */
+.panel.ivory {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 62%, #fffaf0 0%, rgba(255, 250, 240, 0) 70%),
+    linear-gradient(180deg, #f4efe5 0%, #efe8db 55%, #e6dccb 100%);
+}
+.panel.ivory .title { color: #14110c; text-shadow: none; }
+.panel.ivory .sub { color: #5a5243; text-shadow: none; }
+.panel.ivory .eyebrow { color: #8a6d3e; }
+.panel.ivory .device .frame {
+  box-shadow:
+    0 80px 140px rgba(40, 30, 15, 0.32),
+    0 24px 48px rgba(40, 30, 15, 0.22),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.35),
+    inset 0 0 6px rgba(0, 0, 0, 0.6);
+}
+.panel.ivory .callout .lift {
+  box-shadow:
+    0 50px 90px rgba(40, 30, 15, 0.34),
+    0 14px 28px rgba(40, 30, 15, 0.22),
+    0 0 0 1.5px rgba(138, 109, 62, 0.35);
+}

@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Guest-ly App Store set</title>
+<link rel="stylesheet" href="styles.css">
+<script src="boxes.js"></script>
+<script src="panels.js"></script>
+</head>
+<body>
+<div id="strip"></div>
+<script>
+// index.html?lang=en|es  renders all panels side by side (panel i starts at x = 1320 * i).
+// render.mjs screenshots each 1320 x 2868 slice. Open in a browser to inspect.
+const PW = 1320, PH = 2868, NATIVE = 1320;
+const params = new URLSearchParams(location.search);
+const lang = params.get("lang") === "es" ? "es" : "en";
+const only = params.get("only"); // optional: render a single panel id
+const panels = only ? PANELS.filter((p) => p.id === only) : PANELS;
+document.documentElement.lang = lang === "es" ? "es-MX" : "en";
+document.body.style.setProperty("--n", panels.length);
+const strip = document.getElementById("strip");
+const el = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
+// Corner radii in native px (TL TR BR BL), matching the app's own shapes:
+// chat bubbles are 18 pt with one 4 pt tail corner, cards 18 pt, buttons pills.
+const ME = [54, 54, 12, 54], BOT = [54, 54, 54, 12];
+const radiusFor = {
+  decline: [999, 999, 999, 999], approve: [999, 999, 999, 999],
+  "question-shuttle": ME, "guest-question": ME,
+  "answer-shuttle": BOT, "answer-parking": BOT,
+};
+
+// ---------- backdrops ----------
+for (const b of BACKDROPS) {
+  const ids = PANELS.map((p) => p.id);
+  // map the design indices onto the rendered subset
+  const first = panels.findIndex((p) => ids.indexOf(p.id) >= b.from && ids.indexOf(p.id) < b.to);
+  if (first < 0) continue;
+  const count = panels.filter((p) => ids.indexOf(p.id) >= b.from && ids.indexOf(p.id) < b.to).length;
+  const d = el("div", "backdrop", strip);
+  Object.assign(d.style, { left: first * PW + "px", width: count * PW + "px", height: b.h + "px" });
+  const img = el("img", "", d);
+  img.src = "assets/photos/" + b.img;
+  img.style.objectPosition = b.pos;
+  img.style.filter = `brightness(${b.dim}) saturate(0.92) contrast(1.06)`;
+  // text scrim at the top, fade into ink at the bottom
+  const s = el("div", "", d);
+  Object.assign(s.style, {
+    position: "absolute", inset: 0,
+    background: `linear-gradient(180deg, rgba(9,11,16,0.62) 0%, rgba(9,11,16,0.28) 18%, rgba(9,11,16,0.10) 34%, rgba(9,11,16,0.35) 58%, rgba(9,11,16,0.92) 86%, #090b10 100%)`,
+  });
+}
+
+// ---------- grain ----------
+const noise = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>`;
+
+// ---------- helpers ----------
+function gem(size) { const g = el("span", "gem"); g.style.width = g.style.height = size + "px"; return g; }
+
+function wordmark(sizePx, tm) {
+  const w = el("div", "wordmark");
+  w.style.fontSize = sizePx + "px";
+  w.append("Guest");
+  const g = el("span", "gem wm-gem", w);
+  const em = el("em", "", w); em.textContent = "ly";
+  if (tm) { const s = el("sup", "", w); s.textContent = "TM"; }
+  return w;
+}
+
+function device(parent, d, z) {
+  const s = d.w / NATIVE;                       // screen scale
+  const t = Math.round(d.w * 0.017);            // titanium band
+  const b = Math.round(d.w * 0.019);            // black bezel
+  const rIn = Math.round(172 * s);              // display corner radius (~57 pt)
+  const wrap = el("div", "device", parent);
+  wrap.style.left = d.x + "px"; wrap.style.top = d.y + "px";
+  wrap.style.width = d.w + 2 * (t + b) + "px";
+  wrap.style.transform = `rotate(${d.rot || 0}deg)`;
+  wrap.style.zIndex = z;
+  wrap.style.setProperty("--t", t + "px"); wrap.style.setProperty("--b", b + "px");
+  wrap.style.setProperty("--r-in", rIn + "px"); wrap.style.setProperty("--r-mid", rIn + b + "px"); wrap.style.setProperty("--r-out", rIn + b + t + "px");
+  wrap.style.setProperty("--bw", Math.max(5, Math.round(d.w * 0.007)) + "px");
+  const frame = el("div", "frame", wrap);
+  const bezel = el("div", "bezel", frame);
+  const screen = el("div", "screen", bezel);
+  const img = el("img", "", screen); img.src = `assets/screens/${lang}/${d.screen}.jpg`;
+  // soft: [[y0, y1], ...] in native px. The screen under a lifted card is blurred
+  // and dimmed (feathered edges), so nothing half-covered stays legible.
+  const soft = typeof d.soft === "function" ? d.soft(lang) : d.soft;
+  for (const [y0, y1] of soft || []) {
+    const f = el("div", "soft", screen);
+    const fe = Math.min(90, (y1 - y0) / 4) * s;
+    Object.assign(f.style, { top: y0 * s + "px", height: (y1 - y0) * s + "px" });
+    const m = `linear-gradient(180deg, transparent 0, #000 ${fe}px, #000 calc(100% - ${fe}px), transparent 100%)`;
+    f.style.maskImage = m; f.style.webkitMaskImage = m;
+  }
+  // fade: native y from which the screen sinks into the night (the hook's lower half).
+  if (d.fade) {
+    const f = el("div", "fade", screen);
+    const y0 = d.fade * s, y1 = (d.fade + 160) * s;
+    f.style.background = `linear-gradient(180deg, rgba(9,11,16,0) ${y0}px, rgba(9,11,16,0.96) ${y1}px, rgba(9,11,16,0.96) 100%)`;
+  }
+  el("div", "glass", screen);
+  const island = el("div", "island", screen);
+  Object.assign(island.style, { width: 378 * s + "px", height: 111 * s + "px", top: 33 * s + "px" });
+  // side buttons, as fractions of the frame height (17 Pro Max layout)
+  const H = PH * s + 2 * (t + b);
+  const bw = Math.max(5, Math.round(d.w * 0.007));
+  const btn = (side, from, to) => {
+    const e = el("div", "btn", wrap);
+    Object.assign(e.style, { top: from * H + "px", height: (to - from) * H + "px", [side]: -bw + 1 + "px" });
+  };
+  btn("left", 0.16, 0.2); btn("left", 0.245, 0.315); btn("left", 0.34, 0.41);
+  btn("right", 0.27, 0.37); btn("right", 0.55, 0.62);
+  return { x: d.x + t + b, y: d.y + t + b, s };
+}
+
+function callout(parent, c, devs) {
+  const box = BOXES[lang][c.img];
+  if (!box) { console.warn("missing callout", c.img); return; }
+  let x, y, w;
+  if (c.from !== undefined) {
+    const dv = devs[c.from];
+    const scale = dv.s * c.k;
+    w = box.w * scale;
+    // centre of the source rectangle inside the device, in panel px
+    const cx = dv.x + (box.box[0] + box.w / 2) * dv.s;
+    const cy = dv.y + (box.box[1] + box.h / 2) * dv.s;
+    x = cx - w / 2 + (c.dx || 0);
+    y = cy - (box.h * scale) / 2 + (c.dy || 0);
+  } else { x = c.x; y = c.y; w = c.w; }
+  const scale = w / box.w;
+  const e = el("div", "callout", parent);
+  Object.assign(e.style, { left: x + "px", top: y + "px", width: w + "px", transform: `rotate(${c.rot || 0}deg)` });
+  const r = (radiusFor[c.img] ?? [54, 54, 54, 54]).map((v) => (v >= 999 ? 999 : v * scale) + "px").join(" ");
+  const lift = el("div", "lift", e); lift.style.borderRadius = r;
+  const img = el("img", "", lift); img.src = `assets/callouts/${lang}/${c.img}.png`;
+}
+
+// ---------- panels ----------
+panels.forEach((p, i) => {
+  const P = el("div", "panel", strip);
+  P.style.left = i * PW + "px";
+  P.dataset.id = p.id;
+  if (p.theme === "ivory") P.classList.add("ivory");
+
+  // light pooled behind the phones
+  const glow = el("div", "glow", P);
+  Object.assign(glow.style, { left: "110px", top: "1100px", width: "1100px", height: "1300px",
+    background: p.theme === "ivory"
+      ? "radial-gradient(ellipse at center, rgba(201,169,110,0.25), rgba(201,169,110,0) 65%)"
+      : "radial-gradient(ellipse at center, rgba(226,200,146,0.22), rgba(226,200,146,0) 65%)" });
+
+  const copy = el("div", "copy", P);
+  if (p.hook || p.closing) {
+    copy.style.paddingTop = (p.hook ? 150 : 170) + "px";
+    copy.appendChild(wordmark(p.hook ? 118 : 104, !!p.hook));
+    const t = el("div", "title", copy); t.innerHTML = p.title[lang];
+    if (p.hook) { t.style.fontSize = "148px"; t.style.marginTop = "70px"; t.style.lineHeight = "1.0"; }
+    else t.style.marginTop = "56px";
+    const s = el("div", "sub", copy); s.textContent = p.sub[lang];
+  } else {
+    copy.style.paddingTop = "150px";
+    const e = el("div", "eyebrow", copy); e.appendChild(gem(20)); e.append(p.eyebrow[lang]);
+    const t = el("div", "title", copy); t.innerHTML = p.title[lang];
+    const s = el("div", "sub", copy); s.textContent = p.sub[lang];
+  }
+
+  const devs = p.devices.map((d, k) => device(P, d, d.z ?? 10 + k));
+  p.callouts.forEach((c) => callout(P, c, devs));
+});
+
+const grain = el("div", "grain", strip);
+grain.style.backgroundImage = `url("data:image/svg+xml;utf8,${noise.replace(/"/g, "'").replace(/#/g, "%23")}")`;
+grain.style.zIndex = 5;
+
+// render.mjs waits for this flag
+Promise.all([document.fonts.ready, ...[...document.images].map((im) => im.decode().catch(() => {}))]).then(() => {
+  document.body.dataset.ready = "1";
+});
+</script>
+</body>
+</html>
