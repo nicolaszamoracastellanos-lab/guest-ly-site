@@ -10,7 +10,7 @@ import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { Screen, T, Row, Wordmark, IconButton, Badge, Icon, StatTile, Card, Banner, Skeleton, SectionLabel, BriefingRow, useBubbleAvoid } from "@/ui";
-import { colors, FILL } from "@/ui/tokens";
+import { colors, FILL, COVER } from "@/ui/tokens";
 
 const photo = require("../../../assets/photos/hands.jpg");
 
@@ -37,9 +37,15 @@ export default function CoupleHome() {
 
   return (
     <Screen query={mainQuery} padded={false}>
-      <View style={styles.hero}>
-        <Image source={photo} style={FILL} resizeMode="cover" />
-        <LinearGradient colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.7, 1]} style={FILL} />
+      {/* Flow layout: the names push the hero taller instead of sitting at a
+          fixed offset, where a two-line couple name ran over the status badge
+          and under the briefing (Sep 30, iPhone screenshot). */}
+      <View style={[styles.hero, { paddingTop: top + 90 }]}>
+        {/* COVER, not FILL, on the wrapper: the hero has padding (see tokens.ts). */}
+        <View style={COVER}>
+          <Image source={photo} style={FILL} resizeMode="cover" />
+          <LinearGradient colors={["rgba(8,11,16,0.3)", "rgba(8,11,16,0.05)", "rgba(13,17,23,0.7)", colors.night]} locations={[0, 0.35, 0.7, 1]} style={COVER} />
+        </View>
         <Row style={[styles.top, { top }]}>
           <Wordmark height={20} />
           <IconButton name="bell" badge={(data?.needs_you ?? 0) > 0} onPress={() => router.push("/couple/messages")} label={copy.coupleHome.tabs.messages} />
@@ -130,7 +136,7 @@ export default function CoupleHome() {
 }
 
 const styles = StyleSheet.create({
-  hero: { overflow: "hidden", height: 330 },
+  hero: { overflow: "hidden", minHeight: 330, paddingBottom: 28, justifyContent: "flex-end" },
   top: { position: "absolute", left: 24, right: 20, justifyContent: "space-between" },
-  headline: { position: "absolute", left: 24, right: 24, top: 196 },
+  headline: { paddingHorizontal: 24 },
 });
