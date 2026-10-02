@@ -25,6 +25,7 @@ import {
   SectionLabel,
   StatTile,
   Sheet,
+  SheetActions,
   Input,
   Segmented,
   ListRow,
@@ -165,11 +166,11 @@ export default function SeatingIndex() {
     n === 1 ? c.person : fmt(c.people, { n });
 
   return (
-    <Screen query={mainQuery}
+    <Screen query={mainQuery} refresh
       header={
         <TopBar
           onBack={back}
-          title={app.coupleHome.tabs.more}
+          title={c.title}
           right={
             draft.dirty && canEdit ? (
               <Button
@@ -414,8 +415,13 @@ export default function SeatingIndex() {
         </>
       ) : null}
 
-      <Sheet visible={addOpen && canEdit} onClose={() => setAddOpen(false)} top={220}>
-        <Stack gap={12} style={{ paddingHorizontal: 20 }}>
+      <Sheet
+        visible={addOpen && canEdit}
+        onClose={() => setAddOpen(false)}
+        top={220}
+        footer={<SheetActions onCancel={() => setAddOpen(false)} onSave={addTable} saveLabel={c.addTable} />}
+      >
+        <Stack gap={12}>
           <T v="title26">{c.addTable}</T>
           <SectionLabel>{c.tableName}</SectionLabel>
           <Input accessibilityLabel={c.tableName}
@@ -441,12 +447,6 @@ export default function SeatingIndex() {
               { value: "rect", label: c.rect },
             ]}
             onChange={setShape}
-          />
-          <Button
-            label={c.addTable}
-            icon="plus"
-            onPress={addTable}
-            style={{ marginTop: 6 }}
           />
         </Stack>
       </Sheet>

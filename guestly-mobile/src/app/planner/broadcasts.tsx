@@ -4,7 +4,7 @@
 import React from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, plural, relTime, useLang, useCopy } from "@/i18n";
+import { fmt, plural, relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Button, EmptyState, Skeleton, Stack, SectionLabel, T, Chip, ChipRow } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -15,7 +15,6 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerBroadcasts() {
   const c = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -24,7 +23,7 @@ export default function PlannerBroadcasts() {
   const history = data?.history ?? [];
 
   return (
-    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={app.planner.tabs.more} />}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} />}>
       <BigTitle title={c.plannerTitle} sub={c.plannerSubtitle} />
       <Button label={c.plannerRequest} icon="megaphone" onPress={() => router.push({ pathname: "/planner/requests/new", params: { kind: "send_reminders" } })} style={{ marginTop: 18 }} />
       {data ? (

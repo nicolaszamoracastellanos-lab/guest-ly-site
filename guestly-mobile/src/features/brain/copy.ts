@@ -1,7 +1,7 @@
-// Wedding Brain copy. ES uses tú.
+// "What your concierge knows" (the knowledge editor, once "Wedding brain") copy. ES uses tú.
 export const COPY = {
   en: {
-    title: "Wedding brain",
+    title: "What your concierge knows",
     subtitle: "Everything your concierge knows. Edit, preview, publish.",
     live: (v: number) => `Version ${v} is live`,
     nothingLive: "Nothing published yet. Guests get no answers until you publish.",
@@ -22,7 +22,7 @@ export const COPY = {
     versions: "Version history",
     preview: "Ask the concierge",
     previewSub: "Test the live bot, or preview your unpublished edits.",
-    readOnly: "You can read the brain but only owners and admins can edit it.",
+    readOnly: "You can read this, but only owners and admins can edit it.",
     section: {
       couple: "Couple and date",
       itinerary: "Itinerary",
@@ -119,7 +119,7 @@ export const COPY = {
     yes: "Yes",
   },
   es: {
-    title: "Cerebro de la boda",
+    title: "Lo que sabe tu concierge",
     subtitle: "Todo lo que sabe tu concierge. Edita, prueba, publica.",
     live: (v: number) => `La versión ${v} está en vivo`,
     nothingLive: "Todavía no hay nada publicado. Los invitados no reciben respuestas hasta que publiques.",
@@ -140,7 +140,7 @@ export const COPY = {
     versions: "Historial de versiones",
     preview: "Pregúntale al concierge",
     previewSub: "Prueba el bot en vivo o tus cambios sin publicar.",
-    readOnly: "Puedes leer el cerebro, pero solo los dueños y administradores pueden editarlo.",
+    readOnly: "Puedes leer esto, pero solo los dueños y administradores pueden editarlo.",
     section: {
       couple: "Pareja y fecha",
       itinerary: "Itinerario",

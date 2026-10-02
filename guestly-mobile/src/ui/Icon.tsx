@@ -8,7 +8,7 @@ import { colors } from "./tokens";
 export type IconName =
   | "home" | "guests" | "mail" | "chat" | "more" | "calendar" | "calendar-plus" | "pin" | "bell" | "chev"
   | "back" | "down" | "search" | "sparkle" | "hanger" | "bus" | "qr" | "check" | "clock" | "wallet" | "tasks"
-  | "plus" | "x" | "filter" | "map" | "camera" | "share" | "phone" | "contacts" | "lock" | "warning" | "info"
+  | "plus" | "x" | "x-circle" | "filter" | "map" | "camera" | "share" | "phone" | "contacts" | "lock" | "warning" | "info"
   | "edit" | "coins" | "grid" | "store" | "list" | "megaphone" | "globe" | "book" | "gear" | "signout"
   | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo";
 
@@ -42,6 +42,7 @@ export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 
       case "tasks": return <><Path {...p} d="M4.5 7.5 6 9l3-3M4.5 13.5 6 15l3-3M4.5 19.5 6 21l3-3" /><Path {...p} d="M12 7h8M12 13h8M12 19h8" /></>;
       case "plus": return <Path {...p} d="M12 5v14M5 12h14" />;
       case "x": return <Path {...p} d="M6 6l12 12M18 6 6 18" />;
+      case "x-circle": return <><Circle {...p} cx="12" cy="12" r="8.5" /><Path {...p} d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6" /></>;
       case "filter": return <Path {...p} d="M4 7h16M7 12h10M10 17h4" />;
       case "map": return <><Path {...p} d="m3.5 6 5.5-2 6 2 5.5-2v14l-5.5 2-6-2-5.5 2z" /><Path {...p} d="M9 4v14M15 6v14" /></>;
       case "camera": return <><Path {...p} d="M4 8.5h3l1.5-2.5h7L17 8.5h3v10H4z" /><Circle {...p} cx="12" cy="13" r="3" /></>;

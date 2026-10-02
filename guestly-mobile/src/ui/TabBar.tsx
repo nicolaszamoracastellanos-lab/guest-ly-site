@@ -8,6 +8,14 @@
 // long Spanish label shrinks a little instead of running into its neighbour.
 // On wide windows the bar is a centered 520 pt pill, not a full-width strip.
 //
+// v1.2 (audit N3, N26):
+// - A section that is not a tab itself (Tasks, Budget, Day-of... declared with
+//   `href: null`) lights the tab it belongs to: the spec whose `owns` lists it,
+//   else More. Before, no tab was lit inside them and people lost their place.
+// - Tapping a tab you are not on opens it at its first screen (its list), not
+//   at a screen another tab pushed into it earlier. Tapping the tab you are on
+//   pops it to its list (the stack does that on tabPress).
+//
 // Tabs' tabBar prop is a render function that the navigator CALLS (it is not
 // mounted as a component), so hooks cannot live in that function. The
 // layouts pass `(props) => <GlassTabBar {...props} specs={...} />` and this
@@ -32,7 +40,20 @@ export type TabSpec = {
   icon: IconName;
   label: string;
   badge?: number;
+  /** Hidden routes (route names in the same Tabs) that light this tab while
+   *  open. Hidden routes no spec owns light the "more" tab. */
+  owns?: string[];
 };
+
+type NestedState = { key?: string; index?: number; type?: string };
+
+/** Which spec is lit for the focused route. */
+function litSpecName(routeName: string, specs: TabSpec[]): string | null {
+  if (specs.some((s) => s.name === routeName)) return routeName;
+  const owner = specs.find((s) => s.owns?.includes(routeName));
+  if (owner) return owner.name;
+  return specs.some((s) => s.name === "more") ? "more" : null;
+}
 
 export function GlassTabBar({
   state,
@@ -59,13 +80,15 @@ export function GlassTabBar({
           const spec = specs.find((s) => s.name === route.name);
           if (!spec) return null;
           const focused = state.index === index;
-          const color = focused ? colors.goldLight : colors.ivory55;
+          // Lit: this tab, or the tab the open hidden section belongs to.
+          const lit = focused || litSpecName(state.routes[state.index]?.name ?? "", specs) === route.name;
+          const color = lit ? colors.goldLight : colors.ivory55;
           return (
             <Pressable
               key={route.key}
               testID={`tab-${route.name}`}
               accessibilityRole="tab"
-              accessibilityState={{ selected: focused }}
+              accessibilityState={{ selected: lit }}
               accessibilityLabel={spec.label}
               onPress={() => {
                 void Haptics.selectionAsync();
@@ -74,8 +97,14 @@ export function GlassTabBar({
                   target: route.key,
                   canPreventDefault: true,
                 });
-                if (!focused && !event.defaultPrevented)
-                  navigation.navigate(route.name);
+                if (focused || event.defaultPrevented) return;
+                // Back to the tab's own list: a screen pushed into it from
+                // another tab (Guests to RSVP questions) does not linger.
+                const nested = (route as { state?: NestedState }).state;
+                if (nested?.key && nested.type === "stack" && (nested.index ?? 0) > 0) {
+                  navigation.dispatch({ type: "POP_TO_TOP", target: nested.key });
+                }
+                navigation.navigate(route.name);
               }}
               style={styles.tab}
             >

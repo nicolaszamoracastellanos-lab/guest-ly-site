@@ -3,7 +3,7 @@
 import React, { memo, useCallback, useMemo, useState } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, useLang, useCopy } from "@/i18n";
+import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Input, ListRow, StatTile, Badge, Chip, ChipRow, Banner, EmptyState, Skeleton, Avatar } from "@/ui";
@@ -25,7 +25,6 @@ function fold(s: string): string {
 
 export function VendorsListScreen() {
   const copy = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -67,13 +66,8 @@ export function VendorsListScreen() {
   const { booked, quotedTotal, bookedTotal } = stats;
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} right={canEdit ? <IconButton name="plus" label={copy.add} onPress={() => router.push({ pathname: "/couple/vendors/new" as never })} /> : undefined} />}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} right={canEdit ? <IconButton name="plus" label={copy.add} onPress={() => router.push({ pathname: "/couple/vendors/new" as never })} /> : undefined} />}>
       <BigTitle title={copy.title} sub={copy.subtitle} size={38} />
-      {!online ? (
-        <View style={{ marginTop: 14 }}>
-          <Banner icon="wifi-off" title={copy.offline} />
-        </View>
-      ) : null}
       {data?.pending ? (
         <View style={{ marginTop: 14 }}>
           <Banner icon="clock" title={copy.pending} />

@@ -1,8 +1,14 @@
 // Concierge chat: proxies to the engine through the portal. Quick chips,
 // typing indicator, escalation bubble. Drafts survive an app restart.
+//
+// v1.2 (K3): while the keyboard is up the intro row and the quick chips step
+// aside (they left about 150 pt of conversation), and the newest message stays
+// in view: the list scrolls to the end when the keyboard opens and whenever it
+// shrinks while the guest was reading the end. Before, the answer just
+// received slid under the composer as the keyboard rose.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator, Keyboard } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -85,6 +91,16 @@ export default function Concierge() {
     const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(t);
   }, [turns, busy]);
+  // Following the end of the chat: true until the guest scrolls up to read.
+  const atEnd = useRef(true);
+  const toEnd = useCallback((animated: boolean) => scroll.current?.scrollToEnd({ animated }), []);
+  useEffect(() => {
+    const sub = Keyboard.addListener("keyboardDidShow", () => {
+      atEnd.current = true;
+      toEnd(true);
+    });
+    return () => sub.remove();
+  }, [toEnd]);
 
   const send = useCallback(async (text: string, retrying = false) => {
     const msg = text.trim();
@@ -141,17 +157,40 @@ export default function Concierge() {
       header={<TopBar onBack={back} right={<IconButton name="chat" onPress={() => router.push("/guest/messages")} label={copy.messages.title} />} />}
     >
       <KeyboardFill>
-        <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
-          <Avatar gem size={44} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <T v="title26">{copy.concierge.title}</T>
-            <T v="meta13" color={colors.ivory55}>
-              {copy.concierge.subtitle}
-            </T>
-          </View>
-        </Row>
-        <Hairline />
-        <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, gap: 10 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+        {/* The intro steps aside while typing: the conversation gets the room. */}
+        {keyboardOpen ? null : (
+          <>
+            <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
+              <Avatar gem size={44} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <T v="title26">{copy.concierge.title}</T>
+                <T v="meta13" color={colors.ivory55}>
+                  {copy.concierge.subtitle}
+                </T>
+              </View>
+            </Row>
+            <Hairline />
+          </>
+        )}
+        <ScrollView
+          ref={scroll}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, gap: 10 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          scrollEventThrottle={64}
+          onScroll={(e) => {
+            const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
+            atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
+          }}
+          // The list shrinks as the keyboard rises: keep the newest message in view.
+          onLayout={() => {
+            if (atEnd.current) toEnd(false);
+          }}
+          onContentSizeChange={() => {
+            if (atEnd.current) toEnd(true);
+          }}
+        >
           <Bubble role="assistant" text={fmt(copy.concierge.hello, { name })} />
           {turns.map((t, i) => (
             <Bubble
@@ -180,12 +219,15 @@ export default function Concierge() {
             </Row>
           ) : null}
         </ScrollView>
-        <View style={{ paddingHorizontal: 20, paddingBottom: bottomPad, gap: 8 }}>
-          <ChipRow>
-            {chips.map((c) => (
-              <Chip key={c} label={c} onPress={() => send(c)} />
-            ))}
-          </ChipRow>
+        <View style={{ paddingHorizontal: 20, paddingTop: keyboardOpen ? 8 : 0, paddingBottom: bottomPad, gap: 8 }}>
+          {/* Quick questions are for before typing; while typing they only took space. */}
+          {keyboardOpen ? null : (
+            <ChipRow>
+              {chips.map((c) => (
+                <Chip key={c} label={c} onPress={() => send(c)} />
+              ))}
+            </ChipRow>
+          )}
           <Input
             value={draft}
             onChangeText={setDraft}

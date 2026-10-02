@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { fmt, useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Sheet, Skeleton, SectionLabel, Toggle, Input, Icon, Hairline, ListRow, Avatar, EmptyState, Field } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Sheet, Skeleton, SectionLabel, Toggle, Input, Icon, Hairline, ListRow, Avatar, EmptyState, Field, SheetActions } from "@/ui";
 import { DateInput } from "@/ui/Pickers";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
@@ -14,6 +14,7 @@ import { useBudgetSurface, useBudgetWrites, useBudgetBase, findComputedItem, typ
 import { formatMoney, formatDay, parseAmount, numText, todayIso, isIsoDate } from "../money";
 import { StatusBadge, TextField, Options, ConfirmSheet, KeyValue, useAction } from "../ui";
 import { useSafeBack } from "@/lib/nav";
+import { CategoryOptions, NO_CATEGORY } from "../AddLineSheet";
 import { useUnsavedGuard } from "@/lib/unsaved";
 
 const STATUSES: ItemStatus[] = ["quoted", "confirmed", "pending", "cancelled"];
@@ -30,6 +31,7 @@ function formFrom(row: ItemRow) {
     currency: row.currency ?? "",
     status: row.status,
     note: row.note ?? "",
+    category: row.category_id ?? NO_CATEGORY,
   };
 }
 
@@ -79,7 +81,9 @@ export function BudgetItemScreen() {
     const body = {
       budget_id: active.budget.id,
       title: form.title.trim(),
-      category_id: row.category_id,
+      // A top line can move to another category (N15); a line inside another
+      // follows its parent.
+      category_id: row.parent_id ? row.category_id : form.category === NO_CATEGORY ? null : form.category,
       parent_id: row.parent_id,
       qty: form.qty.trim() ? parseAmount(form.qty) : null,
       unit_price: form.unit_price.trim() ? parseAmount(form.unit_price) : null,
@@ -176,6 +180,11 @@ export function BudgetItemScreen() {
             <Stack gap={10}>
               <TextField label={copy.itemTitle} value={form.title} onChange={(v) => setForm({ ...form, title: v })} autoCapitalize="sentences" editable={mayEdit} />
               <TextField label={copy.vendor} value={form.vendor} onChange={(v) => setForm({ ...form, vendor: v })} autoCapitalize="words" editable={mayEdit} />
+              {!row.parent_id && active ? (
+                <Field label={copy.category}>
+                  <CategoryOptions categories={active.categories} value={form.category} onChange={(v) => setForm({ ...form, category: v })} disabled={!mayEdit} />
+                </Field>
+              ) : null}
               <Row gap={8}>
                 <View style={{ flex: 1 }}>
                   <TextField label={copy.qty} value={form.qty} onChange={(v) => setForm({ ...form, qty: v })} keyboardType="decimal-pad" editable={mayEdit} />
@@ -314,8 +323,8 @@ export function BudgetItemScreen() {
         ) : null}
       </>
 
-      <Sheet visible={payOpen} onClose={() => setPayOpen(false)} top={90}>
-        <View style={{ paddingHorizontal: 24, gap: 12 }}>
+      <Sheet visible={payOpen} onClose={() => setPayOpen(false)} top={90} footer={<SheetActions onCancel={() => setPayOpen(false)} onSave={addPayment} saving={busy} disabled={!(parseAmount(pay.amount) ?? 0) || !isIsoDate(pay.paid_on.trim())} cancelLabel={copy.cancel} saveLabel={copy.save} />}>
+        <View style={{ gap: 12 }}>
           <T v="title26">{copy.addPayment}</T>
           <TextField label={copy.amount} value={pay.amount} onChange={(v) => setPay({ ...pay, amount: v })} keyboardType="decimal-pad" />
           {/* The system calendar (ui/Pickers), stored as YYYY-MM-DD. */}
@@ -326,19 +335,11 @@ export function BudgetItemScreen() {
           <TextField label={copy.method} value={pay.method} onChange={(v) => setPay({ ...pay, method: v })} />
           <TextField label={copy.paidBy} value={pay.paid_by} onChange={(v) => setPay({ ...pay, paid_by: v })} autoCapitalize="words" />
           <Toggle value={pay.reimbursable} onChange={(v) => setPay({ ...pay, reimbursable: v })} label={copy.reimbursable} />
-          <Row gap={8} style={{ marginTop: 4 }}>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.cancel} kind="ghost" onPress={() => setPayOpen(false)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.save} onPress={addPayment} loading={busy} disabled={!(parseAmount(pay.amount) ?? 0) || !isIsoDate(pay.paid_on.trim())} />
-            </View>
-          </Row>
         </View>
       </Sheet>
 
-      <Sheet visible={subOpen} onClose={() => setSubOpen(false)} top={160}>
-        <View style={{ paddingHorizontal: 24, gap: 12 }}>
+      <Sheet visible={subOpen} onClose={() => setSubOpen(false)} top={160} footer={<SheetActions onCancel={() => setSubOpen(false)} onSave={addSub} saving={busy} disabled={!sub.title.trim()} cancelLabel={copy.cancel} saveLabel={copy.save} />}>
+        <View style={{ gap: 12 }}>
           <T v="title26">{copy.addSubItem}</T>
           <TextField label={copy.itemTitle} value={sub.title} onChange={(v) => setSub({ ...sub, title: v })} autoCapitalize="sentences" />
           <Row gap={8}>
@@ -350,14 +351,6 @@ export function BudgetItemScreen() {
             </View>
           </Row>
           <TextField label={copy.amountOverride} value={sub.amount_override} onChange={(v) => setSub({ ...sub, amount_override: v })} keyboardType="decimal-pad" />
-          <Row gap={8} style={{ marginTop: 4 }}>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.cancel} kind="ghost" onPress={() => setSubOpen(false)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.save} onPress={addSub} loading={busy} disabled={!sub.title.trim()} />
-            </View>
-          </Row>
         </View>
       </Sheet>
 

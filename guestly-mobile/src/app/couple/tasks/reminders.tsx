@@ -7,9 +7,8 @@ import * as Clipboard from "expo-clipboard";
 import { useLang, zoneLabel } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
-import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Banner, Skeleton, Card, T, Row, Toggle, SectionLabel } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Toggle, SectionLabel } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
@@ -36,7 +35,6 @@ export default function Reminders() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const online = useOnline();
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const mainQuery = useTasksBoard();
@@ -86,7 +84,6 @@ export default function Reminders() {
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
       <BigTitle title={copy.reminders} size={34} />
-      {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <Stack gap={16} style={{ marginTop: 20 }}>
         {isLoading && !board ? <Skeleton h={120} r={18} /> : null}
         {board ? (

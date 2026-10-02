@@ -13,7 +13,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, KeyboardFill, renderInlineBold } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, KeyboardFill, useKeyboardOpen, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
@@ -228,7 +228,11 @@ export default function AssistantScreen() {
   }
 
   const chips = surface === "planner" ? copy.chipsPlanner : copy.chips;
-  const bottomPad = Math.max(insets.bottom, 12) + 8;
+  // The home indicator padding only applies at rest. With the keyboard up it
+  // covers the indicator, and the same padding left the reply box floating
+  // about 53 pt above the keys (K5).
+  const keyboardOpen = useKeyboardOpen();
+  const bottomPad = keyboardOpen ? 8 : Math.max(insets.bottom, 12) + 8;
   const showEmpty = !busy && items.length === 0 && (!sessionId || detailQ.isFetched);
 
   return (

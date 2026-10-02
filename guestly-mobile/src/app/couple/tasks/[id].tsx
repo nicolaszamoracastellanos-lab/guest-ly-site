@@ -9,7 +9,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Button, Stack, Banner, Skeleton, Row, Badge, T, EmptyState } from "@/ui";
+import { Screen, TopBar, Button, Stack, Skeleton, Row, Badge, T, EmptyState } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskView } from "@/features/tasks/hooks";
@@ -108,7 +108,6 @@ export default function TaskDetail() {
       {board && !task ? <EmptyState title={copy.notFound} /> : null}
       {task && form ? (
         <Stack gap={18}>
-          {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
           <Row gap={8} style={{ flexWrap: "wrap" }}>
             <Badge label={copy.statuses[task.status]} kind={task.status === "done" ? "green" : task.status === "blocked" ? "amber" : "gold"} />
             {task.template_key ? <Badge label={copy.checklist} kind="mute" /> : null}

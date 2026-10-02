@@ -13,6 +13,7 @@ import { Screen, BigTitle, Card, ListRow, Icon, LangToggle, Toggle, Footer, Stac
 import { colors } from "@/ui/tokens";
 import { useFeatureCopy } from "@/i18n/feature";
 import { TOUR_COPY, startTour } from "@/features/tour";
+import { DressCodeSheet } from "@/features/guest/DressCodeSheet";
 
 export default function GuestMore() {
   const copy = useCopy();
@@ -26,6 +27,7 @@ export default function GuestMore() {
   // The switch shows what the server has: on only while a token is saved.
   const notif = !!pushToken;
   const [notifBusy, setNotifBusy] = useState(false);
+  const [dressOpen, setDressOpen] = useState(false);
   async function toggleNotifications(v: boolean) {
     if (notifBusy) return;
     if (v) {
@@ -53,7 +55,8 @@ export default function GuestMore() {
       <BigTitle title={copy.guestMore.title} sub={session?.tenant.couple_names} />
       <Stack gap={12} style={{ marginTop: 22 }}>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
-          <ListRow leading={<Icon name="hanger" size={22} color={colors.goldLight} />} title={copy.guestMore.dressCode} sub={home?.dress_code ?? schedule?.events.find((e) => e.dress_code)?.dress_code ?? null} chevron={false} last={siteOff} />
+          {/* The sub-line is cut at two lines; the row opens the whole text (N8). */}
+          <ListRow leading={<Icon name="hanger" size={22} color={colors.goldLight} />} title={copy.guestMore.dressCode} sub={home?.dress_code ?? schedule?.events.find((e) => e.dress_code)?.dress_code ?? null} onPress={() => setDressOpen(true)} last={siteOff} />
           {siteOff ? null : (
             <>
           <ListRow leading={<Icon name="pin" size={22} color={colors.goldLight} />} title={copy.guestMore.hotels} onPress={() => router.push("/guest/site/hotels" as never)} />
@@ -96,6 +99,7 @@ export default function GuestMore() {
         </T>
       </Stack>
       <Footer version={copy.common.footerVersion} trademark={copy.common.footerTrademark} />
+      <DressCodeSheet visible={dressOpen} onClose={() => setDressOpen(false)} />
     </Screen>
   );
 }

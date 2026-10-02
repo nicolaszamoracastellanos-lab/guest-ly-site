@@ -8,7 +8,7 @@ import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Button, Banner, EmptyState, Skeleton, Stack, SectionLabel, Segmented, Input, Toggle, Chip, ChipRow, Sheet, T, Row, IconButton } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Button, Banner, EmptyState, Skeleton, Stack, SectionLabel, Segmented, Input, Toggle, Chip, ChipRow, Sheet, SheetActions, T, Row, IconButton } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/rsvp-questions/copy";
 import { saveRsvpQuestions, uniqueSlug, useRsvpQuestions, type RsvpQuestion } from "@/features/rsvp-questions/hooks";
@@ -146,10 +146,18 @@ export default function RsvpQuestions() {
         {canEdit ? <Button label={c.add} icon="plus" kind="glass" onPress={() => { setError(null); setEditing({ index: null, draft: blank() }); }} disabled={busy || questions.length >= 20} /> : null}
       </Stack>
 
-      <Sheet visible={!!editing} onClose={() => (busy ? null : setEditing(null))} top={70} scroll={false}>
+      {/* Cancel / Save dock at the bottom of the sheet, above the keyboard, so
+          they are never under it while a label is being typed (K2). */}
+      <Sheet
+        visible={!!editing}
+        onClose={() => (busy ? null : setEditing(null))}
+        top={70}
+        scroll={false}
+        footer={d ? <SheetActions onCancel={() => (busy ? null : setEditing(null))} onSave={saveDraft} saving={busy} disabled={busy} saveLabel={c.save} /> : undefined}
+      >
         {d ? (
           <View style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
               <T v="title26">{c.edit}</T>
               <Stack gap={10} style={{ marginTop: 14 }}>
                 <Input accessibilityLabel={c.labelEn} value={d.label.en ?? ""} onChangeText={(t) => setD({ label: { ...d.label, en: t.slice(0, 160) } })} placeholder={c.labelEn} />
@@ -195,8 +203,7 @@ export default function RsvpQuestions() {
                   {error}
                 </T>
               ) : null}
-              <Button label={busy ? c.saving : c.save} onPress={saveDraft} loading={busy} disabled={busy} style={{ marginTop: 18 }} />
-              {editing?.index !== null ? <Button label={c.delete} kind="text" onPress={remove} disabled={busy} style={{ marginTop: 6 }} /> : null}
+              {editing?.index !== null ? <Button label={c.delete} kind="text" onPress={remove} disabled={busy} style={{ marginTop: 14 }} /> : null}
             </ScrollView>
           </View>
         ) : null}

@@ -64,7 +64,7 @@ export default function BrainHome() {
   const facts = draft.facts as Record<string, unknown>;
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />} bottomInset={40}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
 
       <Card kind="glass" padding={16} style={{ marginTop: 20 }}>

@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useCopy, useLang, longDate } from "@/i18n";
 import { useGuestSchedule, type ScheduleEvent } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
-import { Screen, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel, useTopInset, Button } from "@/ui";
+import { Screen, ScreenBannerSlot, T, Row, Gem, IconButton, Stack, Skeleton, SectionLabel, useTopInset, Button } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
 import { clockLabel } from "@/features/guest/format";
 import { openMaps, openUrlSafe } from "@/features/guest/links";
@@ -36,7 +36,10 @@ export default function GuestSchedule() {
   const failLink = copy.common.linkFailed;
 
   return (
-    <Screen query={mainQuery} padded={false} topInset={false} refresh>
+    // backdrop={false}: plain night behind the photo. Its gradient ends in night;
+    // over the lighter backdrop image that end showed as a straight line across
+    // the first event (I8).
+    <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh>
       {/* Flow layout: the title block pushes the hero taller instead of sitting at
           a fixed offset where large text ran into the first event (D-016, D-031).
           The scrim is darker behind the title, which sat on the brightest part of
@@ -67,6 +70,8 @@ export default function GuestSchedule() {
         </View>
       </View>
       <View style={{ paddingHorizontal: 20, marginTop: -16 }}>
+        {/* The connection banner goes under the photo, not above it. */}
+        <ScreenBannerSlot />
         {isLoading && !data ? (
           <Stack gap={14}>
             <Skeleton h={80} />

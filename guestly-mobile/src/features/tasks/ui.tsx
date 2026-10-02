@@ -5,7 +5,7 @@ import React, { useMemo, useState } from "react";
 import { View, Pressable, StyleSheet, Alert, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import { fmt, relTime, shortDate, useLang } from "@/i18n";
+import { fmt, relTime, shortDate, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, del, ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
@@ -454,7 +454,6 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       {isLoading && !task ? <Skeleton h={160} r={18} /> : null}
       {task ? (
         <Stack gap={18}>
-          {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
           <Row style={{ justifyContent: "space-between" }}>
             <Badge label={copy.boardStatuses[task.status]} kind={boardStatusKind(task.status)} />
             <T v="meta13" color={colors.ivory55}>
@@ -573,6 +572,16 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
     return (plannerGuests.data?.guests ?? []).filter((g) => (q ? fold(g.name).includes(fold(q)) : true)).map((g) => ({ id: g.id, name: g.name }));
   }, [surface, coupleGuests.items, plannerGuests.data, q]);
   const chosen = picked;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const common = useCopy().common;
+  const pickerEmpty = useCopy().core.pickerEmpty;
+  // The couple's list is searched on the server from 2 letters; the planner's
+  // whole list is already here.
+  const showResults = surface === "planner" || q.trim().length >= 2;
+  const closePicker = () => {
+    setPickerOpen(false);
+    setQ("");
+  };
   const leave = useUnsavedGuard(!!title.trim() || !!detail.trim() || picked.length > 0);
 
   async function submit() {
@@ -622,24 +631,42 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
               ))}
             </ChipRow>
           ) : null}
-          <Input icon="search" value={q} onChangeText={setQ} placeholder={copy.fields.guests} autoCorrect={false} />
-          {q.length >= 2 && candidates.length ? (
-            <Card kind="solid" padding={2} style={{ paddingHorizontal: 14 }}>
-              {candidates.slice(0, 6).map((c, i) => (
-                <ListRow
-                  key={c.id}
-                  title={c.name}
-                  chevron={false}
-                  trailing={guestIds.includes(c.id) ? <Icon name="check" size={18} color={colors.goldLight} /> : undefined}
-                  onPress={() => {
-                    setPicked((list) => (list.some((x) => x.id === c.id) ? list.filter((x) => x.id !== c.id) : list.length < 10 ? [...list, c] : list));
-                    setQ("");
-                  }}
-                  last={i === Math.min(candidates.length, 6) - 1}
-                />
-              ))}
-            </Card>
-          ) : null}
+          {/* The guest search lives in a sheet: its results scroll in the room
+              above the keyboard and a first tap picks a guest (K12). Before,
+              the results opened under the keyboard with no way to reach them. */}
+          <Pressable onPress={() => setPickerOpen(true)} accessibilityRole="button" accessibilityLabel={copy.fields.guests} style={styles.pickerRow} testID="task-guests-open">
+            <Icon name="search" size={20} color={colors.ivory55} />
+            <T v="body16" color={colors.ivory55} style={{ flex: 1 }}>
+              {copy.fields.guests}
+            </T>
+            <Icon name="down" size={18} color={colors.ivory40} />
+          </Pressable>
+          <Sheet visible={pickerOpen} onClose={closePicker} top={120} scroll={false} footer={<Button label={common.done} onPress={closePicker} />}>
+            <View style={{ flex: 1, gap: 10 }}>
+              <T v="title26">{copy.fields.guests}</T>
+              <Input icon="search" value={q} onChangeText={setQ} placeholder={copy.fields.guests} autoCorrect={false} autoFocus />
+              <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+                {showResults && candidates.length ? (
+                  <Card kind="solid" padding={2} style={{ paddingHorizontal: 14 }}>
+                    {candidates.slice(0, 40).map((c, i, arr) => (
+                      <ListRow
+                        key={c.id}
+                        title={c.name}
+                        chevron={false}
+                        trailing={guestIds.includes(c.id) ? <Icon name="check" size={18} color={colors.goldLight} /> : undefined}
+                        onPress={() => setPicked((list) => (list.some((x) => x.id === c.id) ? list.filter((x) => x.id !== c.id) : list.length < 10 ? [...list, c] : list))}
+                        last={i === arr.length - 1}
+                      />
+                    ))}
+                  </Card>
+                ) : showResults ? (
+                  <T v="body15" color={colors.ivory55}>
+                    {pickerEmpty}
+                  </T>
+                ) : null}
+              </ScrollView>
+            </View>
+          </Sheet>
         </Field>
         <Button label={copy.addBoard} onPress={submit} loading={busy} disabled={!online || busy} style={{ marginTop: 8 }} />
       </Stack>

@@ -126,7 +126,7 @@ export default function GuestDetailScreen() {
   }
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={() => leave(back)} title={copy.guests.title} />} keyboard>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={() => leave(back)} title={copy.guests.title} />} keyboard>
         <>
           {isLoading && !d ? (
             <Stack gap={12} style={{ marginTop: 20 }}>

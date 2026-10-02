@@ -1,23 +1,23 @@
-// The floating assistant button: a gold gem that drags anywhere, snaps to the
-// nearest edge and remembers where it was left. Tap opens the Coordinator
-// (couples, planners) or the concierge (guests). Mounted once by the root
-// layout; hidden while a keyboard is open and on the chat screens themselves.
+// The floating Coordinator button, AssistiveTouch style (v1.2, audit I9).
 //
-// Part 9 audit (Sep 18 2026), D-010: at rest it used to sit over toggles,
-// badges and buttons. Now:
-//  - it shows on browse screens only (tab roots, section lists, guest site
-//    pages); forms and detail screens have none (`pathShowsBubble`);
-//  - its resting place is a reserved band right above the tab bar, and every
-//    scrolling screen that shows it keeps that band free at the end of its
-//    content (`useBottomClearance`), so it never rests on the last control;
-//  - a screen with its own floating control (add-guest button, docked action
-//    bar) lifts the band above that control (`useBubbleLift`);
-//  - a place chosen by dragging is still remembered, side and height.
+// - Always whole on screen: it never docks half off the edge any more.
+// - Drag it anywhere; on release it snaps to the nearest side, 8 pt in, with a
+//   light selection tap. Vertically it stays between the header band under the
+//   status bar and just above the tab bar.
+// - Remembers its side and height across launches (AsyncStorage, best effort).
+// - Rests at about 55% opacity after 3 s untouched and comes back to full on
+//   touch, so it never hides what is under it for long.
+// - Tap opens the Coordinator (couple, planner: /assistant) or the concierge
+//   (guest: the concierge tab). Hold shows its name.
+// - Hidden while the keyboard is open and on the chat it opens (root layout,
+//   chrome.ts pathShowsBubble). Honors Reduce Motion.
+//
+// Mounted once by the root layout so it keeps its place across screens.
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Keyboard, Platform, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -25,91 +25,112 @@ import * as Haptics from "expo-haptics";
 import { useLang } from "@/i18n";
 import { Icon } from "./Icon";
 import { T } from "./Text";
-import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN, MAX_CONTENT_WIDTH } from "./tokens";
-import { useBubbleDocked, useBubbleLiftValue } from "./chrome";
+import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN, BUBBLE_IDLE_OPACITY, BUBBLE_IDLE_MS, HIT_TARGET, TOP_SAFE_MIN } from "./tokens";
 
 export type AssistantSurface = "guest" | "couple" | "planner";
 
 const SIZE = BUBBLE_SIZE;
-const MARGIN = BUBBLE_MARGIN;
+const INSET = BUBBLE_MARGIN;
 const STORAGE_KEY = "assistant-bubble";
-/** How much of the bubble shows while docked: inside the 24 pt screen gutter. */
-const SLIVER = 18;
-/** The band under the status bar that holds every screen's header controls
- *  (back, title actions, the tour's Skip). The bubble never rests in it. */
-const HEADER_BAND = 60;
+/** Every screen's header row (back, title actions, the tour's Skip) is one
+ *  hit target tall with 6 pt under it, starting at the screen's top inset
+ *  (useTopInset in the kit). The bubble stays below it, 8 pt clear. */
+const HEADER_ROW = HIT_TARGET + 6;
 /** A tap within this long of the bubble appearing is ignored: it was aimed at
  *  whatever was on top a moment ago (the tour's Skip, a closing sheet). */
 const APPEAR_GRACE_MS = 600;
+/** Where it starts before the person has moved it: the right side, a little
+ *  below the middle of its travel. */
+const DEFAULT_PLACE: Place = { side: "right", frac: 0.62 };
 
-type Saved = { side: "left" | "right"; y: number };
+type Side = "left" | "right";
+/** `frac` is the height as a fraction of the travel between the header band
+ *  and the tab bar, so the place survives a different phone or a rotation. */
+type Place = { side: Side; frac: number };
+/** Stored shape. Build 11 saved `{ side, y }` (absolute points). */
+type Saved = { side?: Side; y?: number; frac?: number };
 
 const LABEL = {
-  en: { coordinator: "Ask the Coordinator", concierge: "Ask the concierge" },
-  es: { coordinator: "Pregúntale al Coordinador", concierge: "Pregúntale al concierge" },
+  en: { coordinator: "Ask the Coordinator", concierge: "Ask the concierge", hint: "Opens the chat. Drag to move it." },
+  es: { coordinator: "Pregúntale al Coordinador", concierge: "Pregúntale al concierge", hint: "Abre el chat. Arrástralo para moverlo." },
 };
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
 export default function AssistantBubble({ surface, hidden = false, badge = false }: { surface: AssistantSurface; hidden?: boolean; badge?: boolean }) {
   const router = useRouter();
   const { lang } = useLang();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
   const [keyboard, setKeyboard] = useState(false);
   const [label, setLabel] = useState(false);
-  const lift = useBubbleLiftValue();
-  // Docked while the screen's content runs on below the visible area: only a
-  // sliver shows, inside the screen gutter, so the bubble never rests on a
-  // row's pill or button mid-list (chrome.ts, useBubbleDock).
-  const docked = useBubbleDocked();
-  // Null until the person drags the bubble somewhere: then it rests in the band.
-  const [chosenY, setChosenY] = useState<number | null>(null);
+  const [place, setPlace] = useState<Place>(DEFAULT_PLACE);
+  // The bubble stays hidden until the saved place is read, so it appears where
+  // it was left instead of flying there from the default spot.
+  const [restored, setRestored] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
-  // Below the header band. Dragged to the very top, the bubble used to rest
-  // exactly under the welcome tour's Skip button and on the header's right
-  // control, so the second tap of a double tap on Skip (or a tap that landed
-  // as the tour faded) opened the Coordinator by itself.
-  const minY = Math.max(insets.top, 20) + HEADER_BAND + MARGIN;
-  const floorY = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - MARGIN;
-  const maxY = Math.max(minY, floorY - lift);
-  // On a wide window the bubble keeps to the edges of the centered content
-  // column instead of the far edges of the window (large screen rule).
-  const gutter = Math.max(0, (width - MAX_CONTENT_WIDTH) / 2);
-  const leftX = gutter + MARGIN;
-  const rightX = width - gutter - SIZE - MARGIN;
-  const leftDockX = gutter - SIZE + SLIVER;
-  const rightDockX = width - gutter - SLIVER;
+  // Travel: under the header row, above the floating tab bar, 8 pt in. The
+  // header's top is the same rule the screens use (useTopInset in the kit).
+  const headerTop = insets.top >= 40 ? Math.max(insets.top, TOP_SAFE_MIN) : insets.top + 16;
+  const minY = headerTop + HEADER_ROW + INSET;
+  const maxY = Math.max(minY, height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - INSET);
+  const leftX = INSET;
+  const rightX = Math.max(INSET, width - SIZE - INSET);
 
   const x = useSharedValue(rightX);
-  const y = useSharedValue(maxY);
+  const y = useSharedValue(minY + (maxY - minY) * DEFAULT_PLACE.frac);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
   const scale = useSharedValue(1);
-  const shown = useSharedValue(1);
-  const onRight = useSharedValue(1);
-  const dock = useSharedValue(0);
+  const shown = useSharedValue(0);
+  const idle = useSharedValue(1);
+  const armed = useSharedValue(0);
 
-  // Restore the last resting place, once per mount.
+  // Restore the last place, once per mount. Storage can fail or be empty: the
+  // default place is fine then.
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw && alive) {
-          const saved = JSON.parse(raw) as Saved;
-          onRight.set(saved.side === "left" ? 0 : 1);
-          x.set(saved.side === "left" ? leftX : rightX);
-          if (typeof saved.y === "number") setChosenY(saved.y);
-        }
+        if (!raw || !alive) return;
+        const saved = JSON.parse(raw) as Saved;
+        const side: Side = saved.side === "left" ? "left" : "right";
+        let frac = typeof saved.frac === "number" ? saved.frac : null;
+        // A build 11 place in points: map it onto today's travel.
+        if (frac === null && typeof saved.y === "number" && maxY > minY) frac = (saved.y - minY) / (maxY - minY);
+        setPlace({ side, frac: clamp01(frac ?? DEFAULT_PLACE.frac) });
       } catch {
-        // No saved spot; the default corner is fine.
+        // Nothing saved, or unreadable: keep the default.
+      } finally {
+        if (alive) setRestored(true);
       }
     })();
     return () => {
       alive = false;
     };
-    // Screen size and insets are settled by first paint; restoring once is intended.
+    // Restoring once is intended; later size changes re-place from `place`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Move to the place: on restore, after a drag (the snap) and when the window
+  // or the safe area changes. Until the restore is done (bubble still hidden)
+  // and for the restored place itself it jumps; later moves glide.
+  const placed = useRef(false);
+  useEffect(() => {
+    const tx = place.side === "left" ? leftX : rightX;
+    const ty = minY + (maxY - minY) * clamp01(place.frac);
+    if (!placed.current || reduceMotion) {
+      x.set(placed.current && reduceMotion ? withTiming(tx, { duration: 120 }) : tx);
+      y.set(placed.current && reduceMotion ? withTiming(ty, { duration: 120 }) : ty);
+      placed.current = restored;
+      return;
+    }
+    x.set(withSpring(tx, { damping: 20, stiffness: 220 }));
+    y.set(withSpring(ty, { damping: 20, stiffness: 220 }));
+  }, [place, restored, leftX, rightX, minY, maxY, reduceMotion, x, y]);
 
   useEffect(() => {
     const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -122,33 +143,32 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
     };
   }, []);
 
-  // Follow the band when a screen lifts it, the window changes size, or the
-  // saved place would now be under a docked control.
+  // Full opacity on touch (and each time it appears), then back to the
+  // resting opacity after a while. Every touch bumps `touches`; the effect
+  // owns the timer.
+  const [touches, setTouches] = useState(0);
+  const wake = useCallback(() => setTouches((n) => n + 1), []);
+  const visible = restored && !hidden && !keyboard;
   useEffect(() => {
-    const target = chosenY === null ? maxY : Math.min(Math.max(chosenY, minY), maxY);
-    y.set(withTiming(target, { duration: 160 }));
-  }, [chosenY, maxY, minY, y]);
+    if (!visible) return;
+    idle.set(withTiming(1, { duration: reduceMotion ? 0 : 120 }));
+    // Never dims under the finger: the rest timer starts when the drag ends.
+    if (dragging) return;
+    const t = setTimeout(() => {
+      idle.set(withTiming(BUBBLE_IDLE_OPACITY, { duration: reduceMotion ? 0 : 400 }));
+    }, BUBBLE_IDLE_MS);
+    return () => clearTimeout(t);
+  }, [touches, visible, dragging, idle, reduceMotion]);
 
-  // Rest, or dock into the gutter on the side it lives on.
   useEffect(() => {
-    const right = onRight.get() === 1;
-    const target = docked ? (right ? rightDockX : leftDockX) : right ? rightX : leftX;
-    x.set(withSpring(target, { damping: 20, stiffness: 200 }));
-    dock.set(withTiming(docked ? 1 : 0, { duration: 180 }));
-  }, [docked, leftDockX, leftX, rightDockX, rightX, onRight, x, dock]);
-
-  const visible = !hidden && !keyboard;
-  // Taps count only once the bubble has been on screen for a moment.
-  const armed = useSharedValue(0);
-  useEffect(() => {
-    shown.set(withTiming(visible ? 1 : 0, { duration: 180 }));
+    shown.set(withTiming(visible ? 1 : 0, { duration: reduceMotion ? 0 : 180 }));
     if (!visible) {
       armed.set(0);
       return;
     }
     const t = setTimeout(() => armed.set(1), APPEAR_GRACE_MS);
     return () => clearTimeout(t);
-  }, [visible, shown, armed]);
+  }, [visible, shown, armed, reduceMotion]);
 
   // The label hides itself; the effect owns the timer.
   useEffect(() => {
@@ -157,44 +177,58 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
     return () => clearTimeout(t);
   }, [label]);
 
-  const persist = (side: "left" | "right", yy: number) => {
-    setChosenY(Math.round(yy));
-    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ side, y: Math.round(yy) } satisfies Saved)).catch(() => {});
-  };
+  const commit = useCallback((side: Side, frac: number) => {
+    void Haptics.selectionAsync().catch(() => {});
+    const next = { side, frac: clamp01(frac) };
+    setPlace(next);
+    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+  }, []);
 
-  const open = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const open = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     if (surface === "guest") router.push("/guest/concierge");
     else router.push("/assistant");
-  };
+  }, [router, surface]);
 
-  const showLabel = () => {
-    void Haptics.selectionAsync();
+  const showLabel = useCallback(() => {
+    void Haptics.selectionAsync().catch(() => {});
     setLabel(true);
-  };
+    wake();
+  }, [wake]);
 
+  const lift = reduceMotion ? 1 : 1.06;
   const pan = Gesture.Pan()
     .minDistance(6)
+    .onBegin(() => {
+      runOnJS(wake)();
+    })
     .onStart(() => {
       startX.set(x.get());
       startY.set(y.get());
-      scale.set(withSpring(1.08));
+      scale.set(withTiming(lift, { duration: 120 }));
+      runOnJS(setDragging)(true);
     })
     .onUpdate((e) => {
-      x.set(Math.min(Math.max(startX.get() + e.translationX, leftX - 6), rightX + 6));
+      // Free in both directions while held, never past the window edges.
+      x.set(Math.min(Math.max(startX.get() + e.translationX, 0), rightX + INSET));
       y.set(Math.min(Math.max(startY.get() + e.translationY, minY), maxY));
     })
     .onEnd((e) => {
-      const side: "left" | "right" = x.get() + SIZE / 2 + e.velocityX * 0.05 < width / 2 ? "left" : "right";
-      onRight.set(side === "right" ? 1 : 0);
-      const dockedNow = dock.get() > 0.5;
-      x.set(withSpring(side === "left" ? (dockedNow ? leftDockX : leftX) : dockedNow ? rightDockX : rightX, { damping: 18, stiffness: 180 }));
-      scale.set(withSpring(1));
-      runOnJS(persist)(side, y.get());
+      const side: Side = x.get() + SIZE / 2 + e.velocityX * 0.05 < width / 2 ? "left" : "right";
+      const frac = maxY > minY ? (y.get() - minY) / (maxY - minY) : 0;
+      scale.set(withTiming(1, { duration: 120 }));
+      runOnJS(commit)(side, frac);
+      runOnJS(wake)();
+    })
+    .onFinalize(() => {
+      runOnJS(setDragging)(false);
     });
 
   const tap = Gesture.Tap()
     .maxDuration(300)
+    .onBegin(() => {
+      runOnJS(wake)();
+    })
     .onEnd((_e, success) => {
       // A tap right after the bubble appeared was meant for what covered it.
       if (success && armed.get() === 1) runOnJS(open)();
@@ -209,14 +243,14 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const gesture = Gesture.Race(pan, Gesture.Exclusive(longPress, tap));
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value * (0.7 + 0.3 * shown.value) * (1 - 0.12 * dock.value) }],
-    opacity: shown.value * (1 - 0.1 * dock.value),
+    transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value * (0.8 + 0.2 * shown.value) }],
+    opacity: shown.value * idle.value,
   }));
   const labelStyle = useAnimatedStyle(() => ({
     // The label sits on the side with room: left of the bubble when it rests
-    // on the right edge, and the other way round.
-    right: x.value > width / 2 ? SIZE + 10 : undefined,
-    left: x.value > width / 2 ? undefined : SIZE + 10,
+    // on the right side, and the other way round.
+    right: x.value + SIZE / 2 > width / 2 ? SIZE + 10 : undefined,
+    left: x.value + SIZE / 2 > width / 2 ? undefined : SIZE + 10,
   }));
 
   const text = surface === "guest" ? LABEL[lang].concierge : LABEL[lang].coordinator;
@@ -237,11 +271,16 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
               fired on the same tap and pushed the chat twice (P2-36). */}
           <View
             testID="assistant-bubble"
-            accessible
+            accessible={visible}
+            accessibilityElementsHidden={!visible}
+            importantForAccessibility={visible ? "yes" : "no-hide-descendants"}
             accessibilityRole="button"
             accessibilityLabel={text}
-            accessibilityActions={[{ name: "activate" }, { name: "longpress", label: text }]}
-            onAccessibilityAction={(e) => (e.nativeEvent.actionName === "activate" ? open() : showLabel())}
+            accessibilityHint={LABEL[lang].hint}
+            accessibilityActions={[{ name: "activate" }]}
+            onAccessibilityAction={(e) => {
+              if (e.nativeEvent.actionName === "activate") open();
+            }}
             style={styles.button}
           >
             <View style={styles.ring} />

@@ -2,7 +2,7 @@
 // delete. Edits land in the shared draft; Save writes the plan.
 
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Alert, Pressable } from "react-native";
+import { View, Alert, Pressable, ScrollView } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -85,7 +85,8 @@ function SeatingTableScreen({ id }: { id: string }) {
       (p) => p.unseated > 0 && (q ? fold(p.name).includes(fold(q)) : true),
     )
     .sort((a, b) => Number(b.confirmed) - Number(a.confirmed))
-    .slice(0, 12);
+    // The list scrolls now (K11), so it can hold more than a screenful.
+    .slice(0, 60);
 
   const groups = useMemo(() => {
     if (!table) return [];
@@ -403,6 +404,10 @@ function SeatingTableScreen({ id }: { id: string }) {
             autoCorrect={false}
           />
           {candidates.length ? (
+            // The results scroll in the room left above the keyboard, and a
+            // first tap picks a party instead of only closing the keyboard
+            // (K11). The sheet shrinks to the keyboard; this list fills it.
+            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
             <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
               {candidates.map((p, i) => (
                 <ListRow
@@ -420,9 +425,10 @@ function SeatingTableScreen({ id }: { id: string }) {
                 />
               ))}
             </Card>
+            </ScrollView>
           ) : (
             <T v="body15" color={colors.ivory55}>
-              {c.allSeated}
+              {q.trim() ? app.core.pickerEmpty : c.allSeated}
             </T>
           )}
         </Stack>

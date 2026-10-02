@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Linking } from "react-native";
-import { useLang, fmt, useCopy } from "@/i18n";
+import { useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import {
@@ -23,7 +23,6 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function PlannerRunsheet() {
   const c = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const mainQuery = usePlannerRunsheet();
@@ -33,7 +32,7 @@ export default function PlannerRunsheet() {
       header={
         <TopBar
           onBack={back}
-          title={app.planner.tabs.more}
+          title={c.title}
           right={
             data?.blocks_total ? (
               <IconButton

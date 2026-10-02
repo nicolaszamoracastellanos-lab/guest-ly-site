@@ -5,12 +5,12 @@ import React, { useMemo, useRef, useState } from "react";
 import { View, FlatList, Alert, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang, useCopy } from "@/i18n";
+import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skeleton, Stack, SectionLabel, T, Row, Icon, Banner, useTopInset, useBottomClearance, COLUMN, QueryError, DockedActions, useScrimScroll } from "@/ui";
+import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skeleton, Stack, SectionLabel, T, Row, Icon, Banner, useTopInset, useBottomClearance, COLUMN, QueryError, OfflineState, StaleBanner, retryConnection, usePullRefresh, DockedActions, useScrimScroll } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, useSharedBoard, KEYS, TASK_INVALIDATE, type Board, type TaskGroup, type TaskView, type BoardTask } from "@/features/tasks/hooks";
@@ -22,7 +22,6 @@ type Row_ = { kind: "header"; key: string; label: string; count: number } | { ki
 
 export default function CoupleTasks() {
   const copy = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -40,6 +39,10 @@ export default function CoupleTasks() {
   const board = useTasksBoard();
   const shared = useSharedBoard("couple");
   const data = board.data;
+  // The list on screen: the couple's own, or the board shared with the planner.
+  const current = segment === "ours" ? board : shared;
+  // Pull to refresh (S2): both lists, so switching segment shows fresh data.
+  const pull = usePullRefresh(() => Promise.all([board.refetch(), shared.refetch()]));
 
   const rows = useMemo<Row_[]>(() => {
     if (segment === "board") {
@@ -89,7 +92,7 @@ export default function CoupleTasks() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar onBack={back} title={app.coupleHome.tabs.more} right={canEdit ? <Pressable onPress={() => router.push(segment === "ours" ? "/couple/tasks/new" : "/couple/tasks/board/new")} accessibilityRole="button" accessibilityLabel={copy.add} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
+      <TopBar onBack={back} right={canEdit ? <Pressable onPress={() => router.push(segment === "ours" ? "/couple/tasks/new" : "/couple/tasks/board/new")} accessibilityRole="button" accessibilityLabel={copy.add} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
       <View style={{ marginTop: 10 }}>
         <BigTitle title={copy.title} sub={progress ? fmt(copy.progress, { done: progress.done, total: progress.total }) : copy.subtitle} />
       </View>
@@ -108,9 +111,11 @@ export default function CoupleTasks() {
           onChange={setSegment}
         />
       </View>
-      {!online ? (
+      {/* One connection banner, only over saved tasks (S4); with nothing
+          saved the list itself says offline (S1). */}
+      {current.data !== undefined && (!online || current.isError) ? (
         <View style={{ marginTop: 12 }}>
-          <Banner icon="wifi-off" title={copy.offline} />
+          <StaleBanner onRetry={() => retryConnection(current.refetch)} />
         </View>
       ) : null}
       {data?.pending || shared.data?.pending ? (
@@ -154,6 +159,7 @@ export default function CoupleTasks() {
           {...scrim.listProps}
           data={rows}
           keyExtractor={(r) => r.key}
+          refreshControl={pull.control ?? undefined}
           ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
           contentContainerStyle={[COLUMN, { paddingBottom: clearance + (canEdit && rows.length ? dock : 0) }]}
           ListEmptyComponent={
@@ -163,8 +169,11 @@ export default function CoupleTasks() {
                 <Skeleton h={64} />
                 <Skeleton h={64} />
               </Stack>
-            ) : (segment === "ours" ? board.isError : shared.isError) ? (
-              <QueryError onRetry={() => void (segment === "ours" ? board.refetch() : shared.refetch())} />
+            ) : current.isError && current.data === undefined ? (
+              <QueryError onRetry={() => void current.refetch()} />
+            ) : !online && current.data === undefined ? (
+              // Offline with nothing saved: never "start your list" (S1).
+              <OfflineState onRetry={() => retryConnection(current.refetch)} />
             ) : segment === "ours" ? (
               <EmptyList
                 title={group === "done" ? copy.emptyDone : copy.emptyTitle}

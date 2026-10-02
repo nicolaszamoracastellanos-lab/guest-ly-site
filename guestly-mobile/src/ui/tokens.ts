@@ -36,6 +36,8 @@ export const colors = {
   glassSolidFill: "rgba(247,243,236,0.055)",
   goldBorder: "rgba(201,169,110,0.35)",
   scrim: "rgba(8,11,16,0.62)",
+  /** The Done bar over a numeric keyboard: close to the dark iOS keyboard. */
+  keyboardBar: "#1f2329",
 } as const;
 
 /** 4-point grid. */
@@ -106,12 +108,18 @@ export const TOP_SAFE_MIN = 54;
 /** Space a scrolling screen keeps free at its end so the last control clears
  *  the floating tab bar (bar height, its offset, and 16 of air). */
 export const TAB_CLEARANCE = TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + 16;
-/** The assistant bubble rests in its own band right above the tab bar. Screens
- *  that show the bubble keep this much extra room at the end of their scroll,
- *  so the bubble never sits on the last control. */
+/** The floating Coordinator button (v1.2, AssistiveTouch style). It floats
+ *  and moves wherever the person drags it, so screens no longer reserve a band
+ *  for it (audit I9, I11). It snaps to the nearest side with this inset. */
 export const BUBBLE_SIZE = 56;
-export const BUBBLE_MARGIN = 14;
-export const BUBBLE_ZONE = BUBBLE_SIZE + BUBBLE_MARGIN;
+export const BUBBLE_MARGIN = 8;
+/** Opacity of the bubble after a few seconds untouched. */
+export const BUBBLE_IDLE_OPACITY = 0.55;
+export const BUBBLE_IDLE_MS = 3000;
+
+/** Default focal point of a photo: the faces of people usually sit in the
+ *  upper third (plan v1.2, section c). Fractions of width and height. */
+export const PHOTO_FOCAL = { x: 0.5, y: 0.3 } as const;
 
 /** Large-screen rule (BUILD-LOG decision 15). Android tablets and foldables get
  *  no phone lock, so content sits in one centered column and nothing stretches. */

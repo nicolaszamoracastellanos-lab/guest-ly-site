@@ -5,13 +5,16 @@ import { View } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { useCoupleDayOf } from "@/lib/hooks";
-import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon } from "@/ui";
+import { Screen, TopBar, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { nightOrder } from "@/features/runsheet/list";
+import { useSafeBack } from "@/lib/nav";
 
 export default function CoupleDayOf() {
   const copy = useCopy();
   const router = useRouter();
+  // A section like the others: a back button to where you came from (N2).
+  const back = useSafeBack();
   const focused = useIsFocused();
   const mainQuery = useCoupleDayOf({ poll: focused });
   const { data, isLoading } = mainQuery;
@@ -26,7 +29,7 @@ export default function CoupleDayOf() {
   const pct = data && data.parties_total ? Math.min(100, Math.round((data.parties_in / data.parties_total) * 100)) : 0;
 
   return (
-    <Screen query={mainQuery} header={<TopBar left={<Wordmark height={20} />} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
       <Row gap={24} align="flex-end" style={{ marginTop: 16 }}>
         <View>
           <SectionLabel color={colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>

@@ -5,21 +5,36 @@
 // /setup by the session provider. New couples can also start at /sign-up.
 
 import React, { useRef, useState } from "react";
-import { View, StyleSheet, Image, useWindowDimensions, type TextInput } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, useWindowDimensions, type TextInput } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import { useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
-import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel } from "@/ui";
-import { colors, FILL } from "@/ui/tokens";
+import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel, PhotoHero, useKeyboardOpen, useTopInset } from "@/ui";
+import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { COPY as SIGNUP_COPY } from "@/features/signup/copy";
 import { appleAvailable, authErrorKind, authRedirectUrl, signInWithApple, signInWithGoogle } from "@/features/signup/social";
 
 WebBrowser.maybeCompleteAuthSession();
 const suite = require("../../assets/photos/suite.jpg");
+// suite.jpg is 780 x 1386; the wax seal sits at 57% across, 71% down.
+const SEAL = { w: 780, h: 1386, x: 0.57, y: 0.71 };
+// Height of the back + language row under the status bar.
+const BAR = 50;
+
+/** Object position that puts the seal in the middle of the photo band left
+ *  between the back row and the text (I4): the old centered crop showed the
+ *  blank card and cut the envelope in half. */
+function sealFocal(width: number, boxH: number, bandTop: number, bandBottom: number): { x: number; y: number } {
+  const scale = Math.max(width / SEAL.w, boxH / SEAL.h);
+  const imgH = SEAL.h * scale;
+  const slack = imgH - boxH;
+  if (!width || slack < 1) return { x: SEAL.x, y: 0.5 };
+  const y = (SEAL.y * imgH - (bandTop + bandBottom) / 2) / slack;
+  return { x: SEAL.x, y: Math.min(1, Math.max(0, y)) };
+}
 
 // The typed address outlives this screen: if it is remounted (a session
 // event, a back and forth), or the person switches between link and password,
@@ -95,47 +110,69 @@ export default function SignIn() {
 
   // A build without its sign-in settings says so calmly; it never names a setting.
   const configured = supabaseConfigured();
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const top = useTopInset();
+  // While typing, the photo shrinks to a band with the seal and only the
+  // fields and the gold button stay, so the button is in view above the
+  // keyboard on a 667 pt phone too (K7). Apple, Google and the intro come
+  // back when the keyboard goes away.
+  const keyboardOpen = useKeyboardOpen();
   // The photo is a share of the window, so on a 667 pt phone the email field
   // and the button are on screen without scrolling (Part 9 audit, D-035).
-  // The photo has to end about half way down the window, where the background
-  // reaches the night colour it fades into; the text starts higher on it.
   // On a 6.1 to 6.9 inch phone the text starts as high on the photo as it
   // needs to for the whole form, down to "Create an account", to fit without
   // scrolling (at 240 pt the password switch was cut in half at the bottom
   // edge of a 17 Pro). 754 is the height of everything from the wordmark down.
+  // The photo now runs edge to edge behind the status bar and the back row
+  // (I4); the text starts where it started before, under that row.
   const compact = height < 700;
   const textTop = compact ? 118 : Math.max(118, Math.min(240, height - 754));
-  const heroH = compact ? Math.max(210, Math.round(height * 0.52) - 86) : textTop + 180;
-  const overlap = heroH - textTop;
+  const bandTop = top + BAR;
+  const textStart = bandTop + (keyboardOpen ? 48 : textTop);
+  const heroH = textStart + (keyboardOpen ? 56 : 110);
+  const overlap = heroH - textStart;
 
   return (
-    <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>
+    <Screen topInset={false} backdrop={false} bottomInset={24} padded={false} keyboard>
       <>
-        <View style={[styles.hero, { height: heroH }]}>
-          <Image source={suite} style={FILL} resizeMode="cover" />
-          <LinearGradient colors={["rgba(13,17,23,0.1)", "rgba(13,17,23,0.6)", colors.night]} style={FILL} />
-        </View>
+        <PhotoHero
+          source={suite}
+          height={heroH}
+          focal={sealFocal(width, heroH, bandTop, textStart)}
+          gradient={0.5}
+          gutter={0}
+          top={
+            <View style={{ flex: 1 }}>
+              <TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />
+            </View>
+          }
+        />
         <View style={{ paddingHorizontal: 28, marginTop: -overlap }}>
-          <Wordmark height={34} />
-          <SectionLabel color={colors.goldLight} style={{ marginTop: 10 }}>
+          {keyboardOpen ? null : <Wordmark height={34} />}
+          <SectionLabel color={colors.goldLight} style={{ marginTop: keyboardOpen ? 0 : 10 }}>
             {copy.signIn.label}
           </SectionLabel>
-          <T v="title34" style={{ marginTop: 8 }}>
+          <T v={keyboardOpen ? "title26" : "title34"} style={{ marginTop: 8 }}>
             {copy.signIn.title}
           </T>
-          <T v="body15" color={colors.ivory55}>
-            {copy.signIn.intro}
-          </T>
+          {keyboardOpen ? null : (
+            <T v="body15" color={colors.ivory55}>
+              {copy.signIn.intro}
+            </T>
+          )}
         </View>
-        <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 26 }}>
-          {appleAvailable ? <Button testID="signin-apple" label={copy.signIn.apple} kind="glass" icon="apple" onPress={() => withBusy("apple", signInWithApple)} loading={busy === "apple"} /> : null}
-          <Button testID="signin-google" label={copy.signIn.google} kind="glass" icon="google" onPress={() => withBusy("google", signInWithGoogle)} loading={busy === "google"} />
-          <Row gap={12} style={{ marginVertical: 8 }}>
-            <Hairline style={{ flex: 1 }} />
-            <SectionLabel color={colors.ivory40}>{copy.signIn.orEmail}</SectionLabel>
-            <Hairline style={{ flex: 1 }} />
-          </Row>
+        <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: keyboardOpen ? 16 : 26 }}>
+          {keyboardOpen ? null : (
+            <>
+              {appleAvailable ? <Button testID="signin-apple" label={copy.signIn.apple} kind="glass" icon="apple" onPress={() => withBusy("apple", signInWithApple)} loading={busy === "apple"} /> : null}
+              <Button testID="signin-google" label={copy.signIn.google} kind="glass" icon="google" onPress={() => withBusy("google", signInWithGoogle)} loading={busy === "google"} />
+              <Row gap={12} style={{ marginVertical: 8 }}>
+                <Hairline style={{ flex: 1 }} />
+                <SectionLabel color={colors.ivory40}>{copy.signIn.orEmail}</SectionLabel>
+                <Hairline style={{ flex: 1 }} />
+              </Row>
+            </>
+          )}
           <Input
             testID="signin-email"
             icon="mail"
@@ -218,7 +255,3 @@ export default function SignIn() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  hero: { overflow: "hidden", opacity: 0.55 },
-});

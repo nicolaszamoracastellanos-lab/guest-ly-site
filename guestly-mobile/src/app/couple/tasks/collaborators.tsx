@@ -9,7 +9,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Banner, Skeleton, Card, T, ListRow, Avatar, SectionLabel, Sheet, Input, Toggle, Row, Segmented, Icon } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, ListRow, Avatar, SectionLabel, Sheet, SheetActions, Input, Toggle, Row, Segmented, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type Collaborator } from "@/features/tasks/hooks";
@@ -76,7 +76,6 @@ export default function Collaborators() {
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} />} bottomInset={60}>
       <BigTitle title={copy.collaborators} sub={copy.collaboratorsIntro} size={34} />
-      {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <Stack gap={18} style={{ marginTop: 20 }}>
         {isLoading && !board ? <Skeleton h={120} r={18} /> : null}
         {board?.members.length ? (
@@ -114,8 +113,8 @@ export default function Collaborators() {
         {canEdit ? <Button label={copy.addHelper} icon="plus" onPress={() => setEditing({ id: null, form: blank })} disabled={!online} /> : null}
       </Stack>
 
-      <Sheet visible={!!editing} onClose={() => setEditing(null)} top={90} scroll={false}>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
+      <Sheet visible={!!editing} onClose={() => setEditing(null)} top={90} scroll={false} footer={<SheetActions onCancel={() => setEditing(null)} onSave={save} saving={busy} disabled={!form.name.trim() || !form.email.trim() || !online} />}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
           <T v="title26">{editing?.id ? copy.editHelper : copy.addHelper}</T>
           <Field label={copy.helperFields.name}>
             <Input value={form.name} onChangeText={(v) => setF("name", v.slice(0, 80))} autoCapitalize="words" />
@@ -136,7 +135,6 @@ export default function Collaborators() {
             <T v="body16">{copy.helperFields.notify}</T>
             <Toggle value={form.notifications_enabled} onChange={(v) => setF("notifications_enabled", v)} label={copy.helperFields.notify} />
           </Row>
-          <Button label={copy.save} onPress={save} loading={busy} disabled={!form.name.trim() || !form.email.trim() || !online} />
           {editing?.id ? (
             <Button
               label={copy.removeHelper}

@@ -1,7 +1,7 @@
 // Guest-ly component kit. Direction A: night background, ivory type, gold
 // accents, glass surfaces, one paper (ivory) card per screen at most.
 
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   View,
   Pressable,
@@ -11,6 +11,7 @@ import {
   Image,
   ScrollView,
   RefreshControl,
+  InputAccessoryView,
   type ViewStyle,
   type ImageStyle,
   type StyleProp,
@@ -31,11 +32,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import Animated, { Extrapolation, SlideInDown, interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from "react-native-reanimated";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import NetInfo from "@react-native-community/netinfo";
+import { onlineManager } from "@tanstack/react-query";
 import { useCopy, useLang, longDate } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
 import { colors, fonts, radius, space, HIT_TARGET, BUTTON_HEIGHT, TOP_SAFE_MIN, FILL, COVER, COLUMN, SHEET_MAX_WIDTH, WIDE_BREAKPOINT, MIN_BODY } from "./tokens";
-import { useBottomClearance, useBubbleDock, useBubbleLift, useTabBarTop, DOCK_SLACK } from "./chrome";
+import { useBottomClearance, useTabBarTop } from "./chrome";
 import { LockCover } from "./LockCover";
 import { useOnline } from "@/lib/query";
 import { useNavigation, useRoute } from "expo-router";
@@ -45,25 +48,34 @@ export { renderInlineBold } from "./MarkdownText";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { colors, radius, space, COLUMN } from "./tokens";
-export { useBottomClearance, useBubbleLift, useBubbleAvoid, useBubbleHide, useTabBarTop } from "./chrome";
+export { useBottomClearance, useTabBarTop } from "./chrome";
 export { LockCover } from "./LockCover";
+export { PhotoHero, focalPosition } from "./PhotoHero";
+export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
 
 // ---------------------------------------------------------------- layout
 
 /** Night gradient background with the gold bloom, safe areas handled.
  *
- *  Rules owned here (Part 9 audit, Sep 18 2026):
+ *  Rules owned here (Part 9 audit, Sep 18 2026; v1.2 Oct 2026):
  *  - Bottom: inside the tab layouts a scrolling screen always ends clear of the
- *    floating tab bar, and of the assistant bubble where it shows. `bottomInset`
- *    is only a floor for screens outside the tabs. Non-scroll screens (lists,
- *    chats) pad themselves with `useBottomClearance()`.
- *  - Keyboard: `keyboard` lets iOS inset the scroll view so the focused field
- *    stays above the keyboard. A KeyboardAvoidingView inside a ScrollView does
- *    nothing, so screens must not add one.
+ *    floating tab bar. `bottomInset` is only a floor for screens outside the
+ *    tabs. Non-scroll screens (lists, chats) pad themselves with
+ *    `useBottomClearance()`. The assistant bubble reserves nothing any more: it
+ *    floats and the person moves it (I9, I11).
+ *  - Keyboard: iOS insets the scroll view so the focused field stays above the
+ *    keyboard. A KeyboardAvoidingView inside a ScrollView does nothing, so
+ *    screens must not add one.
  *  - Width: header and body sit in one centered column (COLUMN), so nothing
  *    stretches on tablets, foldables or a desktop window.
  *  - Top: devices with a notch keep the 54 pt design minimum; a phone with a
- *    plain 20 pt status bar gets the status bar plus 16, not a 54 pt hole. */
+ *    plain 20 pt status bar gets the status bar plus 16, not a 54 pt hole. A
+ *    screen that opens on a PhotoHero passes `topInset={false}` (the hero
+ *    applies the inset once) and `backdrop={false}` (plain night, no seam).
+ *  - Data states (S1, S2, S4): with `query`, the screen shows the error state
+ *    when it failed with nothing cached, "You are offline" when the phone is
+ *    offline with nothing cached (never the empty state), and one connection
+ *    banner above cached content. `refresh` adds pull to refresh. */
 export function Screen({
   children,
   scroll = true,
@@ -73,6 +85,7 @@ export function Screen({
   style,
   contentStyle,
   topInset = true,
+  backdrop = true,
   query,
   refresh = false,
   scrollY,
@@ -87,29 +100,27 @@ export function Screen({
   /** Kept for the call sites: every screen now insets for the keyboard and
    *  lets a drag put it away. */
   keyboard?: boolean;
-  /** False for list screens whose list header carries the top inset itself. */
+  /** False for list screens whose list header carries the top inset itself,
+   *  and for screens that open on a PhotoHero. */
   topInset?: boolean;
+  /** False draws a plain night background instead of the gradient image: for
+   *  screens that open on a PhotoHero, whose gradient ends in plain night (I8). */
+  backdrop?: boolean;
   /** The screen's main query. While it has failed with nothing cached the
-   *  screen shows the shared error state with Retry instead of its content
-   *  (never a false empty state, never a blank screen); with cached content it
-   *  shows the offline banner above it (Part 9 audit, D-023). */
+   *  screen shows the shared error state with Retry instead of its content;
+   *  offline with nothing cached it shows "You are offline" with Retry (never
+   *  a false empty state, never a blank screen); with cached content it shows
+   *  one connection banner above it (Part 9 audit D-023; v1.2 S1, S4). */
   query?: QueryLike | null;
-  /** Pull to refresh the main query (scrolling screens only). */
-  refresh?: boolean;
+  /** Pull to refresh (scrolling screens only). `true` refetches `query`; a
+   *  function runs instead (refetch several queries, return a promise). */
+  refresh?: boolean | (() => unknown);
   /** For a screen that scrolls its own list (`scroll={false}`): the offset
    *  from `useScrimScroll()`, so the status bar backdrop follows that list. */
   scrollY?: SharedValue<number>;
 }) {
   const insets = useSafeAreaInsets();
-  const [pulling, setPulling] = useState(false);
-  const onPull = useCallback(async () => {
-    setPulling(true);
-    try {
-      await query?.refetch();
-    } finally {
-      setPulling(false);
-    }
-  }, [query]);
+  const pull = usePullRefresh(typeof refresh === "function" ? refresh : refresh && query ? () => query.refetch() : null);
   const top = useTopInset();
   const { lang } = useLang();
   const { clearance } = useBottomClearance();
@@ -117,43 +128,41 @@ export function Screen({
   const online = useOnline();
   const edgeBack = useEdgeBack();
   const ownY = useSharedValue(0);
-  // The assistant bubble docks into the gutter while content runs on below
-  // the visible area (chrome.ts, useBubbleDock). Worked out on the UI thread;
-  // JS hears only the crossings.
-  const dock = useBubbleDock();
-  const below = useSharedValue(-1);
   const onScroll = useAnimatedScrollHandler((e) => {
     ownY.value = e.contentOffset.y;
-    const b = e.contentSize.height - (e.contentOffset.y + e.layoutMeasurement.height) > DOCK_SLACK ? 1 : 0;
-    if (b !== below.value) {
-      below.value = b;
-      runOnJS(dock)(b === 1);
-    }
   });
-  // Before the first scroll event: from the sizes.
-  const sizes = useRef({ content: 0, view: 0 });
-  const measureDock = useCallback(() => {
-    const { content, view } = sizes.current;
-    if (!content || !view) return;
-    const b = content - (ownY.get() + view) > DOCK_SLACK ? 1 : 0;
-    below.set(b);
-    dock(b === 1);
-  }, [below, dock, ownY]);
   const failed = !!query?.isError && query.data === undefined;
-  // Offline, a query pauses instead of failing, so the banner also follows
-  // the connection itself (core review P1-12).
-  const stale = (!!query?.isError && query.data !== undefined) || (!!query && !online && !failed);
+  // Offline, a query pauses instead of failing and has no data: that is not
+  // "nothing here yet", it is "we cannot look" (S1).
+  const offlineEmpty = !!query && !online && !failed && query.data === undefined;
+  // One banner per screen (S4): offline, or the last refresh failed, with
+  // cached content on screen. Nested StaleBanners stay quiet while it shows.
+  const stale = !!query && query.data !== undefined && (!!query.isError || !online);
+  const [bannerStore] = useState(createBannerStore);
+  const [slotStore] = useState(createBannerStore);
+  // A photo screen places the banner under its hero with <ScreenBannerSlot />.
+  const slotted = useSyncExternalStore(slotStore.subscribe, slotStore.first, slotStore.first) !== null;
+  const latestQuery = useRef(query);
+  useEffect(() => {
+    latestQuery.current = query;
+  });
+  const retry = useCallback(() => retryOnline(latestQuery.current), []);
+  const scope = React.useMemo(() => ({ screenShows: stale, store: bannerStore, slots: slotStore, retry }), [stale, bannerStore, slotStore, retry]);
   const inner = (
     <View style={[styles.column, padded && styles.padded, !scroll && styles.fill, { paddingTop: header || !topInset ? 0 : top, paddingBottom: bottom }, contentStyle]}>
       {failed ? (
-        <View style={!padded && styles.padded}>
+        <View style={[!padded && styles.padded, !topInset && !header && { paddingTop: top }]}>
           <QueryError onRetry={() => void query?.refetch()} message={queryMessage(query, lang)} />
+        </View>
+      ) : offlineEmpty ? (
+        <View style={[!padded && styles.padded, !topInset && !header && { paddingTop: top }]}>
+          <OfflineState onRetry={() => retryOnline(query)} />
         </View>
       ) : (
         <>
-          {stale ? (
-            <View style={[{ marginBottom: 12 }, !padded && styles.padded]}>
-              <StaleBanner onRetry={() => void query?.refetch()} />
+          {stale && !slotted ? (
+            <View style={[{ marginBottom: 12 }, !padded && styles.padded, !topInset && !header && { paddingTop: top }]}>
+              <ConnectionBanner onRetry={retry} />
             </View>
           ) : null}
           {children}
@@ -163,27 +172,20 @@ export function Screen({
   );
   return (
     <BackSlot.Provider value={edgeBack.slot}>
+    <BannerScope.Provider value={scope}>
     <View style={[styles.screen, style]}>
       {/* The night backdrop (navy to night to deep night, with the gold wash
           from the top right) as one small baked image, stretched. It used to
           be two full-screen gradient layers per screen: every screen kept in
           the tabs held about 50 MB of drawing (QA Sep 29: 130 MB at launch,
           860 MB after visiting each section once). One decoded bitmap is
-          now shared by every screen. */}
-      <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" />
+          now shared by every screen. Photo screens skip it (plain night). */}
+      {backdrop ? <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" /> : null}
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
       {scroll ? (
         <Animated.ScrollView
           onScroll={onScroll}
           scrollEventThrottle={16}
-          onContentSizeChange={(_w, h) => {
-            sizes.current.content = h;
-            measureDock();
-          }}
-          onLayout={(e) => {
-            sizes.current.view = e.nativeEvent.layout.height;
-            measureDock();
-          }}
           keyboardShouldPersistTaps="handled"
           // Every screen: a drag down the content puts the keyboard away (QA Sep 29:
           // fields on screens without `keyboard` could not be left otherwise).
@@ -191,7 +193,7 @@ export function Screen({
           automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
-          refreshControl={refresh && query ? <RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={colors.goldLight} colors={[colors.gold]} progressBackgroundColor={colors.night} /> : undefined}
+          refreshControl={pull.control ?? undefined}
         >
           {inner}
         </Animated.ScrollView>
@@ -203,7 +205,122 @@ export function Screen({
       {edgeBack.strip}
       <LockCover />
     </View>
+    </BannerScope.Provider>
     </BackSlot.Provider>
+  );
+}
+
+const PULL_REFRESH_MAX_MS = 8000;
+
+/** Pull to refresh for any scroll view or list (S2). Pass the refetch (or a
+ *  function that refetches several queries and returns a promise); spread
+ *  `control` as the list's `refreshControl`. Null fn: no control. */
+export function usePullRefresh(fn: (() => unknown) | null | undefined): { refreshing: boolean; onRefresh: () => void; control: React.ReactElement<React.ComponentProps<typeof RefreshControl>> | null } {
+  const [refreshing, setRefreshing] = useState(false);
+  const latest = useRef(fn);
+  useEffect(() => {
+    latest.current = fn;
+  });
+  const onRefresh = useCallback(() => {
+    const run = latest.current;
+    if (!run) return;
+    // Offline, React Query pauses the refetch and its promise stays pending
+    // until the connection is back: ask the system to re-check instead and
+    // never leave the spinner hanging (the offline banner already says why).
+    if (!onlineManager.isOnline()) {
+      retryConnection(run);
+      return;
+    }
+    setRefreshing(true);
+    // A refetch that gets paused mid-way (connection lost) settles late too:
+    // the spinner stops after PULL_REFRESH_MAX_MS whatever happens.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cap = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, PULL_REFRESH_MAX_MS);
+    });
+    void Promise.race([Promise.resolve().then(() => run()), cap])
+      .catch(() => {})
+      .finally(() => {
+        if (timer) clearTimeout(timer);
+        setRefreshing(false);
+      });
+  }, []);
+  const control = fn ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.goldLight} colors={[colors.gold]} progressBackgroundColor={colors.night} /> : null;
+  return { refreshing, onRefresh, control };
+}
+
+/** Retry from an offline state: ask the system to re-check the connection,
+ *  then run `refetch` (a refetch alone stays paused while the app thinks it
+ *  is offline). Use it for the Retry of `OfflineState` on list screens. */
+export function retryConnection(refetch: () => unknown) {
+  const again = () => void Promise.resolve().then(refetch).catch(() => {});
+  if (Platform.OS === "web") return again();
+  void NetInfo.refresh()
+    .catch(() => null)
+    .then(again);
+}
+
+function retryOnline(query: QueryLike | null | undefined) {
+  retryConnection(() => query?.refetch());
+}
+
+/** True when a data screen must not render its content (and above all not its
+ *  empty state): the query failed with nothing cached, or the phone is offline
+ *  with nothing cached. For screens that draw their own list instead of
+ *  passing `query` to Screen (S1). Pair it with `<QueryState query={...} />`. */
+export function useQueryBlocked(query: QueryLike | null | undefined): boolean {
+  const online = useOnline();
+  if (!query || query.data !== undefined) return false;
+  return !!query.isError || !online;
+}
+
+// One connection banner per screen (S4). Screen owns the scope: while it shows
+// its own banner, nested StaleBanners render nothing; otherwise only the first
+// nested one mounted shows.
+type BannerStore = { subscribe: (l: () => void) => () => void; first: () => string | null; add: (id: string) => void; remove: (id: string) => void };
+function createBannerStore(): BannerStore {
+  let ids: string[] = [];
+  const listeners = new Set<() => void>();
+  const emit = () => listeners.forEach((l) => l());
+  return {
+    subscribe: (l) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+    first: () => ids[0] ?? null,
+    add: (id) => {
+      if (ids.includes(id)) return;
+      ids = [...ids, id];
+      emit();
+    },
+    remove: (id) => {
+      if (!ids.includes(id)) return;
+      ids = ids.filter((x) => x !== id);
+      emit();
+    },
+  };
+}
+const BannerScope = createContext<{ screenShows: boolean; store: BannerStore; slots: BannerStore; retry: () => void } | null>(null);
+const NO_STORE: BannerStore = { subscribe: () => () => {}, first: () => null, add: () => {}, remove: () => {} };
+
+/** Where the Screen's connection banner goes on a screen that opens on a
+ *  PhotoHero: put it right under the hero. Without a slot the banner sits at
+ *  the top of the content. Renders nothing while the connection is fine. */
+export function ScreenBannerSlot({ style }: { style?: StyleProp<ViewStyle> }) {
+  const scope = useContext(BannerScope);
+  const id = useId();
+  const slots = scope?.slots ?? NO_STORE;
+  useEffect(() => {
+    slots.add(id);
+    return () => slots.remove(id);
+  }, [slots, id]);
+  if (!scope?.screenShows) return null;
+  return (
+    <View style={[{ marginBottom: 12 }, style]}>
+      <ConnectionBanner onRetry={scope.retry} />
+    </View>
   );
 }
 
@@ -264,10 +381,11 @@ export function StatusScrim({ y }: { y?: SharedValue<number> }) {
 }
 
 /** For list screens that scroll their own FlatList inside `<Screen scroll={false}>`:
- *  spread `listProps` on the list and pass `scrollY` to the Screen. The status
- *  bar backdrop follows the list and the assistant bubble docks while rows run
- *  on below the visible area, as on a scrolling Screen. FlatList already
- *  reports its offset to JS for windowing, so this costs nothing extra. */
+ *  spread `listProps` on the list and pass `scrollY` to the Screen, so the
+ *  status bar backdrop follows the list as on a scrolling Screen. FlatList
+ *  already reports its offset to JS for windowing, so this costs nothing
+ *  extra. (The bubble dock it also drove is gone in v1.2; the props keep
+ *  their shape so call sites need no change.) */
 export function useScrimScroll(): {
   scrollY: SharedValue<number>;
   listProps: {
@@ -278,31 +396,17 @@ export function useScrimScroll(): {
   };
 } {
   const scrollY = useSharedValue(0);
-  const dock = useBubbleDock();
-  const sizes = useRef({ y: 0, content: 0, view: 0 });
-  const listProps = React.useMemo(() => {
-    const update = () => {
-      const { y, content, view } = sizes.current;
-      if (content && view) dock(content - (y + view) > DOCK_SLACK);
-    };
-    return {
+  const listProps = React.useMemo(
+    () => ({
       onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-        scrollY.set(contentOffset.y);
-        sizes.current = { y: contentOffset.y, content: contentSize.height, view: layoutMeasurement.height };
-        update();
+        scrollY.set(e.nativeEvent.contentOffset.y);
       },
       scrollEventThrottle: 16,
-      onContentSizeChange: (_w: number, h: number) => {
-        sizes.current.content = h;
-        update();
-      },
-      onLayout: (e: LayoutChangeEvent) => {
-        sizes.current.view = e.nativeEvent.layout.height;
-        update();
-      },
-    };
-  }, [dock, scrollY]);
+      onContentSizeChange: (_w: number, _h: number) => {},
+      onLayout: (_e: LayoutChangeEvent) => {},
+    }),
+    [scrollY]
+  );
   return { scrollY, listProps };
 }
 
@@ -813,29 +917,115 @@ export function LangToggle({ value, onChange, dark = true }: { value: "en" | "es
   );
 }
 
+/** Keyboards with no Return key: they get a Done bar on iOS (K6). */
+const NUMERIC_KEYBOARDS = new Set(["number-pad", "decimal-pad", "numeric", "phone-pad", "ascii-capable-number-pad"]);
+
 /** Text field. Dark keyboard (the app is dark only), the same 1.3 text size cap
  *  as the Text component, and a card radius when multiline so a tall field does
- *  not read as a blob. */
-export function Input({ icon, style, right, ref, ...props }: Omit<TextInputProps, "style"> & { icon?: IconName; right?: ReactNode; style?: StyleProp<ViewStyle>; ref?: React.Ref<TextInput> }) {
+ *  not read as a blob.
+ *
+ *  v1.2:
+ *  - A numeric, decimal or phone keyboard has no Return key, so on iOS it gets
+ *    a "Done" bar on top (K6). `doneBar={false}` turns it off; a call site's
+ *    own `inputAccessoryViewID` wins.
+ *  - A search field (`icon="search"`, or `clearable`) shows a clear button
+ *    while it has text (K9 to K12). It empties the field through
+ *    `onChangeText("")` and keeps the keyboard up. */
+export function Input({
+  icon,
+  style,
+  right,
+  ref,
+  clearable,
+  doneBar = true,
+  ...props
+}: Omit<TextInputProps, "style"> & {
+  icon?: IconName;
+  right?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  ref?: React.Ref<TextInput>;
+  /** Show the clear button while there is text. Default: on for search fields. */
+  clearable?: boolean;
+  /** The iOS Done bar on numeric keyboards. Default on. */
+  doneBar?: boolean;
+}) {
   // Inside a Field the field's visible label names the input for VoiceOver
   // and TalkBack; alone, its placeholder does. A call site's own label wins.
   const field = useContext(FieldContext);
+  const c = useCopy().common;
+  const inner = useRef<TextInput | null>(null);
+  const setRef = useCallback(
+    (node: TextInput | null) => {
+      inner.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref && typeof ref === "object") (ref as React.RefObject<TextInput | null>).current = node;
+    },
+    [ref]
+  );
+  const barId = `done-${useId()}`;
+  const numeric = !props.multiline && !!props.keyboardType && NUMERIC_KEYBOARDS.has(props.keyboardType);
+  const withBar = Platform.OS === "ios" && doneBar && numeric && !props.inputAccessoryViewID;
+  const canClear = (clearable ?? icon === "search") && props.editable !== false && !!props.value;
   return (
     <View style={[styles.input, props.multiline && styles.inputMultiline, style]}>
       {icon ? <Icon name={icon} size={20} color={colors.ivory55} /> : null}
       <TextInput
-        ref={ref}
+        ref={setRef}
         accessibilityLabel={field?.label ?? (typeof props.placeholder === "string" ? props.placeholder : undefined)}
         accessibilityHint={field?.hint ?? undefined}
         placeholderTextColor={colors.ivory55}
         selectionColor={colors.goldLight}
         keyboardAppearance="dark"
         maxFontSizeMultiplier={1.3}
+        inputAccessoryViewID={withBar ? barId : undefined}
         {...props}
         style={[{ flex: 1, color: colors.ivory, fontFamily: fonts.body, fontSize: 16, paddingVertical: 12 }, props.multiline && { minHeight: 90, textAlignVertical: "top" }]}
       />
+      {canClear ? (
+        <Pressable
+          testID={props.testID ? `${props.testID}-clear` : undefined}
+          accessibilityRole="button"
+          accessibilityLabel={c.clearSearch}
+          hitSlop={4}
+          onPress={() => {
+            props.onChangeText?.("");
+            inner.current?.focus();
+          }}
+          style={({ pressed }) => [styles.clearHit, pressed && { opacity: 0.6 }]}
+        >
+          <Icon name="x-circle" size={20} color={colors.ivory55} />
+        </Pressable>
+      ) : null}
       {right}
+      {withBar ? <KeyboardDoneBar nativeID={barId} onDone={() => inner.current?.blur()} /> : null}
     </View>
+  );
+}
+
+/** The iOS "Done" bar over a keyboard with no Return key (K6). `Input` adds it
+ *  by itself; a raw TextInput opts in with `inputAccessoryViewID={id}` and
+ *  `<KeyboardDoneBar nativeID={id} />` next to it. Renders nothing off iOS. */
+export function KeyboardDoneBar({ nativeID, onDone }: { nativeID: string; onDone?: () => void }) {
+  const c = useCopy().common;
+  if (Platform.OS !== "ios") return null;
+  return (
+    <InputAccessoryView nativeID={nativeID} backgroundColor={colors.keyboardBar}>
+      <View style={styles.doneBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={c.done}
+          onPress={() => {
+            onDone?.();
+            Keyboard.dismiss();
+          }}
+          style={({ pressed }) => [styles.doneHit, pressed && { opacity: 0.6 }]}
+        >
+          <T v="body15" color={colors.goldLight} style={{ fontFamily: fonts.bodySemibold }}>
+            {c.done}
+          </T>
+        </Pressable>
+      </View>
+    </InputAccessoryView>
   );
 }
 
@@ -1102,25 +1292,83 @@ export function Skeleton({ w = "100%", h = 16, r = 8, style }: { w?: number | `$
   return <View style={[{ width: w, height: h, borderRadius: r, backgroundColor: "rgba(247,243,236,0.09)" }, style]} />;
 }
 
+/** The focused native text field, or null. react-native-web's TextInputState
+ *  has no currentlyFocusedInput (only currentlyFocusedField), so the web QA
+ *  rig skips it instead of throwing while a sheet renders. */
+function focusedTextInput(): ReturnType<typeof TextInput.State.currentlyFocusedInput> | null {
+  if (Platform.OS === "web") return null;
+  const state = TextInput.State as Partial<typeof TextInput.State>;
+  return state.currentlyFocusedInput?.() ?? null;
+}
+
 /** Bottom sheet with the gold hairline and grabber.
  *
  *  Default: the height follows the content up to the window minus the top
- *  inset, the content scrolls inside, and the sheet rides above the keyboard
+ *  margin, the content scrolls inside, and the sheet rides above the keyboard
  *  and shrinks if the keyboard leaves less room. No fixed offset can squeeze it
  *  on a 667 pt phone any more (Part 9 audit, H5).
+ *
+ *  v1.2 (K1, K2):
+ *  - Opening a sheet puts the keyboard away first. A sheet that opened over a
+ *    keyboard never moved (its keyboard avoidance only hears a keyboard that
+ *    opens after it), so a picker's Done sat under the keys and typing still
+ *    went to the field behind.
+ *  - The sheet never climbs under the status bar: it keeps the top safe area
+ *    plus 8 pt free, also while the keyboard squeezes it.
+ *  - `footer` is docked at the bottom of the sheet, outside the scroll, so it
+ *    rides right on top of the keyboard while a field is focused. Use it for
+ *    the form's actions: `footer={<SheetActions onCancel={...} onSave={...} />}`.
  *
  *  `scroll={false}` is for sheets that bring their own list or scroll view:
  *  they get a definite height (the old `top` offset, but never under 320 pt and
  *  never over the window) so a `flex: 1` child has something to fill.
  *
  *  On wide windows the sheet is a centered 640 pt column. */
-export function Sheet({ visible, onClose, children, top = 150, scroll = true }: { visible: boolean; onClose: () => void; children: ReactNode; top?: number; scroll?: boolean }) {
+export function Sheet({
+  visible,
+  onClose,
+  children,
+  top = 150,
+  scroll = true,
+  footer,
+  dismissKeyboard = true,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  top?: number;
+  scroll?: boolean;
+  /** Docked under the content and above the keyboard (Cancel / Save). */
+  footer?: ReactNode;
+  /** Put the keyboard away when the sheet opens. Default on (K1). */
+  dismissKeyboard?: boolean;
+}) {
   const insets = useSafeAreaInsets();
   const copy = useCopy();
   const { height, width } = useWindowDimensions();
-  const maxHeight = height - Math.max(insets.top, 20) - 24;
+  const keyboardOpen = useKeyboardOpen();
+  // Never under the clock, the Dynamic Island or the status bar (K2).
+  const topGap = Math.max(insets.top, 20) + 8;
+  const maxHeight = height - topGap;
   const fixed = Math.min(Math.max(height - top, 320), maxHeight);
   const wide = width >= WIDE_BREAKPOINT;
+  // Under the keyboard the home indicator is covered: no room kept for it.
+  const bottomPad = keyboardOpen ? 12 : insets.bottom + 16;
+  // The field that had the keyboard when the sheet opened, read while the
+  // sheet renders (before anything inside it mounts), then blurred. Only that
+  // one: a field inside the sheet that focuses itself keeps its keyboard.
+  // Starts false so a sheet mounted already open counts as opening too.
+  const [wasVisible, setWasVisible] = useState(false);
+  const [blurTarget, setBlurTarget] = useState<ReturnType<typeof TextInput.State.currentlyFocusedInput> | null>(null);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    setBlurTarget(visible && dismissKeyboard ? focusedTextInput() : null);
+  }
+  useEffect(() => {
+    if (!blurTarget) return;
+    // Runs once per opening: the target changes only when `visible` does.
+    (TextInput.State as Partial<typeof TextInput.State>).blurTextInput?.(blurTarget);
+  }, [blurTarget]);
   // The scrim fades while the sheet itself slides up; dragging the grabber
   // band down dismisses it, as the grabber promises (core review P2-35).
   const drag = useSharedValue(0);
@@ -1141,7 +1389,7 @@ export function Sheet({ visible, onClose, children, top = 150, scroll = true }: 
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Pressable testID="sheet-scrim" style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={copy.common.close} />
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} pointerEvents="box-none" style={styles.sheetHost}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} pointerEvents="box-none" style={[styles.sheetHost, { paddingTop: topGap }]}>
           <Animated.View entering={SlideInDown.duration(260)} style={[styles.sheet, { maxHeight }, !scroll && { height: fixed }, wide && styles.sheetWide, dragStyle]}>
             <GestureDetector gesture={pan}>
               <View style={styles.grabberBand} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -1149,18 +1397,56 @@ export function Sheet({ visible, onClose, children, top = 150, scroll = true }: 
               </View>
             </GestureDetector>
             {scroll ? (
-              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
+              <ScrollView
+                style={footer ? styles.sheetScroll : undefined}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={{ paddingBottom: footer ? 12 : bottomPad }}
+              >
                 {children}
               </ScrollView>
             ) : (
-              <View style={{ flex: 1, paddingBottom: insets.bottom + 16 }}>{children}</View>
+              <View style={{ flex: 1, paddingBottom: footer ? 12 : bottomPad }}>{children}</View>
             )}
+            {footer ? <View style={[styles.sheetFooter, { paddingBottom: bottomPad }]}>{footer}</View> : null}
           </Animated.View>
         </KeyboardAvoidingView>
         {/* A Modal sits above the root layout's lock cover: it draws its own. */}
         <LockCover />
       </GestureHandlerRootView>
     </Modal>
+  );
+}
+
+/** The standard actions of a form sheet, for `Sheet footer`: Cancel and the
+ *  main action side by side, always visible above the keyboard (K2). */
+export function SheetActions({
+  onCancel,
+  onSave,
+  saveLabel,
+  cancelLabel,
+  saving,
+  disabled,
+  saveTestID,
+}: {
+  onCancel: () => void;
+  onSave: () => void;
+  /** Default "Save" / "Guardar". */
+  saveLabel?: string;
+  /** Default "Cancel" / "Cancelar". */
+  cancelLabel?: string;
+  saving?: boolean;
+  disabled?: boolean;
+  saveTestID?: string;
+}) {
+  const c = useCopy().common;
+  return (
+    <ButtonRow>
+      <Button label={cancelLabel ?? c.cancel} kind="ghost" onPress={onCancel} haptic={false} />
+      <Button label={saveLabel ?? c.save} onPress={onSave} loading={saving} disabled={disabled} testID={saveTestID} />
+    </ButtonRow>
   );
 }
 
@@ -1184,19 +1470,58 @@ export function QueryError({ onRetry, message, compact }: { onRetry?: () => void
   );
 }
 
-/** Shown above cached content when the last refresh failed. */
-export function StaleBanner({ onRetry }: { onRetry?: () => void }) {
+/** "You are offline" for a screen with nothing cached to show (S1): never the
+ *  empty state ("Start with the people...") while the phone has no network. */
+export function OfflineState({ onRetry, compact }: { onRetry?: () => void; compact?: boolean }) {
+  const c = useCopy().common;
+  return (
+    <Stack gap={12} style={{ alignItems: "center", paddingHorizontal: 16, paddingVertical: compact ? 16 : 32 }}>
+      <Icon name="wifi-off" size={28} color={colors.amber} />
+      <T v={compact ? "title26" : "title30"} center>
+        {c.offlineTitle}
+      </T>
+      <T v="body15" color={colors.ivory55} center>
+        {c.offlineEmptyBody}
+      </T>
+      {onRetry ? <Button label={c.retry} kind="glass" small full={false} icon="undo" onPress={onRetry} style={{ alignSelf: "center", marginTop: 4 }} /> : null}
+    </Stack>
+  );
+}
+
+/** The banner itself. */
+function ConnectionBanner({ onRetry }: { onRetry?: () => void }) {
   const c = useCopy().common;
   return <Banner icon="wifi-off" title={c.offline} body={c.offlineDetail} action={onRetry ? <IconButton name="undo" label={c.retry} onPress={onRetry} /> : undefined} />;
 }
 
+/** Shown above cached content when the last refresh failed or the phone is
+ *  offline. One per screen (S4): inside a Screen that already shows its own
+ *  banner it renders nothing, and of several inside one Screen only the first
+ *  shows. */
+export function StaleBanner({ onRetry }: { onRetry?: () => void }) {
+  const scope = useContext(BannerScope);
+  const id = useId();
+  const store = scope?.store ?? NO_STORE;
+  useEffect(() => {
+    store.add(id);
+    return () => store.remove(id);
+  }, [store, id]);
+  const first = useSyncExternalStore(store.subscribe, store.first, store.first);
+  if (scope && (scope.screenShows || (first !== null && first !== id))) return null;
+  return <ConnectionBanner onRetry={onRetry} />;
+}
+
 /** What a data screen shows instead of its content while a query is in trouble.
  *  Renders nothing when the query is healthy. With cached data it is a banner
- *  above the content; with none it is the full error state, and the screen
- *  must not render its empty state under it (check `query.isError`). */
+ *  above the content (one per screen); with none it is the full error state,
+ *  or "You are offline" when the phone is offline. The screen must not render
+ *  its empty state under it: check `useQueryBlocked(query)`. */
 export function QueryState({ query, message }: { query: { isError: boolean; data: unknown; refetch: () => unknown; isFetching?: boolean }; message?: string | null }) {
+  const online = useOnline();
+  const retry = () => retryOnline(query);
   if (query.isError && query.data === undefined) return <QueryError onRetry={() => void query.refetch()} message={message} />;
-  if (query.isError) return <StaleBanner onRetry={() => void query.refetch()} />;
+  if (!online && query.data === undefined) return <OfflineState onRetry={retry} />;
+  if (query.isError || !online) return <StaleBanner onRetry={retry} />;
   return null;
 }
 
@@ -1205,17 +1530,10 @@ export function QueryState({ query, message }: { query: { isError: boolean; data
  *  `dockedListPadding` so its last row scrolls clear. */
 export function DockedActions({ children, onHeight }: { children: ReactNode; onHeight?: (h: number) => void }) {
   const tabTop = useTabBarTop();
-  const [h, setH] = useState(0);
-  // The bubble rests above the dock while this screen is focused.
-  useBubbleLift(h);
   return (
     <View pointerEvents="box-none" style={[styles.dock, { paddingBottom: tabTop + 12 }]}>
       <LinearGradient pointerEvents="none" colors={["rgba(8,11,16,0)", "rgba(8,11,16,0.94)", colors.nightDeep]} locations={[0, 0.3, 1]} style={COVER} />
-      <View style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]} onLayout={(e) => {
-          const next = Math.round(e.nativeEvent.layout.height);
-          setH(next);
-          onHeight?.(next);
-        }}
+      <View style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]} onLayout={(e) => onHeight?.(Math.round(e.nativeEvent.layout.height))}
       >
         {children}
       </View>
@@ -1254,6 +1572,9 @@ const styles = StyleSheet.create({
   segmentStack: { flex: 0, borderRadius: radius.tile, paddingHorizontal: 14 },
   langHit: { minWidth: HIT_TARGET, minHeight: HIT_TARGET, alignItems: "center", justifyContent: "center" },
   inputMultiline: { borderRadius: radius.card, alignItems: "flex-start", paddingVertical: 4 },
+  clearHit: { width: HIT_TARGET, height: HIT_TARGET, marginRight: -12, alignItems: "center", justifyContent: "center" },
+  doneBar: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", minHeight: HIT_TARGET, paddingHorizontal: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.ivory14 },
+  doneHit: { minHeight: HIT_TARGET, minWidth: 64, paddingHorizontal: 12, alignItems: "center", justifyContent: "center" },
   dock: { position: "absolute", left: 0, right: 0, bottom: 0 },
   sheetHost: { flex: 1, justifyContent: "flex-end" },
   input: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, borderRadius: radius.pill, paddingHorizontal: 18, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)" },
@@ -1265,6 +1586,8 @@ const styles = StyleSheet.create({
   scrimEdge: { position: "absolute", left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth, backgroundColor: colors.ivory14 },
   sheetWide: { maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", width: "100%", borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.goldBorder },
   sheet: { flexShrink: 1, backgroundColor: colors.night, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, borderTopWidth: 1, borderTopColor: colors.goldBorder, paddingHorizontal: 24 },
+  sheetScroll: { flexGrow: 0, flexShrink: 1 },
+  sheetFooter: { paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.ivory09, marginHorizontal: -24, paddingHorizontal: 24 },
   grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(247,243,236,0.2)" },
   grabberBand: { alignSelf: "stretch", paddingTop: 10, paddingBottom: 14, marginHorizontal: -24, alignItems: "center" },
   briefRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 8 },

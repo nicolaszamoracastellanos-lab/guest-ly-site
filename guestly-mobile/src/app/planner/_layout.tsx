@@ -45,11 +45,15 @@ export default function PlannerTabs() {
           route names below match (core review P1-7). */}
       <Tabs.Screen name="budget" />
       <Tabs.Screen name="more" />
-      <Tabs.Screen name="tasks" options={{ href: null }} />
-      <Tabs.Screen name="runsheet" options={{ href: null }} />
+      {/* Sections reached from More. While one is open the More tab stays lit
+          (GlassTabBar), and leaving a section pops it to its list, so it
+          reopens on its list and never on the last record (v1.2, N3; same
+          rule as the couple tabs). */}
+      <Tabs.Screen name="tasks" options={{ href: null, popToTopOnBlur: true }} />
+      <Tabs.Screen name="runsheet" options={{ href: null, popToTopOnBlur: true }} />
       <Tabs.Screen name="seating" options={{ href: null }} />
       <Tabs.Screen name="broadcasts" options={{ href: null }} />
-      <Tabs.Screen name="vendors" options={{ href: null }} />
+      <Tabs.Screen name="vendors" options={{ href: null, popToTopOnBlur: true }} />
     </Tabs>
   );
 }

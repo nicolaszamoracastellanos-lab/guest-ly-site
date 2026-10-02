@@ -1,0 +1,147 @@
+// Day-of: the critical fact in the top 320px, then the runsheet for guests.
+//
+// v1.2 (N1): this is also the guest Home on the wedding day. Home used to jump
+// to the hidden /guest/dayof route once; one tap on Home brought the countdown
+// back and the day view was gone until the app restarted. Home now renders
+// this view itself while the server says it is the day; the /guest/dayof
+// route stays for deep links (a push on the day).
+
+import React from "react";
+import { View, StyleSheet, Image } from "react-native";
+import { useIsFocused, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { fmt, useCopy, useLang } from "@/i18n";
+import { useGuestDayOf } from "@/lib/hooks";
+import { Screen, ScreenBannerSlot, T, Row, Gem, IconButton, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
+import { colors, FILL, COVER } from "@/ui/tokens";
+import { clockLabel } from "@/features/guest/format";
+import { openMaps, openUrlSafe } from "@/features/guest/links";
+import { useRefetchOnRefocus } from "@/features/guest/focus";
+
+const photo = require("../../../assets/photos/courtyard.jpg");
+
+export function GuestDayOfView() {
+  const copy = useCopy();
+  const { lang } = useLang();
+  const router = useRouter();
+  const top = useTopInset();
+  // Polls every minute only while this screen is on top; tabs stay mounted.
+  const focused = useIsFocused();
+  const mainQuery = useGuestDayOf({ poll: focused });
+  useRefetchOnRefocus(focused, mainQuery.refetch);
+  const { data, isLoading } = mainQuery;
+  const now = data?.now_local;
+  const focus = data?.current ?? data?.next ?? data?.events[0] ?? null;
+
+  const failLink = copy.common.linkFailed;
+
+  return (
+    // Plain night behind the photo: its gradient ends in night, so it has no
+    // seam where it meets the screen (I8).
+    <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh>
+      {/* The hero grows with its text. It had a fixed height with the text pinned
+          inside, so a five-line sentence ran under the buttons (Part 9 audit, D-015). */}
+      <View style={[styles.hero, { paddingTop: top + 64 }]}>
+        {/* COVER wrapper: the hero has padding (see tokens.ts). */}
+        <View style={COVER}>
+          <Image source={photo} style={FILL} resizeMode="cover" />
+          <LinearGradient colors={["rgba(8,11,16,0.34)", "rgba(8,11,16,0.12)", "rgba(13,17,23,0.66)", colors.night]} locations={[0, 0.25, 0.58, 1]} style={COVER} />
+        </View>
+        <Row style={[styles.top, { top }]}>
+          <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
+            <Gem />
+            <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={1} style={{ letterSpacing: 2, flexShrink: 1 }}>
+              {copy.common.today}
+              {now ? ` · ${clockLabel(now.hour * 60 + now.minute, null, lang)}` : ""}
+            </T>
+          </Row>
+          <IconButton name="bell" label={copy.messages.title} onPress={() => router.push("/guest/messages")} />
+        </Row>
+        <View style={styles.headline}>
+          <SectionLabel color={colors.goldLight}>{copy.dayof.rightNow}</SectionLabel>
+          {isLoading && !data ? (
+            <Skeleton w={260} h={44} style={{ marginTop: 8 }} />
+          ) : focus ? (
+            <>
+              <T v="display44" style={{ marginTop: 8 }}>
+                {fmt(copy.dayof.headTo, { event: focus.title })}
+              </T>
+              <T v="body15" color="rgba(247,243,236,0.85)" style={{ marginTop: 8 }}>
+                {[focus.location, clockLabel(focus.start_minutes, focus.time, lang) || null, focus.notes].filter(Boolean).join(". ")}
+              </T>
+            </>
+          ) : (
+            <T v="body15" color={colors.ivory70} style={{ marginTop: 8 }}>
+              {copy.dayof.notYet}
+            </T>
+          )}
+        </View>
+      </View>
+      {/* One action. The Shuttle button next to it did nothing when pressed; the
+          shuttle details are in the Getting there card right below. */}
+      <View style={{ paddingHorizontal: 24, marginTop: -24 }}>
+        {/* The connection banner sits under the photo, never above it. */}
+        <ScreenBannerSlot style={{ marginTop: 0 }} />
+        <Button label={copy.dayof.openMaps} small icon="map" onPress={() => openMaps(focus?.maps_url, failLink)} disabled={!focus?.maps_url} />
+      </View>
+      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
+          {(data?.events ?? []).map((e, i) => (
+            <Row key={e.id} gap={14} style={[styles.runRow, i === (data?.events.length ?? 0) - 1 && { borderBottomWidth: 0 }]}>
+              <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: lang === "en" ? 78 : 62 }}>
+                {clockLabel(e.start_minutes, e.time, lang)}
+              </T>
+              <T
+                v="body15"
+                color={e.state === "now" ? colors.ivory : e.state === "done" ? colors.ivory40 : colors.ivory70}
+                style={[{ flex: 1 }, e.state === "done" && { textDecorationLine: "line-through" }]}
+              >
+                {e.title}
+                {e.location ? ` · ${e.location}` : ""}
+              </T>
+              {e.state === "now" ? <Badge label={copy.common.now} kind="gold" /> : null}
+            </Row>
+          ))}
+        </Card>
+        {data?.getting_there ? (
+          <Card kind="solid" padding={12} style={{ marginTop: 12 }}>
+            <Row gap={12}>
+              <Icon name="bus" size={22} color={colors.goldLight} />
+              <View style={{ flex: 1, gap: 1 }}>
+                <SectionLabel>{copy.dayof.gettingThere}</SectionLabel>
+                <T v="body15" color={colors.ivory90}>
+                  {data.getting_there}
+                </T>
+              </View>
+            </Row>
+          </Card>
+        ) : null}
+        {data?.dress_code ? (
+          <Card kind="solid" padding={12} style={{ marginTop: 12 }}>
+            <Row gap={12}>
+              <Icon name="hanger" size={22} color={colors.goldLight} />
+              <View style={{ flex: 1, gap: 1 }}>
+                <SectionLabel>{copy.dayof.dressCode}</SectionLabel>
+                <T v="body15" color={colors.ivory90}>
+                  {data.dress_code}
+                </T>
+              </View>
+            </Row>
+          </Card>
+        ) : null}
+        {data?.planner_whatsapp ? (
+          <Stack style={{ marginTop: 12 }}>
+            <Button label={copy.dayof.planner} kind="ghost" small icon="phone" onPress={() => openUrlSafe(`https://wa.me/${data.planner_whatsapp!.replace(/\D/g, "")}`, failLink)} />
+          </Stack>
+        ) : null}
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: { overflow: "hidden", minHeight: 400, paddingBottom: 56, justifyContent: "flex-end" },
+  top: { position: "absolute", left: 24, right: 14, gap: 8, justifyContent: "space-between" },
+  headline: { paddingHorizontal: 24 },
+  runRow: { minHeight: 46, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 6 },
+});

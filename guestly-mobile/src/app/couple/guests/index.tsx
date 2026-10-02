@@ -11,7 +11,7 @@ import { exportGuests, type ExportPreset } from "@/features/exports/download";
 import { useGuestPages } from "@/features/guests/hooks";
 import type { GuestListItem } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset, useBottomClearance, useBubbleHide, COLUMN, QueryError, useTabBarTop, useScrimScroll, StaleBanner } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Input, Chip, ChipRow, ListRow, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, Card, T, Row, useTopInset, useBottomClearance, COLUMN, QueryError, OfflineState, retryConnection, usePullRefresh, useTabBarTop, useScrimScroll, StaleBanner } from "@/ui";
 import { useOnline } from "@/lib/query";
 import { colors } from "@/ui/tokens";
 
@@ -39,10 +39,8 @@ export default function CoupleGuests() {
   const { items, totals, isLoading, loadMore, isFetchingNextPage } = guestsQuery;
   const openGuest = useCallback((id: string) => router.push({ pathname: "/couple/guests/[id]", params: { id } }), [router]);
   const canEdit = user?.me.can_edit ?? false;
-  // The add button floats where the assistant bubble would rest, so the bubble
-  // moves up by the button and its gap while this list is on screen.
-  // One floating circle per screen: with the add button up, the bubble steps aside.
-  useBubbleHide(canEdit);
+  // Pull to refresh (S2).
+  const pull = usePullRefresh(() => guestsQuery.refetch());
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
@@ -61,7 +59,7 @@ export default function CoupleGuests() {
       {/* Saved rows shown offline say so (QA Sep 29). */}
       {items.length && (!online || guestsQuery.isError) ? (
         <View style={{ marginTop: 14 }}>
-          <StaleBanner onRetry={() => void guestsQuery.refetch()} />
+          <StaleBanner onRetry={() => retryConnection(guestsQuery.refetch)} />
         </View>
       ) : null}
       <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoCorrect={false} style={{ marginTop: 18 }} />
@@ -91,6 +89,9 @@ export default function CoupleGuests() {
           onEndReachedThreshold={0.5}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          // Search results scroll clear of the keyboard (K9 to K12).
+          automaticallyAdjustKeyboardInsets
+          refreshControl={pull.control ?? undefined}
           ListFooterComponent={isFetchingNextPage ? <ActivityIndicator color={colors.goldLight} style={{ marginVertical: 18 }} /> : null}
           ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
           contentContainerStyle={[COLUMN, { paddingBottom: clearance + (canEdit ? FAB_SIZE + 14 : 0) }]}
@@ -103,6 +104,9 @@ export default function CoupleGuests() {
               </Stack>
             ) : guestsQuery.isError ? (
               <QueryError onRetry={() => void guestsQuery.refetch()} />
+            ) : !online && !guestsQuery.data ? (
+              // Offline with nothing saved: never "Start with the people..." (S1).
+              <OfflineState onRetry={() => retryConnection(guestsQuery.refetch)} />
             ) : guestsQuery.term ? (
               <EmptyState title={copy.guests.noMatchTitle} body={copy.guests.noMatchBody} />
             ) : filter !== "all" ? (

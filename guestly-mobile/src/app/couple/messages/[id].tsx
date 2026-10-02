@@ -3,7 +3,7 @@
 // WhatsApp with the text; web threads have no return channel.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Linking, Alert, ScrollView } from "react-native";
+import { View, Linking, Alert, ScrollView, Keyboard } from "react-native";
 import { useIsFocused, useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang, relTime } from "@/i18n";
@@ -11,7 +11,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card, KeyboardFill, useKeyboardOpen, useBottomClearance, renderInlineBold } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Input, Button, Badge, Stack, Skeleton, Icon, Card, KeyboardFill, useKeyboardOpen, useBottomClearance, usePullRefresh, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { fetchEarlier, useConversation, type TranscriptLine } from "@/features/inbox/hooks";
@@ -44,6 +44,12 @@ export default function Conversation() {
   const recentIds = new Set(recent.map((m) => m.id));
   const lines = [...earlier.filter((m) => !recentIds.has(m.id)), ...recent];
   const hasEarlier = earlierMore ?? data?.has_more ?? false;
+  // The reply box clears the tab bar at rest and sits on the keyboard while typing (D-003).
+  const keyboardOpen = useKeyboardOpen();
+  const { clearance } = useBottomClearance();
+  const channelLabel = data ? (c.channel[data.channel] ?? data.channel) : "";
+  // Pull down on the transcript to check for new messages now (S2).
+  const pull = usePullRefresh(() => refetch());
 
   async function loadEarlier() {
     const first = lines[0];
@@ -64,6 +70,14 @@ export default function Conversation() {
   useEffect(() => {
     if (data?.messages.length) setTimeout(() => scroll.current?.scrollToEnd({ animated: false }), 50);
   }, [data?.messages.length]);
+
+  // The keyboard takes the bottom of the transcript: bring the last message
+  // back above the reply box, so the question being answered stays in view
+  // (K3). "Did": the list has its new height by then.
+  useEffect(() => {
+    const sub = Keyboard.addListener("keyboardDidShow", () => scroll.current?.scrollToEnd({ animated: true }));
+    return () => sub.remove();
+  }, []);
 
   async function invalidate() {
     await Promise.all([qc.invalidateQueries({ queryKey: ["couple-inbox"] }), qc.invalidateQueries({ queryKey: ["couple-conversation", id] }), qc.invalidateQueries({ queryKey: ["couple-home"] })]);
@@ -105,44 +119,47 @@ export default function Conversation() {
     }
   }
 
-  // The reply box clears the tab bar at rest and sits on the keyboard while typing (D-003).
-  const keyboardOpen = useKeyboardOpen();
-  const { clearance } = useBottomClearance();
-  const channelLabel = data ? (c.channel[data.channel] ?? data.channel) : "";
-
   return (
-    <Screen query={mainQuery} scroll={false} padded={false} header={<TopBar onBack={back} title={c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
+    <Screen query={mainQuery} scroll={false} padded={false} header={<TopBar onBack={back} title={data ? undefined : c.title} right={data?.whatsapp_link ? <Button label={c.openWhatsapp} kind="glass" small full={false} icon="phone" onPress={() => Linking.openURL(data.whatsapp_link!)} /> : undefined} />}>
       <KeyboardFill>
-        <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+        {/* Who this is stays on screen while the transcript scrolls (K3): name,
+            channel and the guest card, fixed above the list. The details and
+            the "handled" action fold away while you type, so the last message
+            keeps the room. */}
+        {data ? (
+          <View style={{ paddingHorizontal: 20, paddingBottom: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory14 }}>
+            <Row gap={12}>
+              <Avatar initials={data.initials} size={keyboardOpen ? 36 : 44} gem={data.channel === "app"} />
+              <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
+                <T v={keyboardOpen ? "body16" : "title26"} numberOfLines={1}>
+                  {data.name}
+                </T>
+                <Row gap={6} style={{ flexWrap: "wrap" }}>
+                  <Badge label={channelLabel} kind={data.channel === "app" ? "gold" : "mute"} />
+                  {keyboardOpen ? null : data.sentiment === "frustrated" ? <Badge label={c.frustrated} kind="red" /> : data.sentiment === "negative" ? <Badge label={c.upset} kind="red" /> : null}
+                  {!keyboardOpen && data.open_events > 0 ? <Badge label={c.openEvents(data.open_events)} kind="amber" dot /> : null}
+                </Row>
+              </View>
+              {data.guest_id ? (
+                <Button label={c.viewGuest} kind="glass" small full={false} onPress={() => router.push({ pathname: "/couple/guests/[id]", params: { id: data.guest_id! } })} />
+              ) : null}
+            </Row>
+            {keyboardOpen ? null : (
+              <>
+                <T v="meta13" color={colors.ivory55}>
+                  {c.started(relTime(data.started_at, lang))} · {c.messages(data.messages.length)}
+                </T>
+                {canEdit && data.open_events > 0 ? <Button label={c.handled} kind="glass" small full={false} icon="check" loading={handling} onPress={markHandled} style={{ alignSelf: "flex-start" }} /> : null}
+              </>
+            )}
+          </View>
+        ) : null}
+        <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16, gap: 10 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" refreshControl={pull.control ?? undefined}>
           {isLoading && !data ? (
             <Stack gap={10}>
               <Skeleton h={56} />
               <Skeleton h={80} />
             </Stack>
-          ) : null}
-          {data ? (
-            <Row gap={14} style={{ marginBottom: 8 }}>
-              <Avatar initials={data.initials} size={52} gem={data.channel === "app"} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <T v="title26">{data.name}</T>
-                <Row gap={6} style={{ flexWrap: "wrap" }}>
-                  <Badge label={channelLabel} kind={data.channel === "app" ? "gold" : "mute"} />
-                  {data.sentiment === "frustrated" ? <Badge label={c.frustrated} kind="red" /> : data.sentiment === "negative" ? <Badge label={c.upset} kind="red" /> : null}
-                  {data.open_events > 0 ? <Badge label={c.openEvents(data.open_events)} kind="amber" dot /> : null}
-                </Row>
-                <T v="meta13" color={colors.ivory55}>
-                  {c.started(relTime(data.started_at, lang))} · {c.messages(data.messages.length)}
-                </T>
-              </View>
-            </Row>
-          ) : null}
-          {data ? (
-            <Row gap={8} style={{ marginBottom: 6, flexWrap: "wrap" }}>
-              {data.guest_id ? (
-                <Button label={c.viewGuest} kind="glass" small full={false} icon="guests" onPress={() => router.push({ pathname: "/couple/guests/[id]", params: { id: data.guest_id! } })} />
-              ) : null}
-              {canEdit && data.open_events > 0 ? <Button label={c.handled} kind="glass" small full={false} icon="check" loading={handling} onPress={markHandled} /> : null}
-            </Row>
           ) : null}
           {data && hasEarlier ? <Button label={c.earlier} kind="text" small loading={loadingEarlier} onPress={() => void loadEarlier()} /> : null}
           {lines.map((m) => (

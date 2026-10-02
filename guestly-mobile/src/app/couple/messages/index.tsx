@@ -6,7 +6,8 @@ import { View, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, ChipRow, ListRow, Avatar, Badge, Row, T, EmptyState, Skeleton, Stack, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, ChipRow, ListRow, Avatar, Badge, Row, T, EmptyState, Skeleton, Stack, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
+import { useOnline } from "@/lib/query";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { COPY as INSIGHTS } from "@/features/insights/copy";
@@ -25,6 +26,9 @@ export default function Inbox() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("needs_you");
   const inbox = useInboxList(filter);
   const { data, isLoading } = inbox;
+  const online = useOnline();
+  // Pull down to refresh the inbox (S2).
+  const pull = usePullRefresh(() => inbox.refetch());
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
@@ -32,6 +36,11 @@ export default function Inbox() {
       <View style={{ marginTop: 18 }}>
         <BigTitle title={c.title} sub={c.subtitle} />
       </View>
+      {data && (!online || inbox.isError) ? (
+        <View style={{ marginTop: 14 }}>
+          <StaleBanner onRetry={() => retryConnection(inbox.refetch)} />
+        </View>
+      ) : null}
       <View style={{ marginTop: 18 }}>
         <ChipRow>
           {FILTERS.map((f) => (
@@ -46,6 +55,7 @@ export default function Inbox() {
     <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
       <FlatList
         {...scrim.listProps}
+        refreshControl={pull.control ?? undefined}
         data={data?.items ?? []}
         keyExtractor={(i) => i.id}
         ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
@@ -58,6 +68,9 @@ export default function Inbox() {
             </Stack>
           ) : inbox.isError ? (
             <QueryError onRetry={() => void inbox.refetch()} />
+          ) : !online && !data ? (
+            // Offline with nothing saved: "we cannot look", never "no messages" (S1).
+            <OfflineState onRetry={() => retryConnection(inbox.refetch)} />
           ) : (
             <EmptyState title={filter === "needs_you" ? c.emptyNeedsYou : c.empty} />
           )

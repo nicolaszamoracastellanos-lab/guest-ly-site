@@ -8,7 +8,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Banner, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskCategory } from "@/features/tasks/hooks";
@@ -57,9 +57,8 @@ export default function Checklists() {
   }
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} />} bottomInset={120}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={copy.title} />} bottomInset={120}>
       <BigTitle title={copy.checklist} sub={copy.checklistIntro} size={34} />
-      {!online ? <Banner icon="wifi-off" title={copy.offline} /> : null}
       <View style={{ marginTop: 16 }}>
         <ChipRow>
           <Chip label={copy.filters.all} on={category === "all"} onPress={() => setCategory("all")} />

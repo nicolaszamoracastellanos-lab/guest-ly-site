@@ -2,18 +2,19 @@
 // planner share it; the surface decides the route prefix.
 
 import React, { useEffect, useState } from "react";
-import { View, Pressable } from "react-native";
+import { View, Pressable, Platform, AccessibilityInfo } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, ListRow, StatTile, Sheet, Banner, EmptyState, Skeleton, SectionLabel, Chip, ChipRow, Hairline, ButtonRow } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, ListRow, StatTile, Sheet, Banner, EmptyState, Skeleton, SectionLabel, Chip, ChipRow, Hairline, ButtonRow, SheetActions } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, type BudgetRow } from "../hooks";
 import { formatMoney, formatMoneyShort, formatMonth, parseAmount, numText } from "../money";
 import { ProgressBar, TextField, ConfirmSheet, useAction } from "../ui";
+import { AddLineSheet } from "../AddLineSheet";
 import { useSafeBack } from "@/lib/nav";
 
 const SELECTED_KEY = "budget-selected";
@@ -58,6 +59,13 @@ export function BudgetOverviewScreen() {
   const [archiveSheet, setArchiveSheet] = useState(false);
   const [form, setForm] = useState({ name: "", currency: "USD", alt_currency: "", fx_rate: "1", guest_count: "", notes: "" });
   const [categoryName, setCategoryName] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [added, setAdded] = useState<string | null>(null);
+  useEffect(() => {
+    if (!added) return;
+    const t = setTimeout(() => setAdded(null), 5000);
+    return () => clearTimeout(t);
+  }, [added]);
 
   const active = data?.active ?? null;
   const computed = active?.computed;
@@ -94,14 +102,9 @@ export function BudgetOverviewScreen() {
   const months = (computed?.months ?? []).filter((m) => m.plannedBase > 0).slice(0, 4);
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} right={active && canEdit ? <IconButton name="gear" label={copy.settings} onPress={() => openEdit(active.budget)} /> : undefined} />}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={copy.title} right={active && canEdit ? <IconButton name="gear" label={copy.settings} onPress={() => openEdit(active.budget)} /> : undefined} />}>
       <BigTitle title={active ? active.budget.name : copy.title} sub={copy.subtitle} size={38} />
 
-      {!online ? (
-        <View style={{ marginTop: 14 }}>
-          <Banner icon="wifi-off" title={copy.offline} />
-        </View>
-      ) : null}
       {data?.pending ? (
         <View style={{ marginTop: 14 }}>
           <Banner icon="clock" title={copy.pending} />
@@ -227,9 +230,17 @@ export function BudgetOverviewScreen() {
 
           {canEdit ? (
             <ButtonRow style={{ marginTop: 14 }}>
-              <Button label={copy.addItem} small icon="plus" onPress={() => router.push({ pathname: `${routePrefix}/category/[id]` as never, params: { id: "none", b: active.budget.id, add: "1" } as never })} />
+              {/* Opens over this summary with a category picker; Cancel leaves
+                  you here (N15). It used to push the empty "No category". */}
+              <Button label={copy.addItem} small icon="plus" onPress={() => setAddOpen(true)} testID="budget-add-line" />
               <Button label={copy.importBudget} small kind="glass" icon="camera" onPress={() => router.push({ pathname: `${routePrefix}/import` as never, params: { b: active.budget.id } as never })} />
             </ButtonRow>
+          ) : null}
+
+          {added ? (
+            <T v="meta13" color={colors.greenText} style={{ marginTop: 10 }} accessibilityLiveRegion="polite">
+              {added}
+            </T>
           ) : null}
 
           {months.length ? (
@@ -260,8 +271,8 @@ export function BudgetOverviewScreen() {
         </>
       ) : null}
 
-      <Sheet visible={budgetSheet !== null} onClose={() => setBudgetSheet(null)} top={90}>
-        <View style={{ paddingHorizontal: 24, gap: 12 }}>
+      <Sheet visible={budgetSheet !== null} onClose={() => setBudgetSheet(null)} top={90} footer={<SheetActions onCancel={() => setBudgetSheet(null)} onSave={saveBudget} saving={busy} disabled={!form.name.trim() || form.currency.trim().length !== 3} cancelLabel={copy.cancel} saveLabel={copy.save} />}>
+        <View style={{ gap: 12 }}>
           <T v="title26">{budgetSheet === "edit" ? copy.settings : copy.createBudget}</T>
           <TextField label={copy.name} value={form.name} onChange={(v) => setForm({ ...form, name: v })} autoCapitalize="sentences" />
           <Row gap={8}>
@@ -275,14 +286,6 @@ export function BudgetOverviewScreen() {
           {form.alt_currency ? <TextField label={copy.fxRate} value={form.fx_rate} onChange={(v) => setForm({ ...form, fx_rate: v })} keyboardType="decimal-pad" /> : null}
           <TextField label={copy.guestCount} value={form.guest_count} onChange={(v) => setForm({ ...form, guest_count: v.replace(/\D/g, "") })} keyboardType="number-pad" />
           <TextField label={copy.notes} value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} multiline />
-          <Row gap={8} style={{ marginTop: 4 }}>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.cancel} kind="ghost" onPress={() => setBudgetSheet(null)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.save} onPress={saveBudget} loading={busy} disabled={!form.name.trim() || form.currency.trim().length !== 3} />
-            </View>
-          </Row>
           {budgetSheet === "edit" ? (
             <Button
               label={copy.archive}
@@ -297,31 +300,47 @@ export function BudgetOverviewScreen() {
         </View>
       </Sheet>
 
-      <Sheet visible={categorySheet} onClose={() => setCategorySheet(false)} top={380}>
-        <View style={{ paddingHorizontal: 24, gap: 12 }}>
+      <Sheet
+        visible={categorySheet}
+        onClose={() => setCategorySheet(false)}
+        top={380}
+        footer={
+          <SheetActions
+            onCancel={() => setCategorySheet(false)}
+            onSave={() =>
+              active &&
+              act(() => writes.createCategory(active.budget.id, categoryName.trim()), () => {
+                setCategoryName("");
+                setCategorySheet(false);
+              })
+            }
+            saving={busy}
+            disabled={!categoryName.trim() || !active}
+            cancelLabel={copy.cancel}
+            saveLabel={copy.save}
+          />
+        }
+      >
+        <View style={{ gap: 12 }}>
           <T v="title26">{copy.addCategory}</T>
           <TextField label={copy.categoryName} value={categoryName} onChange={setCategoryName} autoCapitalize="sentences" />
-          <Row gap={8}>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.cancel} kind="ghost" onPress={() => setCategorySheet(false)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button
-                label={copy.save}
-                loading={busy}
-                disabled={!categoryName.trim() || !active}
-                onPress={() =>
-                  active &&
-                  act(() => writes.createCategory(active.budget.id, categoryName.trim()), () => {
-                    setCategoryName("");
-                    setCategorySheet(false);
-                  })
-                }
-              />
-            </View>
-          </Row>
         </View>
       </Sheet>
+
+      {active ? (
+        <AddLineSheet
+          visible={addOpen && canEdit}
+          onClose={() => setAddOpen(false)}
+          budgetId={active.budget.id}
+          categories={active.categories}
+          onAdded={(id) => {
+            const name = id ? (active.categories.find((c) => c.id === id)?.name ?? copy.uncategorized) : copy.uncategorized;
+            const text = fmt(copy.lineAdded, { name });
+            setAdded(text);
+            if (Platform.OS !== "web") AccessibilityInfo.announceForAccessibility(text);
+          }}
+        />
+      ) : null}
 
       <ConfirmSheet
         visible={archiveSheet}

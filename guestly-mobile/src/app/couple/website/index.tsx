@@ -6,11 +6,11 @@ import { View, Alert, Pressable, Share } from "react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang, useCopy } from "@/i18n";
+import { useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, Banner, EmptyState } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, SheetActions, Banner, EmptyState } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useConfigDraft, WEBSITE_KEY, type SectionType, type WebsiteSurface } from "@/features/website/hooks";
@@ -34,7 +34,6 @@ const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar
 
 export default function WebsiteHome() {
   const c = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -127,7 +126,7 @@ export default function WebsiteHome() {
   const movable = sections.filter((s) => s.type !== "hero");
 
   return (
-    <Screen header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />} bottomInset={40}>
+    <Screen header={<TopBar onBack={back} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {isLoading && !surface ? (
         <Stack gap={10} style={{ marginTop: 20 }}>
@@ -275,19 +274,17 @@ export default function WebsiteHome() {
         </ReadOnlyContext.Provider>
       ) : null}
 
-      <Sheet visible={slugOpen} onClose={() => setSlugOpen(false)} top={260}>
+      <Sheet visible={slugOpen} onClose={() => setSlugOpen(false)} top={260} footer={<SheetActions onCancel={() => setSlugOpen(false)} onSave={() => void saveSlug()} saving={busy === "slug"} saveLabel={c.save} />}>
         <T v="title30">{c.changeAddress}</T>
         <T v="meta13" color={colors.ivory55} style={{ marginTop: 6 }}>
           {c.addressHint}
           {slugDraft}
         </T>
         <Input accessibilityLabel={c.address} value={slugDraft} onChangeText={setSlugDraft} placeholder={c.addressPlaceholder} placeholderTextColor={colors.ivory40} autoCapitalize="none" autoCorrect={false} style={{ marginTop: 14 }} />
-        <Button label={c.save} onPress={() => void saveSlug()} loading={busy === "slug"} style={{ marginTop: 14 }} />
       </Sheet>
-      <Sheet visible={pwOpen} onClose={() => setPwOpen(false)} top={260}>
+      <Sheet visible={pwOpen} onClose={() => setPwOpen(false)} top={260} footer={<SheetActions onCancel={() => setPwOpen(false)} onSave={() => void savePassword()} saving={busy === "password"} disabled={pwDraft.trim().length < 4} saveLabel={c.save} />}>
         <T v="title30">{c.setPassword}</T>
         <Input accessibilityLabel={c.newPassword} value={pwDraft} onChangeText={setPwDraft} placeholder={c.newPassword} placeholderTextColor={colors.ivory40} autoCapitalize="none" autoCorrect={false} secureTextEntry style={{ marginTop: 14 }} />
-        <Button label={c.save} onPress={() => void savePassword()} loading={busy === "password"} disabled={pwDraft.trim().length < 4} style={{ marginTop: 14 }} />
       </Sheet>
     </Screen>
   );

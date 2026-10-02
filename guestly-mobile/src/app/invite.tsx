@@ -1,12 +1,19 @@
 // Invite code entry: six boxes, auto-advance, paste, uppercase.
+//
+// v1.2 (K8, B14, K18): the help line sits right under the boxes, before the
+// button, and turns into the error when a code fails, so neither ever hides
+// under the keyboard. A clear button empties the code in one tap (after an
+// error the guest had to press delete six times). The keyboard no longer
+// offers SMS one-time codes: they are digits, filled six at once, and failed.
 
 import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import type { TenantSummary } from "@/lib/session";
-import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel } from "@/ui";
+import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel, Row, Icon, useKeyboardOpen } from "@/ui";
 import { colors, fonts, radius, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { extractInviteCode } from "@/features/guest/format";
@@ -44,6 +51,7 @@ export default function InviteCode() {
       router.push({ pathname: "/find", params: { code: value, tenant: JSON.stringify(r.tenant) } });
     } catch (err) {
       setError(guestErrorText(err, copy, lang));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -57,6 +65,15 @@ export default function InviteCode() {
   // Open button also clears the keyboard on a 956 pt Pro Max.
   const { height } = useWindowDimensions();
   const showCard = height >= 900;
+  // On a short phone with the keyboard up, the label and the intro step aside
+  // so the boxes, the help line and the button all stay above the keyboard.
+  const keyboardOpen = useKeyboardOpen();
+  const tight = keyboardOpen && height < 760;
+  const clear = () => {
+    setCode("");
+    setError(null);
+    input.current?.focus();
+  };
   const cells = Array.from({ length: LEN }, (_, i) => code[i] ?? "");
   return (
     <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} keyboard>
@@ -67,19 +84,21 @@ export default function InviteCode() {
           </View>
         ) : null}
         <Stack gap={8} style={{ marginTop: showCard ? 20 : 8 }}>
-          <SectionLabel color={colors.goldLight}>{copy.invite.label}</SectionLabel>
+          {tight ? null : <SectionLabel color={colors.goldLight}>{copy.invite.label}</SectionLabel>}
           <T v="title42" size={height < 700 ? 32 : 38}>
             {copy.invite.title}
           </T>
-          <T v="body15" color={colors.ivory55}>
-            {copy.invite.intro}
-          </T>
+          {tight ? null : (
+            <T v="body15" color={colors.ivory55}>
+              {copy.invite.intro}
+            </T>
+          )}
         </Stack>
         {/* VoiceOver reads the characters typed so far, one by one. */}
         <Pressable
           onPress={() => input.current?.focus()}
           style={styles.cells}
-          accessibilityLabel={copy.invite.title}
+          accessibilityLabel={copy.invite.fieldLabel}
           accessibilityValue={{ text: code ? fmt(copy.invite.codeValue, { code: code.split("").join(" ") }) : copy.invite.codeEmpty }}
           accessibilityHint={copy.invite.intro}
         >
@@ -105,22 +124,29 @@ export default function InviteCode() {
             autoFocus
             style={styles.hidden}
             keyboardAppearance="dark"
-            accessibilityLabel={copy.invite.title}
-            textContentType="oneTimeCode"
+            accessibilityLabel={copy.invite.fieldLabel}
+            // Not oneTimeCode: QuickType offered the last SMS code (digits),
+            // filled all six boxes and opened it at once, which always failed (K18).
+            textContentType="none"
+            autoComplete="off"
+            spellCheck={false}
             returnKeyType="go"
             onSubmitEditing={() => code.length === LEN && open(code)}
           />
         </Pressable>
-        {error ? (
-          <T v="body15" color={colors.red} style={{ marginTop: 12 }}>
-            {error}
+        {/* One line under the boxes: the help, or the error in its place. */}
+        <Row gap={8} align="flex-start" style={{ marginTop: 12 }}>
+          <T v={error ? "body15" : "meta13"} color={error ? colors.red : colors.ivory55} style={{ flex: 1, paddingTop: error ? 0 : 2 }} accessibilityLiveRegion="polite">
+            {error ?? copy.invite.noCode}
           </T>
-        ) : null}
-        <Stack gap={14} style={{ marginTop: 28 }}>
+          {code ? (
+            <Pressable testID="invite-clear" onPress={clear} accessibilityRole="button" accessibilityLabel={copy.invite.clear} hitSlop={8} style={({ pressed }) => [styles.clear, pressed && { opacity: 0.6 }]}>
+              <Icon name="x-circle" size={22} color={colors.ivory70} />
+            </Pressable>
+          ) : null}
+        </Row>
+        <Stack style={{ marginTop: 20 }}>
           <Button testID="invite-open" label={copy.invite.open} onPress={() => open(code)} disabled={code.length !== LEN} loading={busy} />
-          <T v="meta13" color={colors.ivory55} center>
-            {copy.invite.noCode}
-          </T>
         </Stack>
       </>
     </Screen>
@@ -133,4 +159,5 @@ const styles = StyleSheet.create({
   cell: { flex: 1, height: 64, borderRadius: radius.chip, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", alignItems: "center", justifyContent: "center" },
   cellActive: { borderColor: "rgba(201,169,110,0.6)" },
   hidden: { position: "absolute", opacity: 0, height: 1, width: 1 },
+  clear: { width: 44, height: 44, marginTop: -12, marginRight: -10, alignItems: "center", justifyContent: "center" },
 });

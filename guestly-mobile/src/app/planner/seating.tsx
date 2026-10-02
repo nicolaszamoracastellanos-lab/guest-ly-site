@@ -40,7 +40,7 @@ export default function PlannerSeating() {
 
   return (
     <Screen query={mainQuery} refresh
-      header={<TopBar onBack={back} title={app.planner.tabs.more} />}
+      header={<TopBar onBack={back} />}
       bottomInset={40}
     >
       <BigTitle title={c.title} sub={c.readOnly} size={38} />

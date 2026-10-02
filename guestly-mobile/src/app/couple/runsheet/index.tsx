@@ -1,7 +1,8 @@
-// The day-of runsheet: blocks by day, status chips that cycle on tap, add,
-// template seed when empty, and the calendar file.
+// The day-of runsheet: blocks by day, add, template seed when empty, and the
+// calendar file. A row opens its editor; its status opens a menu, and every
+// status change can be undone (v1.2, B4).
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Linking, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,12 +26,12 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/runsheet/copy";
 import {
   useCoupleRunsheet,
-  nextStatus,
   RUNSHEET_KEY,
   type RunsheetBlock,
+  type RunsheetStatus,
   type RunsheetSurface,
 } from "@/features/runsheet/hooks";
-import { RunsheetList } from "@/features/runsheet/list";
+import { RunsheetList, StatusMenu, UndoBar, statusChangedText } from "@/features/runsheet/list";
 import { useSafeBack } from "@/lib/nav";
 
 export default function CoupleRunsheet() {
@@ -45,8 +46,26 @@ export default function CoupleRunsheet() {
   const { data, isLoading, error } = mainQuery;
   const [seeding, setSeeding] = useState(false);
 
-  async function cycle(b: RunsheetBlock) {
-    const status = nextStatus(b.status);
+  const [menuFor, setMenuFor] = useState<RunsheetBlock | null>(null);
+  const [undo, setUndo] = useState<{ block: RunsheetBlock; from: RunsheetStatus; text: string } | null>(null);
+  const clearUndo = useCallback(() => setUndo(null), []);
+
+  // Picked in the status menu: saved at once, with Undo for a few seconds.
+  function pick(b: RunsheetBlock, status: RunsheetStatus) {
+    setMenuFor(null);
+    void setStatus(b, status).then((ok) => {
+      if (ok) setUndo({ block: b, from: b.status, text: statusChangedText(c, b, status) });
+    });
+  }
+
+  function undoLast() {
+    if (!undo) return;
+    const { block, from } = undo;
+    setUndo(null);
+    void setStatus(block, from);
+  }
+
+  async function setStatus(b: RunsheetBlock, status: RunsheetStatus): Promise<boolean> {
     qc.setQueryData<RunsheetSurface>(RUNSHEET_KEY, (cur) =>
       cur
         ? {
@@ -62,8 +81,10 @@ export default function CoupleRunsheet() {
     );
     try {
       await post(`/couple/runsheet/${b.id}/status`, { status });
+      return true;
     } catch (err) {
       Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      return false;
     } finally {
       void qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
     }
@@ -84,11 +105,12 @@ export default function CoupleRunsheet() {
   const canEdit = data?.can_edit ?? false;
 
   return (
-    <Screen query={mainQuery}
+    <View style={{ flex: 1, backgroundColor: colors.night }}>
+    <Screen query={mainQuery} refresh
       header={
         <TopBar
           onBack={back}
-          title={app.coupleHome.tabs.more}
+          title={c.title}
           right={
             <Row gap={8}>
               {data?.blocks_total ? (
@@ -168,7 +190,7 @@ export default function CoupleRunsheet() {
           <RunsheetList
             data={data}
             canEdit={canEdit && online}
-            onStatus={cycle}
+            onStatus={setMenuFor}
             onOpen={
               canEdit
                 ? (b) =>
@@ -191,5 +213,8 @@ export default function CoupleRunsheet() {
         </>
       ) : null}
     </Screen>
+    <StatusMenu block={menuFor} onPick={pick} onClose={() => setMenuFor(null)} />
+    <UndoBar text={undo?.text ?? null} onUndo={undoLast} onDismiss={clearUndo} />
+    </View>
   );
 }

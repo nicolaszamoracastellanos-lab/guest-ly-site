@@ -7,7 +7,8 @@ import { colors } from "@/ui/tokens";
 export default function GuestTabs() {
   const c = useCopy().guestHome.tabs;
   const specs: TabSpec[] = [
-    { name: "index", icon: "home", label: c.home },
+    // Day-of is reached from Home (and is Home on the day): Home stays lit there.
+    { name: "index", icon: "home", label: c.home, owns: ["dayof"] },
     { name: "rsvp", icon: "mail", label: c.rsvp },
     { name: "schedule", icon: "calendar", label: c.schedule },
     { name: "concierge", icon: "sparkle", label: c.concierge },

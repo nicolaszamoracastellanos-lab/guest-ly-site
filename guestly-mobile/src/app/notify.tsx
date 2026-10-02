@@ -110,7 +110,8 @@ export default function NotifyAsk() {
   const overlap = heroH - (compact ? 96 : 130);
 
   return (
-    <Screen bottomInset={16} padded={false} topInset={false}>
+    // Plain night behind the photo, so its gradient ends without a seam (I8).
+    <Screen bottomInset={16} padded={false} topInset={false} backdrop={false}>
       <View style={[styles.hero, { height: heroH }]}>
         <Image source={photo} style={FILL} resizeMode="cover" />
         <LinearGradient colors={["rgba(13,17,23,0.2)", "rgba(13,17,23,0.7)", colors.night]} style={FILL} />

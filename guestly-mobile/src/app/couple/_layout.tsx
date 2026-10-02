@@ -47,7 +47,9 @@ export default function CoupleTabs() {
       <Tabs.Screen name="requests" options={{ href: null }} />
       {/* Each section below is its own Stack (see its _layout.tsx). Leaving a
           section pops it to its list, so its detail screens never linger
-          mounted with the last record's state. */}
+          mounted with the last record's state. While a hidden section is open
+          the More tab stays lit (GlassTabBar, v1.2 N3): all of them are
+          reached from More (Day-of also from Home). */}
       <Tabs.Screen name="tasks" options={{ href: null, popToTopOnBlur: true }} />
       <Tabs.Screen name="seating" options={{ href: null, popToTopOnBlur: true }} />
       <Tabs.Screen name="runsheet" options={{ href: null, popToTopOnBlur: true }} />

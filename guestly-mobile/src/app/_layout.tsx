@@ -26,7 +26,7 @@ import { flushPendingReports, installGlobalErrorHandlers, setTelemetryRoute } fr
 import { colors } from "@/ui/tokens";
 import { T, Button, Gem, Stack as VStack, LockCover } from "@/ui";
 import AssistantBubble from "@/ui/AssistantBubble";
-import { pathShowsBubble, useBubbleHiddenByScreen } from "@/ui/chrome";
+import { pathShowsBubble } from "@/ui/chrome";
 import { TourHost, useTourOnScreen } from "@/features/tour";
 import * as ExpoLinking from "expo-linking";
 
@@ -149,16 +149,16 @@ function Gate() {
     }
   }, [sessionKind, router]);
 
-  // The floating assistant: concierge for guests, Coordinator for couples and
-  // planners. Mounted once here so it rides above every signed-in screen and
-  // keeps its position; hidden on the chat screens themselves and behind the
-  // lock and update overlays.
+  // The floating assistant (v1.2, AssistiveTouch style): concierge for guests,
+  // Coordinator for couples and planners. Mounted once here so it rides above
+  // every signed-in screen and keeps its place. It shows on every screen of
+  // the three surfaces, moves wherever the person drags it, and hides only on
+  // the chat it opens, while the keyboard is up (the bubble itself) and behind
+  // the lock, update and tour overlays. Screens no longer hide or lift it.
   const bubbleSurface = state.status === "guest" ? "guest" : state.status === "user" ? (state.me.surface === "planner" ? "planner" : "couple") : null;
-  const hiddenByScreen = useBubbleHiddenByScreen();
   const tourOnScreen = useTourOnScreen();
   const bubbleHidden =
     !pathShowsBubble(pathname) ||
-    hiddenByScreen ||
     locked ||
     updateRequired ||
     // The welcome tour covers the screen: no floating control under it.

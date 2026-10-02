@@ -10,7 +10,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { can, useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Chip, ChipRow, Button, Skeleton, Stack, Banner, Icon, StatTile, useTopInset, useBottomClearance, COLUMN, QueryError, DockedActions, StatRow, ListRowLongPress, useScrimScroll } from "@/ui";
+import { Screen, TopBar, BigTitle, Chip, ChipRow, Button, Skeleton, Stack, Banner, Icon, StatTile, useTopInset, useBottomClearance, COLUMN, QueryState, StaleBanner, useQueryBlocked, retryConnection, DockedActions, StatRow, ListRowLongPress, useScrimScroll } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useSharedBoard, TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
@@ -37,6 +37,7 @@ export default function PlannerTasks() {
   const [status, setStatus] = useState<"open" | "all" | "done">("open");
   const boardQuery = useSharedBoard("planner");
   const { data, isLoading } = boardQuery;
+  const blocked = useQueryBlocked(boardQuery);
   const [pulling, setPulling] = useState(false);
   const onPull = useCallback(async () => {
     setPulling(true);
@@ -63,13 +64,15 @@ export default function PlannerTasks() {
 
   const header = (
     <View style={{ paddingHorizontal: 24 }}>
-      <TopBar onBack={back} title={app.planner.tabs.more} right={canEdit ? <Pressable onPress={() => router.push("/planner/tasks/new")} accessibilityRole="button" accessibilityLabel={copy.addBoard} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
+      <TopBar onBack={back} right={canEdit ? <Pressable onPress={() => router.push("/planner/tasks/new")} accessibilityRole="button" accessibilityLabel={copy.addBoard} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={24} color={colors.goldLight} /></Pressable> : undefined} />
       <View style={{ marginTop: 10 }}>
         <BigTitle title={copy.planner.title} sub={copy.planner.subtitle} />
       </View>
-      {!online ? (
+      {/* One connection banner, only over cached tasks (S4). With nothing
+          cached the list itself says offline or failed (S1). */}
+      {data !== undefined && (!online || boardQuery.isError) ? (
         <View style={{ marginTop: 12 }}>
-          <Banner icon="wifi-off" title={copy.offline} />
+          <StaleBanner onRetry={() => retryConnection(boardQuery.refetch)} />
         </View>
       ) : null}
       {data?.pending ? (
@@ -111,8 +114,8 @@ export default function PlannerTasks() {
                 <Skeleton h={64} />
                 <Skeleton h={64} />
               </Stack>
-            ) : boardQuery.isError ? (
-              <QueryError onRetry={() => void boardQuery.refetch()} />
+            ) : blocked ? (
+              <QueryState query={boardQuery} />
             ) : (
               <EmptyList title={copy.emptyBoardTitle} body={copy.emptyBoardBody} action={canEdit ? <Button label={copy.addBoard} small onPress={() => router.push("/planner/tasks/new")} /> : undefined} />
             )

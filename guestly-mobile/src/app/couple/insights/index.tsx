@@ -83,7 +83,7 @@ export default function Insights() {
   const maxCount = Math.max(1, ...(data?.top_questions.map((q) => q.count) ?? [1]));
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.coupleHome.tabs.more} />} bottomInset={40}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} />} bottomInset={40}>
       <BigTitle title={c.title} sub={c.subtitle} size={36} />
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

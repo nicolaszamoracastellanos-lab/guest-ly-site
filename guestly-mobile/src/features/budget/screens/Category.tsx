@@ -1,5 +1,6 @@
 // One category: its lines with amounts and paid state, add, reorder, rename.
-// id "none" is the group without a category.
+// id "none" is the group without a category. "Add line" opens the shared
+// AddLineSheet with this category picked (v1.2, N15).
 
 import React, { useMemo, useState } from "react";
 import { View, Pressable } from "react-native";
@@ -7,15 +8,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Sheet, Skeleton, EmptyState, Icon } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Sheet, SheetActions, Skeleton, EmptyState, Icon } from "@/ui";
+import { AddLineSheet } from "../AddLineSheet";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
-import { useBudgetSurface, useBudgetWrites, useBudgetBase, type ComputedItem, type ItemStatus } from "../hooks";
-import { formatMoney, parseAmount } from "../money";
-import { StatusBadge, TextField, Options, ConfirmSheet, useAction } from "../ui";
+import { useBudgetSurface, useBudgetWrites, useBudgetBase, type ComputedItem } from "../hooks";
+import { formatMoney } from "../money";
+import { StatusBadge, TextField, ConfirmSheet, useAction } from "../ui";
 import { useSafeBack } from "@/lib/nav";
-
-const STATUSES: ItemStatus[] = ["quoted", "confirmed", "pending", "cancelled"];
 
 export function BudgetCategoryScreen() {
   const copy = useFeatureCopy(COPY);
@@ -42,29 +42,6 @@ export function BudgetCategoryScreen() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [name, setName] = useState("");
-  const [form, setForm] = useState({ title: "", vendor: "", qty: "", unit_price: "", amount_override: "", status: "quoted" as ItemStatus, note: "" });
-
-  async function addItem() {
-    if (!active) return;
-    const body = {
-      budget_id: active.budget.id,
-      title: form.title.trim(),
-      category_id: category?.id ?? null,
-      parent_id: null,
-      qty: form.qty.trim() ? parseAmount(form.qty) : null,
-      unit_price: form.unit_price.trim() ? parseAmount(form.unit_price) : null,
-      amount_override: form.amount_override.trim() ? parseAmount(form.amount_override) : null,
-      status: form.status,
-      vendor: form.vendor.trim(),
-      note: form.note.trim(),
-      unit_label: "",
-      currency: null,
-    };
-    await act(() => writes.createItem(body), () => {
-      setForm({ title: "", vendor: "", qty: "", unit_price: "", amount_override: "", status: "quoted", note: "" });
-      setAddOpen(false);
-    });
-  }
 
   async function move(index: number, dir: -1 | 1) {
     if (!active || !group) return;
@@ -80,7 +57,7 @@ export function BudgetCategoryScreen() {
   }
 
   return (
-    <Screen query={mainQuery}
+    <Screen query={mainQuery} refresh
       header={
         <TopBar
           onBack={back}
@@ -177,44 +154,21 @@ export function BudgetCategoryScreen() {
         </View>
       ) : null}
 
-      <Sheet visible={addOpen && (data?.can_edit ?? false)} onClose={() => setAddOpen(false)} top={70}>
-        <View style={{ paddingHorizontal: 24, gap: 12 }}>
-          <T v="title26">{copy.addItem}</T>
-          <TextField label={copy.itemTitle} value={form.title} onChange={(v) => setForm({ ...form, title: v })} autoCapitalize="sentences" />
-          <TextField label={copy.vendor} value={form.vendor} onChange={(v) => setForm({ ...form, vendor: v })} autoCapitalize="words" />
-          <Row gap={8}>
-            <View style={{ flex: 1 }}>
-              <TextField label={copy.qty} value={form.qty} onChange={(v) => setForm({ ...form, qty: v })} keyboardType="decimal-pad" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <TextField label={copy.unitPrice} value={form.unit_price} onChange={(v) => setForm({ ...form, unit_price: v })} keyboardType="decimal-pad" />
-            </View>
-          </Row>
-          <TextField label={copy.amountOverride} value={form.amount_override} onChange={(v) => setForm({ ...form, amount_override: v })} keyboardType="decimal-pad" />
-          <Options<ItemStatus> value={form.status} options={STATUSES.map((s) => ({ value: s, label: copy.statuses[s] }))} onChange={(v) => setForm({ ...form, status: v })} />
-          <Row gap={8} style={{ marginTop: 4 }}>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.cancel} kind="ghost" onPress={() => setAddOpen(false)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.save} onPress={addItem} loading={busy} disabled={!form.title.trim()} />
-            </View>
-          </Row>
-        </View>
-      </Sheet>
+      {active ? (
+        // The same sheet as on the summary, with this category picked; the line
+        // can still go to another one (N15).
+        <AddLineSheet visible={addOpen && canEdit} onClose={() => setAddOpen(false)} budgetId={active.budget.id} categories={active.categories} categoryId={category?.id ?? null} />
+      ) : null}
 
-      <Sheet visible={renameOpen} onClose={() => setRenameOpen(false)} top={380}>
-        <View style={{ paddingHorizontal: 24, gap: 12 }}>
+      <Sheet
+        visible={renameOpen}
+        onClose={() => setRenameOpen(false)}
+        top={380}
+        footer={<SheetActions onCancel={() => setRenameOpen(false)} onSave={() => category && act(() => writes.renameCategory(category.id, name.trim()), () => setRenameOpen(false))} saving={busy} disabled={!name.trim()} cancelLabel={copy.cancel} saveLabel={copy.save} />}
+      >
+        <View style={{ gap: 12 }}>
           <T v="title26">{copy.renameCategory}</T>
           <TextField label={copy.categoryName} value={name} onChange={setName} autoCapitalize="sentences" />
-          <Row gap={8}>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.cancel} kind="ghost" onPress={() => setRenameOpen(false)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label={copy.save} loading={busy} disabled={!name.trim()} onPress={() => category && act(() => writes.renameCategory(category.id, name.trim()), () => setRenameOpen(false))} />
-            </View>
-          </Row>
         </View>
       </Sheet>
 

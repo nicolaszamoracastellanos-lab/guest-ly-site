@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { ApiFailure } from "@/lib/api";
 import { errorText, newSendKey, outcomeUnknown } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Card, Chip, ChipRow, Segmented, Input, Button, Badge, Banner, Sheet, Skeleton, Stack, SectionLabel, T, ListRow, Avatar, Hairline } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -37,8 +38,17 @@ export default function NewBroadcast() {
   const [vars, setVars] = useState<Record<string, string>>({});
   const [custom, setCustom] = useState("");
   const [langMode, setLangMode] = useState<LangMode>("auto");
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  // Each preview (and preview error) remembers the composition it was made
+  // for. One that no longer matches what is on screen is never shown as the
+  // count, and Send waits for the new one (B1: switching from Pending 30 to
+  // All 180 and confirming fast said 30 and sent 180).
+  const [previewState, setPreviewState] = useState<{ key: string; data: Preview } | null>(null);
+  const [previewErrorState, setPreviewErrorState] = useState<{ key: string; text: string } | null>(null);
+  // Bumped to ask for a fresh preview (after the server said the audience changed).
+  const [previewNonce, setPreviewNonce] = useState(0);
+  // What the confirm sheet showed, frozen when it opened: exactly this is sent.
+  const [confirmed, setConfirmed] = useState<{ composition: Composition; recipients: number } | null>(null);
+  const [recipientsChanged, setRecipientsChanged] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -74,6 +84,12 @@ export default function NewBroadcast() {
     };
   }, [audience, mode, template, custom, langMode, vars]);
 
+  const compositionKey = JSON.stringify(composition);
+  const preview = composition && previewState?.key === compositionKey ? previewState.data : null;
+  const previewError = composition && previewErrorState?.key === compositionKey ? previewErrorState.text : null;
+  // The composition changed and its preview is on the way.
+  const updating = !!composition && !preview && !previewError;
+
   // Part 9 audit, D-001 (P0). The approved template bodies live in the portal
   // and were written for one wedding. Until they are per wedding, a template
   // preview that does not name THIS couple is never shown and never sent: it
@@ -88,25 +104,19 @@ export default function NewBroadcast() {
     return Object.values(preview.sample).some((body) => !names.every((n) => fold(body ?? "").includes(n)));
   }, [mode, preview, coupleNames]);
 
-  const compositionKey = JSON.stringify(composition);
   useEffect(() => {
     let alive = true;
+    const key = compositionKey;
     const t = setTimeout(async () => {
-      if (!composition) {
-        setPreview(null);
-        return;
-      }
+      if (!composition) return;
       try {
         const p = await previewBroadcast(composition);
         if (alive) {
-          setPreview(p);
-          setPreviewError(null);
+          setPreviewState({ key, data: p });
+          setPreviewErrorState(null);
         }
       } catch (err) {
-        if (alive) {
-          setPreview(null);
-          setPreviewError(errorText(err, lang, copyCommonError));
-        }
+        if (alive) setPreviewErrorState({ key, text: errorText(err, lang, copyCommonError) });
       }
     }, 350);
     return () => {
@@ -115,7 +125,7 @@ export default function NewBroadcast() {
     };
     // The key captures every field of the composition.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compositionKey, lang]);
+  }, [compositionKey, lang, previewNonce]);
 
   const shownGuests = useMemo(() => {
     const q = pickQuery.trim().toLowerCase();
@@ -134,6 +144,9 @@ export default function NewBroadcast() {
   }, []);
 
   function openConfirm() {
+    if (!composition || !preview) return;
+    setConfirmed({ composition, recipients: preview.recipients_count });
+    setRecipientsChanged(null);
     setTyped("");
     setSendError(null);
     setSendKey(newSendKey());
@@ -141,11 +154,14 @@ export default function NewBroadcast() {
   }
 
   async function send() {
-    if (!composition || !confirmOk || busy || !sendKey) return;
+    if (!confirmed || !confirmOk || busy || !sendKey) return;
     setBusy(true);
     setSendError(null);
     try {
-      const r = await sendBroadcast(composition, typed.trim().toUpperCase(), sendKey);
+      // The frozen composition and the count the person confirmed. A portal
+      // that knows `expected_recipients` refuses (409) when the live audience
+      // no longer matches; an older one ignores it.
+      const r = await sendBroadcast(confirmed.composition, typed.trim().toUpperCase(), sendKey, confirmed.recipients);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResult(r);
       setConfirmOpen(false);
@@ -156,6 +172,16 @@ export default function NewBroadcast() {
         setUnknownOutcome(true);
         setConfirmOpen(false);
         setTyped("");
+        void qc.invalidateQueries({ queryKey: ["broadcasts"] });
+      } else if (err instanceof ApiFailure && err.code === "recipients_changed") {
+        // Nothing was sent. Close the sheet, fetch the new count, and let the
+        // person look at it and confirm again.
+        setConfirmOpen(false);
+        setTyped("");
+        setConfirmed(null);
+        setRecipientsChanged(errorText(err, lang, c.recipientsChanged));
+        setPreviewState(null);
+        setPreviewNonce((n) => n + 1);
         void qc.invalidateQueries({ queryKey: ["broadcasts"] });
       } else {
         setSendError(errorText(err, lang, c.confirmTitle));
@@ -176,7 +202,10 @@ export default function NewBroadcast() {
     setVars({});
     setTyped("");
     setSendKey("");
-    setPreview(null);
+    setPreviewState(null);
+    setPreviewErrorState(null);
+    setConfirmed(null);
+    setRecipientsChanged(null);
     setAudienceKey("all");
     back();
   }
@@ -232,6 +261,10 @@ export default function NewBroadcast() {
                 {fmt(c.withPhone, { n: preview.recipients_count })}
                 {preview.skipped_no_phone ? ` · ${fmt(c.withoutPhone, { n: preview.skipped_no_phone })}` : ""}
               </T>
+            ) : updating ? (
+              <T v="meta13" color={colors.ivory40} style={{ marginTop: 10 }}>
+                {c.updatingPreview}
+              </T>
             ) : null}
 
             <SectionLabel color={colors.goldLight} style={{ marginTop: 28 }}>{c.stepMessage}</SectionLabel>
@@ -267,6 +300,11 @@ export default function NewBroadcast() {
             </View>
 
             <SectionLabel color={colors.goldLight} style={{ marginTop: 28 }}>{c.stepReview}</SectionLabel>
+            {recipientsChanged ? (
+              <View style={{ marginTop: 10 }}>
+                <Banner icon="warning" title={recipientsChanged} kind="amber" />
+              </View>
+            ) : null}
             {previewError ? <Banner icon="warning" title={previewError} kind="red" /> : null}
             {templateMismatch ? (
               <View style={{ marginTop: 10 }}>
@@ -289,7 +327,7 @@ export default function NewBroadcast() {
               </Card>
             ) : null}
             {preview && preview.recipients_count === 0 ? <Banner icon="phone" title={c.noRecipients} /> : null}
-            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : c.review} onPress={openConfirm} disabled={!canReview || templateMismatch} style={{ marginTop: 20 }} />
+            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : updating ? c.updatingPreview : c.review} onPress={openConfirm} disabled={!canReview || templateMismatch} style={{ marginTop: 20 }} />
           </>
         ) : null}
       </>
@@ -326,7 +364,7 @@ export default function NewBroadcast() {
           </T>
           <Hairline gold style={{ marginVertical: 14 }} />
           <T v="meta13" color={colors.ivory55}>
-            {preview ? fmt(c.sendTo, { n: preview.recipients_count }) : ""}
+            {confirmed ? fmt(c.sendTo, { n: confirmed.recipients }) : ""}
           </T>
           <Input accessibilityLabel={c.confirmPlaceholder} value={typed} onChangeText={setTyped} placeholder={c.confirmPlaceholder} autoCapitalize="characters" autoCorrect={false} style={{ marginTop: 12 }} />
           {sendError ? (

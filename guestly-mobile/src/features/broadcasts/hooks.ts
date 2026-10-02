@@ -103,5 +103,12 @@ export const previewBroadcast = (c: Composition) => postLong<Preview>("/couple/b
 /** `sendKey` is minted once per send attempt (the confirm sheet opening) and
  *  reused on any retry of that attempt, so the portal can answer a replay with
  *  the first result instead of messaging every guest twice. */
-export const sendBroadcast = (c: Composition, confirm: string, sendKey: string) =>
-  postOnce<SendResult>("/couple/broadcasts", { ...c, confirm }, sendKey);
+export const sendBroadcast = (c: Composition, confirm: string, sendKey: string, expectedRecipients?: number) =>
+  postOnce<SendResult>(
+    "/couple/broadcasts",
+    // `expected_recipients` (B1): the count the person confirmed. A portal that
+    // knows it answers 409 `recipients_changed` and sends nothing when the live
+    // audience differs; an older portal ignores the field.
+    typeof expectedRecipients === "number" ? { ...c, confirm, expected_recipients: expectedRecipients } : { ...c, confirm },
+    sendKey
+  );

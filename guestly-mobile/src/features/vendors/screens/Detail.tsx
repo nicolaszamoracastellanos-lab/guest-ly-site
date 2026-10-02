@@ -44,7 +44,7 @@ export function VendorDetailScreen() {
   const ig = vendor ? instagramHref(vendor.instagram) : null;
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.title} right={canEdit && vendor ? <IconButton name="edit" label={copy.edit} onPress={() => router.push({ pathname: "/couple/vendors/new" as never, params: { id: vendor.id } as never })} /> : undefined} />}>
+    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={copy.title} right={canEdit && vendor ? <IconButton name="edit" label={copy.edit} onPress={() => router.push({ pathname: "/couple/vendors/new" as never, params: { id: vendor.id } as never })} /> : undefined} />}>
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 8 }}>
           <Skeleton h={60} r={18} />
@@ -149,7 +149,7 @@ export function VendorDetailScreen() {
           ) : null}
 
           <Sheet visible={linkOpen} onClose={() => setLinkOpen(false)} top={140} scroll={false}>
-            <View style={{ paddingHorizontal: 24, gap: 12, flex: 1 }}>
+            <View style={{ gap: 12, flex: 1 }}>
               <T v="title26">{copy.linkItem}</T>
               {unlinked.length === 0 ? (
                 <T v="body15" color={colors.ivory55}>

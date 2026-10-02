@@ -87,7 +87,10 @@ export function SiteScreen({ entry }: { entry?: Entry }) {
   }
 
   return (
-    <Screen padded={false} header={header} bottomInset={40}>
+    // Opening on the couple's photo: the hero applies the top inset itself (it
+    // was applied twice, a band above the photo, I3) and the screen is plain
+    // night so the photo's gradient ends without a seam (I8).
+    <Screen padded={false} header={header} topInset={!!header} backdrop={!!header} bottomInset={40}>
       {content}
     </Screen>
   );

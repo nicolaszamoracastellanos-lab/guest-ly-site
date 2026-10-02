@@ -13,8 +13,8 @@ import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { T, Row, Stack, Card, Button, Badge, Gem, Hairline, Countdown, Avatar, Icon, IconButton, SectionLabel, LockCover } from "@/ui";
-import { colors, FILL, radius } from "@/ui/tokens";
+import { T, Row, Stack, Card, Button, Badge, Gem, Hairline, Countdown, Avatar, Icon, IconButton, SectionLabel, LockCover, focalPosition, useTopInset } from "@/ui";
+import { colors, FILL, COVER, radius } from "@/ui/tokens";
 import { COPY } from "./copy";
 import type { GuestSite, SiteSection, SectionType } from "./hooks";
 import { useSafeBack } from "@/lib/nav";
@@ -148,13 +148,21 @@ function openExternal(url: string) {
 /* ------------------------------------------------------------------ */
 
 function Hero({ s }: { s: Extract<SiteSection, { type: "hero" }> }) {
-  const insets = useSafeAreaInsets();
   const back = useSafeBack();
-  const top = Math.max(insets.top, 54);
+  // The only top inset on this screen: SiteScreen draws no header and no inset
+  // of its own above a hero (I3, the band above the photo came from both).
+  const top = useTopInset();
+  // Focal point when the portal sends one (deferred, plan f.4); faces in the
+  // upper third otherwise, instead of a centered crop (I1).
+  const extra = s as { image_focal_x?: number | null; image_focal_y?: number | null };
   return (
     <View style={styles.hero}>
-      {s.image_url ? <Image source={{ uri: s.image_url }} style={FILL} contentFit="cover" transition={300} /> : null}
-      <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.15)", "rgba(13,17,23,0.75)", colors.night]} locations={[0, 0.35, 0.78, 1]} style={FILL} />
+      {/* COVER wrapper: the hero has bottom padding, and FILL's percent sizes
+          stopped 28 pt short of it, leaving a band under the photo (I3). */}
+      <View style={COVER} pointerEvents="none">
+        {s.image_url ? <Image source={{ uri: s.image_url }} style={FILL} contentFit="cover" contentPosition={focalPosition({ x: extra.image_focal_x ?? undefined, y: extra.image_focal_y ?? undefined })} transition={300} /> : null}
+        <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.15)", "rgba(13,17,23,0.75)", colors.night]} locations={[0, 0.35, 0.78, 1]} style={FILL} />
+      </View>
       <View style={[styles.heroTop, { top }]}>
         <IconButton name="back" onPress={() => back()} />
       </View>

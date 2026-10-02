@@ -2,7 +2,7 @@
 // the ivory guest card, works offline with a replayable queue.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Pressable, Alert, Linking } from "react-native";
+import { View, StyleSheet, Pressable, Alert, Linking, ScrollView } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -56,7 +56,7 @@ export default function DoorCheckin() {
       }
       try {
         const r = await get<{ items: GuestListItem[] }>(`/couple/guests?q=${encodeURIComponent(term)}`);
-        setResults(r.items.slice(0, 6));
+        setResults(r.items.slice(0, 20));
       } catch {
         setResults([]);
       }
@@ -150,13 +150,22 @@ export default function DoorCheckin() {
       )}
 
       <View style={{ flex: 1 }} />
-      <View style={{ paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 12 }}>
+      {/* With the keyboard up the block shrinks into the room above it and the
+          results scroll there; a first tap on a name checks it in instead of
+          only closing the keyboard (K9). */}
+      <View style={{ flexShrink: 1, paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 12 }}>
         {typing ? (
           <Card kind="glass" blur padding={10}>
             <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} />
-            {results.map((g, i) => (
-              <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : undefined} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
-            ))}
+          </Card>
+        ) : null}
+        {typing && results.length ? (
+          <Card kind="glass" padding={0} style={{ flexShrink: 1, paddingHorizontal: 10 }}>
+            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+              {results.map((g, i) => (
+                <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : undefined} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
+              ))}
+            </ScrollView>
           </Card>
         ) : null}
         {card ? (

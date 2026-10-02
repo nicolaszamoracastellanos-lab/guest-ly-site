@@ -50,6 +50,8 @@ export type CoupleHome = {
   couple_names: string; wedding_date: string | null; countdown: { days: number; hours: number; minutes: number; passed: boolean } | null;
   day_of: boolean; concierge_live: boolean; briefing: { text: string; href: string; tone: "risk" | "warn" | "info" }[];
   needs_you: number; totals: Totals; budget_percent_paid: number | null;
+  /** v1.2 portal, additive: the percent per active budget id. Absent on older portals. */
+  budget_percent_paid_by_id?: Record<string, number | null>;
 };
 export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null };
 export type RsvpListItem = { id: string; guest_id: string | null; name: string; initials: string; status: "attending" | "declined" | "pending"; party_size: number | null; seats_answered: string; channel: string | null; source: string | null; updated_at: string | null };

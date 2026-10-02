@@ -1,16 +1,19 @@
 // App chrome rules shared by the kit and the root layout: where the floating
-// tab bar is on screen, where the assistant bubble may rest, and how much room
-// a screen keeps free at its end so neither ever covers a control.
+// tab bar is on screen, where the floating Coordinator bubble may show, and how
+// much room a screen keeps free at its end so the tab bar never covers a
+// control.
 //
-// Part 9 audit (Sep 18 2026), D-003 and D-010: bottom actions sat behind the
-// tab bar and the bubble rested on top of toggles, badges and buttons. The
-// rule now lives in one place instead of a magic number per screen.
+// v1.2 (Oct 2026, audit I9 and I11): the bubble is now an AssistiveTouch style
+// button that the person drags anywhere and that never rests half off screen.
+// The band every screen used to reserve for it, the per-screen lift, the hide
+// on screens with their own round button, the collision check on the homes and
+// the dock into the gutter while a list scrolled are gone. The three hooks
+// screens still call (useBubbleLift, useBubbleHide, useBubbleAvoid) are kept
+// as no-ops for one release so nothing breaks while their call sites go away.
 
-import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
-import { usePathname, useFocusEffect } from "expo-router";
+import { usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWindowDimensions, type View } from "react-native";
-import { BUBBLE_MARGIN, BUBBLE_SIZE, BUBBLE_ZONE, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TAB_CLEARANCE } from "./tokens";
+import { TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TAB_CLEARANCE } from "./tokens";
 
 const SURFACES = ["guest", "couple", "planner"];
 
@@ -21,36 +24,25 @@ export function pathHasTabBar(pathname: string): boolean {
   return SURFACES.includes(head);
 }
 
-// Sections where a person is typing, answering or scanning. The bubble would
-// only be in the way there, and it hides on every detail and form screen
-// (three or more path segments) as well.
-// The guest More screen is a settings screen (language, notifications, leave):
-// the bubble covered its controls on the Pro Max and its last line on the SE.
-const NO_BUBBLE_SECTIONS = ["/guest/rsvp", "/guest/concierge", "/guest/more", "/couple/checkin", "/couple/settings"];
-// The guest home is the invitation itself, and it already opens the concierge
-// twice (its own quick action and the tab). On the release walk the bubble
-// rested on the last countdown figure on the small phone and on the Concierge
-// quick action on the Pro Max, so this one screen goes without it.
-const NO_BUBBLE_EXACT = ["/guest"];
+/** The chat screens the bubble opens: it never shows on top of its own chat. */
+const BUBBLE_TARGETS = ["/guest/concierge", "/assistant"];
 
-/** The bubble shows on the browse screens only: tab roots, the section lists
- *  behind the More menus and the guest site pages. */
+/** The bubble shows on every screen inside the three surfaces (guest, couple,
+ *  planner), except on the chat it opens. Settings, the web view and the
+ *  entrance screens have none. */
 export function pathShowsBubble(pathname: string): boolean {
   if (!pathHasTabBar(pathname)) return false;
-  if (NO_BUBBLE_EXACT.includes(pathname)) return false;
-  if (NO_BUBBLE_SECTIONS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return false;
-  if (pathname.startsWith("/guest/site")) return true;
-  return pathname.split("/").filter(Boolean).length <= 2;
+  return !BUBBLE_TARGETS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-/** Room a screen keeps free below its last control, safe area included. */
-export function useBottomClearance(): { tabBar: boolean; bubble: boolean; clearance: number } {
+/** Room a screen keeps free below its last control, safe area included. Only
+ *  the tab bar counts now: the bubble floats and moves, it reserves nothing. */
+export function useBottomClearance(): { tabBar: boolean; clearance: number } {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const tabBar = pathHasTabBar(pathname);
-  const bubble = pathShowsBubble(pathname);
-  const clearance = insets.bottom + (tabBar ? TAB_CLEARANCE : 24) + (bubble ? BUBBLE_ZONE : 0);
-  return { tabBar, bubble, clearance };
+  const clearance = insets.bottom + (tabBar ? TAB_CLEARANCE : 24);
+  return { tabBar, clearance };
 }
 
 /** Distance from the bottom of the window to the top edge of the floating tab
@@ -58,212 +50,4 @@ export function useBottomClearance(): { tabBar: boolean; bubble: boolean; cleara
 export function useTabBarTop(): number {
   const insets = useSafeAreaInsets();
   return insets.bottom + TAB_BAR_BOTTOM + TAB_BAR_HEIGHT;
-}
-
-// A screen with its own floating control above the tab bar (the add-guest
-// button, a docked action bar) lifts the bubble's resting place by that much.
-// Tab screens stay mounted, so the lift is tied to focus, and it is keyed so a
-// blur that arrives after the next focus cannot wipe the newer value.
-const lifts = new Map<string, number>();
-let lift = 0;
-const listeners = new Set<() => void>();
-function recompute() {
-  const next = lifts.size ? Math.max(...lifts.values()) : 0;
-  if (next === lift) return;
-  lift = next;
-  listeners.forEach((l) => l());
-}
-function subscribe(l: () => void) {
-  listeners.add(l);
-  return () => {
-    listeners.delete(l);
-  };
-}
-
-/** Read by the bubble. */
-export function useBubbleLiftValue(): number {
-  return useSyncExternalStore(subscribe, () => lift, () => 0);
-}
-
-/** Called by a screen that floats something above the tab bar. */
-export function useBubbleLift(px: number) {
-  const id = useId();
-  useFocusEffect(
-    useCallback(() => {
-      lifts.set(id, px);
-      recompute();
-      return () => {
-        lifts.delete(id);
-        recompute();
-      };
-    }, [id, px])
-  );
-}
-
-/**
- * Hides the bubble while one specific block on a fixed-layout dashboard
- * (couple and planner home) is on screen: the stat tiles through the last
- * card below them, a block that sits above the screen's own trailing
- * `useBottomClearance` padding, so D-010's "every scrolling screen ends clear
- * of it" does not reach it. The bubble's resting height is a fixed distance
- * from the *window's* bottom edge, while this block sits at a nearly fixed
- * distance from the *content's* top, so whether the two collide on the
- * screen's first, unscrolled paint depends only on window height, not on
- * anything a screen author can see at write time (found on a real 390x844
- * simulator, fixer round 3, not just the web rig: clear at 360 and 430, but
- * on 390 the block is measured taller than the bubble's entire reachable
- * travel between the tab bar and the content above, so lifting it clear
- * (the tactic `useBubbleLift` gives every other screen) has nowhere to land
- * without landing on something else instead). Hiding is the same tradeoff
- * the kit already makes for a screen with its own floating round button: the
- * Coordinator stays one tap away in the More menu, on couple home also from
- * the "Ask the wedding brain" card, so nothing is actually out of reach.
- *
- * Pass the ref of that block AND spread the returned `layoutProps` onto the
- * same element (`{...layoutProps}`, alongside its own `ref`): `onLayout`
- * re-measures whenever the block's own frame changes, which is what catches
- * a query resolving and the skeleton rows being replaced by real (shorter or
- * taller) ones. A mount timer and the window's own height also trigger a
- * measurement, so an `onLayout` that never fires (a block whose size never
- * changes) is not relied on alone. Measured in window coordinates, so it is
- * correct regardless of scroll position, which is always 0 at the moments
- * this measures. Native only: `measureInWindow` is not reliable enough on
- * the web target for this (the web rig's own layout check already covers
- * the same screens another way).
- */
-export function useBubbleAvoid(ref: React.RefObject<View | null>): { onLayout: () => void } {
-  const { height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const [collide, setCollide] = useState(false);
-
-  const measure = useCallback(() => {
-    const node = ref.current as unknown as { measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void } | null;
-    if (!node?.measureInWindow) return;
-    node.measureInWindow((_x, y, _w, h) => {
-      if (h <= 0) return; // not laid out yet
-      // A margin of air on both sides of the bubble's own box: hides it a
-      // beat before it would actually touch the block, not only once a
-      // pixel of the two truly shares the same row.
-      const bubbleTop = height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - BUBBLE_SIZE - BUBBLE_MARGIN - BUBBLE_MARGIN;
-      const bubbleBottom = bubbleTop + BUBBLE_SIZE + BUBBLE_MARGIN * 2;
-      const contentBottom = y + h;
-      const overlap = Math.min(bubbleBottom, contentBottom) - Math.max(bubbleTop, y);
-      setCollide(overlap > 0);
-    });
-  }, [ref, height, insets.bottom]);
-
-  useEffect(() => {
-    const t = setTimeout(measure, 350);
-    return () => clearTimeout(t);
-  }, [measure]);
-
-  useBubbleHide(collide);
-
-  return { onLayout: measure };
-}
-
-// A screen with its own round floating button (the add-guest button) shows no
-// bubble while it is focused: two gold circles stacked at the right edge read
-// as clutter and covered two rows of badges. The Coordinator stays one tap away
-// in the More menu and on every other tab.
-const hides = new Set<string>();
-let hiddenByScreen = false;
-const hideListeners = new Set<() => void>();
-function recomputeHide() {
-  const next = hides.size > 0;
-  if (next === hiddenByScreen) return;
-  hiddenByScreen = next;
-  hideListeners.forEach((l) => l());
-}
-function subscribeHide(l: () => void) {
-  hideListeners.add(l);
-  return () => {
-    hideListeners.delete(l);
-  };
-}
-
-/** Read by the root layout. */
-export function useBubbleHiddenByScreen(): boolean {
-  return useSyncExternalStore(subscribeHide, () => hiddenByScreen, () => false);
-}
-
-/** Called by a screen that floats its own round button. */
-export function useBubbleHide(active: boolean) {
-  const id = useId();
-  useFocusEffect(
-    useCallback(() => {
-      if (!active) return undefined;
-      hides.add(id);
-      recomputeHide();
-      return () => {
-        hides.delete(id);
-        recomputeHide();
-      };
-    }, [id, active])
-  );
-}
-
-// While the focused screen has content running on below the visible area,
-// the bubble docks: it slides into the right (or left) screen gutter and
-// shows only a sliver, so it never rests on a row's badge, pill or button
-// in the middle of a list (QA Sep 29: RSVPs, vendors, tasks, guest Day-of).
-// At the end of the content, where every screen keeps the bubble's band
-// free (useBottomClearance), and on short screens it comes back in full.
-// Keyed per screen and tied to focus like the lift, since tab screens stay
-// mounted.
-const docks = new Map<string, boolean>();
-let docked = false;
-const dockListeners = new Set<() => void>();
-function recomputeDock() {
-  const next = Array.from(docks.values()).some(Boolean);
-  if (next === docked) return;
-  docked = next;
-  dockListeners.forEach((l) => l());
-}
-function subscribeDock(l: () => void) {
-  dockListeners.add(l);
-  return () => {
-    dockListeners.delete(l);
-  };
-}
-
-/** Read by the bubble. */
-export function useBubbleDocked(): boolean {
-  return useSyncExternalStore(subscribeDock, () => docked, () => false);
-}
-
-/** Content left below the visible area before the bubble docks: less than
- *  this and the band the screen keeps free is in view. */
-export const DOCK_SLACK = 24;
-
-/** For a scrolling screen: returns a setter that says whether content still
- *  runs on below the visible area. Cleared when the screen loses focus and
- *  restored when it regains it. */
-export function useBubbleDock(): (below: boolean) => void {
-  const id = useId();
-  // Refs, not state: a scroll crossing the threshold must not re-render the screen.
-  const value = useRef(false);
-  const focused = useRef(false);
-  useFocusEffect(
-    useCallback(() => {
-      focused.current = true;
-      docks.set(id, value.current);
-      recomputeDock();
-      return () => {
-        focused.current = false;
-        docks.delete(id);
-        recomputeDock();
-      };
-    }, [id])
-  );
-  return useCallback(
-    (below: boolean) => {
-      if (value.current === below) return;
-      value.current = below;
-      if (!focused.current) return;
-      docks.set(id, below);
-      recomputeDock();
-    },
-    [id]
-  );
 }

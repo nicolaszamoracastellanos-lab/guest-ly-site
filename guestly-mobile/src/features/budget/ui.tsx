@@ -39,7 +39,7 @@ export function KeyValue({ label, value, color = colors.ivory }: { label: string
 export function ConfirmSheet({ visible, title, body, confirmLabel, cancelLabel, onConfirm, onClose, busy }: { visible: boolean; title: string; body?: string; confirmLabel: string; cancelLabel: string; onConfirm: () => void; onClose: () => void; busy?: boolean }) {
   return (
     <Sheet visible={visible} onClose={onClose} top={420}>
-      <View style={{ paddingHorizontal: 24, gap: 12 }}>
+      <View style={{ gap: 12 }}>
         <T v="title26">{title}</T>
         {body ? (
           <T v="body15" color={colors.ivory70}>
