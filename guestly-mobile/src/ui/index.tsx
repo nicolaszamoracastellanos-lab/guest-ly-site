@@ -34,6 +34,7 @@ import Animated, { Extrapolation, SlideInDown, interpolate, runOnJS, useAnimated
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import NetInfo from "@react-native-community/netinfo";
 import { onlineManager } from "@tanstack/react-query";
+import { KeyboardAvoidingView as KeyboardLiftView, KeyboardAwareScrollView, useKeyboardState } from "react-native-keyboard-controller";
 import { useCopy, useLang, longDate } from "@/i18n";
 import { T } from "./Text";
 import { Icon, type IconName } from "./Icon";
@@ -42,6 +43,8 @@ import { useBottomClearance, useTabBarTop } from "./chrome";
 import { LockCover } from "./LockCover";
 import { useOnline } from "@/lib/query";
 import { useNavigation, useRoute } from "expo-router";
+import { ChatArea, DockedAction, FormGroup, FormToolbar, FORM_SCOPE, KeyboardScope, TOOLBAR_SPACE, focusedTextInput, useInFormScope, useKeepFocusedVisible } from "./keyboard";
+import { ToastHost, useDockLift } from "./Toast";
 
 export { T } from "./Text";
 export { renderInlineBold } from "./MarkdownText";
@@ -52,6 +55,18 @@ export { useBottomClearance, useTabBarTop } from "./chrome";
 export { LockCover } from "./LockCover";
 export { PhotoHero, focalPosition } from "./PhotoHero";
 export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
+// v1.2 build 12: keyboard primitives (react-native-keyboard-controller) and toasts.
+export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, FormGroup, KeyboardScope, TOOLBAR_SPACE, useInFormScope, useKeepFocusedVisible } from "./keyboard";
+/** react-native-keyboard-controller's KeyboardAvoidingView (frame-synced with
+ *  the keyboard, interactive dismiss included). For a non-scrolling screen
+ *  whose bottom part must stay above the keyboard (search field + results,
+ *  K9 to K12): `<KeyboardLiftView behavior="padding" style={{ flex: 1 }}>`. */
+export { KeyboardAvoidingView as KeyboardLiftView } from "react-native-keyboard-controller";
+export type { ChatListHandle, ComposerProps } from "./keyboard";
+export { toast, dismissToast, ToastHost, useDockLift } from "./Toast";
+export type { ToastOptions, DockLift } from "./Toast";
+export { RoleTabs, GlassTabBar } from "./TabBar";
+export type { TabSpec, HiddenRoute } from "./TabBar";
 
 // ---------------------------------------------------------------- layout
 
@@ -63,9 +78,20 @@ export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
  *    tabs. Non-scroll screens (lists, chats) pad themselves with
  *    `useBottomClearance()`. The assistant bubble reserves nothing any more: it
  *    floats and the person moves it (I9, I11).
- *  - Keyboard: iOS insets the scroll view so the focused field stays above the
- *    keyboard. A KeyboardAvoidingView inside a ScrollView does nothing, so
- *    screens must not add one.
+ *  - Keyboard (build 12, react-native-keyboard-controller):
+ *    - default: iOS insets the scroll view so the focused field stays above
+ *      the keyboard (search fields, a lone note).
+ *    - `keyboard` or `keyboard="form"`: a form. The scroll keeps the focused
+ *      field AND the docked action (`dock`) visible above the keyboard, and the
+ *      keyboard gets the "Prev / Next / Done" bar (FormToolbar), Done included
+ *      for number pads.
+ *    - `keyboard="chat"`: a conversation. No bottom padding; the content is
+ *      wrapped in a ChatArea for <ChatList> and <ChatComposer>.
+ *    A KeyboardAvoidingView inside a ScrollView does nothing, so screens must
+ *    not add one.
+ *  - Dock: `dock={<Button ... />}` docks the screen's main action at the
+ *    bottom, above the tab bar at rest and right above the keyboard while
+ *    typing; the content is padded so nothing ends under it.
  *  - Width: header and body sit in one centered column (COLUMN), so nothing
  *    stretches on tablets, foldables or a desktop window.
  *  - Top: devices with a notch keep the 54 pt design minimum; a phone with a
@@ -78,7 +104,7 @@ export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
  *    banner above cached content. `refresh` adds pull to refresh. */
 export function Screen({
   children,
-  scroll = true,
+  scroll: scrollProp = true,
   padded = true,
   bottomInset = 0,
   header,
@@ -89,6 +115,8 @@ export function Screen({
   query,
   refresh = false,
   scrollY,
+  keyboard,
+  dock,
 }: {
   children: ReactNode;
   scroll?: boolean;
@@ -97,9 +125,14 @@ export function Screen({
   header?: ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
-  /** Kept for the call sites: every screen now insets for the keyboard and
-   *  lets a drag put it away. */
-  keyboard?: boolean;
+  /** Keyboard behavior (build 12). Omitted: plain (every screen insets for
+   *  the keyboard and lets a drag put it away). `true` or "form": a form, with
+   *  the keyboard-aware scroll and the Prev / Next / Done bar. "chat": a
+   *  conversation (use with `scroll={false}`, then ChatList + ChatComposer). */
+  keyboard?: boolean | "form" | "chat";
+  /** The screen's main action, docked at the bottom: above the tab bar at
+   *  rest, right above the keyboard (and its bar) while typing. */
+  dock?: ReactNode;
   /** False for list screens whose list header carries the top inset itself,
    *  and for screens that open on a PhotoHero. */
   topInset?: boolean;
@@ -124,7 +157,18 @@ export function Screen({
   const top = useTopInset();
   const { lang } = useLang();
   const { clearance } = useBottomClearance();
-  const bottom = scroll ? Math.max(clearance, bottomInset + insets.bottom) : bottomInset + insets.bottom;
+  const mode: "plain" | "form" | "chat" = keyboard === "chat" ? "chat" : keyboard ? "form" : "plain";
+  const form = mode === "form";
+  // A chat brings its own list: never inside the screen's scroll view.
+  const scroll = scrollProp && mode !== "chat";
+  // Height of the docked action, so the content ends clear of it and the
+  // keyboard-aware scroll keeps the focused field above it.
+  const [dockHeight, setDockHeight] = useState(0);
+  const docked = dock ? dockHeight : 0;
+  const bottom = mode === "chat" ? 0 : (scroll ? Math.max(clearance, bottomInset + insets.bottom) : bottomInset + insets.bottom) + docked;
+  // Toasts clear the form toolbar while the keyboard is open (the docked
+  // action registers its own height).
+  useDockLift(form ? { rest: 0, open: TOOLBAR_SPACE } : null);
   const online = useOnline();
   const edgeBack = useEdgeBack();
   const ownY = useSharedValue(0);
@@ -165,14 +209,26 @@ export function Screen({
               <ConnectionBanner onRetry={retry} />
             </View>
           ) : null}
-          {children}
+          {mode === "chat" ? <ChatArea>{children}</ChatArea> : children}
         </>
       )}
     </View>
   );
+  // A form bounds Prev / Next to its own fields (other tab screens stay mounted).
+  const content = form ? <FormGroup style={!scroll ? styles.fill : undefined}>{inner}</FormGroup> : inner;
+  const scrollCommon = {
+    keyboardShouldPersistTaps: "handled" as const,
+    // Every screen: a drag down the content puts the keyboard away (QA Sep 29:
+    // fields on screens without `keyboard` could not be left otherwise).
+    keyboardDismissMode: "interactive" as const,
+    showsVerticalScrollIndicator: false,
+    contentInsetAdjustmentBehavior: "never" as const,
+    refreshControl: pull.control ?? undefined,
+  };
   return (
     <BackSlot.Provider value={edgeBack.slot}>
     <BannerScope.Provider value={scope}>
+    <KeyboardScope.Provider value={form ? FORM_SCOPE : null}>
     <View style={[styles.screen, style]}>
       {/* The night backdrop (navy to night to deep night, with the gold wash
           from the top right) as one small baked image, stretched. It used to
@@ -182,29 +238,39 @@ export function Screen({
           now shared by every screen. Photo screens skip it (plain night). */}
       {backdrop ? <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" /> : null}
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
-      {scroll ? (
-        <Animated.ScrollView
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          keyboardShouldPersistTaps="handled"
-          // Every screen: a drag down the content puts the keyboard away (QA Sep 29:
-          // fields on screens without `keyboard` could not be left otherwise).
-          keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets
-          showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="never"
-          refreshControl={pull.control ?? undefined}
+      {scroll && form ? (
+        // Forms: the focused field scrolls into the band above the keyboard,
+        // its bar and the docked action, frame by frame (K4). The library
+        // insets the scroll for the keyboard itself, so no automatic iOS
+        // keyboard insets here (they would count the keyboard twice).
+        <KeyboardAwareScrollView
+          onScroll={onScroll as unknown as React.ComponentProps<typeof KeyboardAwareScrollView>["onScroll"]}
+          // +32: the dock's 16 pt fade plus 16 pt of air, so the focused
+          // field is never half under the docked action (seen on the sims).
+          bottomOffset={docked + TOOLBAR_SPACE + 32}
+          {...scrollCommon}
         >
-          {inner}
+          {content}
+        </KeyboardAwareScrollView>
+      ) : scroll ? (
+        <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} automaticallyAdjustKeyboardInsets {...scrollCommon}>
+          {content}
         </Animated.ScrollView>
       ) : (
-        <View style={styles.fill}>{inner}</View>
+        <View style={styles.fill}>{content}</View>
       )}
       {/* A fixed header keeps the content below the status bar on its own. */}
       {header ? null : scroll ? <StatusScrim y={ownY} /> : scrollY ? <StatusScrim y={scrollY} /> : null}
       {edgeBack.strip}
+      {dock ? (
+        <DockedAction toolbar={form} onHeight={setDockHeight}>
+          {dock}
+        </DockedAction>
+      ) : null}
+      {form ? <FormToolbar /> : null}
       <LockCover />
     </View>
+    </KeyboardScope.Provider>
     </BannerScope.Provider>
     </BackSlot.Provider>
   );
@@ -442,7 +508,11 @@ export function useKeyboardOpen(): boolean {
   return open;
 }
 
-/** Root wrapper for the non-scrolling chat screens: the composer at the bottom
+/** @deprecated Build 12: use `<Screen keyboard="chat">` with ChatList and
+ *  ChatComposer (src/ui/keyboard.tsx), which follow the keyboard frame by
+ *  frame. Kept until the last chat screen moves over.
+ *
+ *  Root wrapper for the non-scrolling chat screens: the composer at the bottom
  *  rides exactly on top of the keyboard.
  *
  *  KeyboardAvoidingView works from its position inside its parent, not on the
@@ -576,10 +646,13 @@ export function Button({
   full = true,
   haptic = true,
   testID,
+  onPaper,
 }: {
   label: string;
   onPress?: () => void;
   kind?: ButtonKind;
+  /** A text button on a paper card: ink, never gold on cream (plan c). */
+  onPaper?: boolean;
   icon?: IconName;
   small?: boolean;
   loading?: boolean;
@@ -590,7 +663,7 @@ export function Button({
   testID?: string;
 }) {
   const h = small ? 48 : BUTTON_HEIGHT;
-  const fg = kind === "primary" || kind === "paper" ? colors.night : kind === "text" ? colors.goldLight : colors.ivory;
+  const fg = kind === "primary" || kind === "paper" ? colors.night : kind === "text" ? (onPaper ? colors.ink : colors.goldLight) : colors.ivory;
   const bg =
     kind === "primary" ? colors.gold : kind === "paper" ? colors.cream : kind === "glass" ? colors.glassFill : "transparent";
   const border = kind === "glass" ? colors.ivory14 : kind === "ghost" ? "rgba(247,243,236,0.18)" : kind === "primary" ? colors.gold : "transparent";
@@ -925,9 +998,13 @@ const NUMERIC_KEYBOARDS = new Set(["number-pad", "decimal-pad", "numeric", "phon
  *  not read as a blob.
  *
  *  v1.2:
- *  - A numeric, decimal or phone keyboard has no Return key, so on iOS it gets
- *    a "Done" bar on top (K6). `doneBar={false}` turns it off; a call site's
- *    own `inputAccessoryViewID` wins.
+ *  - A numeric, decimal or phone keyboard has no Return key, so it needs a
+ *    "Done" (K6). Inside a form (a `keyboard` Screen, a form Sheet) the form
+ *    toolbar gives it, with Prev / Next (build 12). Elsewhere, on iOS, the
+ *    field adds its own "Done" accessory bar as in wave 1: it is part of the
+ *    keyboard, so the automatic keyboard insets of a plain screen account for
+ *    it. `doneBar={false}` turns that bar off; a call site's own
+ *    `inputAccessoryViewID` wins.
  *  - A search field (`icon="search"`, or `clearable`) shows a clear button
  *    while it has text (K9 to K12). It empties the field through
  *    `onChangeText("")` and keeps the keyboard up. */
@@ -963,8 +1040,9 @@ export function Input({
     [ref]
   );
   const barId = `done-${useId()}`;
+  const inForm = useInFormScope();
   const numeric = !props.multiline && !!props.keyboardType && NUMERIC_KEYBOARDS.has(props.keyboardType);
-  const withBar = Platform.OS === "ios" && doneBar && numeric && !props.inputAccessoryViewID;
+  const withBar = Platform.OS === "ios" && doneBar && numeric && !inForm && !props.inputAccessoryViewID;
   const canClear = (clearable ?? icon === "search") && props.editable !== false && !!props.value;
   return (
     <View style={[styles.input, props.multiline && styles.inputMultiline, style]}>
@@ -1003,8 +1081,10 @@ export function Input({
 }
 
 /** The iOS "Done" bar over a keyboard with no Return key (K6). `Input` adds it
- *  by itself; a raw TextInput opts in with `inputAccessoryViewID={id}` and
- *  `<KeyboardDoneBar nativeID={id} />` next to it. Renders nothing off iOS. */
+ *  by itself outside forms; a raw TextInput opts in with
+ *  `inputAccessoryViewID={id}` and `<KeyboardDoneBar nativeID={id} />` next to
+ *  it. Inside a form Screen or form Sheet do not add it: the form toolbar
+ *  already has Done. Renders nothing off iOS. */
 export function KeyboardDoneBar({ nativeID, onDone }: { nativeID: string; onDone?: () => void }) {
   const c = useCopy().common;
   if (Platform.OS !== "ios") return null;
@@ -1292,15 +1372,6 @@ export function Skeleton({ w = "100%", h = 16, r = 8, style }: { w?: number | `$
   return <View style={[{ width: w, height: h, borderRadius: r, backgroundColor: "rgba(247,243,236,0.09)" }, style]} />;
 }
 
-/** The focused native text field, or null. react-native-web's TextInputState
- *  has no currentlyFocusedInput (only currentlyFocusedField), so the web QA
- *  rig skips it instead of throwing while a sheet renders. */
-function focusedTextInput(): ReturnType<typeof TextInput.State.currentlyFocusedInput> | null {
-  if (Platform.OS === "web") return null;
-  const state = TextInput.State as Partial<typeof TextInput.State>;
-  return state.currentlyFocusedInput?.() ?? null;
-}
-
 /** Bottom sheet with the gold hairline and grabber.
  *
  *  Default: the height follows the content up to the window minus the top
@@ -1319,6 +1390,14 @@ function focusedTextInput(): ReturnType<typeof TextInput.State.currentlyFocusedI
  *    rides right on top of the keyboard while a field is focused. Use it for
  *    the form's actions: `footer={<SheetActions onCancel={...} onSave={...} />}`.
  *
+ *  Build 12 (react-native-keyboard-controller):
+ *  - The sheet rides the keyboard frame by frame (interactive dismiss too).
+ *  - A form sheet (`footer` given, or `form`) gets the "Prev / Next / Done"
+ *    bar over the keyboard and its footer sits right above that bar.
+ *  - The focused field is scrolled into the visible part of the sheet once the
+ *    keyboard settles and whenever focus moves to another field.
+ *  - Toasts shown while it is open appear inside it, above its footer.
+ *
  *  `scroll={false}` is for sheets that bring their own list or scroll view:
  *  they get a definite height (the old `top` offset, but never under 320 pt and
  *  never over the window) so a `flex: 1` child has something to fill.
@@ -1332,6 +1411,7 @@ export function Sheet({
   scroll = true,
   footer,
   dismissKeyboard = true,
+  form,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -1342,11 +1422,20 @@ export function Sheet({
   footer?: ReactNode;
   /** Put the keyboard away when the sheet opens. Default on (K1). */
   dismissKeyboard?: boolean;
+  /** Prev / Next / Done bar over the keyboard. Default: on when there is a
+   *  `footer` (a form sheet). Pass true for a form without footer, false for a
+   *  footer sheet whose only field is a search. */
+  form?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const copy = useCopy();
   const { height, width } = useWindowDimensions();
   const keyboardOpen = useKeyboardOpen();
+  const isForm = form ?? !!footer;
+  const kbOpen = useKeyboardState((k) => k.isVisible);
+  const kbHeight = useKeyboardState((k) => k.height);
+  const { scrollRef: sheetScrollRef, contentRef: sheetContentRef, onScroll: onSheetScroll, onLayout: onSheetLayout, onContentSizeChange: onSheetContentSize } = useKeepFocusedVisible({ gap: 16, enabled: visible && scroll });
+  const [footerHeight, setFooterHeight] = useState(0);
   // Never under the clock, the Dynamic Island or the status bar (K2).
   const topGap = Math.max(insets.top, 20) + 8;
   const maxHeight = height - topGap;
@@ -1388,8 +1477,14 @@ export function Sheet({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardScope.Provider value={isForm ? FORM_SCOPE : null}>
         <Pressable testID="sheet-scrim" style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={copy.common.close} />
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} pointerEvents="box-none" style={[styles.sheetHost, { paddingTop: topGap }]}>
+        {/* The form bar floats over a gap between the lifted sheet and the
+            keyboard; fill it with the sheet's night so the screen behind the
+            modal never shows through there (seen on the SE). */}
+        {isForm && kbOpen ? <View pointerEvents="none" style={[styles.sheetKbFill, { height: kbHeight + TOOLBAR_SPACE + 24 }]} /> : null}
+        {/* Lifted by the keyboard frame by frame, plus the form bar's room. */}
+        <KeyboardLiftView behavior="padding" keyboardVerticalOffset={isForm ? TOOLBAR_SPACE : 0} pointerEvents="box-none" style={[styles.sheetHost, { paddingTop: topGap }]}>
           <Animated.View entering={SlideInDown.duration(260)} style={[styles.sheet, { maxHeight }, !scroll && { height: fixed }, wide && styles.sheetWide, dragStyle]}>
             <GestureDetector gesture={pan}>
               <View style={styles.grabberBand} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -1398,6 +1493,11 @@ export function Sheet({
             </GestureDetector>
             {scroll ? (
               <ScrollView
+                ref={sheetScrollRef}
+                onScroll={onSheetScroll}
+                scrollEventThrottle={16}
+                onLayout={onSheetLayout}
+                onContentSizeChange={onSheetContentSize}
                 style={footer ? styles.sheetScroll : undefined}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"
@@ -1405,16 +1505,26 @@ export function Sheet({
                 bounces={false}
                 contentContainerStyle={{ paddingBottom: footer ? 12 : bottomPad }}
               >
-                {children}
+                <View ref={sheetContentRef} collapsable={false}>
+                  {children}
+                </View>
               </ScrollView>
             ) : (
               <View style={{ flex: 1, paddingBottom: footer ? 12 : bottomPad }}>{children}</View>
             )}
-            {footer ? <View style={[styles.sheetFooter, { paddingBottom: bottomPad }]}>{footer}</View> : null}
+            {footer ? (
+              <View style={[styles.sheetFooter, { paddingBottom: bottomPad }]} onLayout={(e) => setFooterHeight(Math.round(e.nativeEvent.layout.height))}>
+                {footer}
+              </View>
+            ) : null}
           </Animated.View>
-        </KeyboardAvoidingView>
+        </KeyboardLiftView>
+        {isForm ? <FormToolbar /> : null}
+        {/* The sheet covers the root's toast host: toasts show in here. */}
+        <ToastHost base={footer ? 0 : insets.bottom} lift={{ rest: footerHeight, open: footerHeight + (isForm ? TOOLBAR_SPACE : 0) }} />
         {/* A Modal sits above the root layout's lock cover: it draws its own. */}
         <LockCover />
+        </KeyboardScope.Provider>
       </GestureHandlerRootView>
     </Modal>
   );
@@ -1530,10 +1640,19 @@ export function QueryState({ query, message }: { query: { isError: boolean; data
  *  `dockedListPadding` so its last row scrolls clear. */
 export function DockedActions({ children, onHeight }: { children: ReactNode; onHeight?: (h: number) => void }) {
   const tabTop = useTabBarTop();
+  const [height, setHeight] = useState(0);
+  // Toasts sit above these buttons (they stay behind the keyboard when it opens).
+  useDockLift(height ? { rest: height, open: 0 } : null);
   return (
     <View pointerEvents="box-none" style={[styles.dock, { paddingBottom: tabTop + 12 }]}>
       <LinearGradient pointerEvents="none" colors={["rgba(8,11,16,0)", "rgba(8,11,16,0.94)", colors.nightDeep]} locations={[0, 0.3, 1]} style={COVER} />
-      <View style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]} onLayout={(e) => onHeight?.(Math.round(e.nativeEvent.layout.height))}
+      <View
+        style={[styles.column, { paddingHorizontal: space.screen, paddingTop: 22, gap: 10 }]}
+        onLayout={(e) => {
+          const h = Math.round(e.nativeEvent.layout.height);
+          setHeight(h);
+          onHeight?.(h);
+        }}
       >
         {children}
       </View>
@@ -1585,6 +1704,7 @@ const styles = StyleSheet.create({
   statusScrim: { position: "absolute", top: 0, left: 0, right: 0, overflow: "hidden" },
   scrimEdge: { position: "absolute", left: 0, right: 0, bottom: 0, height: StyleSheet.hairlineWidth, backgroundColor: colors.ivory14 },
   sheetWide: { maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", width: "100%", borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.goldBorder },
+  sheetKbFill: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: colors.night },
   sheet: { flexShrink: 1, backgroundColor: colors.night, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, borderTopWidth: 1, borderTopColor: colors.goldBorder, paddingHorizontal: 24 },
   sheetScroll: { flexGrow: 0, flexShrink: 1 },
   sheetFooter: { paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.ivory09, marginHorizontal: -24, paddingHorizontal: 24 },

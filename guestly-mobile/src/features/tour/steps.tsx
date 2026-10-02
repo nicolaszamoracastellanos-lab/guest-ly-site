@@ -1,5 +1,7 @@
-// Which steps each tour has, in order. Four to six each; the last one is the
-// celebration. The pending couple tour previews the couple tour.
+// Which steps each tour has, in order. Build 12: at most three cards, each
+// naming a real tab; the last card closes the tour (its button is the CTA).
+// The pending couple tour previews the couple tour. The planner tour is built
+// from the planner's real permissions on the open wedding.
 
 import React, { type ComponentType } from "react";
 import { fmt } from "@/i18n";
@@ -7,9 +9,9 @@ import type { TourCopy, TourStepCopy } from "./copy";
 import type { TourVariant } from "./state";
 import type { SceneProps } from "./scenes/kit";
 import { GemScene } from "./scenes/Gem";
-import { CalendarScene, ConciergeScene, DayOfScene, RsvpScene } from "./scenes/guest";
-import { BriefingScene, CheckinScene, CoordinatorScene, MessagesScene, RsvpsScene } from "./scenes/couple";
-import { ProposeScene, RequestsScene, TasksScene, WeddingsScene } from "./scenes/planner";
+import { CalendarScene, ConciergeScene, RsvpScene } from "./scenes/guest";
+import { BriefingScene, CoordinatorScene, RsvpsScene } from "./scenes/couple";
+import { ProposeScene, ToolsScene, WeddingsScene, type TourTool } from "./scenes/planner";
 
 export type TourStep = {
   key: string;
@@ -19,24 +21,19 @@ export type TourStep = {
   final?: boolean;
 };
 
-export type TourNames = { name?: string | null; couple?: string | null };
+export type TourNames = {
+  name?: string | null;
+  couple?: string | null;
+  /** Planner only: which Boda tools are shared, and whether the task and
+   *  Coordinator tools are on. Missing: everything counts as on. */
+  planner?: { tools: Record<TourTool, boolean>; tasks: boolean; coordinator: boolean } | null;
+};
 
 function GemAssemble(props: SceneProps) {
   return <GemScene {...props} burst={false} />;
 }
 
-/** Fills {name} and {couple}, falling back to the copy written without them. */
-function withNames(c: TourStepCopy, names: TourNames): TourStepCopy {
-  const name = names.name?.trim() || null;
-  const couple = names.couple?.trim() || null;
-  return {
-    ...c,
-    title: c.title.includes("{name}") ? (name ? fmt(c.title, { name }) : c.titleNoName ?? c.title.replace(/,?\s*\{name\}/, "")) : c.title,
-    body: c.body.includes("{couple}") ? (couple ? fmt(c.body, { couple }) : c.bodyNoName ?? c.body) : c.body,
-  };
-}
-
-export function buildSteps(variant: TourVariant, t: TourCopy, names: TourNames): TourStep[] {
+export function buildSteps(variant: TourVariant, t: TourCopy, names: TourNames, toolLabels?: Record<TourTool, string>): TourStep[] {
   const g = t.steps.guest;
   const c = t.steps.couple;
   const p = t.steps.planner;
@@ -46,36 +43,37 @@ export function buildSteps(variant: TourVariant, t: TourCopy, names: TourNames):
       return [
         { key: "rsvp", copy: g.rsvp, Scene: RsvpScene },
         { key: "calendar", copy: g.calendar, Scene: CalendarScene },
-        { key: "concierge", copy: g.concierge, Scene: ConciergeScene },
-        { key: "dayof", copy: g.dayof, Scene: DayOfScene },
-        { key: "ready", copy: withNames(g.ready, names), Scene: GemScene, final: true },
+        { key: "concierge", copy: g.concierge, Scene: ConciergeScene, final: true },
       ];
     case "couple":
       return [
-        { key: "briefing", copy: c.briefing, Scene: BriefingScene },
-        { key: "rsvps", copy: c.rsvps, Scene: RsvpsScene },
-        { key: "messages", copy: c.messages, Scene: MessagesScene },
-        { key: "coordinator", copy: c.coordinator, Scene: CoordinatorScene },
-        { key: "checkin", copy: c.checkin, Scene: CheckinScene },
-        { key: "ready", copy: c.ready, Scene: GemScene, final: true },
+        { key: "home", copy: c.home, Scene: BriefingScene },
+        { key: "guests", copy: c.guests, Scene: RsvpsScene },
+        { key: "plan", copy: c.plan, Scene: CoordinatorScene, final: true },
       ];
     case "couple-pending":
       return [
         { key: "intro", copy: pend.intro, Scene: GemAssemble },
-        { key: "rsvps", copy: c.rsvps, Scene: RsvpsScene },
-        { key: "messages", copy: c.messages, Scene: MessagesScene },
-        { key: "coordinator", copy: c.coordinator, Scene: CoordinatorScene },
-        { key: "checkin", copy: c.checkin, Scene: CheckinScene },
-        { key: "ready", copy: pend.ready, Scene: GemScene, final: true },
+        { key: "guests", copy: c.guests, Scene: RsvpsScene },
+        { key: "plan", copy: { ...c.plan, tip: undefined }, Scene: CoordinatorScene, final: true },
       ];
-    case "planner":
-      return [
-        { key: "weddings", copy: p.weddings, Scene: WeddingsScene },
-        { key: "propose", copy: p.propose, Scene: ProposeScene },
-        { key: "requests", copy: p.requests, Scene: RequestsScene },
-        { key: "tasks", copy: p.tasks, Scene: TasksScene },
-        { key: "ready", copy: p.ready, Scene: GemScene, final: true },
-      ];
+    case "planner": {
+      const perms = names.planner ?? null;
+      const tasks = perms ? perms.tasks : true;
+      const coordinator = perms ? perms.coordinator : true;
+      const order: TourTool[] = ["budget", "tasks", "seating", "runsheet"];
+      const labels = perms && toolLabels ? order.filter((k) => perms.tools[k]).map((k) => toolLabels[k]) : [];
+      const wedding: TourStepCopy = {
+        ...p.wedding,
+        body: labels.length ? fmt(p.wedding.body, { tools: labels.join(", ") }) : p.wedding.bodyNoName ?? p.wedding.body,
+        // The Coordinator line only when that tool is on.
+        tip: coordinator ? `${p.coordinator} ${p.wedding.tip ?? ""}`.trim() : p.wedding.tip,
+      };
+      const steps: TourStep[] = [{ key: "weddings", copy: p.weddings, Scene: WeddingsScene }];
+      if (tasks) steps.push({ key: "propose", copy: p.propose, Scene: ProposeScene });
+      steps.push({ key: "wedding", copy: wedding, Scene: ToolsScene, final: true });
+      return steps;
+    }
   }
 }
 

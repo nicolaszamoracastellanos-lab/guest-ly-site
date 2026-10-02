@@ -9,13 +9,16 @@
 //   touch, so it never hides what is under it for long.
 // - Tap opens the Coordinator (couple, planner: /assistant) or the concierge
 //   (guest: the concierge tab). Hold shows its name.
-// - Hidden while the keyboard is open and on the chat it opens (root layout,
-//   chrome.ts pathShowsBubble). Honors Reduce Motion.
+// - Hidden while the keyboard is open (build 12: read from
+//   react-native-keyboard-controller, the same source the composers and docked
+//   actions ride on) and on the chat it opens (root layout, chrome.ts
+//   pathShowsBubble). Honors Reduce Motion.
 //
 // Mounted once by the root layout so it keeps its place across screens.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Keyboard, Platform, StyleSheet, View, useWindowDimensions } from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +28,7 @@ import * as Haptics from "expo-haptics";
 import { useLang } from "@/i18n";
 import { Icon } from "./Icon";
 import { T } from "./Text";
-import { colors, TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN, BUBBLE_IDLE_OPACITY, BUBBLE_IDLE_MS, HIT_TARGET, TOP_SAFE_MIN } from "./tokens";
+import { colors, TAB_BAR_HEIGHT, BUBBLE_SIZE, BUBBLE_MARGIN, BUBBLE_IDLE_OPACITY, BUBBLE_IDLE_MS, HIT_TARGET, TOP_SAFE_MIN, tabBarOffset } from "./tokens";
 
 export type AssistantSurface = "guest" | "couple" | "planner";
 
@@ -63,7 +66,7 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const [keyboard, setKeyboard] = useState(false);
+  const keyboard = useKeyboardState((k) => k.isVisible);
   const [label, setLabel] = useState(false);
   const [place, setPlace] = useState<Place>(DEFAULT_PLACE);
   // The bubble stays hidden until the saved place is read, so it appears where
@@ -75,7 +78,7 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
   // header's top is the same rule the screens use (useTopInset in the kit).
   const headerTop = insets.top >= 40 ? Math.max(insets.top, TOP_SAFE_MIN) : insets.top + 16;
   const minY = headerTop + HEADER_ROW + INSET;
-  const maxY = Math.max(minY, height - Math.max(insets.bottom, 0) - TAB_BAR_BOTTOM - TAB_BAR_HEIGHT - SIZE - INSET);
+  const maxY = Math.max(minY, height - tabBarOffset(Math.max(insets.bottom, 0)) - TAB_BAR_HEIGHT - SIZE - INSET);
   const leftX = INSET;
   const rightX = Math.max(INSET, width - SIZE - INSET);
 
@@ -131,17 +134,6 @@ export default function AssistantBubble({ surface, hidden = false, badge = false
     x.set(withSpring(tx, { damping: 20, stiffness: 220 }));
     y.set(withSpring(ty, { damping: 20, stiffness: 220 }));
   }, [place, restored, leftX, rightX, minY, maxY, reduceMotion, x, y]);
-
-  useEffect(() => {
-    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const a = Keyboard.addListener(showEvt, () => setKeyboard(true));
-    const b = Keyboard.addListener(hideEvt, () => setKeyboard(false));
-    return () => {
-      a.remove();
-      b.remove();
-    };
-  }, []);
 
   // Full opacity on touch (and each time it appears), then back to the
   // resting opacity after a while. Every touch bumps `touches`; the effect

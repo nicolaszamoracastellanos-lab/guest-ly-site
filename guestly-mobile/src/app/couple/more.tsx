@@ -1,105 +1,79 @@
-// Everything else. Every entry opens a native screen; nothing leaves the app
-// (the guide renders inside the signed-in web view).
+// Más (build 12): the invitation code, then everything that is not one of the
+// four tabs, as one list. Settings appears once (the gear row). Sections that
+// moved: Tasks, Budget, Seating and the day's schedule to Plan; announcements
+// to Messages; RSVPs into Guests. Nothing else was removed: the planner's
+// requests, wedding day mode and the concierge insights stay here too.
 
 import React from "react";
-import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { plural, useCopy } from "@/i18n";
 import { useMore } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, T, Icon, SectionLabel, Badge, Stack, Footer, type IconName } from "@/ui";
+import { useCoupleSettings } from "@/features/settings/hooks";
+import { Screen, TopBar, Wordmark, BigTitle, T, Icon, Footer, Skeleton } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
+import { useCoupleCopy, useShareInvite, MenuRow, MenuCard } from "@/features/couple/ui";
 
-type Item = { key: string; icon: IconName; label: string; sub: string; route?: string; params?: Record<string, string>; available: boolean };
-
-export default function MoreSheet() {
+export default function CoupleMore() {
   const copy = useCopy();
+  const c = useCoupleCopy();
   const router = useRouter();
   const user = useUserSession();
-  const mainQuery = useMore();
-  const { data } = mainQuery;
-  const e = data?.entries ?? {};
-  // A count shows only when the server sent one. With the API failing the tile
-  // keeps its plain label instead of claiming "0" (Part 9 audit, D-023).
-  const count = (k: string, forms: { one: string; other: string }) => (typeof e[k]?.count === "number" ? plural(e[k]!.count, forms) : copy.more.subs.inApp);
-
-  const planning: Item[] = [
-    { key: "tasks", icon: "tasks", label: copy.more.items.tasks, sub: count("tasks", copy.more.subs.tasksOpen), route: "/couple/tasks", available: true },
-    { key: "seating", icon: "grid", label: copy.more.items.seating, sub: count("seating", copy.more.subs.seatingPlans), route: "/couple/seating", available: true },
-    { key: "budget", icon: "coins", label: copy.more.items.budget, sub: copy.more.subs.inApp, route: "/couple/budget", available: true },
-    { key: "brain", icon: "sparkle", label: copy.more.items.brain, sub: copy.more.subs.brainAsk, route: "/couple/brain", available: true },
-    { key: "vendors", icon: "store", label: copy.more.items.vendors, sub: count("vendors", copy.more.subs.vendors), route: "/couple/vendors", available: true },
-    { key: "runsheet", icon: "list", label: copy.more.items.runsheet, sub: copy.more.subs.runsheet, route: "/couple/runsheet", available: true },
-    { key: "dayof", icon: "clock", label: copy.more.items.dayof, sub: copy.more.subs.dayof, route: "/couple/dayof", available: true },
-  ];
-  const communication: Item[] = [
-    { key: "broadcasts", icon: "megaphone", label: copy.more.items.broadcasts, sub: count("broadcasts", copy.more.subs.broadcasts), route: "/couple/broadcasts", available: true },
-    { key: "requests", icon: "tasks", label: copy.more.items.requests, sub: count("requests", copy.more.subs.requests), route: "/couple/requests", available: true },
-    { key: "insights", icon: "star", label: copy.more.items.insights, sub: copy.more.subs.insights, route: "/couple/insights", available: true },
-    { key: "coordinator", icon: "chat", label: copy.more.items.coordinator, sub: copy.more.subs.coordinator, route: "/assistant", available: true },
-  ];
-  const eventDay: Item[] = [
-    { key: "checkin", icon: "qr", label: copy.more.items.checkin, sub: copy.more.subs.checkin, route: "/couple/checkin", available: true },
-    { key: "website", icon: "globe", label: copy.more.items.website, sub: `guest-ly.com/${data?.site_slug ?? user?.me.tenant.slug ?? ""}`, route: "/couple/website", available: true },
-    { key: "guide", icon: "book", label: copy.more.items.guide, sub: copy.more.subs.inApp, route: "/web", params: { path: "/guide", title: copy.more.items.guide }, available: true },
-    { key: "settings", icon: "gear", label: copy.more.items.settings, sub: "", route: "/settings", available: true },
-  ];
-
-  function open(item: Item) {
-    if (!item.available || !item.route) return;
-    if (item.params) return router.push({ pathname: item.route, params: item.params } as never);
-    router.push(item.route as never);
-  }
-
-  // Two tiles per row need about 165 pt each. With large text on a narrow phone
-  // the labels broke mid word ("Presupue / sto"), so the grid goes to one column
-  // there (plan 6.2; Part 9 audit, D-031).
-  const { width, fontScale } = useWindowDimensions();
-  const oneColumn = width < 380 && fontScale > 1.15;
-
-  const grid = (items: Item[]) => (
-    <View style={styles.grid}>
-      {items.map((it) => (
-        <Pressable key={it.key} onPress={() => open(it)} disabled={!it.available} accessibilityRole="button" accessibilityLabel={it.sub ? `${it.label}, ${it.sub}` : it.label} style={({ pressed }) => [styles.tile, oneColumn && { width: "100%" }, pressed && { opacity: 0.75 }, !it.available && { opacity: 0.55 }]}>
-          <Icon name={it.icon} size={22} color={colors.goldLight} />
-          <View style={{ flex: 1, gap: 1 }}>
-            <T v="body15" numberOfLines={2}>
-              {it.label}
-            </T>
-            {it.available ? (
-              it.sub ? (
-                <T v="meta13" color={colors.ivory55} numberOfLines={2}>
-                  {it.sub}
-                </T>
-              ) : null
-            ) : (
-              <Badge label={copy.common.comingSoon} kind="mute" />
-            )}
-          </View>
-        </Pressable>
-      ))}
-    </View>
-  );
+  const more = useMore();
+  const settings = useCoupleSettings();
+  const shareInvite = useShareInvite();
+  const slug = more.data?.site_slug ?? user?.me.tenant.slug ?? "";
+  const requests = more.data?.entries.requests?.count;
+  const code = settings.data?.invite_code ?? null;
 
   return (
-    <Screen header={<TopBar left={<Wordmark height={20} />} right={<IconButton name="gear" label={copy.more.items.settings} onPress={() => router.push("/settings")} />} />}>
-      <View style={{ marginTop: 18 }}>
-        <BigTitle title={copy.more.title} sub={user?.me.tenant.couple_names} />
+    <Screen header={<TopBar left={<Wordmark height={20} />} />} refresh={() => Promise.all([more.refetch(), settings.refetch()])}>
+      <View style={{ marginTop: 10 }}>
+        <BigTitle title={c.more.title} sub={user?.me.tenant.couple_names} />
       </View>
-      <Stack gap={8} style={{ marginTop: 20 }}>
-        <SectionLabel>{copy.more.planning}</SectionLabel>
-        {grid(planning)}
-        <SectionLabel style={{ marginTop: 10 }}>{copy.more.communication}</SectionLabel>
-        {grid(communication)}
-        <SectionLabel style={{ marginTop: 10 }}>{copy.more.eventDay}</SectionLabel>
-        {grid(eventDay)}
-      </Stack>
+
+      {/* The invitation code, one tap from sharing (it used to sit four taps deep in Settings). */}
+      <Pressable onPress={() => router.push("/couple/settings/invite")} accessibilityRole="button" accessibilityLabel={code ? `${c.more.code}, ${code.split("").join(" ")}` : c.more.code} style={({ pressed }) => [styles.code, pressed && { opacity: 0.85 }]}>
+        <View style={{ flex: 1, gap: 4 }}>
+          <T v="meta13" color={colors.ivory70}>
+            {c.more.code}
+          </T>
+          {code ? (
+            <T v="title30" color={colors.ivory} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ letterSpacing: 4 }}>
+              {code}
+            </T>
+          ) : settings.isLoading ? (
+            <Skeleton h={30} w={140} />
+          ) : (
+            <Icon name="chev" size={18} color={colors.ivory40} />
+          )}
+        </View>
+        <Pressable onPress={() => void shareInvite()} accessibilityRole="button" accessibilityLabel={c.more.share} style={({ pressed }) => [styles.share, pressed && { opacity: 0.8 }]}>
+          <Icon name="share" size={18} color={colors.goldLight} />
+          <T v="meta13" color={colors.goldLight}>
+            {c.more.share}
+          </T>
+        </Pressable>
+      </Pressable>
+
+      <MenuCard style={{ marginTop: 16 }}>
+        <MenuRow icon="globe" title={c.more.site} sub={slug ? `guest-ly.com/${slug}` : undefined} onPress={() => router.push("/couple/website")} testID="more-site" />
+        <MenuRow icon="book" title={c.more.brain} sub={c.more.brainSub} onPress={() => router.push("/couple/brain")} testID="more-brain" />
+        <MenuRow icon="sparkle" title={c.more.coordinator} sub={c.more.coordinatorSub} onPress={() => router.push("/assistant" as never)} testID="more-coordinator" />
+        <MenuRow icon="qr" title={c.more.checkin} sub={c.more.checkinSub} onPress={() => router.push("/couple/checkin")} testID="more-checkin" />
+        <MenuRow icon="clock" title={c.more.dayof} sub={c.more.dayofSub} onPress={() => router.push("/couple/dayof")} testID="more-dayof" />
+        <MenuRow icon="tasks" title={c.more.requests} sub={typeof requests === "number" && requests > 0 ? plural(requests, copy.more.subs.requests) : c.more.requestsSub} onPress={() => router.push("/couple/requests")} testID="more-requests" />
+        <MenuRow icon="star" title={c.more.insights} sub={c.more.insightsSub} onPress={() => router.push("/couple/insights")} testID="more-insights" />
+        <MenuRow icon="info" title={c.more.guide} sub={c.more.guideSub} onPress={() => router.push({ pathname: "/web", params: { path: "/guide", title: c.more.guide } } as never)} testID="more-guide" />
+        <MenuRow icon="gear" title={c.more.settings} sub={c.more.settingsSub} onPress={() => router.push("/settings")} testID="more-settings" last />
+      </MenuCard>
       <Footer version={copy.common.footerVersion} trademark={copy.common.footerTrademark} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "stretch" },
-  tile: { width: "48.5%", minHeight: 64, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 10 },
+  code: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 20, padding: 16, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.goldBorder },
+  share: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder },
 });

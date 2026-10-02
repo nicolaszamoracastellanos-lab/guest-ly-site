@@ -1,5 +1,9 @@
 // Pre-prompt before the OS notification dialog (both platforms). The
 // preferences chosen here become the push prefs on the server.
+//
+// Build 12: guests no longer pass through here after the code (N24). They are
+// asked on the RSVP confirmation (features/guest/notifications). The route
+// stays for Info's switch, couple and planner Settings, and deep links.
 
 import React, { useState } from "react";
 import { View, StyleSheet, Image, useWindowDimensions, Alert, Linking, Platform } from "react-native";

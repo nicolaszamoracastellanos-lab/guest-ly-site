@@ -2,7 +2,7 @@
 // section type, all in the app's Direction A language; the gallery viewer is
 // a full-screen modal owned by SiteBody so every image on the page opens it.
 
-import React, { useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 import { View, StyleSheet, Pressable, Modal, FlatList, useWindowDimensions, ScrollView } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,11 +22,15 @@ import { openUrlSafe } from "@/features/guest/links";
 
 type Viewer = { images: { url: string; caption: string | null }[]; index: number } | null;
 
+/** True inside a sheet (build 12: the guest Home's Hotels and Gifts sheets):
+ *  the sheet gives the side padding and the title, so sections drop theirs. */
+const Bare = createContext(false);
+
 /* ------------------------------------------------------------------ */
 /* Page body                                                            */
 /* ------------------------------------------------------------------ */
 
-export function SiteBody({ site, only, hero = true }: { site: GuestSite; only?: SectionType[]; hero?: boolean }) {
+export function SiteBody({ site, only, hero = true, bare = false }: { site: GuestSite; only?: SectionType[]; hero?: boolean; bare?: boolean }) {
   const copy = useFeatureCopy(COPY);
   const [viewer, setViewer] = useState<Viewer>(null);
   const open = (images: { url: string; caption: string | null }[], index: number) => {
@@ -50,6 +54,7 @@ export function SiteBody({ site, only, hero = true }: { site: GuestSite; only?: 
   }
 
   return (
+    <Bare.Provider value={bare}>
     <View>
       {body}
       {!only && site.hashtag ? (
@@ -59,6 +64,7 @@ export function SiteBody({ site, only, hero = true }: { site: GuestSite; only?: 
       ) : null}
       <GalleryViewer viewer={viewer} onClose={() => setViewer(null)} copy={copy} />
     </View>
+    </Bare.Provider>
   );
 }
 
@@ -102,6 +108,8 @@ function SectionView({ section, onOpen }: { section: SiteSection; onOpen: (image
 /* ------------------------------------------------------------------ */
 
 function Section({ heading, children, fallback }: { heading: string | null; children: React.ReactNode; fallback: string }) {
+  const bare = useContext(Bare);
+  if (bare) return <View style={styles.sectionBare}>{children}</View>;
   return (
     <View style={styles.section}>
       <Row gap={10} style={{ marginBottom: 14 }}>
@@ -613,6 +621,7 @@ function initialsOf(name: string): string {
 
 const styles = StyleSheet.create({
   section: { paddingHorizontal: 24, marginTop: 34 },
+  sectionBare: { marginTop: 16 },
   hero: { overflow: "hidden", minHeight: 460, justifyContent: "flex-end", paddingBottom: 28 },
   heroTop: { position: "absolute", left: 20 },
   heroText: { paddingHorizontal: 24 },

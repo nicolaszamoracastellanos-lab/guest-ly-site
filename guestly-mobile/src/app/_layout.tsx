@@ -1,6 +1,11 @@
 // Root layout: providers, session gating, biometric lock, update gate, push
 // tap routing, error boundary. Every screen below inherits the night background.
 //
+// Build 12: KeyboardProvider (react-native-keyboard-controller) wraps the app,
+// so forms, sheets, chats and docked actions follow the keyboard frame by
+// frame (src/ui/keyboard.tsx). One ToastHost shows the kit's toasts above
+// every screen (a Sheet shows them inside itself while it is open).
+//
 // Launch: the splash stays up until the session is known, so a signed-in
 // person never sees (or taps) the entrance first (core review P1-8). Fonts are
 // embedded natively and never gate it; a safety timer hides it regardless.
@@ -13,6 +18,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { onlineManager } from "@tanstack/react-query";
 import { useAppFonts } from "@/lib/useAppFonts";
 import { LangProvider, useCopy } from "@/i18n";
@@ -24,7 +30,7 @@ import { drainQueue } from "@/lib/queue";
 import { setLockHandlers } from "@/lib/lock";
 import { flushPendingReports, installGlobalErrorHandlers, setTelemetryRoute } from "@/lib/telemetry";
 import { colors } from "@/ui/tokens";
-import { T, Button, Gem, Stack as VStack, LockCover } from "@/ui";
+import { T, Button, Gem, Stack as VStack, LockCover, ToastHost } from "@/ui";
 import AssistantBubble from "@/ui/AssistantBubble";
 import { pathShowsBubble } from "@/ui/chrome";
 import { TourHost, useTourOnScreen } from "@/features/tour";
@@ -57,14 +63,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.night }}>
       <SafeAreaProvider>
-        <LangProvider>
-          <QueryProvider>
-            <SessionProvider>
-              <StatusBar style="light" />
-              <Gate />
-            </SessionProvider>
-          </QueryProvider>
-        </LangProvider>
+        <KeyboardProvider>
+          <LangProvider>
+            <QueryProvider>
+              <SessionProvider>
+                <StatusBar style="light" />
+                <Gate />
+              </SessionProvider>
+            </QueryProvider>
+          </LangProvider>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -313,6 +321,9 @@ function Gate() {
         <Stack.Screen name="tour" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
       </Stack>
       {bubbleSurface ? <AssistantBubble surface={bubbleSurface} hidden={bubbleHidden} /> : null}
+      {/* Toasts (v1.2 d): above the screens and the bubble, under the tour,
+          the update screen and the lock. */}
+      {locked || updateRequired ? null : <ToastHost />}
       {/* Welcome tour: after a fresh sign-in, account creation or a guest's
           first open, and on replay from Settings. Under the lock and update
           screens, above everything else. */}

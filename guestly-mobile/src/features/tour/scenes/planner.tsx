@@ -1,14 +1,14 @@
 // Planner tour scenes: switching weddings, a request the couple approves, the
 // request list with its conversations, and the shared task board.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition, ZoomIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { fmt, plural, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY as TASKS_COPY } from "@/features/tasks/copy";
-import { Icon } from "@/ui/Icon";
+import { Icon, type IconName } from "@/ui/Icon";
 import { colors, fonts, radius } from "@/ui/tokens";
 import { TOUR_COPY } from "../copy";
 import { Bubble, FakeButton, Initials, Pill, ST, Tap, sceneStyles, useTimer, useTried, useTryAction, type SceneProps } from "./kit";
@@ -288,6 +288,43 @@ export function TasksScene({ active, reduced }: SceneProps) {
   );
 }
 
+// ---------------------------------------------------------------- tools (Boda)
+
+export type TourTool = "budget" | "tasks" | "seating" | "runsheet";
+
+/** Which Boda tools this planner has on this wedding (tour step 3 draws
+ *  them lit or locked). Every tool lit when unknown. */
+export const TourToolsContext = createContext<Record<TourTool, boolean> | null>(null);
+
+const TOOL_ICONS: { id: TourTool; icon: IconName }[] = [
+  { id: "budget", icon: "wallet" },
+  { id: "tasks", icon: "tasks" },
+  { id: "seating", icon: "grid" },
+  { id: "runsheet", icon: "clock" },
+];
+
+export function ToolsScene({ reduced }: SceneProps) {
+  const app = useCopy();
+  const on = useContext(TourToolsContext);
+  const b = app.planner.b12;
+  const label = (t: TourTool) => (t === "budget" ? b.budget : t === "tasks" ? b.tasks : t === "seating" ? b.seating : b.runsheet);
+  return (
+    <View style={[StyleSheet.absoluteFill, { flexDirection: "row", flexWrap: "wrap", gap: 12, alignContent: "center", justifyContent: "center" }]}>
+      {TOOL_ICONS.map((t, i) => {
+        const lit = on ? on[t.id] : true;
+        return (
+          <Animated.View key={t.id} entering={reduced ? undefined : FadeInDown.delay(80 * i).duration(320)} style={[styles.tool, !lit && styles.toolLocked]}>
+            <Icon name={lit ? t.icon : "lock"} size={26} color={lit ? colors.goldLight : colors.ivory40} />
+            <ST v="body15" color={lit ? colors.ivory : colors.ivory55} lines={2}>
+              {label(t.id)}
+            </ST>
+          </Animated.View>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   frame: { position: "absolute", left: 0, right: 0, top: -4, height: ROW_H + 8, borderRadius: 20, borderWidth: 1.5, borderColor: "rgba(201,169,110,0.7)", backgroundColor: "rgba(201,169,110,0.08)" },
   wRow: { height: ROW_H, marginHorizontal: 5, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, paddingHorizontal: 12, backgroundColor: "rgba(13,17,23,0.6)", borderWidth: 1, borderColor: colors.ivory09 },
@@ -299,5 +336,7 @@ const styles = StyleSheet.create({
   ghost: { height: 30, borderRadius: 8, backgroundColor: "rgba(247,243,236,0.06)" },
   task: { position: "absolute", left: 4, top: 42 + 32, width: COL_W - 8, borderRadius: 12, padding: 9, backgroundColor: "rgba(22,33,58,0.96)", borderWidth: 1.5, borderColor: colors.gold, shadowColor: "#000", shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 8 } },
   taskDone: { borderColor: "rgba(52,211,153,0.6)" },
+  tool: { width: 136, height: 112, borderRadius: 18, padding: 14, justifyContent: "space-between", backgroundColor: "rgba(201,169,110,0.08)", borderWidth: 1.5, borderColor: "rgba(201,169,110,0.5)" },
+  toolLocked: { backgroundColor: "rgba(247,243,236,0.03)", borderColor: colors.ivory14, borderStyle: "dashed" },
   doneDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.green, alignItems: "center", justifyContent: "center" },
 });

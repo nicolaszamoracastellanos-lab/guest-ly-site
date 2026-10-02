@@ -16,7 +16,7 @@ import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { usePlannerRequest } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState } from "@/ui";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState, Composer, toast } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "@/app/couple/requests/index";
 import { describeChanges } from "@/app/couple/requests/[id]";
@@ -52,6 +52,7 @@ export default function PlannerRequestDetail() {
     try {
       await post(`/planner/requests/${r.id}/comment`, { text: text.trim() });
       setText("");
+      toast(copy.planner.b12.replySent);
       await refresh();
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
@@ -77,6 +78,7 @@ export default function PlannerRequestDetail() {
       await refresh();
       await qc.invalidateQueries({ queryKey: ["planner-home"] });
       back();
+      toast(copy.planner.b12.withdrawn);
     } catch (err) {
       Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
     } finally {
@@ -87,7 +89,31 @@ export default function PlannerRequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, r.guest_names ?? [], copy.requests.changeWords, copy.requests.changeFields) : [];
 
   return (
-    <Screen query={mainQuery} refresh header={<TopBar onBack={back} title={copy.planner.requests} />} bottomInset={40} keyboard>
+    <Screen
+      query={mainQuery}
+      refresh
+      header={<TopBar onBack={back} title={copy.planner.requests} />}
+      bottomInset={40}
+      // Build 12: the reply box is docked, like a chat composer: above the
+      // tab bar at rest, right on the keyboard while typing, the last
+      // message kept above it. Its Send used to sit under the field, below
+      // the keyboard (audit K4, P/53).
+      dock={
+        r ? (
+          <Composer
+            value={text}
+            onChangeText={setText}
+            onSend={() => void reply()}
+            placeholder={copy.planner.b12.replyPlaceholder}
+            sendLabel={copy.planner.sendReply}
+            busy={busy === "reply"}
+            editable={busy !== "reply"}
+            testID="planner-request-reply"
+            sendTestID="planner-request-reply-send"
+          />
+        ) : undefined
+      }
+    >
       <>
         {!r && isLoading ? (
           <Stack gap={12}>
@@ -148,8 +174,6 @@ export default function PlannerRequestDetail() {
                 </Row>
                 )
               )}
-              <Input accessibilityLabel={copy.planner.replyToCouple} value={text} onChangeText={setText} placeholder={copy.planner.replyToCouple} onSubmitEditing={() => void reply()} returnKeyType="send" editable={busy !== "reply"} />
-              <Button label={copy.planner.sendReply} small kind="glass" onPress={() => void reply()} loading={busy === "reply"} disabled={!text.trim() || busy !== null} />
             </Stack>
             {r.status === "open" && mine ? (
               <ButtonRow style={{ marginTop: 22 }}>

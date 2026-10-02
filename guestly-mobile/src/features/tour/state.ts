@@ -20,7 +20,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSyncExternalStore } from "react";
 
 /** Bump when the content changes enough that everyone should see it again. */
-export const TOUR_VERSION = 1;
+// 2: build 12, new tabs per role and three cards at most.
+export const TOUR_VERSION = 2;
 
 export type TourVariant = "guest" | "couple" | "couple-pending" | "planner";
 

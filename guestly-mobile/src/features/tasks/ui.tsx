@@ -641,7 +641,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
             </T>
             <Icon name="down" size={18} color={colors.ivory40} />
           </Pressable>
-          <Sheet visible={pickerOpen} onClose={closePicker} top={120} scroll={false} footer={<Button label={common.done} onPress={closePicker} />}>
+          <Sheet visible={pickerOpen} onClose={closePicker} top={120} scroll={false} form={false} footer={<Button label={common.done} onPress={closePicker} />}>
             <View style={{ flex: 1, gap: 10 }}>
               <T v="title26">{copy.fields.guests}</T>
               <Input icon="search" value={q} onChangeText={setQ} placeholder={copy.fields.guests} autoCorrect={false} autoFocus />

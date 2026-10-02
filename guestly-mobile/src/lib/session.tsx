@@ -103,6 +103,12 @@ type Ctx = {
   switchTenant: (slug: string) => Promise<boolean>;
   /** The slug being switched to, while the switch runs. */
   switchingTenant: string | null;
+  /** Build 12 (F1): changes every time the open wedding changes (a switch,
+   *  or a recovery to another wedding), never on a plain /auth/me refresh.
+   *  Screens and layouts that hold per-wedding local state (search text,
+   *  filters, selections, open sheets) use it as a React `key` so they
+   *  remount clean for the new wedding. Null outside a couple/planner session. */
+  tenantKey: string | null;
   signOut: () => Promise<void>;
   pushToken: string | null;
   setPushToken: (t: string | null) => void;
@@ -184,6 +190,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [biometricEnabled, setBio] = useState(false);
   const [dayOfManual, setDayOf] = useState(false);
   const [switchingTenant, setSwitchingTenant] = useState<string | null>(null);
+  // Bumped when the open wedding changes, so tenantKey changes even when a
+  // planner goes A -> B -> A (F1).
+  const [tenantGen, setTenantGen] = useState(0);
   const [notice, setNotice] = useState<SessionNotice>(null);
   const background = useRef<number | null>(null);
   const { applyTenantDefault, lang } = useLang();
@@ -298,6 +307,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setCredential({ kind: "user", jwt, tenantSlug: r.me.tenant.slug });
           await clearQueryCache();
           await runScopedResets();
+          setTenantGen((g) => g + 1);
         }
         enterUser(jwt, r.me);
       } else if (r.reason === "no_wedding") enterOnboarding(jwt, s.me.user.email);
@@ -598,6 +608,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setCredential({ kind: "user", jwt, tenantSlug: slug });
         await clearQueryCache();
         await runScopedResets();
+        // Same batch as the new session: the new key and the new wedding
+        // render together, never the new key over the old wedding.
+        setTenantGen((g) => g + 1);
         enterUser(jwt, r.me);
         void reRegisterPush();
         return true;
@@ -648,6 +661,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const unlock = useCallback(() => setLocked(false), []);
   const clearNotice = useCallback(() => setNotice(null), []);
+  const tenantKey = state.status === "user" ? `${state.me.tenant.slug}#${tenantGen}` : null;
 
   const value = useMemo<Ctx>(
     () => ({
@@ -659,6 +673,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       refreshMe,
       switchTenant,
       switchingTenant,
+      tenantKey,
       signOut,
       pushToken,
       setPushToken,
@@ -669,7 +684,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       notice,
       clearNotice,
     }),
-    [state, updateRequired, locked, unlock, signInGuest, refreshMe, switchTenant, switchingTenant, signOut, pushToken, setPushToken, biometricEnabled, setBiometricEnabled, dayOfManual, setDayOfManual, notice, clearNotice]
+    [state, updateRequired, locked, unlock, signInGuest, refreshMe, switchTenant, switchingTenant, tenantKey, signOut, pushToken, setPushToken, biometricEnabled, setBiometricEnabled, dayOfManual, setDayOfManual, notice, clearNotice]
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
@@ -688,6 +703,13 @@ export function useGuestSession() {
 export function useUserSession() {
   const { state } = useSession();
   return state.status === "user" ? state : null;
+}
+
+/** The open wedding's key (build 12, F1): use as a React `key` on a screen
+ *  body so its local state (search, filters, selections, open sheets) starts
+ *  clean after a wedding switch. "none" outside a couple/planner session. */
+export function useTenantKey(): string {
+  return useSession().tenantKey ?? "none";
 }
 
 export { api };

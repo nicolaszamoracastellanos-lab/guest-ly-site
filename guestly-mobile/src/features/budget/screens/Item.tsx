@@ -14,6 +14,7 @@ import { useBudgetSurface, useBudgetWrites, useBudgetBase, findComputedItem, typ
 import { formatMoney, formatDay, parseAmount, numText, todayIso, isIsoDate } from "../money";
 import { StatusBadge, TextField, Options, ConfirmSheet, KeyValue, useAction } from "../ui";
 import { useSafeBack } from "@/lib/nav";
+import { LineVendor, useLineVendorOf } from "../VendorLink";
 import { CategoryOptions, NO_CATEGORY } from "../AddLineSheet";
 import { useUnsavedGuard } from "@/lib/unsaved";
 
@@ -36,6 +37,7 @@ function formFrom(row: ItemRow) {
 }
 
 export function BudgetItemScreen() {
+  const vendorOf = useLineVendorOf();
   const copy = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
@@ -180,6 +182,7 @@ export function BudgetItemScreen() {
             <Stack gap={10}>
               <TextField label={copy.itemTitle} value={form.title} onChange={(v) => setForm({ ...form, title: v })} autoCapitalize="sentences" editable={mayEdit} />
               <TextField label={copy.vendor} value={form.vendor} onChange={(v) => setForm({ ...form, vendor: v })} autoCapitalize="words" editable={mayEdit} />
+              <LineVendor itemId={row.id} vendorId={vendorOf(row.id, row.vendor_id)} vendorText={row.vendor} canEdit={canEdit} />
               {!row.parent_id && active ? (
                 <Field label={copy.category}>
                   <CategoryOptions categories={active.categories} value={form.category} onChange={(v) => setForm({ ...form, category: v })} disabled={!mayEdit} />

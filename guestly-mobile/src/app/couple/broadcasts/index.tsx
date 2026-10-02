@@ -9,25 +9,12 @@ import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, ListRow, Badge, Banner, Button, EmptyState, Skeleton, Stack, SectionLabel, T } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
-import { useBroadcasts, type HistoryGroup } from "@/features/broadcasts/hooks";
+import { useBroadcasts } from "@/features/broadcasts/hooks";
+import { groupTitle, deliveryLine } from "@/features/broadcasts/format";
 import { useSafeBack } from "@/lib/nav";
 
-export function groupTitle(g: HistoryGroup, unknown: string): string {
-  if (g.groupKind === "campaign") return g.label;
-  return g.label ?? unknown;
-}
-
-export function deliveryLine(g: HistoryGroup, c: (typeof COPY)["en"]): string {
-  if (g.groupKind === "campaign") {
-    const parts = [fmt(c.sentOf, { sent: g.sent, total: g.audience })];
-    if (g.failed) parts.push(fmt(c.failed, { n: g.failed }));
-    if (g.delivery) parts.push(fmt(c.delivered, { n: g.delivery.delivered }));
-    return parts.join(" · ");
-  }
-  const parts = [fmt(c.messages, { n: g.count })];
-  if (g.delivery) parts.push(fmt(c.delivered, { n: g.delivery.delivered }));
-  return parts.join(" · ");
-}
+// Kept here too: the planner imports them from this file.
+export { groupTitle, deliveryLine };
 
 export default function Broadcasts() {
   const c = useFeatureCopy(COPY);

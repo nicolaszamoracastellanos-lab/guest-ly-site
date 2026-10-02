@@ -16,7 +16,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "expo-router";
-import { useSession, type Me } from "@/lib/session";
+import { can, useSession, type Me } from "@/lib/session";
 import { TourOverlay } from "./TourOverlay";
 import { clearTourRequest, hasSeenTour, markTourSeen, requestAutoTour, setTourOnScreen, useTourRequest, type TourVariant } from "./state";
 import type { TourNames } from "./steps";
@@ -39,7 +39,7 @@ export function setPendingAccountCheck(fn: (me: Me) => boolean): void {
   pendingCheck = fn;
 }
 
-type Person = { personId: string; variant: TourVariant; surface: "guest" | "couple" | "planner"; name: string | null; couple: string | null };
+type Person = { personId: string; variant: TourVariant; surface: "guest" | "couple" | "planner"; name: string | null; couple: string | null; planner: TourNames["planner"] };
 
 export function TourHost({ blocked }: { blocked: boolean }) {
   const { state } = useSession();
@@ -53,7 +53,9 @@ export function TourHost({ blocked }: { blocked: boolean }) {
   useEffect(() => {
     const was = prev.current;
     prev.current = state.status;
-    if ((was === "none" || was === "onboarding") && (state.status === "user" || state.status === "guest")) requestAutoTour();
+    // Build 12: guests get no automatic tour (their Invitation tab opens on
+    // the RSVP card); they can still replay it from Info.
+    if ((was === "none" || was === "onboarding") && state.status === "user") requestAutoTour();
   }, [state.status]);
 
   // Who is signed in, as plain values so a token refresh does not restart
@@ -65,6 +67,9 @@ export function TourHost({ blocked }: { blocked: boolean }) {
   const surface = state.status === "user" ? state.me.surface : null;
   const userCouple = state.status === "user" ? state.me.tenant.couple_names : null;
   const pending = state.status === "user" && state.me.surface !== "planner" ? safePending(state.me) : false;
+  // The planner tour is built from what the couple shares on this wedding.
+  const plannerMe = state.status === "user" && state.me.surface === "planner" ? state.me : null;
+  const permKey = plannerMe ? ["budget", "tasks", "seating", "runsheet", "coordinator"].map((k) => (can(plannerMe, k) ? "1" : "0")).join("") : "";
   // A locked wedding that just became active: the full couple tour, once.
   const wasPending = useRef<{ id: string | null; pending: boolean }>({ id: null, pending: false });
   useEffect(() => {
@@ -74,13 +79,15 @@ export function TourHost({ blocked }: { blocked: boolean }) {
   }, [userId, pending]);
 
   const person = useMemo<Person | null>(() => {
-    if (guestId) return { personId: guestId, variant: "guest", surface: "guest", name: firstName(guestName), couple: guestCouple };
+    if (guestId) return { personId: guestId, variant: "guest", surface: "guest", name: firstName(guestName), couple: guestCouple, planner: null };
     if (userId) {
       const s = surface === "planner" ? "planner" : "couple";
-      return { personId: userId, variant: s === "planner" ? "planner" : pending ? "couple-pending" : "couple", surface: s, name: null, couple: userCouple };
+      const on = (i: number) => permKey.charAt(i) === "1";
+      const planner = s === "planner" && permKey ? { tools: { budget: on(0), tasks: on(1), seating: on(2), runsheet: on(3) }, tasks: on(1), coordinator: on(4) } : null;
+      return { personId: userId, variant: s === "planner" ? "planner" : pending ? "couple-pending" : "couple", surface: s, name: null, couple: userCouple, planner };
     }
     return null;
-  }, [guestId, guestName, guestCouple, userId, surface, userCouple, pending]);
+  }, [guestId, guestName, guestCouple, userId, surface, userCouple, pending, permKey]);
 
   // The tour on screen belongs to whoever is signed in now; signing out (or a
   // 401) takes it away without marking it seen.
@@ -107,7 +114,7 @@ export function TourHost({ blocked }: { blocked: boolean }) {
         }
         if (cancelled) return;
         clearTourRequest(request.seq);
-        setShown({ variant, personId: person.personId, seq: request.seq, names: { name: person.name, couple: person.couple } });
+        setShown({ variant, personId: person.personId, seq: request.seq, names: { name: person.name, couple: person.couple, planner: person.planner } });
       },
       // The home screen draws first, then the tour arrives on top of it.
       request.auto ? 700 : 150

@@ -89,3 +89,20 @@ export function extractInviteCode(text: string, len = 6): string {
   if (grouped.length) return grouped[0];
   return upper.replace(/[^A-Z0-9]/g, "").slice(0, len);
 }
+
+/** Day and month in words, no weekday or year: "15 de marzo" / "15 March".
+ *  For "Reply by ..." and "... days until ..." lines (build 12). */
+export function dayMonth(iso: string | null | undefined, lang: "en" | "es"): string {
+  if (!iso) return "";
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { day: "numeric", month: "long" });
+}
+
+/** "Ceremonia, cóctel y recepción" / "Ceremony, cocktail and reception":
+ *  the first title as written, the rest in lower case, joined with "and". */
+export function joinTitles(titles: string[], and: string): string {
+  const parts = titles.filter(Boolean).map((t, i) => (i === 0 ? t : t.charAt(0).toLowerCase() + t.slice(1)));
+  if (parts.length < 2) return parts.join("");
+  return `${parts.slice(0, -1).join(", ")} ${and} ${parts[parts.length - 1]}`;
+}

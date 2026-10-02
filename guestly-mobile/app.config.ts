@@ -27,7 +27,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // states only to builds at 1.1.0 or later (lib/mobile/auth isLegacyApp).
   // At 1.0.0 a new account was answered "unauthorized" after its code and
   // stayed on the verify screen.
-  version: "1.1.0",
+  // 1.2.0 (build 12): native keyboard library (react-native-keyboard-controller)
+  // and the per-role navigation. The fingerprint changes with the new native
+  // module, so build 11 never receives this JS over the air.
+  version: "1.2.0",
   orientation: "portrait",
   scheme: "guestly",
   userInterfaceStyle: "dark",

@@ -1,106 +1,196 @@
-// Planner home: greeting, needs you, two tiles, the weddings list.
+// Planner Hoy / Today (build 12, M12): the wedding pill, greeting, the gold
+// "New request", "Needs you (N)" with exactly N rows, "Waiting on the couple",
+// today's tasks with "Overdue" in red, and the Coordinator.
+//
+// "Needs you" holds only the rows the portal flags as the planner's to do;
+// rows marked `needs_you: false` (requests waiting on the couple, new RSVPs)
+// are not repeated here: what waits on the couple has its own card, built from
+// the requests themselves (v1.2, B3; core review P2-31). A portal without the
+// flag: every row is "Needs you", as before.
 
 import React from "react";
-import { View, Alert, ActivityIndicator } from "react-native";
+import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, plural, useCopy, useLang, mediumDate } from "@/i18n";
+import { fmt, plural, useCopy, useLang, relTime } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
-import { can, useSession, useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, Badge, T, Row, StatTile, SectionLabel, Skeleton, Card, ListRow, BriefingRow } from "@/ui";
-import { colors } from "@/ui/tokens";
+import { can, useTenantKey, useUserSession } from "@/lib/session";
+import { Screen, T, Row, SectionLabel, Skeleton, Card, ListRow, BriefingRow, Button, Icon, Stack } from "@/ui";
+import { colors, fonts, radius } from "@/ui/tokens";
+import { requestTitle } from "@/app/couple/requests/index";
+import { PlannerTop, IconDisc, TaskCheckRow, usePlannerBoardQ, usePlannerRequestsQ, useTaskToggle, asksPlanner, dueOf, todayIso, daysToGo, kindIcon } from "@/app/planner/_layout";
 
-export default function PlannerHome() {
+export default function PlannerToday() {
+  // A wedding switch remounts the body: nothing of the last wedding stays.
+  return <PlannerTodayBody key={useTenantKey()} />;
+}
+
+function PlannerTodayBody() {
   const copy = useCopy();
+  const c = copy.planner.b12;
   const { lang } = useLang();
   const router = useRouter();
-  const user = useUserSession();
-  const { switchTenant, switchingTenant } = useSession();
-  const mainQuery = usePlannerHome();
-  const { data, isLoading } = mainQuery;
-  const hour = new Date().getHours();
-  const part = hour < 12 ? copy.planner.morning : hour < 19 ? copy.planner.afternoon : copy.planner.evening;
-  // Never derived from the email: without a profile name the greeting has no name.
-  const name = (data?.greeting_name ?? "").trim();
-  const { mine, info } = splitBriefing(data?.briefing);
-  const needs = mine.length;
+  const me = useUserSession()?.me;
+  const canTasks = can(me, "tasks");
+  const canTasksEdit = can(me, "tasks", "edit");
+  const canCoordinator = can(me, "coordinator");
+  const home = usePlannerHome();
+  const reqs = usePlannerRequestsQ(canTasks);
+  const board = usePlannerBoardQ(canTasks);
+  const toggle = useTaskToggle();
+  const data = home.data;
+
+  // Never derived from the email: without a profile name there is no name.
+  const name = (data?.greeting_name ?? "").trim().split(/\s+/)[0] ?? "";
+  const days = daysToGo(me, data?.weddings);
+  const parties = data?.totals.parties ?? 0;
+  const replied = parties - (data?.totals.pending_parties ?? 0);
+  const sub = [days === null ? null : days === 0 ? c.weddingDay : plural(days, c.daysToGo), data && parties ? fmt(c.replied, { n: replied, total: parties }) : null].filter(Boolean).join(" · ");
+
+  const needs = (data?.briefing ?? []).filter((b) => b.needs_you !== false);
+  const waiting = (reqs.data?.requests ?? []).filter((r) => r.status === "open" && !asksPlanner(r));
+
+  // Today's tasks: mine, open. With due dates (newer portals) only the ones
+  // due today or late, late first; without them every open task of mine.
+  // (A task ticked here stays, struck through, until the list refreshes, so
+  // Undo has something to undo.)
+  const mineOpen = (board.data?.tasks ?? []).filter((t) => t.assigned_to === "planner" && t.status !== "done");
+  const dated = mineOpen.some((t) => dueOf(t));
+  const today = todayIso();
+  const tasks = (dated ? mineOpen.filter((t) => (dueOf(t) ?? "9999") <= today).sort((a, b) => (dueOf(a) ?? "").localeCompare(dueOf(b) ?? "")) : mineOpen).slice(0, 5);
 
   return (
-    <Screen query={mainQuery} refresh header={<TopBar left={<Row gap={8}><Wordmark height={20} /><Badge label={copy.settings.planner} kind="gold" /></Row>} right={<IconButton name="bell" badge={needs > 0} onPress={() => router.push("/planner/requests")} label={copy.planner.tabs.requests} />} />}>
-      <View style={{ marginTop: 18 }}>
-        <T v="title42" size={38}>
-          {name ? fmt(copy.planner.greeting, { part, name: cap(name) }) : fmt(copy.planner.greetingNoName, { part })}
+    <Screen query={home} refresh={() => Promise.all([home.refetch(), canTasks ? reqs.refetch() : null, canTasks ? board.refetch() : null])} header={<PlannerTop />}>
+      <View style={{ marginTop: 10 }}>
+        <Row style={{ justifyContent: "space-between", minHeight: 44 }}>
+          <SectionLabel color={colors.goldLight} style={{ flexShrink: 1 }}>
+            {new Date().toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { weekday: "long", day: "numeric", month: "long" })}
+          </SectionLabel>
+          {canCoordinator ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={c.coordinator} onPress={() => router.push("/assistant" as never)} hitSlop={4} style={({ pressed }) => [{ height: 36, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder, flexDirection: "row", alignItems: "center", gap: 6 }, pressed && { opacity: 0.8 }]}>
+              <Icon name="sparkle" size={18} color={colors.goldLight} />
+              <T v="body15" color={colors.goldLight} style={{ fontFamily: fonts.bodyMedium }}>
+                {c.coordinator}
+              </T>
+            </Pressable>
+          ) : null}
+        </Row>
+        <T v="title42" size={40} style={{ marginTop: 4 }}>
+          {name ? fmt(c.hello, { name: cap(name) }) : c.helloNoName}
         </T>
-        <T v="body15" color={colors.ivory55} style={{ marginTop: 6 }}>
-          {fmt(copy.planner.subtitle, { weddings: plural(data?.weddings.length ?? user?.me.tenants.length ?? 0, copy.planner.weddingsCount), needs: plural(needs, copy.planner.needsCount) })}
-        </T>
+        {sub ? (
+          <T v="body15" color={colors.ivory70} style={{ marginTop: 4 }}>
+            {sub}
+          </T>
+        ) : null}
       </View>
-      <SectionLabel style={{ marginTop: 26, marginBottom: 6 }}>{copy.planner.needsYou}</SectionLabel>
-      {isLoading && !data ? <Skeleton h={58} /> : null}
-      {data && !mine.length ? (
-        <T v="body15" color={colors.ivory55} style={{ paddingVertical: 12 }}>
-          {copy.coupleHome.briefingEmpty}
-        </T>
-      ) : null}
-      {mine.map((b, i) => (
-        <BriefingRow key={`m${i}`} text={b.text} tone={b.tone} onPress={() => open(b)} />
-      ))}
-      {info.length ? (
-        <>
-          <SectionLabel style={{ marginTop: 18, marginBottom: 6 }}>{copy.planner.goodToKnow}</SectionLabel>
-          {info.map((b, i) => (
-            <BriefingRow key={`i${i}`} text={b.text} tone={b.tone} onPress={() => open(b)} />
-          ))}
-        </>
-      ) : null}
-      <View>
-        <Row gap={8} style={{ marginTop: 22 }}>
-          <StatTile value={String(data?.totals.attending_seats ?? "·")} label={`${copy.rsvps.tiles.attending} · ${user?.me.tenant.couple_names ?? ""}`} />
-          <StatTile value={String(data?.totals.pending_parties ?? "·")} label={copy.rsvps.tiles.pending} color={colors.amber} />
-        </Row>
-        <Row style={{ justifyContent: "space-between", marginTop: 26 }}>
-          <SectionLabel>{copy.planner.yourWeddings}</SectionLabel>
-        </Row>
-        <Card kind="solid" padding={2} style={{ paddingHorizontal: 18, marginTop: 8 }}>
-          {(data?.weddings ?? []).map((w, i, arr) => (
-            <ListRow
-              key={w.slug}
-              title={`${w.couple_names}${w.wedding_date ? ` · ${mediumDate(w.wedding_date, lang)}` : ""}`}
-              sub={w.current ? `${copy.planner.current}${w.days_to_go !== null ? ` · ${w.days_to_go} ${copy.common.days}` : ""}` : w.days_to_go !== null && w.days_to_go < 30 ? `${copy.planner.nextUp} · ${w.days_to_go} ${copy.common.days}` : copy.planner.quiet}
-              trailing={switchingTenant === w.slug ? <ActivityIndicator color={colors.goldLight} /> : <Badge label={plural(w.open_requests, copy.planner.open)} kind={w.open_requests ? "amber" : "mute"} />}
-              onPress={() => void openWedding(w.slug, w.current)}
-              chevron={!w.current}
-              last={i === arr.length - 1}
-            />
+
+      {canTasks ? <Button label={copy.planner.newRequest} icon="plus" onPress={() => router.push("/planner/requests/new")} style={{ marginTop: 20 }} testID="planner-new-request" /> : null}
+
+      <Stack gap={14} style={{ marginTop: 20 }}>
+        {/* Needs you: the count in the label is the number of rows (B3). */}
+        <Card kind="solid" padding={16}>
+          <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
+            {fmt(c.needsYou, { n: needs.length })}
+          </SectionLabel>
+          {home.isLoading && !data ? <Skeleton h={58} /> : null}
+          {data && !needs.length ? (
+            <View>
+              <Row gap={12} style={{ paddingVertical: 10 }}>
+                <IconDisc name="check" />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T v="body16">{c.nothingNeeds}</T>
+                  <T v="meta13" color={colors.ivory55}>
+                    {c.nothingNeedsBody}
+                  </T>
+                </View>
+              </Row>
+              {canTasks ? <Button label={c.seeTodo} kind="text" small full={false} onPress={() => router.navigate("/planner/requests")} style={{ alignSelf: "center" }} /> : null}
+            </View>
+          ) : null}
+          {needs.map((b, i) => (
+            <BriefingRow key={`n${i}`} text={b.text} tone={b.tone} onPress={() => open(b)} />
           ))}
         </Card>
-      </View>
+
+        {canTasks ? (
+          <Card kind="solid" padding={16}>
+            <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
+              {fmt(c.waiting, { n: waiting.length })}
+            </SectionLabel>
+            {reqs.isLoading && !reqs.data ? <Skeleton h={58} /> : null}
+            {reqs.data && !waiting.length ? (
+              <T v="body15" color={colors.ivory55} style={{ paddingVertical: 8 }}>
+                {c.waitingEmpty}
+              </T>
+            ) : null}
+            {waiting.slice(0, 5).map((r, i, arr) => (
+              <ListRow
+                key={r.id}
+                leading={<IconDisc name={kindIcon(r.kind)} />}
+                title={requestTitle(r, copy.planner.kinds)}
+                sub={[(r.guest_names ?? []).slice(0, 2).join(", "), relTime(r.created_at, lang)].filter(Boolean).join(" · ")}
+                onPress={() => router.push({ pathname: "/planner/requests/[id]", params: { id: r.id } })}
+                last={i === arr.length - 1}
+              />
+            ))}
+          </Card>
+        ) : null}
+
+        {canTasks ? (
+          <Card kind="solid" padding={16}>
+            <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
+              {fmt(dated ? c.todayTasks : c.yourTasks, { n: tasks.length })}
+            </SectionLabel>
+            {board.isLoading && !board.data ? <Skeleton h={58} /> : null}
+            {board.data && !tasks.length ? (
+              <T v="body15" color={colors.ivory55} style={{ paddingVertical: 8 }}>
+                {c.tasksEmpty}
+              </T>
+            ) : null}
+            {tasks.map((t, i) => (
+              <TaskCheckRow
+                key={t.id}
+                task={t}
+                status={toggle.statusOf(t)}
+                canEdit={canTasksEdit}
+                onToggle={() => void toggle.toggle(t)}
+                onCycle={() => void toggle.cycle(t)}
+                onPress={() => router.push({ pathname: "/planner/tasks/[id]", params: { id: t.id } })}
+                last={i === tasks.length - 1}
+              />
+            ))}
+            <Button label={c.seeAllTodo} kind="text" small full={false} onPress={() => router.navigate("/planner/requests")} style={{ alignSelf: "center", marginTop: 4 }} />
+          </Card>
+        ) : null}
+
+        {canCoordinator ? (
+          <Card kind="solid" padding={2} style={{ paddingHorizontal: 16 }}>
+            <ListRow leading={<IconDisc name="sparkle" />} title={c.askCoordinator} sub={c.askCoordinatorSub} onPress={() => router.push("/assistant" as never)} last />
+          </Card>
+        ) : null}
+      </Stack>
     </Screen>
   );
-
-  // Switching commits only when the new wedding answered; the screen then
-  // refetches everything for it (core review P0-2, P0-4).
-  async function openWedding(slug: string, current: boolean) {
-    if (current || switchingTenant) return;
-    const ok = await switchTenant(slug);
-    if (!ok) Alert.alert(copy.common.error, copy.core.switchFailed);
-  }
 
   // The portal's stable row kind (v1.2, N13) opens the exact screen; a row
   // without one (production portal before v1.2) or of a kind this build does
   // not know falls back to its web link.
-  function open(row: { href: string; kind?: unknown; target_id?: unknown }) {
+  function open(row: { href: string; kind?: unknown; target_id?: unknown; filter?: unknown }) {
     const kind = typeof row.kind === "string" ? row.kind : null;
     const target = typeof row.target_id === "string" && row.target_id ? row.target_id : null;
-    if (kind === "planner_waiting") {
+    if (kind === "planner_waiting" && canTasks) {
       router.push((target ? { pathname: "/planner/requests/[id]", params: { id: target } } : "/planner/requests") as never);
       return;
     }
-    if (kind === "planner_tasks" && can(user?.me, "tasks")) {
-      router.push((target ? { pathname: "/planner/tasks/[id]", params: { id: target } } : "/planner/tasks") as never);
+    if (kind === "planner_tasks" && canTasks) {
+      router.push((target ? { pathname: "/planner/tasks/[id]", params: { id: target } } : "/planner/requests") as never);
       return;
     }
-    if ((kind === "rsvp_pace" || kind === "new_rsvps") && can(user?.me, "guests")) return void router.push("/planner/guests" as never);
-    if ((kind === "budget_over" || kind === "vendor_unpaid") && can(user?.me, "budget")) return void router.push("/planner/budget" as never);
+    if ((kind === "rsvp_pace" || kind === "new_rsvps") && can(me, "guests")) {
+      const filter = typeof row.filter === "string" && row.filter === "pending" ? "pending" : undefined;
+      return void router.navigate((filter ? { pathname: "/planner/guests", params: { filter } } : "/planner/guests") as never);
+    }
+    if ((kind === "budget_over" || kind === "vendor_unpaid") && can(me, "budget")) return void router.push("/planner/budget" as never);
     go(row.href);
   }
 
@@ -108,32 +198,21 @@ export default function PlannerHome() {
     const map: [string, string][] = [
       ["requests", "/planner/requests"],
       ["guests", "/planner/guests"],
-      ["tasks", "/planner/tasks"],
+      ["tasks", "/planner/requests"],
       ["budget", "/planner/budget"],
       ["runsheet", "/planner/runsheet"],
-      ["vendors", "/planner/vendors"],
+      // Vendors live inside the budget now (F5); the route stays for links.
+      ["vendors", "/planner/budget"],
       ["broadcasts", "/planner/broadcasts"],
       ["seating", "/planner/seating"],
       ["assistant", "/assistant"],
     ];
     const hit = map.find(([web]) => href.includes(web));
-    // A tool that is off for this planner opens More instead of a refusal.
-    const tool = hit ? (hit[0] === "assistant" ? "coordinator" : hit[0] === "requests" ? null : hit[0]) : null;
-    router.push((hit && (!tool || can(user?.me, tool)) ? hit[1] : "/planner/more") as never);
+    // A tool that is off for this planner opens the Wedding tab, where it
+    // says "Not shared with you", instead of a refusal.
+    const tool = hit ? (hit[0] === "assistant" ? "coordinator" : hit[0] === "requests" ? "tasks" : hit[0] === "vendors" ? "budget" : hit[0]) : null;
+    router.push((hit && (!tool || can(me, tool)) ? hit[1] : "/planner/wedding") as never);
   }
-}
-
-/**
- * "Needs you" holds only the rows the portal flags as the planner's to do;
- * rows it marks `needs_you: false` (requests waiting on the couple, new RSVPs,
- * the couple's own tasks) go under "Good to know". The subtitle and the bell
- * count the "Needs you" rows, so the sentence and the list never disagree
- * (v1.2, B3; core review P2-31). A portal without the flag: every row is
- * "Needs you", as before.
- */
-function splitBriefing<B extends { needs_you?: boolean }>(rows: B[] | undefined): { mine: B[]; info: B[] } {
-  const all = rows ?? [];
-  return { mine: all.filter((b) => b.needs_you !== false), info: all.filter((b) => b.needs_you === false) };
 }
 
 function cap(s: string): string {

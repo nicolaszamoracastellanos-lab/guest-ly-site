@@ -2,13 +2,13 @@
 // planner share it; the surface decides the route prefix.
 
 import React, { useEffect, useState } from "react";
-import { View, Pressable, Platform, AccessibilityInfo } from "react-native";
+import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, ListRow, StatTile, Sheet, Banner, EmptyState, Skeleton, SectionLabel, Chip, ChipRow, Hairline, ButtonRow, SheetActions } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, ListRow, StatTile, Sheet, Banner, EmptyState, Skeleton, SectionLabel, Chip, ChipRow, Hairline, ButtonRow, SheetActions, toast } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, useBudgetBase, type BudgetRow } from "../hooks";
@@ -16,6 +16,7 @@ import { formatMoney, formatMoneyShort, formatMonth, parseAmount, numText } from
 import { ProgressBar, TextField, ConfirmSheet, useAction } from "../ui";
 import { AddLineSheet } from "../AddLineSheet";
 import { useSafeBack } from "@/lib/nav";
+import { BudgetVendors } from "../VendorLink";
 
 const SELECTED_KEY = "budget-selected";
 
@@ -60,12 +61,6 @@ export function BudgetOverviewScreen() {
   const [form, setForm] = useState({ name: "", currency: "USD", alt_currency: "", fx_rate: "1", guest_count: "", notes: "" });
   const [categoryName, setCategoryName] = useState("");
   const [addOpen, setAddOpen] = useState(false);
-  const [added, setAdded] = useState<string | null>(null);
-  useEffect(() => {
-    if (!added) return;
-    const t = setTimeout(() => setAdded(null), 5000);
-    return () => clearTimeout(t);
-  }, [added]);
 
   const active = data?.active ?? null;
   const computed = active?.computed;
@@ -237,11 +232,9 @@ export function BudgetOverviewScreen() {
             </ButtonRow>
           ) : null}
 
-          {added ? (
-            <T v="meta13" color={colors.greenText} style={{ marginTop: 10 }} accessibilityLiveRegion="polite">
-              {added}
-            </T>
-          ) : null}
+          {/* Vendors live inside Budget (F5): the ones on this budget's
+              lines, and the way to every vendor. */}
+          <BudgetVendors budgetId={active.budget.id} />
 
           {months.length ? (
             <View style={{ marginTop: 22 }}>
@@ -335,9 +328,8 @@ export function BudgetOverviewScreen() {
           categories={active.categories}
           onAdded={(id) => {
             const name = id ? (active.categories.find((c) => c.id === id)?.name ?? copy.uncategorized) : copy.uncategorized;
-            const text = fmt(copy.lineAdded, { name });
-            setAdded(text);
-            if (Platform.OS !== "web") AccessibilityInfo.announceForAccessibility(text);
+            // A toast above the tab bar, announced to VoiceOver (build 12).
+            toast(fmt(copy.lineAdded, { name }));
           }}
         />
       ) : null}

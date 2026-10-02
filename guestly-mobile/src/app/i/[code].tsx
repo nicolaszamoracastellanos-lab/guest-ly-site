@@ -62,7 +62,9 @@ export default function InviteLink() {
             if (cancelled) return;
             await latest.current.signInGuest({ token: r.token, tenant: opened.tenant, guest: r.guest, inviteCode: clean });
             if (cancelled) return;
-            nav.replace({ pathname: "/notify", params: { surface: "guest" } });
+            // Straight to the invitation (build 12, N24): notifications are
+            // asked after the RSVP, on the confirmation.
+            nav.replace("/guest");
             return;
           } catch (err) {
             // The personal link points at a guest the couple removed or

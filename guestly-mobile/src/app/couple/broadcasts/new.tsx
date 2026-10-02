@@ -14,6 +14,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { previewBroadcast, sendBroadcast, useBroadcasts, type AudienceFilter, type BroadcastGuest, type Composition, type Preview, type SendResult } from "@/features/broadcasts/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { useLocalSearchParams } from "expo-router";
 import { useUserSession } from "@/lib/session";
 
 type Mode = "template" | "custom";
@@ -29,12 +30,17 @@ export default function NewBroadcast() {
   const mainQuery = useBroadcasts();
   const { data, isLoading } = mainQuery;
 
-  const [audienceKey, setAudienceKey] = useState<string>("all");
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Opened preset (build 12): "Send reminder" on Guests passes
+  // ?audience=pending&template=rsvp_reminder (F3); "Message" for a guest with
+  // no conversation passes ?guest=<id> (an announcement just for them).
+  const params = useLocalSearchParams<{ audience?: string; template?: string; guest?: string }>();
+  const presetGuest = typeof params.guest === "string" && params.guest ? params.guest : null;
+  const [audienceKey, setAudienceKey] = useState<string>(presetGuest ? "picked" : typeof params.audience === "string" && params.audience ? params.audience : "all");
+  const [picked, setPicked] = useState<Set<string>>(() => new Set(presetGuest ? [presetGuest] : []));
   const [pickOpen, setPickOpen] = useState(false);
   const [pickQuery, setPickQuery] = useState("");
   const [mode, setMode] = useState<Mode>("template");
-  const [templateKey, setTemplateKey] = useState<string>("invite");
+  const [templateKey, setTemplateKey] = useState<string>(typeof params.template === "string" && params.template ? params.template : "invite");
   const [vars, setVars] = useState<Record<string, string>>({});
   const [custom, setCustom] = useState("");
   const [langMode, setLangMode] = useState<LangMode>("auto");
@@ -65,6 +71,9 @@ export default function NewBroadcast() {
   const templates = data?.templates ?? [];
   const template = templates.find((t) => t.key === templateKey) ?? templates[0] ?? null;
   const guests = useMemo(() => data?.guests ?? [], [data?.guests]);
+
+  // A preset audience this portal does not offer falls back to everyone.
+  if (audiences.length && audienceKey !== "picked" && !audiences.some((a) => a.key === audienceKey)) setAudienceKey("all");
 
   const audience: AudienceFilter | null = useMemo(() => {
     if (audienceKey === "picked") return picked.size ? { type: "guests", guest_ids: [...picked] } : null;
@@ -236,7 +245,13 @@ export default function NewBroadcast() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={c.newBroadcast} />} bottomInset={40} keyboard>
+    <Screen
+      header={<TopBar onBack={back} title={c.newBroadcast} />}
+      bottomInset={40}
+      keyboard
+      // The main action rides above the keyboard while a field is focused.
+      dock={data ? <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : updating ? c.updatingPreview : c.review} icon="arrow-up" onPress={openConfirm} disabled={!canReview || templateMismatch} testID="broadcast-review" /> : undefined}
+    >
       <>
         {isLoading && !data ? (
           <Stack gap={12}>
@@ -327,7 +342,6 @@ export default function NewBroadcast() {
               </Card>
             ) : null}
             {preview && preview.recipients_count === 0 ? <Banner icon="phone" title={c.noRecipients} /> : null}
-            <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : updating ? c.updatingPreview : c.review} onPress={openConfirm} disabled={!canReview || templateMismatch} style={{ marginTop: 20 }} />
           </>
         ) : null}
       </>

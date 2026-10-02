@@ -9,7 +9,7 @@ import { unregisterPush } from "@/lib/push";
 import { fmt, useCopy, useLang, shortDate } from "@/i18n";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricAvailable, biometricPrompt } from "@/lib/biometric";
-import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet, toast } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -77,9 +77,13 @@ export default function Settings() {
   async function pickWedding(slug: string) {
     if (switchingTenant) return;
     if (slug === me?.tenant.slug) return setSwitching(false);
+    const names = me?.tenants.find((t) => t.slug === slug)?.couple_names ?? "";
     const ok = await switchTenant(slug);
-    if (ok) setSwitching(false);
-    else Alert.alert(copy.common.error, copy.core.switchFailed);
+    if (ok) {
+      setSwitching(false);
+      // Same confirmation as the planner's wedding pill (F1).
+      if (names) toast(fmt(copy.planner.b12.nowShowing, { names }), { icon: "rings" });
+    } else Alert.alert(copy.common.error, copy.core.switchFailed);
   }
 
   function deleteAccount() {

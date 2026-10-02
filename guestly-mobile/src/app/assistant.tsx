@@ -4,16 +4,15 @@
 // nothing until Confirm, and broadcasts need the typed word.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fmt, relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, KeyboardFill, useKeyboardOpen, renderInlineBold } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, ChatList, ChatComposer, useKeyboardOpen, renderInlineBold } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
@@ -25,7 +24,6 @@ export default function AssistantScreen() {
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
-  const insets = useSafeAreaInsets();
   const online = useOnline();
   const user = useUserSession();
   const surface: AssistantSurface = user?.me.surface === "planner" ? "planner" : "couple";
@@ -49,7 +47,6 @@ export default function AssistantScreen() {
   const [cardError, setCardError] = useState<Record<string, string>>({});
   const [drawer, setDrawer] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const scroll = useRef<ScrollView>(null);
 
   // Card expiry is judged against the clock at the last change, not per render.
   const [now, setNow] = useState(() => Date.now());
@@ -69,11 +66,6 @@ export default function AssistantScreen() {
   useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
-
-  useEffect(() => {
-    const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 80);
-    return () => clearTimeout(t);
-  }, [items, busy]);
 
   const notEnabledText = enabled ? null : copy.notEnabledBody;
 
@@ -228,18 +220,16 @@ export default function AssistantScreen() {
   }
 
   const chips = surface === "planner" ? copy.chipsPlanner : copy.chips;
-  // The home indicator padding only applies at rest. With the keyboard up it
-  // covers the indicator, and the same padding left the reply box floating
-  // about 53 pt above the keys (K5).
-  const keyboardOpen = useKeyboardOpen();
-  const bottomPad = keyboardOpen ? 8 : Math.max(insets.bottom, 12) + 8;
+  // The intro and the quick questions fold away while typing, so the last
+  // message keeps the room above the composer (M6, K5).
+  const typing = useKeyboardOpen();
   const showEmpty = !busy && items.length === 0 && (!sessionId || detailQ.isFetched);
 
   return (
     <Screen
       scroll={false}
       padded={false}
-      bottomInset={0}
+      keyboard="chat"
       header={
         <TopBar
           onBack={back}
@@ -253,109 +243,107 @@ export default function AssistantScreen() {
         />
       }
     >
-      <KeyboardFill modal>
-        {/* The intro block sits above a hairline, and the message list is clipped
-            under that line, so messages never run into the sentence (D-017). */}
-        <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
-          <Avatar gem size={44} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <T v="meta13" color={colors.ivory70}>
-              {surface === "planner" ? copy.subtitlePlanner : copy.subtitleCouple}
-            </T>
-            <T v="meta13" color={colors.ivory55}>
-              {copy.aiNotice}
-            </T>
-          </View>
-        </Row>
-        <Hairline />
-
-        {notEnabledText ? (
-          <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
-            <Card kind="solid" padding={18}>
-              <SectionLabel color={colors.goldLight}>{copy.notEnabledTitle}</SectionLabel>
-              <T v="body16" style={{ marginTop: 8 }}>
-                {notEnabledText}
+      {typing ? null : (
+        <>
+          {/* The intro block sits above a hairline, and the message list is
+              clipped under that line, so messages never run into the
+              sentence (D-017). */}
+          <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
+            <Avatar gem size={44} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="meta13" color={colors.ivory70}>
+                {surface === "planner" ? copy.subtitlePlanner : copy.subtitleCouple}
               </T>
-            </Card>
-          </View>
-        ) : (
-          <>
-            <ScrollView ref={scroll} style={{ flex: 1, overflow: "hidden" }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
-              {sessionId && !detailQ.data && detailQ.isLoading ? (
-                <Stack gap={10}>
-                  <Skeleton h={48} r={18} />
-                  <Skeleton h={72} r={18} w="80%" />
-                </Stack>
-              ) : null}
-              {showEmpty ? (
-                <EmptyState title={copy.emptyTitle} body={surface === "planner" ? copy.emptyBodyPlanner : copy.emptyBody} />
-              ) : null}
-              {items.map((it, i) => (
-                <Item
-                  key={i}
-                  item={it}
-                  lang={lang}
-                  copy={copy}
-                  now={now}
-                  typed={typed}
-                  setTyped={setTyped}
-                  cardBusy={cardBusy}
-                  cardError={cardError}
-                  canSend={canSend}
-                  onConfirm={confirm}
-                  onCancel={cancel}
-                />
-              ))}
-              {busy ? (
-                <Row gap={10}>
-                  <Avatar gem size={28} />
-                  <View style={[styles.bot, { flexDirection: "row", gap: 8, alignItems: "center" }]}>
-                    <ActivityIndicator color={colors.goldLight} size="small" />
-                    <T v="meta13" color={colors.ivory55}>
-                      {copy.working}
-                    </T>
-                  </View>
-                </Row>
-              ) : null}
-              {error ? (
-                <T v="body15" color={colors.red}>
-                  {error}
-                </T>
-              ) : null}
-            </ScrollView>
-            <View style={{ paddingHorizontal: 20, paddingBottom: bottomPad, gap: 8 }}>
-              {items.length === 0 && !busy ? (
-                <ChipRow>
-                  {chips.map((c) => (
-                    <Chip key={c} label={c} onPress={() => send(c)} />
-                  ))}
-                </ChipRow>
-              ) : null}
-              {canSend ? (
-                <Input
-                  value={draft}
-                  onChangeText={setDraft}
-                  placeholder={copy.placeholder}
-                  multiline={false}
-                  returnKeyType="send"
-                  onSubmitEditing={() => send(draft)}
-                  editable={!busy}
-                  style={{ paddingRight: 6 }}
-                  right={
-                    <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.send} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
-                      <Icon name="chev" size={20} color={colors.night} strokeWidth={2} />
-                    </Pressable>
-                  }
-                />
-              ) : (
-                <T v="meta13" color={colors.ivory55} center>
-                  {copy.readOnly}
-                </T>
-              )}
+              <T v="meta13" color={colors.ivory55}>
+                {copy.aiNotice}
+              </T>
             </View>
-          </>
-        )}
-      </KeyboardFill>
+          </Row>
+          <Hairline />
+        </>
+      )}
+
+      {notEnabledText ? (
+        <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 24 }}>
+          <Card kind="solid" padding={18}>
+            <SectionLabel color={colors.goldLight}>{copy.notEnabledTitle}</SectionLabel>
+            <T v="body16" style={{ marginTop: 8 }}>
+              {notEnabledText}
+            </T>
+          </Card>
+        </View>
+      ) : (
+        <>
+          <ChatList contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, gap: 10 }}>
+            {sessionId && !detailQ.data && detailQ.isLoading ? (
+              <Stack gap={10}>
+                <Skeleton h={48} r={18} />
+                <Skeleton h={72} r={18} w="80%" />
+              </Stack>
+            ) : null}
+            {showEmpty ? <EmptyState title={copy.emptyTitle} body={surface === "planner" ? copy.emptyBodyPlanner : copy.emptyBody} /> : null}
+            {items.map((it, i) => (
+              <Item
+                key={i}
+                item={it}
+                lang={lang}
+                copy={copy}
+                now={now}
+                typed={typed}
+                setTyped={setTyped}
+                cardBusy={cardBusy}
+                cardError={cardError}
+                canSend={canSend}
+                onConfirm={confirm}
+                onCancel={cancel}
+              />
+            ))}
+            {busy ? (
+              <Row gap={10}>
+                <Avatar gem size={28} />
+                <View style={[styles.bot, { flexDirection: "row", gap: 8, alignItems: "center" }]}>
+                  <ActivityIndicator color={colors.goldLight} size="small" />
+                  <T v="meta13" color={colors.ivory55}>
+                    {copy.working}
+                  </T>
+                </View>
+              </Row>
+            ) : null}
+            {error ? (
+              <T v="body15" color={colors.red}>
+                {error}
+              </T>
+            ) : null}
+          </ChatList>
+          {canSend ? (
+            <ChatComposer
+              value={draft}
+              onChangeText={setDraft}
+              onSend={() => void send(draft)}
+              placeholder={copy.placeholder}
+              sendLabel={copy.send}
+              busy={busy}
+              testID="assistant-input"
+              sendTestID="assistant-send"
+              accessory={
+                items.length === 0 && !busy && !typing ? (
+                  <ChipRow>
+                    {chips.map((c) => (
+                      <Chip key={c} label={c} onPress={() => void send(c)} />
+                    ))}
+                  </ChipRow>
+                ) : null
+              }
+            />
+          ) : (
+            <ChatComposer>
+              <T v="meta13" color={colors.ivory55} center style={{ paddingVertical: 10 }}>
+                {copy.readOnly}
+              </T>
+            </ChatComposer>
+          )}
+        </>
+      )}
 
       <Sheet visible={drawer} onClose={() => setDrawer(false)} top={140} scroll={false}>
         <Row style={{ justifyContent: "space-between", marginBottom: 8 }}>
@@ -533,6 +521,5 @@ function Item({
 const styles = StyleSheet.create({
   bot: { maxWidth: 300, borderRadius: 18, borderBottomLeftRadius: 4, padding: 12, paddingHorizontal: 14, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)" },
   me: { maxWidth: 280, borderRadius: 18, borderBottomRightRadius: 4, padding: 12, paddingHorizontal: 14, backgroundColor: colors.gold },
-  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
   quote: { borderLeftWidth: 2, borderLeftColor: colors.goldBorder, paddingLeft: 10, gap: 4 },
 });

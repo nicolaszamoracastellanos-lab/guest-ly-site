@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 import { fmt, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY as ASSISTANT_COPY } from "@/features/assistant/copy";
+import { COPY as COUPLE_COPY } from "@/features/couple/copy";
 import { Icon } from "@/ui/Icon";
 import { colors, fonts, radius } from "@/ui/tokens";
 import { TOUR_COPY } from "../copy";
@@ -36,6 +37,7 @@ function useResetWhenInactive(active: boolean, reset: () => void) {
 
 export function BriefingScene({ active, reduced }: SceneProps) {
   const app = useCopy();
+  const cc = useFeatureCopy(COUPLE_COPY);
   const demo = useFeatureCopy(TOUR_COPY).demo;
   const tried = useTried();
   const all = [
@@ -74,7 +76,7 @@ export function BriefingScene({ active, reduced }: SceneProps) {
         <Tile value={String(left.length)} label={app.coupleHome.needYou} color={colors.goldLight} reduced={reduced} />
       </View>
       <ST v="label11" color={colors.ivory55} lines={1} style={{ marginTop: 16, marginBottom: 4 }}>
-        {app.coupleHome.briefing}
+        {cc.home.reminders}
       </ST>
       {left.length === 0 ? (
         <Animated.View entering={FadeIn.duration(reduced ? 1 : 300)}>

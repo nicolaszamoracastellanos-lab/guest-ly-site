@@ -36,8 +36,13 @@ export const colors = {
   glassSolidFill: "rgba(247,243,236,0.055)",
   goldBorder: "rgba(201,169,110,0.35)",
   scrim: "rgba(8,11,16,0.62)",
-  /** The Done bar over a numeric keyboard: close to the dark iOS keyboard. */
+  /** The Done bar over a numeric keyboard and the form keyboard toolbar:
+   *  close to the dark iOS keyboard. A hex string (the toolbar appends alpha). */
   keyboardBar: "#1f2329",
+  /** Soft gold wash: the pill behind the active tab (plan v1.2 c). */
+  goldWash: "rgba(201,169,110,0.16)",
+  /** Toast surface: a lighter navy than the sheets so it reads over both. */
+  toast: "#26324f",
 } as const;
 
 /** 4-point grid. */
@@ -103,11 +108,22 @@ export const MIN_CAPTION = 14;
 export const HIT_TARGET = 44;
 export const BUTTON_HEIGHT = 58;
 export const TAB_BAR_HEIGHT = 62;
+/** @deprecated Build 11 floated the bar `insets.bottom + 24` above the bottom
+ *  edge. v1.2 tucks it into the home indicator strip: use `tabBarOffset()` or
+ *  `useTabBarTop()` from the kit. Kept so old call sites still compile; with it
+ *  they place things a little higher than needed, never under the bar. */
 export const TAB_BAR_BOTTOM = 24;
+/** Distance from the bottom edge of the window to the bottom of the floating
+ *  tab bar (v1.2, plan c and the prototype): 12 pt into the home indicator
+ *  strip, like the system bar, and never closer than 8 pt to the edge. On a
+ *  34 pt inset that is 22 pt (build 11: 58 pt). */
+export function tabBarOffset(insetBottom: number): number {
+  return Math.max(insetBottom - 12, 8);
+}
 export const TOP_SAFE_MIN = 54;
-/** Space a scrolling screen keeps free at its end so the last control clears
- *  the floating tab bar (bar height, its offset, and 16 of air). */
-export const TAB_CLEARANCE = TAB_BAR_HEIGHT + TAB_BAR_BOTTOM + 16;
+/** Air between the floating tab bar and the last control of a scrolling
+ *  screen. Clearance = tabBarOffset + TAB_BAR_HEIGHT + TAB_CLEARANCE. */
+export const TAB_CLEARANCE = 16;
 /** The floating Coordinator button (v1.2, AssistiveTouch style). It floats
  *  and moves wherever the person drags it, so screens no longer reserve a band
  *  for it (audit I9, I11). It snaps to the nearest side with this inset. */

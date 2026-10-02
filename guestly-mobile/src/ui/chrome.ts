@@ -13,7 +13,7 @@
 
 import { usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { TAB_BAR_BOTTOM, TAB_BAR_HEIGHT, TAB_CLEARANCE } from "./tokens";
+import { TAB_BAR_HEIGHT, TAB_CLEARANCE, tabBarOffset } from "./tokens";
 
 const SURFACES = ["guest", "couple", "planner"];
 
@@ -41,7 +41,9 @@ export function useBottomClearance(): { tabBar: boolean; clearance: number } {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const tabBar = pathHasTabBar(pathname);
-  const clearance = insets.bottom + (tabBar ? TAB_CLEARANCE : 24);
+  // v1.2: the bar sits in the home indicator strip (tabBarOffset), so the
+  // clearance is measured from the bar itself, not from the safe area.
+  const clearance = tabBar ? tabBarOffset(insets.bottom) + TAB_BAR_HEIGHT + TAB_CLEARANCE : insets.bottom + 24;
   return { tabBar, clearance };
 }
 
@@ -49,5 +51,5 @@ export function useBottomClearance(): { tabBar: boolean; clearance: number } {
  *  bar. Floating controls sit a gap above this. */
 export function useTabBarTop(): number {
   const insets = useSafeAreaInsets();
-  return insets.bottom + TAB_BAR_BOTTOM + TAB_BAR_HEIGHT;
+  return tabBarOffset(insets.bottom) + TAB_BAR_HEIGHT;
 }

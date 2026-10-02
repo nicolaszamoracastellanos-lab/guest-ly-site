@@ -88,7 +88,7 @@ export const COPY = {
     emptyTitle: "Pregunta lo que quieras sobre tu boda.",
     emptyBody: "Quién no ha respondido, qué dice el plan del transporte, agregar un invitado, actualizar un consejo de viaje, enviar un recordatorio. El Coordinador primero lee y propone; nada cambia hasta que toques Confirmar.",
     emptyBodyPlanner: "Pregunta por la lista de invitados, el estado de los RSVP o el tablero. Los cambios llegan a los novios como solicitudes; nada cambia hasta que ellos aprueben.",
-    placeholder: "Pregunta al Coordinador",
+    placeholder: "Pregúntale al Coordinador",
     send: "Enviar",
     working: "Trabajando",
     confirm: "Confirmar",

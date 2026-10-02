@@ -109,8 +109,8 @@ export async function registerPush(
 // lands on the surface home instead of the "Unmatched route" page.
 const SECTIONS: Record<Surface, string[]> = {
   guest: ["rsvp", "schedule", "concierge", "messages", "dayof", "more", "site"],
-  couple: ["guests", "rsvps", "messages", "more", "requests", "tasks", "budget", "vendors", "seating", "runsheet", "brain", "insights", "broadcasts", "website", "dayof", "checkin", "settings"],
-  planner: ["guests", "requests", "tasks", "budget", "vendors", "seating", "runsheet", "broadcasts", "more"],
+  couple: ["guests", "rsvps", "messages", "plan", "more", "requests", "tasks", "budget", "vendors", "seating", "runsheet", "brain", "insights", "broadcasts", "website", "dayof", "checkin", "settings"],
+  planner: ["guests", "requests", "tasks", "wedding", "budget", "vendors", "seating", "runsheet", "broadcasts", "more"],
 };
 
 // Web bell hrefs (root-relative, one per surface) and where they live in the app.

@@ -54,9 +54,11 @@ export function useVendorsBase(): string {
   return user?.me.surface === "planner" ? "/planner/vendors" : "/couple/vendors";
 }
 
-export function useVendors() {
+/** `enabled: false` skips the request (budget screens read vendors only when
+ *  a line is linked to one). */
+export function useVendors(opts: { enabled?: boolean } = {}) {
   const base = useVendorsBase();
-  return useQuery({ queryKey: [VENDORS_KEY, base], queryFn: () => get<VendorsSurface>(base), staleTime: 15_000 });
+  return useQuery({ queryKey: [VENDORS_KEY, base], queryFn: () => get<VendorsSurface>(base), staleTime: 15_000, enabled: opts.enabled ?? true });
 }
 
 export function useVendorWrites() {

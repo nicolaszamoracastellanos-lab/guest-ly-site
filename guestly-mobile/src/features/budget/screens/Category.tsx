@@ -16,9 +16,11 @@ import { useBudgetSurface, useBudgetWrites, useBudgetBase, type ComputedItem } f
 import { formatMoney } from "../money";
 import { StatusBadge, TextField, ConfirmSheet, useAction } from "../ui";
 import { useSafeBack } from "@/lib/nav";
+import { VendorChip, useLineVendorOf } from "../VendorLink";
 
 export function BudgetCategoryScreen() {
   const copy = useFeatureCopy(COPY);
+  const vendorOf = useLineVendorOf();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -100,7 +102,11 @@ export function BudgetCategoryScreen() {
                 <Row style={{ justifyContent: "space-between" }} align="flex-start">
                   <View style={{ flex: 1, gap: 4 }}>
                     <T v="body16">{it.row.title}</T>
-                    {it.row.vendor ? (
+                    {/* The line's vendor (F5: vendors live inside Budget): a
+                        linked one opens its details and contact. */}
+                    {vendorOf(it.row.id, it.row.vendor_id) ? (
+                      <VendorChip id={vendorOf(it.row.id, it.row.vendor_id)!} fallback={it.row.vendor} />
+                    ) : it.row.vendor ? (
                       <T v="meta13" color={colors.ivory55}>
                         {it.row.vendor}
                       </T>

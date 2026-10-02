@@ -1,58 +1,87 @@
-// Concierge chat: proxies to the engine through the portal. Quick chips,
-// typing indicator, escalation bubble. Drafts survive an app restart.
+// Ask (build 12, prototype M6): one thread for everything the guest asks.
 //
-// v1.2 (K3): while the keyboard is up the intro row and the quick chips step
-// aside (they left about 150 pt of conversation), and the newest message stays
-// in view: the list scrolls to the end when the keyboard opens and whenever it
-// shrinks while the guest was reading the end. Before, the answer just
-// received slid under the composer as the keyboard rose.
+// The concierge's answers and the couple's replies ("From Camila & Andrés",
+// gold border) in one conversation. It replaces the Concierge tab, the
+// read-only Messages screen and the bells (N7, N16). The thread is the
+// guest's app thread on the portal (/guest/messages): the portal stores each
+// question and answer there, and the couple answers into it. What was just
+// sent shows at once and gives way to the stored copy when it arrives.
+// Without the server thread (offline, an older portal) the chat kept on this
+// phone is shown, as in build 11.
+//
+// Keyboard (Foundation chat kit): the composer rides the keyboard frame by
+// frame, the newest message stays above it, the box grows to 5 lines, the
+// keyboard stays up after sending; the title shrinks to one line and the
+// quick questions step aside while typing (K3, K4, K15). The AI notice is one
+// line with an info icon (D9, guest AI disclosure).
+// No "Ask the couple directly" button: that endpoint is deferred.
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator, Keyboard } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useIsFocused } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useCopy, useLang } from "@/i18n";
-import { api } from "@/lib/api";
+import { fmt, useCopy, useLang, relTime } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { api, get } from "@/lib/api";
+import { useGuestMessages, type ThreadMessage } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Chip, Row, Input, Icon, Badge, IconButton, KeyboardFill, Hairline, ChipRow, useKeyboardOpen, useBottomClearance, renderInlineBold } from "@/ui";
-import { colors } from "@/ui/tokens";
-import { useSafeBack } from "@/lib/nav";
+import { Screen, TopBar, T, Avatar, Chip, Row, Icon, Badge, ChipRow, Sheet, Card, Button, ChatList, ChatComposer, useKeyboardOpen, renderInlineBold, useTopInset, type ChatListHandle } from "@/ui";
+import { colors, fonts } from "@/ui/tokens";
 import { guestErrorText } from "@/features/guest/errors";
+import { useRefetchOnRefocus } from "@/features/guest/focus";
+import { GUEST_COPY } from "@/features/guest/copy";
+import { useAskSeen } from "@/features/guest/state";
 
 // `error` turns are local only: never sent back to the engine as history,
-// never saved. `retry` is the question to send again.
-type Turn = { role: "user" | "assistant"; content: string; escalated?: boolean; error?: boolean; retry?: string };
+// never saved. `retry` is the question to send again. `at` is when it was
+// sent here, to match it with the stored copy.
+type Turn = { role: "user" | "assistant"; content: string; escalated?: boolean; error?: boolean; retry?: string; at?: number; key?: string; done?: boolean };
 // Keys carry the wedding and the guest, so two guests on one phone never see
 // each other's chat. The "gl.concierge." prefix is cleared on sign out.
 const LEGACY_KEYS = ["gl.concierge.draft", "gl.concierge.history"];
+const EPOCH = "1970-01-01T00:00:00.000Z";
 
-export default function Concierge() {
+type Item =
+  | { kind: "server"; m: ThreadMessage }
+  | { kind: "local"; t: Turn; index: number };
+
+export default function Ask() {
   const copy = useCopy();
+  const g = useFeatureCopy(GUEST_COPY);
   const { lang } = useLang();
-  const router = useRouter();
-  const back = useSafeBack();
   const session = useGuestSession();
   const qc = useQueryClient();
+  const top = useTopInset();
+  const focused = useIsFocused();
+  const typing = useKeyboardOpen();
+  const mainQuery = useGuestMessages({ poll: focused });
+  useRefetchOnRefocus(focused, mainQuery.refetch);
+  const { data } = mainQuery;
   const scope = session ? `guest:${session.tenant.slug}:${session.guest.id}` : "none";
   const draftKey = `gl.concierge.draft:${scope}`;
   const historyKey = `gl.concierge.history:${scope}`;
-  const [turns, setTurns] = useState<Turn[]>([]);
+  // Saved chat (fallback when the server thread is not there) and this
+  // visit's sends that the server copy has not replaced yet.
+  const [saved, setSaved] = useState<Turn[]>([]);
+  const [live, setLive] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  // Saving waits until this identity's saved chat has been read, so a new
-  // key never receives the previous guest's turns.
+  const [aiOpen, setAiOpen] = useState(false);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const loaded = loadedFor === historyKey;
   const [sessionId] = useState(() => `app-${Math.random().toString(36).slice(2, 10)}`);
-  const scroll = useRef<ScrollView>(null);
+  const list = useRef<ChatListHandle>(null);
   const name = session?.guest.name.split(" ")[0] ?? "";
+  const couple = session?.tenant.couple_names ?? "";
+  const keySeq = useRef(0);
 
+  // ---- saved chat and draft (unchanged storage from build 11)
   useEffect(() => {
     let cancelled = false;
-    setTurns([]);
+    setSaved([]);
+    setLive([]);
     setDraft("");
-    // Unscoped keys from older builds could hold another guest's chat.
     AsyncStorage.multiRemove(LEGACY_KEYS).catch(() => {});
     AsyncStorage.multiGet([draftKey, historyKey])
       .then(([[, d], [, h]]) => {
@@ -60,8 +89,8 @@ export default function Concierge() {
         if (d) setDraft(d);
         if (h) {
           try {
-            const saved = JSON.parse(h) as Turn[];
-            if (Array.isArray(saved)) setTurns(saved.filter((t) => t && !t.error && typeof t.content === "string"));
+            const s = JSON.parse(h) as Turn[];
+            if (Array.isArray(s)) setSaved(s.filter((t) => t && !t.error && typeof t.content === "string"));
           } catch {
             // ignore a corrupt entry
           }
@@ -75,7 +104,6 @@ export default function Concierge() {
       cancelled = true;
     };
   }, [draftKey, historyKey]);
-  // The draft is saved once typing pauses, not on every keystroke.
   useEffect(() => {
     if (!loaded) return;
     const t = setTimeout(() => {
@@ -85,234 +113,339 @@ export default function Concierge() {
   }, [draft, draftKey, loaded]);
   useEffect(() => {
     if (!loaded) return;
-    AsyncStorage.setItem(historyKey, JSON.stringify(turns.filter((t) => !t.error).slice(-30))).catch(() => {});
-  }, [turns, historyKey, loaded]);
-  useEffect(() => {
-    const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
-    return () => clearTimeout(t);
-  }, [turns, busy]);
-  // Following the end of the chat: true until the guest scrolls up to read.
-  const atEnd = useRef(true);
-  const toEnd = useCallback((animated: boolean) => scroll.current?.scrollToEnd({ animated }), []);
-  useEffect(() => {
-    const sub = Keyboard.addListener("keyboardDidShow", () => {
-      atEnd.current = true;
-      toEnd(true);
-    });
-    return () => sub.remove();
-  }, [toEnd]);
+    AsyncStorage.setItem(historyKey, JSON.stringify(saved.filter((t) => !t.error).slice(-30))).catch(() => {});
+  }, [saved, historyKey, loaded]);
 
-  const send = useCallback(async (text: string, retrying = false) => {
-    const msg = text.trim();
-    if (!msg || busy) return;
-    if (!retrying) setDraft("");
-    // Failed exchanges never go to the engine as history.
-    const history = turns.filter((t) => !t.error).map((t) => ({ role: t.role, content: t.content }));
-    setTurns((t) => (retrying ? t : [...t, { role: "user", content: msg }]));
-    setBusy(true);
+  // ---- the server thread, with older pages fetched on demand
+  const [older, setOlder] = useState<ThreadMessage[]>([]);
+  const [olderHasMore, setOlderHasMore] = useState<boolean | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  useEffect(() => {
+    setOlder([]);
+    setOlderHasMore(null);
+  }, [scope]);
+  const server = useMemo(() => {
+    const byId = new Map<string, ThreadMessage>();
+    for (const m of [...older, ...(data?.messages ?? [])]) byId.set(m.id, m);
+    return [...byId.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+  }, [older, data?.messages]);
+  // The thread is the source once the portal has one for this guest.
+  const useServer = !!data && !data.pending && (server.length > 0 || !!data.conversation_id);
+  const hasMore = olderHasMore ?? (data as { has_more?: boolean } | undefined)?.has_more ?? false;
+  const loadOlder = useCallback(async () => {
+    const oldest = server[0];
+    if (!oldest || loadingOlder) return;
+    setLoadingOlder(true);
     try {
-      // A real reply calls the AI engine, which can run well past the API
-      // client's 20 s default (D-044: that default made a working connection
-      // show "You seem to be offline" on every question). The couple and
-      // planner assistant already gives itself 120 s for the same reason
-      // (src/features/assistant/stream.ts); this screen now does too.
-      const r = await api<{ reply: string; escalated: boolean }>("/guest/concierge", {
-        method: "POST",
-        body: { message: msg, session_id: sessionId, history },
-        timeoutMs: 120_000,
-      });
-      setTurns((t) => [...t, { role: "assistant", content: r.reply, escalated: r.escalated }]);
-      // The portal mirrors both lines into the guest's thread.
-      void qc.invalidateQueries({ queryKey: ["guest-messages"] });
-    } catch (err) {
-      setTurns((t) => [...t, { role: "assistant", content: guestErrorText(err, copy, lang), error: true, retry: msg }]);
+      const r = await get<{ messages: ThreadMessage[]; has_more?: boolean }>(`/guest/messages?before=${encodeURIComponent(oldest.created_at)}`);
+      setOlder((prev) => [...r.messages, ...prev]);
+      setOlderHasMore(!!r.has_more && r.messages.length > 0);
+    } catch {
+      // A second tap retries.
     } finally {
-      setBusy(false);
+      setLoadingOlder(false);
     }
-  }, [busy, turns, sessionId, qc, copy, lang]);
+  }, [server, loadingOlder]);
+
+  // A sent turn gives way to its stored copy: same author, same text, stored
+  // after it was sent here (two minutes of clock slack).
+  const stored = useCallback(
+    (t: Turn) =>
+      !t.error &&
+      server.some((m) => (m.role === "guest") === (t.role === "user") && m.role !== "couple" && m.text.trim() === t.content.trim() && Date.parse(m.created_at) >= (t.at ?? 0) - 120_000),
+    [server]
+  );
+  useEffect(() => {
+    if (!useServer) return;
+    setLive((all) => (all.some(stored) ? all.filter((t) => !stored(t)) : all));
+  }, [useServer, stored]);
+
+  // ---- unread: what the guest had seen when the tab opened, then mark seen
+  const { seen, markSeen } = useAskSeen();
+  const newestCouple = useMemo(() => server.reduce<string | null>((acc, m) => (m.role === "couple" && (!acc || Date.parse(m.created_at) > Date.parse(acc)) ? m.created_at : acc), null), [server]);
+  const [seenAtOpen, setSeenAtOpen] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!focused) {
+      setSeenAtOpen(undefined);
+      return;
+    }
+    if (seen === undefined || !data) return;
+    setSeenAtOpen((cur) => (cur === undefined ? seen ?? EPOCH : cur));
+    // The mark also says "this guest uses Ask", which lets the tab bar check
+    // for replies (see guest/_layout).
+    markSeen(newestCouple ?? EPOCH);
+  }, [focused, seen, data, newestCouple, markSeen]);
+  const firstNew = useMemo(() => {
+    if (!seenAtOpen) return null;
+    const m = server.find((x) => x.role === "couple" && Date.parse(x.created_at) > Date.parse(seenAtOpen));
+    return m?.id ?? null;
+  }, [server, seenAtOpen]);
+
+  // ---- what is on screen
+  const items: Item[] = useMemo(() => {
+    const out: Item[] = useServer ? server.map((m) => ({ kind: "server" as const, m })) : saved.map((t, i) => ({ kind: "local" as const, t, index: -1 - i }));
+    // Without the server thread, answered turns are already in the saved chat.
+    live.forEach((t, i) => {
+      if (useServer || !t.done) out.push({ kind: "local", t, index: i });
+    });
+    return out;
+  }, [useServer, server, saved, live]);
+
+  const send = useCallback(
+    async (text: string, retrying = false) => {
+      const msg = text.trim();
+      if (!msg || busy) return;
+      if (!retrying) setDraft("");
+      // History for the engine: the conversation so far, without failed
+      // exchanges and without the couple's lines.
+      const history = items
+        .map((it) => (it.kind === "server" ? (it.m.role === "couple" ? null : { role: it.m.role === "guest" ? ("user" as const) : ("assistant" as const), content: it.m.text }) : it.t.error ? null : { role: it.t.role, content: it.t.content }))
+        .filter((x): x is { role: "user" | "assistant"; content: string } => !!x)
+        .slice(-12);
+      const at = Date.now();
+      const q: Turn = { role: "user", content: msg, at, key: `l${++keySeq.current}` };
+      setLive((t) => (retrying ? t : [...t, q]));
+      setBusy(true);
+      try {
+        // A real reply calls the AI engine, which can run well past the API
+        // client's 20 s default (D-044).
+        const r = await api<{ reply: string; escalated: boolean }>("/guest/concierge", {
+          method: "POST",
+          body: { message: msg, session_id: sessionId, history },
+          timeoutMs: 120_000,
+        });
+        const a: Turn = { role: "assistant", content: r.reply, escalated: r.escalated, at, key: `l${++keySeq.current}`, done: true };
+        setLive((t) => [...t.map((x) => (x.key === q.key || (retrying && x.role === "user" && !x.done && x.content.trim() === msg) ? { ...x, done: true } : x)), a]);
+        setSaved((s) => [...s, { role: "user", content: msg }, { role: "assistant", content: r.reply, escalated: r.escalated }]);
+        // The portal stored both lines in the guest's thread.
+        void qc.invalidateQueries({ queryKey: ["guest-messages"] });
+      } catch (err) {
+        setLive((t) => [...t, { role: "assistant", content: guestErrorText(err, copy, lang), error: true, retry: msg, at, key: `l${++keySeq.current}` }]);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, items, sessionId, qc, copy, lang]
+  );
 
   /** Drops the failed answer and asks the same question again. */
   const retry = useCallback(
     (index: number) => {
-      const t = turns[index];
+      const t = live[index];
       if (!t?.retry || busy) return;
-      setTurns((all) => all.filter((_, i) => i !== index));
+      setLive((all) => all.filter((_, i) => i !== index));
       void send(t.retry, true);
     },
-    [turns, busy, send]
+    [live, busy, send]
   );
 
-  const chips = [copy.concierge.chips.dressCode, copy.concierge.chips.hotels, copy.concierge.chips.gifts];
-  // Clear of the tab bar at rest; right on top of the keyboard while typing
-  // (the tab bar is behind the keyboard then).
-  const keyboardOpen = useKeyboardOpen();
-  const { clearance } = useBottomClearance();
-  const bottomPad = keyboardOpen ? 10 : clearance - 4;
+  const chips = [g.ask.chips.wear, g.ask.chips.stay, g.ask.chips.time, g.ask.chips.gifts];
+
+  const header = typing ? (
+    <TopBar title={g.ask.title} />
+  ) : (
+    <View style={[styles.head, { paddingTop: top + 8 }]}>
+      <T v="title42" size={40} accessibilityRole="header">
+        {g.ask.title}
+      </T>
+      <Pressable testID="ask-ai-info" onPress={() => setAiOpen(true)} accessibilityRole="button" hitSlop={8} style={styles.aiRow}>
+        <Icon name="info" size={16} color={colors.goldLight} />
+        <T v="meta13" size={13} color={colors.ivory70} numberOfLines={1} style={{ flexShrink: 1 }}>
+          {g.ask.aiNotice}
+        </T>
+      </Pressable>
+    </View>
+  );
 
   return (
-    <Screen
-      scroll={false}
-      padded={false}
-      bottomInset={0}
-      header={<TopBar onBack={back} right={<IconButton name="chat" onPress={() => router.push("/guest/messages")} label={copy.messages.title} />} />}
-    >
-      <KeyboardFill>
-        {/* The intro steps aside while typing: the conversation gets the room. */}
-        {keyboardOpen ? null : (
-          <>
-            <Row gap={12} align="flex-start" style={{ paddingHorizontal: 24, marginTop: 4, paddingBottom: 12 }}>
-              <Avatar gem size={44} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="title26">{copy.concierge.title}</T>
-                <T v="meta13" color={colors.ivory55}>
-                  {copy.concierge.subtitle}
-                </T>
-              </View>
-            </Row>
-            <Hairline />
-          </>
-        )}
-        <ScrollView
-          ref={scroll}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, gap: 10 }}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          scrollEventThrottle={64}
-          onScroll={(e) => {
-            const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
-            atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
-          }}
-          // The list shrinks as the keyboard rises: keep the newest message in view.
-          onLayout={() => {
-            if (atEnd.current) toEnd(false);
-          }}
-          onContentSizeChange={() => {
-            if (atEnd.current) toEnd(true);
-          }}
-        >
-          <Bubble role="assistant" text={fmt(copy.concierge.hello, { name })} />
-          {turns.map((t, i) => (
-            <Bubble
-              key={i}
-              role={t.role}
-              text={t.content}
-              escalated={t.escalated}
-              escalatedLabel={copy.concierge.escalated}
-              escalatedNote={copy.concierge.repliesInMessages}
-              onOpenMessages={() => router.push("/guest/messages")}
-              error={t.error}
-              errorLabel={copy.concierge.notSent}
-              retryLabel={copy.concierge.retry}
-              onRetry={t.retry ? () => retry(i) : undefined}
-            />
-          ))}
-          {busy ? (
-            <Row gap={10}>
-              <Avatar gem size={28} />
-              <View style={[styles.bot, { flexDirection: "row", gap: 8, alignItems: "center" }]}>
-                <ActivityIndicator color={colors.goldLight} size="small" />
-                <T v="meta13" color={colors.ivory55}>
-                  {copy.concierge.typing}
-                </T>
-              </View>
-            </Row>
-          ) : null}
-        </ScrollView>
-        <View style={{ paddingHorizontal: 20, paddingTop: keyboardOpen ? 8 : 0, paddingBottom: bottomPad, gap: 8 }}>
-          {/* Quick questions are for before typing; while typing they only took space. */}
-          {keyboardOpen ? null : (
-            <ChipRow>
-              {chips.map((c) => (
-                <Chip key={c} label={c} onPress={() => send(c)} />
-              ))}
-            </ChipRow>
-          )}
-          <Input
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={copy.concierge.placeholder}
-            multiline={false}
-            returnKeyType="send"
-            onSubmitEditing={() => send(draft)}
-            style={{ paddingRight: 6 }}
-            right={
-              <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel={copy.concierge.send} style={[styles.send, (busy || !draft.trim()) && { opacity: 0.5 }]} disabled={busy || !draft.trim()}>
-                <Icon name="chev" size={20} color={colors.night} strokeWidth={2} />
-              </Pressable>
+    <Screen scroll={false} padded={false} topInset={false} keyboard="chat" header={typing ? header : undefined}>
+      {typing ? null : header}
+      <ChatList ref={list} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+        {useServer && hasMore ? (
+          <View style={{ alignItems: "center" }}>
+            {loadingOlder ? <ActivityIndicator color={colors.goldLight} /> : <Button label={g.ask.earlier} kind="text" small full={false} onPress={() => void loadOlder()} />}
+          </View>
+        ) : null}
+        <Bot who={g.ask.concierge} text={fmt(g.ask.hello, { name, couple })} />
+        {items.map((it) => {
+          if (it.kind === "server") {
+            const m = it.m;
+            const when = relTime(m.created_at, lang);
+            if (m.role === "guest") {
+              return (
+                <View key={m.id} style={{ gap: 6 }}>
+                  <Mine text={m.text} meta={when} />
+                  {m.needs_couple && !m.replied_at ? (
+                    <View style={{ alignItems: "center", gap: 6 }}>
+                      <Badge label={fmt(g.ask.waiting, { couple })} kind="amber" />
+                    </View>
+                  ) : null}
+                </View>
+              );
             }
-          />
-        </View>
-      </KeyboardFill>
+            if (m.role === "couple") {
+              return (
+                <View key={m.id} style={{ gap: 12 }}>
+                  {m.id === firstNew ? <NewDivider label={g.ask.newLabel} /> : null}
+                  <Theirs couple who={fmt(g.ask.fromCouple, { couple })} text={m.text} meta={when} />
+                </View>
+              );
+            }
+            return <Theirs key={m.id} who={g.ask.concierge} text={m.text} meta={when} />;
+          }
+          const t = it.t;
+          const k = t.key ?? `s${it.index}`;
+          if (t.role === "user") return <Mine key={k} text={t.content} />;
+          if (t.error) {
+            return (
+              <View key={k} style={{ gap: 6, alignItems: "flex-start" }}>
+                <Theirs who={g.ask.concierge} text={t.content} error />
+                <Row gap={8}>
+                  <Badge label={copy.concierge.notSent} kind="red" />
+                  {t.retry && it.index >= 0 ? <Chip label={copy.concierge.retry} onPress={() => retry(it.index)} /> : null}
+                </Row>
+              </View>
+            );
+          }
+          return (
+            <View key={k} style={{ gap: 10 }}>
+              <Theirs who={g.ask.concierge} text={t.content} />
+              {t.escalated ? (
+                <Row gap={6} style={{ alignSelf: "center", maxWidth: 320 }}>
+                  <Icon name="check" size={16} color={colors.goldLight} />
+                  <T v="meta13" size={13} color={colors.ivory70} center style={{ flexShrink: 1 }}>
+                    {fmt(g.ask.passed, { couple })}
+                  </T>
+                </Row>
+              ) : null}
+            </View>
+          );
+        })}
+        {busy ? (
+          <View style={{ gap: 6, alignItems: "flex-start" }} accessible accessibilityLabel={copy.concierge.typing}>
+            <Who label={g.ask.concierge} />
+            <View style={[styles.bubble, styles.bot, { flexDirection: "row", gap: 8, alignItems: "center" }]}>
+              <ActivityIndicator color={colors.goldLight} size="small" />
+              <T v="meta13" color={colors.ivory70}>
+                {copy.concierge.typing}
+              </T>
+            </View>
+          </View>
+        ) : null}
+      </ChatList>
+      <ChatComposer
+        value={draft}
+        onChangeText={setDraft}
+        onSend={() => void send(draft)}
+        placeholder={g.ask.placeholder}
+        busy={busy}
+        testID="ask-input"
+        sendTestID="ask-send"
+        accessory={
+          typing ? null : (
+            <View style={{ marginHorizontal: -16 }}>
+              <ChipRow>
+                {chips.map((c) => (
+                  <Chip key={c} label={c} onPress={() => void send(c)} />
+                ))}
+              </ChipRow>
+            </View>
+          )
+        }
+      />
+      <Sheet visible={aiOpen} onClose={() => setAiOpen(false)} top={260}>
+        <T v="label11" color={colors.goldLight}>
+          {g.ask.aiLabel}
+        </T>
+        <T v="title30" style={{ marginTop: 4 }}>
+          {g.ask.aiTitle}
+        </T>
+        <Card kind="paper" padding={18} style={{ marginTop: 16, gap: 12 }}>
+          <T v="body15" color={colors.ink}>
+            {fmt(g.ask.aiBody1, { couple })}
+          </T>
+          <T v="body15" color={colors.ink}>
+            {g.ask.aiBody2}
+          </T>
+        </Card>
+      </Sheet>
     </Screen>
   );
 }
 
-function Bubble({
-  role,
-  text,
-  escalated,
-  escalatedLabel,
-  escalatedNote,
-  onOpenMessages,
-  error,
-  errorLabel,
-  retryLabel,
-  onRetry,
-}: {
-  role: "user" | "assistant";
-  text: string;
-  escalated?: boolean;
-  escalatedLabel?: string;
-  escalatedNote?: string;
-  onOpenMessages?: () => void;
-  error?: boolean;
-  errorLabel?: string;
-  retryLabel?: string;
-  onRetry?: () => void;
-}) {
-  if (role === "user") {
-    return (
-      <View style={{ alignItems: "flex-end" }}>
-        <View style={styles.me}>
-          <T v="body15" color={colors.night}>
-            {text}
-          </T>
-        </View>
-      </View>
-    );
-  }
+function Who({ label, couple }: { label: string; couple?: boolean }) {
   return (
-    <Row gap={10} align="flex-end">
-      <Avatar gem size={28} />
-      <View style={{ flex: 1, gap: 6, alignItems: "flex-start" }}>
-        <View style={[styles.bot, escalated && { borderColor: "rgba(245,158,11,0.35)" }, error && { borderColor: "rgba(239,68,68,0.35)" }]}>
-          <T v="body15" color={colors.ivory90}>
-            {error ? text : renderInlineBold(text)}
-          </T>
-        </View>
-        {escalated && escalatedLabel ? <Badge label={escalatedLabel} kind="amber" /> : null}
-        {/* Couple replies land in Messages, not in this chat. */}
-        {escalated && escalatedNote ? (
-          <Pressable onPress={onOpenMessages} accessibilityRole="link" hitSlop={8}>
-            <T v="meta13" color={colors.goldLight} style={{ textDecorationLine: "underline" }}>
-              {escalatedNote}
-            </T>
-          </Pressable>
-        ) : null}
-        {error ? (
-          <Row gap={8}>
-            {errorLabel ? <Badge label={errorLabel} kind="red" /> : null}
-            {onRetry && retryLabel ? <Chip label={retryLabel} onPress={onRetry} /> : null}
-          </Row>
-        ) : null}
+    <Row gap={8}>
+      {couple ? (
+        <Icon name="star" size={16} color={colors.goldLight} />
+      ) : (
+        <Avatar gem size={24} />
+      )}
+      <T v="meta13" size={13} color={couple ? colors.goldLight : colors.ivory70} style={{ fontFamily: fonts.bodyMedium }}>
+        {label}
+      </T>
+    </Row>
+  );
+}
+
+function Bot({ who, text }: { who: string; text: string }) {
+  return <Theirs who={who} text={text} />;
+}
+
+function Theirs({ who, text, meta, couple, error }: { who: string; text: string; meta?: string; couple?: boolean; error?: boolean }) {
+  return (
+    <View style={{ gap: 6, alignItems: "flex-start", maxWidth: "86%" }} accessible accessibilityLabel={`${who}${meta ? `, ${meta}` : ""}. ${text}`}>
+      <Who label={who} couple={couple} />
+      <View style={[styles.bubble, styles.bot, couple && styles.couple, error && styles.error]}>
+        <T v="body15" color={colors.ivory90} selectable>
+          {error ? text : renderInlineBold(text)}
+        </T>
       </View>
+      {meta ? (
+        <T v="meta13" size={13} color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
+          {meta}
+        </T>
+      ) : null}
+    </View>
+  );
+}
+
+function Mine({ text, meta }: { text: string; meta?: string }) {
+  return (
+    <View style={{ gap: 6, alignItems: "flex-end", alignSelf: "flex-end", maxWidth: "86%" }}>
+      <View style={[styles.bubble, styles.me]}>
+        <T v="body15" color={colors.ink} selectable>
+          {text}
+        </T>
+      </View>
+      {meta ? (
+        <T v="meta13" size={13} color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
+          {meta}
+        </T>
+      ) : null}
+    </View>
+  );
+}
+
+function NewDivider({ label }: { label: string }) {
+  return (
+    <Row gap={12}>
+      <View style={styles.newLine} />
+      <T v="label11" color={colors.goldLight}>
+        {label}
+      </T>
+      <View style={styles.newLine} />
     </Row>
   );
 }
 
 const styles = StyleSheet.create({
-  bot: { maxWidth: 290, borderRadius: 18, borderBottomLeftRadius: 4, padding: 12, paddingHorizontal: 14, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)" },
-  me: { maxWidth: 270, borderRadius: 18, borderBottomRightRadius: 4, padding: 12, paddingHorizontal: 14, backgroundColor: colors.gold },
-  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
+  head: { paddingHorizontal: 20, paddingBottom: 8, gap: 4, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
+  aiRow: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 32 },
+  bubble: { borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16 },
+  bot: { backgroundColor: colors.navy, borderWidth: 1, borderColor: "rgba(247,243,236,0.10)", borderTopLeftRadius: 6 },
+  couple: { borderColor: colors.gold },
+  error: { borderColor: "rgba(239,68,68,0.45)" },
+  me: { backgroundColor: colors.ivory, borderBottomRightRadius: 6 },
+  newLine: { flex: 1, height: 1, backgroundColor: colors.goldBorder },
 });

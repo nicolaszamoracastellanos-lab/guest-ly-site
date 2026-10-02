@@ -17,7 +17,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import * as Haptics from "expo-haptics";
-import { fmt } from "@/i18n";
+import { fmt, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { T } from "@/ui/Text";
 import { Icon } from "@/ui/Icon";
@@ -27,6 +27,7 @@ import { TOUR_COPY, type TourCopy } from "./copy";
 import { buildSteps, ctaFor, type TourNames, type TourStep } from "./steps";
 import type { TourVariant } from "./state";
 import { SceneBox } from "./scenes/kit";
+import { TourToolsContext } from "./scenes/planner";
 
 const PAGE_SPRING = { damping: 24, stiffness: 210, mass: 1 };
 
@@ -35,7 +36,9 @@ export function TourOverlay({ variant, names, onClose }: { variant: TourVariant;
   const reduced = useReducedMotion();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const steps = useMemo(() => buildSteps(variant, t, names), [variant, t, names]);
+  const b12 = useCopy().planner.b12;
+  const toolLabels = useMemo(() => ({ budget: b12.budget, tasks: b12.tasks, seating: b12.seating, runsheet: b12.runsheet }), [b12]);
+  const steps = useMemo(() => buildSteps(variant, t, names, toolLabels), [variant, t, names, toolLabels]);
   const n = steps.length;
   const [index, setIndex] = useState(0);
   const [sr, setSr] = useState(false);
@@ -183,6 +186,7 @@ export function TourOverlay({ variant, names, onClose }: { variant: TourVariant;
   for (let i = lo; i <= hi; i++) mounted.push(i);
 
   return (
+    <TourToolsContext.Provider value={names.planner?.tools ?? null}>
     <Animated.View
       style={[StyleSheet.absoluteFill, styles.root, rootStyle]}
       accessibilityViewIsModal
@@ -241,6 +245,7 @@ export function TourOverlay({ variant, names, onClose }: { variant: TourVariant;
         <View style={{ width: 52 }} />
       </View>
     </Animated.View>
+    </TourToolsContext.Provider>
   );
 }
 

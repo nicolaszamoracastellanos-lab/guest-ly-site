@@ -5,12 +5,18 @@
 // under the keyboard. A clear button empties the code in one tap (after an
 // error the guest had to press delete six times). The keyboard no longer
 // offers SMS one-time codes: they are digits, filled six at once, and failed.
+//
+// Build 12 (M2): "Continue" is docked and rides the keyboard (form screen),
+// so it is never under the keys, on an iPhone SE either. A success haptic when
+// the code opens a wedding; then one step (find your name) to the invitation.
 
 import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { GUEST_COPY } from "@/features/guest/copy";
 import { post } from "@/lib/api";
 import type { TenantSummary } from "@/lib/session";
 import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel, Row, Icon, useKeyboardOpen } from "@/ui";
@@ -24,6 +30,7 @@ const LEN = 6;
 
 export default function InviteCode() {
   const copy = useCopy();
+  const g = useFeatureCopy(GUEST_COPY);
   const { lang, setLang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -48,6 +55,7 @@ export default function InviteCode() {
     setError(null);
     try {
       const r = await post<{ tenant: TenantSummary }>("/auth/guest/open", { invite_code: value });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       router.push({ pathname: "/find", params: { code: value, tenant: JSON.stringify(r.tenant) } });
     } catch (err) {
       setError(guestErrorText(err, copy, lang));
@@ -76,7 +84,12 @@ export default function InviteCode() {
   };
   const cells = Array.from({ length: LEN }, (_, i) => code[i] ?? "");
   return (
-    <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} keyboard>
+    <Screen
+      header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />}
+      bottomInset={24}
+      keyboard
+      dock={<Button testID="invite-open" label={g.invite.continue} onPress={() => open(code)} disabled={code.length !== LEN} loading={busy} />}
+    >
       <>
         {showCard ? (
           <View style={styles.card}>
@@ -145,9 +158,6 @@ export default function InviteCode() {
             </Pressable>
           ) : null}
         </Row>
-        <Stack style={{ marginTop: 20 }}>
-          <Button testID="invite-open" label={copy.invite.open} onPress={() => open(code)} disabled={code.length !== LEN} loading={busy} />
-        </Stack>
       </>
     </Screen>
   );

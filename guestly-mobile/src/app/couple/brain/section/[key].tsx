@@ -145,7 +145,7 @@ function ItineraryEditor({ facts, disabled }: { facts: WeddingFacts; disabled: b
             </T>
             <Row gap={8}>
               {!disabled ? <Button label={c.remove} kind="text" small full={false} onPress={() => remove(i)} /> : null}
-              <Button label={open === i ? "–" : "+"} kind="glass" small full={false} onPress={() => setOpen(open === i ? null : i)} />
+              <Button label={open === i ? "−" : "+"} kind="glass" small full={false} onPress={() => setOpen(open === i ? null : i)} />
             </Row>
           </Row>
           {open === i ? (

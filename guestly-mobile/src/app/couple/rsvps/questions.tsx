@@ -116,7 +116,7 @@ export default function RsvpQuestions() {
   const setD = (patch: Partial<Draft>) => setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={app.rsvps.title} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
+    <Screen query={mainQuery} header={<TopBar onBack={back} right={savedTick ? <Badge label={c.saved} kind="green" /> : undefined} />}>
       <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {error && !editing ? <Banner icon="warning" title={error} kind="red" /> : null}
       <Stack gap={10} style={{ marginTop: 18 }}>

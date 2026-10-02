@@ -13,7 +13,7 @@ import { errorText } from "@/features/shared/requests";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardFill, useBottomClearance, useKeyboardOpen, useTopInset } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -119,7 +119,8 @@ export default function DoorCheckin() {
         <View style={[FILL, { backgroundColor: colors.night }]} />
       )}
       <View style={[FILL, { backgroundColor: "rgba(8,11,16,0.35)" }]} />
-      <KeyboardFill>
+      {/* The search and its results ride the keyboard frame by frame (build 12). */}
+      <KeyboardLiftView behavior="padding" style={{ flex: 1 }}>
       <View style={{ paddingTop: top }}>
         <TopBar onBack={back} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
       </View>
@@ -215,7 +216,7 @@ export default function DoorCheckin() {
           </Pressable>
         </Row>
       </View>
-      </KeyboardFill>
+      </KeyboardLiftView>
     </View>
   );
 }

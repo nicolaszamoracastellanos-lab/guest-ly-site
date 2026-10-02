@@ -8,7 +8,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel, toast } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskCategory } from "@/features/tasks/hooks";
@@ -47,8 +47,8 @@ export default function Checklists() {
       const r = await post<{ created: number }>("/couple/tasks/checklist", { template_keys: Array.from(selected) });
       for (const k of TASK_INVALIDATE) await qc.invalidateQueries({ queryKey: [k] });
       setSelected(new Set());
-      Alert.alert(fmt(copy.checklistAddedToast, { n: r.created }));
       back();
+      toast(fmt(copy.checklistAddedToast, { n: r.created }));
     } catch (err) {
       Alert.alert(copy.error, errorText(err, lang, copy.error));
     } finally {

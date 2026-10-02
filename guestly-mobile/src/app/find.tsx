@@ -1,13 +1,20 @@
 // Find your name: names only, minimum 3 letters, party members only once
 // the guest picks a row (the API returns the host name as party_of).
+//
+// Build 12 (M2.name, N24): one step after the code. The wedding the code
+// opened sits on top ("Code accepted"), no "Step 1 of 3", and picking a name
+// lands on the invitation: no notification prompt (asked after the RSVP) and
+// no tour. /notify stays for Info and deep links.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCopy, useLang, mediumDate } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { GUEST_COPY } from "@/features/guest/copy";
 import { post, ApiFailure } from "@/lib/api";
 import { useSession, type TenantSummary, type GuestIdentity } from "@/lib/session";
-import { Screen, TopBar, T, Input, Card, ListRow, Avatar, Stack, BigTitle, Loading } from "@/ui";
+import { Screen, TopBar, T, Input, Card, ListRow, Avatar, Stack, Loading, Row, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { guestErrorText } from "@/features/guest/errors";
@@ -19,6 +26,7 @@ const normalize = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
 
 export default function FindName() {
   const copy = useCopy();
+  const g = useFeatureCopy(GUEST_COPY);
   const { lang, applyTenantDefault } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -99,7 +107,14 @@ export default function FindName() {
     try {
       const r = await post<{ token: string; guest: GuestIdentity }>("/auth/guest/session", { invite_code: code, guest_id: c.id });
       await signInGuest({ token: r.token, tenant, guest: r.guest, inviteCode: code });
-      router.replace({ pathname: "/notify", params: { surface: "guest" } });
+      // Straight to the invitation; the entrance flow is cleared so back never
+      // walks through the code and the name again.
+      try {
+        if (router.canDismiss()) router.dismissAll();
+      } catch {
+        // nothing to dismiss
+      }
+      router.replace("/guest");
     } catch (err) {
       setHint(guestErrorText(err, copy, lang));
     } finally {
@@ -118,8 +133,31 @@ export default function FindName() {
   }
 
   return (
-    <Screen header={<TopBar onBack={back} title={copy.guestHome.tabs.rsvp} />} bottomInset={24} keyboard>
-      <BigTitle label={copy.find.step} title={copy.find.title} sub={copy.find.intro} size={38} />
+    <Screen header={<TopBar onBack={back} />} bottomInset={24} keyboard>
+      <Card kind="solid" padding={16}>
+        <Row gap={6}>
+          <Icon name="check" size={16} color={colors.greenText} strokeWidth={2} />
+          <T v="meta13" size={13} color={colors.greenText}>
+            {g.find.codeOk}
+          </T>
+        </Row>
+        <T v="name24" style={{ marginTop: 4 }}>
+          {tenant.couple_names}
+        </T>
+        {tenant.wedding_date ? (
+          <T v="meta13" color={colors.ivory70}>
+            {mediumDate(tenant.wedding_date, lang)}
+          </T>
+        ) : null}
+      </Card>
+      <Stack gap={4} style={{ marginTop: 24 }}>
+        <T v="title30" accessibilityRole="header">
+          {copy.find.title}
+        </T>
+        <T v="body15" color={colors.ivory70}>
+          {g.find.intro}
+        </T>
+      </Stack>
       <Input
         testID="find-input"
         icon="search"
@@ -133,8 +171,13 @@ export default function FindName() {
         textContentType="name"
         returnKeyType="search"
         right={searching && !short ? <ActivityIndicator color={colors.goldLight} style={{ marginRight: 12 }} /> : undefined}
-        style={{ marginTop: 22, borderColor: q ? "rgba(201,169,110,0.5)" : undefined }}
+        style={{ marginTop: 16, borderColor: q ? "rgba(201,169,110,0.5)" : undefined }}
       />
+      {short ? (
+        <T v="meta13" color={colors.ivory55} style={{ marginTop: 8 }}>
+          {g.find.hint}
+        </T>
+      ) : null}
       {candidates.length && !short ? (
         <Card kind="solid" padding={4} style={{ marginTop: 14, paddingHorizontal: 18 }}>
           {candidates.map((c, i) => {
@@ -167,11 +210,12 @@ export default function FindName() {
           {copy.find.notYou} {copy.find.tellCouple} {copy.find.tellCoupleTail}
         </T>
       </View>
-      <Stack gap={4} style={{ marginTop: 24 }}>
-        <T v="meta13" color={colors.ivory40}>
-          {[tenant.couple_names, mediumDate(tenant.wedding_date, lang)].filter(Boolean).join(" · ")}
+      <Row gap={8} align="flex-start" style={{ marginTop: 24 }}>
+        <Icon name="lock" size={16} color={colors.ivory55} />
+        <T v="meta13" color={colors.ivory55} style={{ flex: 1 }}>
+          {g.find.privacy}
         </T>
-      </Stack>
+      </Row>
     </Screen>
   );
 }

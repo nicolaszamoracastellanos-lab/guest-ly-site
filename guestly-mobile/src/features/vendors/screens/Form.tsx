@@ -1,4 +1,6 @@
 // Add or edit a vendor (couple only). With ?id=... it edits that vendor.
+// With ?link=<budget line id> (from a budget line, build 12) the new vendor is
+// linked to that line once saved.
 
 import React, { useState } from "react";
 import { View, Pressable } from "react-native";
@@ -41,7 +43,8 @@ function fromRow(v: VendorRow): Form {
 export function VendorFormScreen() {
   const copy = useFeatureCopy(COPY);
   const back = useSafeBack();
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; link?: string }>();
+  const linkItem = typeof params.link === "string" && params.link ? params.link : null;
   const { data } = useVendors();
   const writes = useVendorWrites();
   const { busy, act } = useAction();
@@ -76,7 +79,12 @@ export function VendorFormScreen() {
       notes: form.notes.trim(),
     };
     await act(
-      () => (editing ? writes.update(editing.id, body) : writes.create(body)),
+      async () => {
+        if (editing) return writes.update(editing.id, body);
+        const r = await writes.create(body);
+        if (linkItem && r?.id) await writes.link(r.id, linkItem);
+        return r;
+      },
       () => {
         leave.release();
         setForm(EMPTY);

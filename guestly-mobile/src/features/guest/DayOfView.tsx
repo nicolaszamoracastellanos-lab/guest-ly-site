@@ -5,14 +5,16 @@
 // back and the day view was gone until the app restarted. Home now renders
 // this view itself while the server says it is the day; the /guest/dayof
 // route stays for deep links (a push on the day).
+//
+// Build 12: no bell (couple replies land in the Ask tab, which shows a dot).
 
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
-import { useIsFocused, useRouter } from "expo-router";
+import { useIsFocused } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestDayOf } from "@/lib/hooks";
-import { Screen, ScreenBannerSlot, T, Row, Gem, IconButton, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
+import { Screen, ScreenBannerSlot, T, Row, Gem, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
 import { clockLabel } from "@/features/guest/format";
 import { openMaps, openUrlSafe } from "@/features/guest/links";
@@ -23,7 +25,6 @@ const photo = require("../../../assets/photos/courtyard.jpg");
 export function GuestDayOfView() {
   const copy = useCopy();
   const { lang } = useLang();
-  const router = useRouter();
   const top = useTopInset();
   // Polls every minute only while this screen is on top; tabs stay mounted.
   const focused = useIsFocused();
@@ -55,7 +56,6 @@ export function GuestDayOfView() {
               {now ? ` · ${clockLabel(now.hour * 60 + now.minute, null, lang)}` : ""}
             </T>
           </Row>
-          <IconButton name="bell" label={copy.messages.title} onPress={() => router.push("/guest/messages")} />
         </Row>
         <View style={styles.headline}>
           <SectionLabel color={colors.goldLight}>{copy.dayof.rightNow}</SectionLabel>
