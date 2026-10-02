@@ -68,7 +68,7 @@ export const es: Copy = {
   entrance: {
     tagline: "Cada invitado, cada pregunta, un solo lugar en calma.",
     openInvitation: "Abrir mi invitación",
-    coupleOrPlanner: "Soy de la pareja o el planner",
+    coupleOrPlanner: "Pareja o planner",
   },
   signIn: {
     emailInvalid: "Escribe el correo de tu cuenta de Guest-ly.",

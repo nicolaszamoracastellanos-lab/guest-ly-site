@@ -58,7 +58,7 @@ export const en = {
   entrance: {
     tagline: "Every guest, every question, one calm place.",
     openInvitation: "Open my invitation",
-    coupleOrPlanner: "I'm the couple or the planner",
+    coupleOrPlanner: "Couple or planner",
   },
   signIn: {
     emailInvalid: "Enter the email address of your Guest-ly account.",
