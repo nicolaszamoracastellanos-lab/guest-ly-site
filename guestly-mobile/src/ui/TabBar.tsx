@@ -43,6 +43,7 @@ import * as Haptics from "expo-haptics";
 import { Icon, type IconName } from "./Icon";
 import { useCovered } from "@/lib/lock";
 import { registerTabs } from "@/lib/nav";
+import { useCopy } from "@/i18n";
 import { colors, fonts, TAB_BAR_HEIGHT, TAB_BAR_MAX_WIDTH, FILL, tabBarOffset } from "./tokens";
 
 type TabsProps = React.ComponentProps<typeof Tabs>;
@@ -67,7 +68,61 @@ export type TabSpec = {
  *  screens never linger mounted with the last record's state. */
 export type HiddenRoute = string | { name: string; popToTopOnBlur?: boolean };
 
-type NestedState = { key?: string; index?: number; type?: string };
+type NestedState = { key?: string; index?: number; type?: string; routes?: { name: string }[]; routeNames?: string[] };
+
+/** Back to a tab stack's list. A record pushed into a stack that had never
+ *  mounted can be that stack's only screen ([new], [[id]]): popping to the top
+ *  does nothing there, so the stack is reset to its "index" instead (review
+ *  fix, build 12). Returns true when it dispatched. */
+export function resetStackToRoot(dispatch: (a: { type: string; target?: string; payload?: object }) => void, nested: NestedState | undefined): boolean {
+  if (!nested?.key || nested.type !== "stack") return false;
+  const first = nested.routes?.[0]?.name;
+  if (first && first !== "index" && nested.routeNames?.includes("index")) {
+    dispatch({ type: "RESET", target: nested.key, payload: { index: 0, routes: [{ name: "index" }] } });
+    return true;
+  }
+  if ((nested.index ?? 0) > 0) {
+    dispatch({ type: "POP_TO_TOP", target: nested.key });
+    return true;
+  }
+  return false;
+}
+
+type TabRoute = { key: string; name: string; state?: unknown };
+type TabNav = { getState: () => { key: string; index: number; routes: TabRoute[] }; dispatch: (a: { type: string; target?: string; payload?: object }) => void };
+
+/** The last path shown in each tab bar tab (by route key). A tab stack that
+ *  was first mounted by a push from another tab ([[id]], [new]) keeps that
+ *  first state to itself: react-navigation only writes a nested state into
+ *  the tab's route once it changes, so `route.state` is empty and nothing
+ *  above can see or pop it (seen on the sims). The path it last showed tells
+ *  whether a record is sitting there. */
+const lastPaths = new Map<string, string>();
+const depth = (path: string) => path.split("/").filter(Boolean).length;
+
+/** Sends tab bar tabs back to their lists: the one with `only`, or every one
+ *  but `skip`. A stack whose state the tab can see goes through
+ *  resetStackToRoot; a tab whose own stack never reported a state but last
+ *  showed a record (".../messages/{id}") gets its stack reset to "index". */
+export function resetTabs(nav: TabNav, opts: { only?: string; skip?: string; tabs: ReadonlySet<string> }) {
+  const st = nav.getState();
+  const nested: NestedState[] = [];
+  let changed = false;
+  const routes = st.routes.map((r) => {
+    if ((opts.only && r.key !== opts.only) || r.key === opts.skip || !opts.tabs.has(r.name)) return r;
+    if (r.state) {
+      nested.push(r.state as NestedState);
+      return r;
+    }
+    const p = lastPaths.get(r.key);
+    if (!p || depth(p) < 3) return r;
+    lastPaths.delete(r.key);
+    changed = true;
+    return { ...r, state: { routes: [{ name: "index" }] } };
+  });
+  if (changed) nav.dispatch({ type: "RESET", target: st.key, payload: { ...st, routes } });
+  for (const n of nested) resetStackToRoot((a) => nav.dispatch(a), n);
+}
 
 /** Which spec is lit for the focused route. */
 function litSpecName(routeName: string, specs: TabSpec[], fallback: string): string | null {
@@ -104,11 +159,14 @@ export function GlassTabBar({
   specs: TabSpec[];
   /** Tab lit inside hidden routes no spec owns. Default "more". */
   fallback?: string;
-  /** When this changes, every tab pops to its first screen. */
+  /** When this changes (the wedding), every tab except the focused one goes
+   *  back to its list. The focused one is left alone: a notification for
+   *  another wedding switches first and then opens its screen there. */
   resetKey?: string | null;
 }) {
   const insets = useSafeAreaInsets();
   const covered = useCovered();
+  const common = useCopy().common;
   const solid = useReduceTransparency();
   const pathname = usePathname();
   const surface = pathname.split("/")[1] ?? "";
@@ -121,7 +179,16 @@ export function GlassTabBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surface, specKey, fallback]);
 
-  // Wedding switch (F1): pop every tab, the current one included, to its root.
+  // The path each tab bar tab shows (see resetTabs).
+  const tabNames = React.useMemo(() => new Set(specs.map((s) => s.name)), [specKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const focusedRoute = state.routes[state.index];
+  useEffect(() => {
+    if (!focusedRoute) return;
+    const seg = pathname.split("/").filter(Boolean);
+    if (seg[1] === focusedRoute.name || (focusedRoute.name === "index" && seg.length === 1)) lastPaths.set(focusedRoute.key, pathname);
+  }, [pathname, focusedRoute]);
+
+  // Wedding switch (F1): every other tab back to its root.
   const latestState = useRef(state);
   useEffect(() => {
     latestState.current = state;
@@ -131,13 +198,9 @@ export function GlassTabBar({
     const prev = lastReset.current;
     lastReset.current = resetKey;
     if (resetKey == null || prev == null || prev === resetKey) return;
-    for (const route of latestState.current.routes) {
-      const nested = (route as { state?: NestedState }).state;
-      if (nested?.key && nested.type === "stack" && (nested.index ?? 0) > 0) {
-        navigation.dispatch({ type: "POP_TO_TOP", target: nested.key });
-      }
-    }
-  }, [resetKey, navigation]);
+    const st = latestState.current;
+    resetTabs(navigation as unknown as TabNav, { skip: st.routes[st.index]?.key, tabs: tabNames });
+  }, [resetKey, navigation, tabNames]);
 
   const bottom = tabBarOffset(Math.max(insets.bottom, 0));
   // The bar floats above the screens, so it would sit on top of their lock
@@ -164,7 +227,8 @@ export function GlassTabBar({
               testID={`tab-${route.name}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: lit }}
-              accessibilityLabel={count ? `${spec.label}, ${count}` : spec.label}
+              // A dot (RSVP pending, an unread reply) is not color alone.
+              accessibilityLabel={count ? `${spec.label}, ${count}` : dot ? `${spec.label}, ${common.newItem}` : spec.label}
               onPress={() => {
                 void Haptics.selectionAsync();
                 const event = navigation.emit({
@@ -175,10 +239,7 @@ export function GlassTabBar({
                 if (focused || event.defaultPrevented) return;
                 // Back to the tab's own list: a screen pushed into it from
                 // another tab (Guests to RSVP questions) does not linger.
-                const nested = (route as { state?: NestedState }).state;
-                if (nested?.key && nested.type === "stack" && (nested.index ?? 0) > 0) {
-                  navigation.dispatch({ type: "POP_TO_TOP", target: nested.key });
-                }
+                resetTabs(navigation as unknown as TabNav, { only: route.key, tabs: tabNames });
                 navigation.navigate(route.name);
               }}
               style={[styles.tab, lit && styles.tabLit]}
@@ -222,7 +283,8 @@ export function GlassTabBar({
  *   />
  *
  * Back means the screen the person came from (backBehavior "history"). Pass
- * `resetKey` (the wedding slug) to pop every tab to its root when it changes.
+ * `resetKey` (the session's tenantKey) to send every other tab back to its
+ * root when the wedding changes.
  */
 export function RoleTabs({ specs, hidden = [], fallback = "more", resetKey }: { specs: TabSpec[]; hidden?: HiddenRoute[]; fallback?: string; resetKey?: string | null }) {
   return (

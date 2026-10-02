@@ -23,14 +23,20 @@ function useOpenVendor() {
   return (id: string) => router.push({ pathname: `${base}/[id]` as never, params: { id } as never });
 }
 
+/** The vendors tool is open to this person: always for the couple; for a
+ *  planner only when the couple shared it. A locked tool never calls its
+ *  endpoint and never opens its screens (review fix). */
+function useVendorsOpen(): boolean {
+  return can(useUserSession()?.me, "vendors");
+}
+
 /** Which vendor a budget line belongs to. The budget payload carries
  *  `vendor_id` on newer portals; the vendors payload always lists the lines
  *  each vendor is linked to, so it fills the gap (seen on the production
  *  demo: a linked line showed no vendor). A planner without the vendors tool
  *  never calls that endpoint. */
 export function useLineVendorOf(): (itemId: string, vendorId: string | null | undefined) => string | null {
-  const me = useUserSession()?.me;
-  const vendors = useVendors({ enabled: can(me, "vendors") });
+  const vendors = useVendors({ enabled: useVendorsOpen() });
   const items = vendors.data?.items;
   return (itemId, vendorId) => vendorId ?? items?.find((i) => i.id === itemId)?.vendor_id ?? null;
 }
@@ -39,10 +45,19 @@ export function useLineVendorOf(): (itemId: string, vendorId: string | null | un
 export function VendorChip({ id, fallback }: { id: string; fallback?: string | null }) {
   const v = useFeatureCopy(VCOPY);
   const c = useCoupleCopy();
-  const vendors = useVendors();
+  const allowed = useVendorsOpen();
+  const vendors = useVendors({ enabled: allowed });
   const open = useOpenVendor();
   const vendor = vendors.data?.vendors.find((x) => x.id === id) ?? null;
   const name = vendor?.name ?? (fallback || c.budget.vendor);
+  // Vendors not shared with this planner: the line's own vendor text, plain.
+  if (!allowed) {
+    return fallback ? (
+      <T v="meta13" color={colors.ivory55}>
+        {fallback}
+      </T>
+    ) : null;
+  }
   return (
     <Pressable onPress={() => open(id)} accessibilityRole="button" accessibilityLabel={`${c.budget.openVendor}: ${name}`} hitSlop={6} style={({ pressed }) => [styles.chip, pressed && { opacity: 0.75 }]}>
       <Icon name="store" size={16} color={colors.goldLight} />
@@ -68,13 +83,28 @@ export function LineVendor({ itemId, vendorId, vendorText, canEdit }: { itemId: 
   const online = useOnline();
   const base = useVendorsBase();
   const couple = !base.startsWith("/planner");
-  const vendors = useVendors({ enabled: !!vendorId || (couple && canEdit) });
+  const allowed = useVendorsOpen();
+  const vendors = useVendors({ enabled: allowed && (!!vendorId || (couple && canEdit)) });
   const writes = useVendorWrites();
   const { busy, act } = useAction();
   const open = useOpenVendor();
   const [pick, setPick] = useState(false);
   const vendor = vendorId ? (vendors.data?.vendors.find((x) => x.id === vendorId) ?? null) : null;
 
+  // Vendors not shared with this planner: the line's vendor as plain text.
+  if (vendorId && !allowed) {
+    return vendorText ? (
+      <View style={{ gap: 6 }}>
+        <SectionLabel>{c.budget.vendor}</SectionLabel>
+        <View style={styles.row}>
+          <Icon name="store" size={22} color={colors.ivory55} />
+          <T v="body16" style={{ flex: 1 }}>
+            {vendorText}
+          </T>
+        </View>
+      </View>
+    ) : null;
+  }
   if (vendorId) {
     return (
       <View style={{ gap: 6 }}>
@@ -153,10 +183,11 @@ export function BudgetVendors({ budgetId }: { budgetId: string }) {
   const v = useFeatureCopy(VCOPY);
   const router = useRouter();
   const base = useVendorsBase();
-  const vendors = useVendors();
+  const allowed = useVendorsOpen();
+  const vendors = useVendors({ enabled: allowed });
   const open = useOpenVendor();
   const data = vendors.data;
-  if (!data || vendors.isError) return null;
+  if (!allowed || !data || vendors.isError) return null;
   const ids = new Set(data.items.filter((i) => i.budget_id === budgetId && i.vendor_id).map((i) => i.vendor_id!));
   const linked = data.vendors.filter((x) => ids.has(x.id));
   if (!data.vendors.length) return null;

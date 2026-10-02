@@ -37,7 +37,7 @@ import { get, post } from "@/lib/api";
 import { usePlannerHome, type RequestRow, type TaskRow } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
-import { GlassTabBar, type TabSpec } from "@/ui/TabBar";
+import { GlassTabBar, resetTabs, type TabSpec } from "@/ui/TabBar";
 import { T, Icon, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
@@ -88,7 +88,6 @@ export default function PlannerTabs() {
 }
 
 type BarProps = React.ComponentProps<typeof GlassTabBar>;
-type NestedState = { key?: string; index?: number; type?: string };
 
 /** The kit's bar, plus F1 for switches that did not start at the pill: when
  *  the wedding changes, every tab stack except the focused one pops to its
@@ -107,11 +106,7 @@ function PlannerTabBar(props: BarProps) {
     last.current = tenantKey;
     if (!prev || !tenantKey || prev === tenantKey) return;
     const st = latest.current;
-    st.routes.forEach((route, i) => {
-      if (i === st.index) return;
-      const nested = (route as { state?: NestedState }).state;
-      if (nested?.key && nested.type === "stack" && (nested.index ?? 0) > 0) navigation.dispatch({ type: "POP_TO_TOP", target: nested.key });
-    });
+    resetTabs(navigation as unknown as Parameters<typeof resetTabs>[0], { skip: st.routes[st.index]?.key, tabs: PLANNER_STACKS });
   }, [tenantKey, navigation]);
   return <GlassTabBar {...props} />;
 }
@@ -190,17 +185,18 @@ export function kindIcon(kind: string): IconName {
 
 // ------------------------------------------------------------------ navigation
 
-type NavLike = { getState: () => { type?: string; routes: { state?: unknown }[] }; getParent: () => NavLike | undefined; dispatch: (a: { type: string; target?: string }) => void };
+type NavLike = { getState: () => { type?: string }; getParent: () => NavLike | undefined };
+
+/** The planner tabs whose stacks go back to their lists on a wedding switch,
+ *  plus the hidden tasks stack Hoy pushes a task into. */
+const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "requests", "guests", "wedding", "more", "tasks"]);
 
 /** Pops every tab stack to its root (F1). From any screen inside the tabs. */
 export function popAllStacks(navigation: unknown) {
   let nav = navigation as NavLike | undefined;
   while (nav && nav.getState()?.type !== "tab") nav = nav.getParent();
   if (!nav) return;
-  for (const route of nav.getState().routes) {
-    const nested = route.state as NestedState | undefined;
-    if (nested?.key && nested.type === "stack" && (nested.index ?? 0) > 0) nav.dispatch({ type: "POP_TO_TOP", target: nested.key });
-  }
+  resetTabs(nav as unknown as Parameters<typeof resetTabs>[0], { tabs: PLANNER_STACKS });
 }
 
 // ------------------------------------------------------------------ header

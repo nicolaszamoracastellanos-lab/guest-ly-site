@@ -24,6 +24,10 @@ export default function CoupleMore() {
   const settings = useCoupleSettings();
   const shareInvite = useShareInvite();
   const slug = more.data?.site_slug ?? user?.me.tenant.slug ?? "";
+  // The public site lives at app.guest-ly.com/{slug} (as the website builder
+  // and the guest Info tab say); a public_url from the portal wins.
+  const publicUrl = (more.data as { public_url?: unknown } | undefined)?.public_url;
+  const siteAddress = typeof publicUrl === "string" && publicUrl ? publicUrl.replace(/^https?:\/\//, "") : slug ? `app.guest-ly.com/${slug}` : undefined;
   const requests = more.data?.entries.requests?.count;
   const code = settings.data?.invite_code ?? null;
 
@@ -34,8 +38,10 @@ export default function CoupleMore() {
       </View>
 
       {/* The invitation code, one tap from sharing (it used to sit four taps deep in Settings). */}
-      <Pressable onPress={() => router.push("/couple/settings/invite")} accessibilityRole="button" accessibilityLabel={code ? `${c.more.code}, ${code.split("").join(" ")}` : c.more.code} style={({ pressed }) => [styles.code, pressed && { opacity: 0.85 }]}>
-        <View style={{ flex: 1, gap: 4 }}>
+      {/* Two sibling buttons, so VoiceOver reaches Share as well (a button
+          inside a button is hidden from it). */}
+      <View style={styles.code}>
+        <Pressable onPress={() => router.push("/couple/settings/invite")} accessibilityRole="button" accessibilityLabel={code ? `${c.more.code}, ${code.split("").join(" ")}` : c.more.code} style={({ pressed }) => [{ flex: 1, gap: 4, minHeight: 44, justifyContent: "center" }, pressed && { opacity: 0.85 }]}>
           <T v="meta13" color={colors.ivory70}>
             {c.more.code}
           </T>
@@ -48,17 +54,17 @@ export default function CoupleMore() {
           ) : (
             <Icon name="chev" size={18} color={colors.ivory40} />
           )}
-        </View>
+        </Pressable>
         <Pressable onPress={() => void shareInvite()} accessibilityRole="button" accessibilityLabel={c.more.share} style={({ pressed }) => [styles.share, pressed && { opacity: 0.8 }]}>
           <Icon name="share" size={18} color={colors.goldLight} />
           <T v="meta13" color={colors.goldLight}>
             {c.more.share}
           </T>
         </Pressable>
-      </Pressable>
+      </View>
 
       <MenuCard style={{ marginTop: 16 }}>
-        <MenuRow icon="globe" title={c.more.site} sub={slug ? `guest-ly.com/${slug}` : undefined} onPress={() => router.push("/couple/website")} testID="more-site" />
+        <MenuRow icon="globe" title={c.more.site} sub={siteAddress} onPress={() => router.push("/couple/website")} testID="more-site" />
         <MenuRow icon="book" title={c.more.brain} sub={c.more.brainSub} onPress={() => router.push("/couple/brain")} testID="more-brain" />
         <MenuRow icon="sparkle" title={c.more.coordinator} sub={c.more.coordinatorSub} onPress={() => router.push("/assistant" as never)} testID="more-coordinator" />
         <MenuRow icon="qr" title={c.more.checkin} sub={c.more.checkinSub} onPress={() => router.push("/couple/checkin")} testID="more-checkin" />

@@ -10,6 +10,7 @@ import { useCoupleHome } from "@/lib/hooks";
 import { useTasksBoard } from "@/features/tasks/hooks";
 import { useCoupleSeating } from "@/features/seating/hooks";
 import { useCoupleRunsheet } from "@/features/runsheet/hooks";
+import { useBudgetSurface } from "@/features/budget/hooks";
 import { useCoupleCopy } from "@/features/couple/ui";
 import { Screen, TopBar, Wordmark, BigTitle, T, Icon, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
@@ -41,28 +42,39 @@ export default function CouplePlan() {
       };
     }, []),
   );
+  // The same number as the Budget screen (M11, B3): its own surface for the
+  // open budget, computed the same way as there and on the planner's Boda.
+  const budget = useBudgetSurface(budgetId ?? undefined);
   const byId = home.data?.budget_percent_paid_by_id;
-  const paid = budgetId && byId && Object.prototype.hasOwnProperty.call(byId, budgetId) ? byId[budgetId] : home.data?.budget_percent_paid;
+  const homeById = budgetId && byId && Object.prototype.hasOwnProperty.call(byId, budgetId) ? byId[budgetId] : undefined;
+  const activeBudget = budget.data?.active;
+  // Home's per-budget figure is exact; its overall figure can differ from the
+  // Budget screen (seen: 26% vs 17%), so it only stands in if the budget fails.
+  const paid = activeBudget ? Math.round((activeBudget.computed.totals.paidFraction || 0) * 100) : homeById ?? (budget.isError ? home.data?.budget_percent_paid : undefined);
+  const budgetNum = typeof paid === "number" ? c.plan.budgetNum(paid) : budget.data && !activeBudget ? c.plan.budgetNone : null;
 
   const groups = tasks.data?.groups;
   const dueSoon = groups ? (groups.overdue?.length ?? 0) + (groups.today?.length ?? 0) + (groups.week?.length ?? 0) : null;
   const open = tasks.data ? tasks.data.progress.total - tasks.data.progress.done : null;
-  const tasksNum = dueSoon === null ? null : dueSoon > 0 ? c.plan.tasksWeek(dueSoon) : open && open > 0 ? c.plan.tasksOpen(open) : c.plan.tasksDone;
+  // Every tile carries a word (F5): a board that failed to load still says
+  // where the tasks are, never a blank tile.
+  const tasksNum = dueSoon === null ? (tasks.isError ? c.plan.tasksSee : null) : dueSoon > 0 ? c.plan.tasksWeek(dueSoon) : open && open > 0 ? c.plan.tasksOpen(open) : c.plan.tasksDone;
   const unseated = seating.data?.stats?.unseated_people;
-  const seatingNum = typeof unseated === "number" ? (unseated > 0 ? c.plan.seatingNum(unseated) : c.plan.seatingDone) : null;
+  const seatingNum = seating.data && !seating.data.tables?.length ? c.plan.seatingNone : typeof unseated === "number" ? (unseated > 0 ? c.plan.seatingNum(unseated) : c.plan.seatingDone) : null;
   const blocks = runsheet.data?.blocks_total;
+  const runsheetNum = typeof blocks === "number" ? (blocks > 0 ? c.plan.runsheetNum(blocks) : c.plan.runsheetNone) : runsheet.data ? c.plan.runsheetNone : null;
 
   const tools: Tool[] = [
-    { key: "budget", icon: "wallet", name: c.plan.budget, num: typeof paid === "number" ? c.plan.budgetNum(paid) : null, route: "/couple/budget" },
+    { key: "budget", icon: "wallet", name: c.plan.budget, num: budgetNum, route: "/couple/budget" },
     { key: "tasks", icon: "tasks", name: c.plan.tasks, num: tasksNum, route: "/couple/tasks" },
     { key: "seating", icon: "grid", name: c.plan.seating, num: seatingNum, route: "/couple/seating" },
-    { key: "runsheet", icon: "clock", name: c.plan.runsheet, num: typeof blocks === "number" && blocks > 0 ? c.plan.runsheetNum(blocks) : null, route: "/couple/runsheet" },
+    { key: "runsheet", icon: "clock", name: c.plan.runsheet, num: runsheetNum, route: "/couple/runsheet" },
   ];
   const days = home.data?.countdown && !home.data.countdown.passed ? home.data.countdown.days : null;
 
   return (
     <Screen
-      refresh={() => Promise.all([home.refetch(), tasks.refetch(), seating.refetch(), runsheet.refetch()])}
+      refresh={() => Promise.all([home.refetch(), tasks.refetch(), seating.refetch(), runsheet.refetch(), budget.refetch()])}
       header={
         <TopBar
           left={<Wordmark height={20} />}

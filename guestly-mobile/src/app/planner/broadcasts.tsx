@@ -12,8 +12,14 @@ import { COPY } from "@/features/broadcasts/copy";
 import { usePlannerBroadcasts } from "@/features/broadcasts/hooks";
 import { deliveryLine, groupTitle } from "@/app/couple/broadcasts/index";
 import { useSafeBack } from "@/lib/nav";
+import { useTenantKey } from "@/lib/session";
 
-export default function PlannerBroadcasts() {
+// Keyed by the wedding, like the tab roots (F1).
+export default function PlannerBroadcastsRoute() {
+  return <PlannerBroadcasts key={useTenantKey()} />;
+}
+
+function PlannerBroadcasts() {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();

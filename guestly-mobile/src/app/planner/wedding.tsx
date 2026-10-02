@@ -16,7 +16,7 @@
 // photo at the same spot (F1).
 
 import React, { useState } from "react";
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, plural, longDate, useCopy, useLang } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
@@ -213,13 +213,19 @@ function RunsheetLine() {
 
 function Tile({ icon, title, locked, onPress, children, testID }: { icon: IconName; title: string; locked: boolean; onPress: () => void; children?: React.ReactNode; testID?: string }) {
   const c = useCopy().planner.b12;
+  // Large text on a narrow phone: full-width tiles instead of squares, so the
+  // title and its line never run past the tile (the couple Plan rule, D-031).
+  const { width, fontScale } = useWindowDimensions();
+  const oneColumn = width < 340 || (width < 380 && fontScale > 1.15);
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={locked ? `${title}, ${c.notSharedShort}` : title}
+      // Unlocked: no label of its own, so VoiceOver reads the title and the
+      // live number inside ("Presupuesto, 17% pagado").
+      accessibilityLabel={locked ? `${title}, ${c.notSharedShort}` : undefined}
       onPress={onPress}
-      style={({ pressed }) => [styles.tile, locked && styles.tileLocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+      style={({ pressed }) => [styles.tile, oneColumn && styles.tileWide, locked && styles.tileLocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
     >
       <View style={[styles.tileIcon, locked && { backgroundColor: colors.ivory09 }]}>
         <Icon name={locked ? "lock" : icon} size={24} color={locked ? colors.ivory70 : colors.goldLight} />
@@ -244,6 +250,7 @@ const styles = StyleSheet.create({
   stat: { flex: 1, minWidth: 0, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.ivory14, backgroundColor: colors.navy, padding: 12, gap: 2 },
   tiles: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 },
   tile: { width: "48.5%", aspectRatio: 1, minHeight: 140, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.ivory14, backgroundColor: colors.navy, padding: 16, justifyContent: "space-between" },
+  tileWide: { width: "100%", aspectRatio: undefined, minHeight: 120, gap: 16 },
   tileLocked: { backgroundColor: "transparent", borderStyle: "dashed", borderColor: colors.ivory25 },
   tileIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: colors.goldWash },
   lockDisc: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: colors.ivory09 },

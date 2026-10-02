@@ -2,7 +2,7 @@
 // With ?link=<budget line id> (from a budget line, build 12) the new vendor is
 // linked to that line once saved.
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { View, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -62,6 +62,7 @@ export function VendorFormScreen() {
   // Typed changes not saved yet ask before leaving (lib/unsaved).
   const leave = useUnsavedGuard(seeded === target && JSON.stringify(form) !== JSON.stringify(editing ? fromRow(editing) : EMPTY));
 
+  const createdId = useRef<string | null>(null);
   async function save() {
     const body = {
       name: form.name.trim(),
@@ -81,7 +82,16 @@ export function VendorFormScreen() {
     await act(
       async () => {
         if (editing) return writes.update(editing.id, body);
+        // Created on an earlier try whose link failed: save onto that vendor
+        // and link it, never a second vendor (review fix).
+        if (createdId.current) {
+          const id = createdId.current;
+          const r = await writes.update(id, body);
+          if (linkItem) await writes.link(id, linkItem);
+          return r;
+        }
         const r = await writes.create(body);
+        if (r?.id) createdId.current = r.id;
         if (linkItem && r?.id) await writes.link(r.id, linkItem);
         return r;
       },

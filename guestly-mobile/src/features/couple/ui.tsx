@@ -73,6 +73,16 @@ export function FadedChipRow({ children, selected, padLeft = 24 }: { children: R
 }
 
 /** "Going, party of 2" / "Va con 2" and friends: always a word, never color alone. */
+/** The guest's own RSVP note, without the "Acompañantes:" line the portal
+ *  may append (it rebuilds that line from the roster on every save). */
+export function rsvpNoteText(notes: string | null | undefined): string {
+  return (notes ?? "")
+    .split("\n")
+    .filter((line) => !/^Acompañantes: /.test(line))
+    .join("\n")
+    .trim();
+}
+
 export function guestStatusText(c: ReturnType<typeof useCoupleCopy>, status: string, party: number): string {
   const n = Math.max(1, party || 1);
   if (status === "attending") return c.guests.going(n);

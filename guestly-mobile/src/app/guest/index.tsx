@@ -77,7 +77,10 @@ export default function GuestHome() {
   // About half the screen, never so tall that "Reply now", the shortcuts or
   // the countdown fall under the tab bar (prototype M3, I5). Taller only when
   // the names need it (flow), capped at 62% of the window.
-  const { height: windowH } = useWindowDimensions();
+  const { height: windowH, width: windowW, fontScale } = useWindowDimensions();
+  // Larger text on a narrow phone: the four tiles go 2 x 2 so "Código de
+  // vestimenta" never breaks mid-word (the D-031 rule of build 11).
+  const twoByTwo = windowW < 380 && fontScale > 1.15;
   const compact = windowH < 720;
   const heroH = Math.round(Math.max(260, Math.min(windowH * 0.46, windowH - 524)));
   const venue = data?.next_event?.location ?? data?.city ?? session?.tenant.city ?? null;
@@ -225,11 +228,11 @@ export default function GuestHome() {
             rsvpCard
           )}
 
-          <View accessibilityRole="menu" accessibilityLabel={g.home.shortcuts} style={styles.tiles}>
-            <Tile icon="map" label={g.home.directions} onPress={() => setSheet("directions")} />
-            <Tile icon="hanger" label={g.home.dressCode} onPress={() => setSheet("dress")} />
-            <Tile icon="bed" label={g.home.hotels} onPress={() => setSheet("hotels")} />
-            <Tile icon="gift" label={g.home.gifts} onPress={() => setSheet("gifts")} />
+          <View accessibilityRole="menu" accessibilityLabel={g.home.shortcuts} style={[styles.tiles, twoByTwo && styles.tilesWrap]}>
+            <Tile icon="map" label={g.home.directions} onPress={() => setSheet("directions")} wide={twoByTwo} />
+            <Tile icon="hanger" label={g.home.dressCode} onPress={() => setSheet("dress")} wide={twoByTwo} />
+            <Tile icon="bed" label={g.home.hotels} onPress={() => setSheet("hotels")} wide={twoByTwo} />
+            <Tile icon="gift" label={g.home.gifts} onPress={() => setSheet("gifts")} wide={twoByTwo} />
           </View>
 
           {!compact && days != null ? (
@@ -265,11 +268,11 @@ function cap(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
-function Tile({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+function Tile({ icon, label, onPress, wide }: { icon: IconName; label: string; onPress: () => void; wide?: boolean }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.tile, wide && styles.tileHalf, pressed && styles.tilePressed]}>
       <Icon name={icon} size={24} color={colors.goldLight} />
-      <T v="meta13" size={13} color={colors.ivory70} center numberOfLines={2} style={{ minHeight: 36 }}>
+      <T v="meta13" size={14} color={colors.ivory70} center numberOfLines={2} style={{ minHeight: 36 }}>
         {label}
       </T>
     </Pressable>
@@ -281,6 +284,8 @@ const styles = StyleSheet.create({
   draftDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold },
   doneIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#03694c", alignItems: "center", justifyContent: "center" },
   tiles: { flexDirection: "row", gap: 8 },
+  tilesWrap: { flexWrap: "wrap", justifyContent: "space-between", columnGap: 0, rowGap: 8 },
+  tileHalf: { flex: 0, width: "48.5%" },
   tile: { flex: 1, minWidth: 0, minHeight: 84, borderRadius: 16, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", gap: 8, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
   tilePressed: { transform: [{ scale: 0.97 }], backgroundColor: colors.ivory09 },
   countText: { gap: 2, paddingLeft: 16, borderLeftWidth: 1, borderLeftColor: colors.ivory14 },

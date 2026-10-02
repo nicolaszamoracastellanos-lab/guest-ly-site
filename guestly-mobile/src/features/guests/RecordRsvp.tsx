@@ -17,7 +17,7 @@ import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, Card, Row, Segmented,
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { flash } from "@/features/couple/flash";
-import { useCoupleCopy } from "@/features/couple/ui";
+import { useCoupleCopy, rsvpNoteText } from "@/features/couple/ui";
 
 type Answer = "attending" | "declined";
 
@@ -32,6 +32,10 @@ function seatsFrom(d: GuestDetail["detail"]): Record<string, Answer>[] {
       if (v === "attending" || v === "declined") out[e.id] = v;
       // A party of one: the event answer is that one seat's answer.
       else if (n === 1 && (e.answer === "attending" || e.answer === "declined")) out[e.id] = e.answer;
+      // An answer saved without per-event seats (older replies, or no roster
+      // at all): the party's answer for the event, narrowed by the seat's own
+      // going / not going when the roster has it. The same as the guest card.
+      else if (e.answer === "attending" || e.answer === "declined") out[e.id] = e.answer === "declined" || (r && !r.attending) ? "declined" : "attending";
     }
     return out;
   });
@@ -67,7 +71,9 @@ export function RecordRsvpScreen() {
       setGuestId(id);
       setDetail(r.detail);
       setSeats(seatsFrom(r.detail));
-      setNotes("");
+      // The note already on file, so saving an untouched form keeps it and
+      // emptying the field is a deliberate clear.
+      setNotes(rsvpNoteText(r.detail.rsvp?.notes));
     } catch (err) {
       if (preset) setFailed(true);
       else Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
@@ -102,7 +108,7 @@ export function RecordRsvpScreen() {
     if (!guestId || !complete || busy) return;
     setBusy(true);
     try {
-      await post("/couple/rsvps/record", { guest_id: guestId, seats, notes: notes.trim() || undefined });
+      await post("/couple/rsvps/record", { guest_id: guestId, seats, notes: notes.trim() });
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["couple-rsvps"] }),
         qc.invalidateQueries({ queryKey: ["couple-guests"] }),
@@ -218,7 +224,7 @@ export function RecordRsvpScreen() {
                 {copy.rsvps.recordNoEvents}
               </T>
             ) : null}
-            <Input accessibilityLabel={copy.rsvps.recordNotes} value={notes} onChangeText={setNotes} placeholder={copy.rsvps.recordNotes} />
+            <Input accessibilityLabel={copy.rsvps.recordNotes} value={notes} onChangeText={setNotes} placeholder={copy.rsvps.recordNotes} multiline maxLength={500} />
             {!complete && events.length > 0 ? (
               <T v="meta13" color={colors.ivory55} center>
                 {copy.rsvp.needsAnswer}

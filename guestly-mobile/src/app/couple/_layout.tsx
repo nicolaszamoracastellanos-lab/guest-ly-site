@@ -12,7 +12,7 @@ import { RoleTabs, type TabSpec } from "@/ui/TabBar";
 
 export default function CoupleTabs() {
   const c = useCoupleCopy().tabs;
-  const { state } = useSession();
+  const { state, tenantKey } = useSession();
   const scopeKey = state.status === "user" ? `${state.me.user.id}:${state.me.tenant.slug}` : null;
   // The brain and seating drafts are module stores: a different account or
   // wedding than last time starts them empty.
@@ -31,6 +31,10 @@ export default function CoupleTabs() {
   return (
     <RoleTabs
       specs={specs}
+      // A wedding switch (Settings, or a notification for the other wedding)
+      // sends the other tabs back to their lists: no record, thread or draft
+      // of the previous wedding stays open (F1 for the couple).
+      resetKey={tenantKey}
       hidden={[
         // RSVPs folded into Invitados: the route stays for pushes and the
         // portal's links and redirects to the guest list (questions and

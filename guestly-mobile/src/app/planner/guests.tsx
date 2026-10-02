@@ -37,6 +37,13 @@ function PlannerGuestsBody() {
   const { clearance } = useBottomClearance();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>(FILTERS.includes(params.filter as Filter) ? (params.filter as Filter) : "all");
+  // Hoy's briefing rows open this tab on a filter after it has mounted: a new
+  // param moves the chip (the couple Invitados does the same).
+  const [seenParam, setSeenParam] = useState(params.filter);
+  if (params.filter !== seenParam) {
+    setSeenParam(params.filter);
+    if (FILTERS.includes(params.filter as Filter)) setFilter(params.filter as Filter);
+  }
   const [picked, setPicked] = useState<PlannerGuest | null>(null);
   const online = useOnline();
 
@@ -105,7 +112,7 @@ function GuestList({ q, setQ, filter, setFilter, picked, setPicked, canRequest, 
         keyExtractor={(g) => g.id}
         ListHeaderComponent={
           <View style={{ paddingHorizontal: 24 }}>
-            <BigTitle title={c.tabs.guests} sub={data ? fmt(c.guestsSub, { total: all.length, replied }) : undefined} />
+            <BigTitle title={c.tabs.guests} sub={data ? fmt(all.length === 1 ? c.guestsSubOne : c.guestsSub, { total: all.length, replied }) : undefined} />
             {data !== undefined && (!online || guestsQuery.isError) ? (
               <View style={{ marginTop: 12 }}>
                 <StaleBanner onRetry={() => retryConnection(guestsQuery.refetch)} />

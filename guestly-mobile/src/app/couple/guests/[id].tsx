@@ -16,7 +16,7 @@ import { Screen, TopBar, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack
 import { colors, radius } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
-import { useCoupleCopy, guestStatusText, statusIcon, statusColor, dayMonth } from "@/features/couple/ui";
+import { useCoupleCopy, guestStatusText, statusIcon, statusColor, dayMonth, rsvpNoteText } from "@/features/couple/ui";
 import { useFlash } from "@/features/couple/flash";
 
 export default function GuestDetailScreen() {
@@ -53,6 +53,8 @@ export default function GuestDetailScreen() {
   const email = d?.scope === "full" ? d.email : null;
   const deadline = rsvps.data?.deadline ? dayMonth(rsvps.data.deadline, lang) : "";
   const answered = !!d?.rsvp?.updatedAt && status !== "pending";
+  // The guest's own note on their RSVP ("note for the couple").
+  const guestNote = rsvpNoteText(d?.rsvp?.notes);
 
   // Edits typed in the form and not saved ask before leaving (lib/unsaved).
   const initialForm = d ? { name: d.name, party_size: String(d.partySize), phone: phone ?? "", email: email ?? "", notes: d.notes ?? "", members: d.members.join("\n") } : null;
@@ -189,7 +191,8 @@ export default function GuestDetailScreen() {
       </View>
     ) : d && editing && form ? (
       <ButtonRow>
-        <Button label={copy.common.cancel} kind="ghost" onPress={() => setEditing(false)} haptic={false} />
+        {/* Cancel asks before throwing typed edits away, like Back (S6). */}
+        <Button label={copy.common.cancel} kind="ghost" onPress={() => leave(() => setEditing(false))} haptic={false} />
         <Button label={copy.common.save} onPress={saveEdit} loading={busy} disabled={!form.name.trim()} testID="guest-save" />
       </ButtonRow>
     ) : undefined;
@@ -265,6 +268,12 @@ export default function GuestDetailScreen() {
                     {d.answers.map((a, i) => (
                       <Line key={i} icon="info" title={a.answer} sub={a.question} last={i === d.answers.length - 1} />
                     ))}
+                  </Section>
+                ) : null}
+
+                {guestNote ? (
+                  <Section label={c.card.guestNote(d.name.split(/\s+/)[0] || d.name)}>
+                    <Line icon="chat" title={guestNote} last />
                   </Section>
                 ) : null}
 

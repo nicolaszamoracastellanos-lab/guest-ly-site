@@ -12,7 +12,7 @@ import { relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { get } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Chip, Avatar, Badge, Row, T, Icon, EmptyState, Skeleton, Stack, Sheet, Input, ListRow, Button, Segmented, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Avatar, Badge, Row, T, Icon, EmptyState, Skeleton, Stack, Sheet, Input, ListRow, Button, Segmented, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
 import { useOnline } from "@/lib/query";
 import { colors, radius } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
@@ -21,7 +21,7 @@ import { useInboxList, type InboxItem } from "@/features/inbox/hooks";
 import { useBroadcasts, type HistoryGroup } from "@/features/broadcasts/hooks";
 import { groupTitle, deliveryLine } from "@/features/broadcasts/format";
 import { useGuestPages } from "@/features/guests/hooks";
-import { useCoupleCopy, FadedChipRow, MenuRow, MenuCard } from "@/features/couple/ui";
+import { useCoupleCopy, MenuRow, MenuCard } from "@/features/couple/ui";
 
 const FILTERS = ["all", "needs_you", "whatsapp", "web", "app"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -135,13 +135,20 @@ export default function Inbox() {
               </Pressable>
             ) : null}
           </View>
-          <View style={{ marginTop: 10 }}>
-            <FadedChipRow selected={FILTERS.indexOf(filter)}>
-              {FILTERS.map((f) => (
-                <Chip key={f} label={f === "needs_you" ? `${c.messages.filters.needs_you} ${unanswered}` : c.messages.filters[f]} on={filter === f} onPress={() => setFilter(f)} />
-              ))}
-            </FadedChipRow>
-          </View>
+          {/* No channel chips (F4: exactly the prototype). A filter set by
+              "Teach it" or a reminder link says so, with the way back. */}
+          {filter !== "all" ? (
+            <Row gap={8} style={{ marginTop: 10, paddingHorizontal: 24 }}>
+              <T v="meta13" color={colors.ivory70} style={{ flex: 1 }}>
+                {c.messages.showing(c.messages.filters[filter] ?? filter)}
+              </T>
+              <Pressable onPress={() => setFilter("all")} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [{ minHeight: 44, justifyContent: "center" }, pressed && { opacity: 0.7 }]} testID="messages-show-all">
+                <T v="meta13" color={colors.goldLight}>
+                  {c.messages.showAll}
+                </T>
+              </Pressable>
+            </Row>
+          ) : null}
         </>
       ) : (
         <View style={{ paddingHorizontal: 24, marginTop: 16, gap: 10 }}>

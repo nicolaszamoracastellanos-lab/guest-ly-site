@@ -82,6 +82,23 @@ export function useInFormScope(): boolean {
   return !!useContext(KeyboardScope)?.form;
 }
 
+/** Multiline fields in a keyboard-aware form scroll. The library keeps the
+ *  caret line above the keyboard, not the whole box, so a 90 pt note could sit
+ *  half under the docked action on short phones. A focused multiline Input
+ *  reports the room it still needs under its caret line here, and the form
+ *  scroll adds it to its bottomOffset (review fix, build 12). */
+export const MultilineRoomSetter = createContext<((room: number) => void) | null>(null);
+export const MultilineRoomValue = createContext(0);
+/** The extra room a focused multiline field asks for (0 otherwise). */
+export function useMultilineRoom(): number {
+  return useContext(MultilineRoomValue);
+}
+/** Room under the caret line: the box height minus one line and its padding,
+ *  capped so a tall, already typed note does not push the field off the top. */
+export function multilineRoomFor(boxHeight: number): number {
+  return Math.max(0, Math.min(boxHeight - 34, 80));
+}
+
 /** The focused native text field, or null. react-native-web's TextInputState
  *  has no currentlyFocusedInput (only currentlyFocusedField), so the web QA
  *  rig skips it instead of throwing. */

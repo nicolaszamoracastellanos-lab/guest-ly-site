@@ -46,7 +46,11 @@ function PlannerTodayBody() {
   const replied = parties - (data?.totals.pending_parties ?? 0);
   const sub = [days === null ? null : days === 0 ? c.weddingDay : plural(days, c.daysToGo), data && parties ? fmt(c.replied, { n: replied, total: parties }) : null].filter(Boolean).join(" · ");
 
-  const needs = (data?.briefing ?? []).filter((b) => b.needs_you !== false);
+  // Guest questions are the couple's to answer (M12): those rows never show
+  // on the planner's Hoy, even from a portal that still sends them. Without a
+  // kind (production today) they are the rows that link to Hoy itself
+  // ("/planner") or to the Brain.
+  const needs = (data?.briefing ?? []).filter((b) => b.needs_you !== false && !coupleOnlyRow(b));
   const waiting = (reqs.data?.requests ?? []).filter((r) => r.status === "open" && !asksPlanner(r));
 
   // Today's tasks: mine, open. With due dates (newer portals) only the ones
@@ -217,4 +221,10 @@ function PlannerTodayBody() {
 
 function cap(s: string): string {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+const COUPLE_ONLY_KINDS = new Set(["open_gaps", "gap_repeat", "escalation_open"]);
+function coupleOnlyRow(b: { kind?: unknown; href?: unknown }): boolean {
+  if (typeof b.kind === "string" && COUPLE_ONLY_KINDS.has(b.kind)) return true;
+  return typeof b.href === "string" && (/^\/planner\/?$/.test(b.href) || /^\/brain(\/|$|\?)/.test(b.href));
 }

@@ -29,7 +29,7 @@ import { post } from "@/lib/api";
 import { useGuestRsvp, type RsvpSummary } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { useQueryClient } from "@tanstack/react-query";
-import { Screen, TopBar, Card, T, Badge, Input, Button, Row, Stack, Skeleton, SectionLabel, Chip, ChipRow, Icon, Field, useTabBarTop, TOOLBAR_SPACE } from "@/ui";
+import { Screen, TopBar, Card, T, Badge, Input, Button, Row, Stack, Skeleton, SectionLabel, Chip, ChipRow, Icon, Field, useTabBarTop, TOOLBAR_SPACE, useMultilineRoom } from "@/ui";
 import { colors, fonts } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { guestErrorText, rsvpReason } from "@/features/guest/errors";
@@ -218,7 +218,7 @@ export default function RsvpAnswers() {
 
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} />} scroll={false} padded={false} keyboard dock={dock}>
-      <KeyboardAwareScrollView
+      <RoomScrollView
         ref={scroll}
         bottomOffset={dockH + 24 + TOOLBAR_SPACE + 16}
         keyboardShouldPersistTaps="handled"
@@ -396,7 +396,7 @@ export default function RsvpAnswers() {
             )}
           </View>
         ) : null}
-      </KeyboardAwareScrollView>
+      </RoomScrollView>
     </Screen>
   );
 }
@@ -422,7 +422,9 @@ function PaperSegment({ value, options, onChange, label, need }: { value: Answer
               onChange(o.value);
             }}
             accessibilityRole="radio"
-            accessibilityLabel={o.label}
+            // The event and the person with each option: the group's own
+            // label is never read on iOS (a View that is not accessible).
+            accessibilityLabel={label ? `${o.label}, ${label}` : o.label}
             accessibilityState={{ checked: on }}
             hitSlop={{ top: 4, bottom: 4 }}
             style={[styles.segOpt, on && styles.segOn]}
@@ -435,6 +437,13 @@ function PaperSegment({ value, options, onChange, label, need }: { value: Answer
       })}
     </View>
   );
+}
+
+/** The form scroll, plus the room a focused multiline field (the note) asks
+ *  for, so the whole note box clears the docked "Send" (review fix). */
+function RoomScrollView({ bottomOffset = 0, ref, ...props }: React.ComponentProps<typeof KeyboardAwareScrollView>) {
+  const room = useMultilineRoom();
+  return <KeyboardAwareScrollView ref={ref} {...props} bottomOffset={bottomOffset + room} />;
 }
 
 const styles = StyleSheet.create({

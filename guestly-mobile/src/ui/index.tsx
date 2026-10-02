@@ -43,7 +43,7 @@ import { useBottomClearance, useTabBarTop } from "./chrome";
 import { LockCover } from "./LockCover";
 import { useOnline } from "@/lib/query";
 import { useNavigation, useRoute } from "expo-router";
-import { ChatArea, DockedAction, FormGroup, FormToolbar, FORM_SCOPE, KeyboardScope, TOOLBAR_SPACE, focusedTextInput, useInFormScope, useKeepFocusedVisible } from "./keyboard";
+import { ChatArea, DockedAction, FormGroup, FormToolbar, FORM_SCOPE, KeyboardScope, MultilineRoomSetter, MultilineRoomValue, TOOLBAR_SPACE, focusedTextInput, multilineRoomFor, useInFormScope, useKeepFocusedVisible } from "./keyboard";
 import { ToastHost, useDockLift } from "./Toast";
 
 export { T } from "./Text";
@@ -56,7 +56,7 @@ export { LockCover } from "./LockCover";
 export { PhotoHero, focalPosition } from "./PhotoHero";
 export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
 // v1.2 build 12: keyboard primitives (react-native-keyboard-controller) and toasts.
-export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, FormGroup, KeyboardScope, TOOLBAR_SPACE, useInFormScope, useKeepFocusedVisible } from "./keyboard";
+export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, FormGroup, KeyboardScope, TOOLBAR_SPACE, useInFormScope, useKeepFocusedVisible, useMultilineRoom } from "./keyboard";
 /** react-native-keyboard-controller's KeyboardAvoidingView (frame-synced with
  *  the keyboard, interactive dismiss included). For a non-scrolling screen
  *  whose bottom part must stay above the keyboard (search field + results,
@@ -165,6 +165,8 @@ export function Screen({
   // keyboard-aware scroll keeps the focused field above it.
   const [dockHeight, setDockHeight] = useState(0);
   const docked = dock ? dockHeight : 0;
+  // Extra room for a focused multiline field (see MultilineRoomSetter).
+  const [mlRoom, setMlRoom] = useState(0);
   const bottom = mode === "chat" ? 0 : (scroll ? Math.max(clearance, bottomInset + insets.bottom) : bottomInset + insets.bottom) + docked;
   // Toasts clear the form toolbar while the keyboard is open (the docked
   // action registers its own height).
@@ -229,6 +231,8 @@ export function Screen({
     <BackSlot.Provider value={edgeBack.slot}>
     <BannerScope.Provider value={scope}>
     <KeyboardScope.Provider value={form ? FORM_SCOPE : null}>
+    <MultilineRoomSetter.Provider value={form ? setMlRoom : null}>
+    <MultilineRoomValue.Provider value={mlRoom}>
     <View style={[styles.screen, style]}>
       {/* The night backdrop (navy to night to deep night, with the gold wash
           from the top right) as one small baked image, stretched. It used to
@@ -247,7 +251,7 @@ export function Screen({
           onScroll={onScroll as unknown as React.ComponentProps<typeof KeyboardAwareScrollView>["onScroll"]}
           // +32: the dock's 16 pt fade plus 16 pt of air, so the focused
           // field is never half under the docked action (seen on the sims).
-          bottomOffset={docked + TOOLBAR_SPACE + 32}
+          bottomOffset={docked + TOOLBAR_SPACE + 32 + mlRoom}
           {...scrollCommon}
         >
           {content}
@@ -270,6 +274,8 @@ export function Screen({
       {form ? <FormToolbar /> : null}
       <LockCover />
     </View>
+    </MultilineRoomValue.Provider>
+    </MultilineRoomSetter.Provider>
     </KeyboardScope.Provider>
     </BannerScope.Provider>
     </BackSlot.Provider>
@@ -1041,6 +1047,30 @@ export function Input({
   );
   const barId = `done-${useId()}`;
   const inForm = useInFormScope();
+  const setRoom = useContext(MultilineRoomSetter);
+  const boxHeight = useRef(0);
+  const { onFocus, onBlur, onLayout } = props;
+  const roomFocus = useCallback<NonNullable<TextInputProps["onFocus"]>>(
+    (e) => {
+      if (props.multiline && setRoom) setRoom(multilineRoomFor(boxHeight.current));
+      onFocus?.(e);
+    },
+    [props.multiline, setRoom, onFocus]
+  );
+  const roomBlur = useCallback<NonNullable<TextInputProps["onBlur"]>>(
+    (e) => {
+      if (props.multiline && setRoom) setRoom(0);
+      onBlur?.(e);
+    },
+    [props.multiline, setRoom, onBlur]
+  );
+  const roomLayout = useCallback<NonNullable<TextInputProps["onLayout"]>>(
+    (e) => {
+      boxHeight.current = e.nativeEvent.layout.height;
+      onLayout?.(e);
+    },
+    [onLayout]
+  );
   const numeric = !props.multiline && !!props.keyboardType && NUMERIC_KEYBOARDS.has(props.keyboardType);
   const withBar = Platform.OS === "ios" && doneBar && numeric && !inForm && !props.inputAccessoryViewID;
   const canClear = (clearable ?? icon === "search") && props.editable !== false && !!props.value;
@@ -1057,6 +1087,9 @@ export function Input({
         maxFontSizeMultiplier={1.3}
         inputAccessoryViewID={withBar ? barId : undefined}
         {...props}
+        onFocus={roomFocus}
+        onBlur={roomBlur}
+        onLayout={roomLayout}
         style={[{ flex: 1, color: colors.ivory, fontFamily: fonts.body, fontSize: 16, paddingVertical: 12 }, props.multiline && { minHeight: 90, textAlignVertical: "top" }]}
       />
       {canClear ? (
@@ -1478,6 +1511,8 @@ export function Sheet({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardScope.Provider value={isForm ? FORM_SCOPE : null}>
+        {/* Sheets keep their own fields in view (useKeepFocusedVisible). */}
+        <MultilineRoomSetter.Provider value={null}>
         <Pressable testID="sheet-scrim" style={styles.scrim} onPress={onClose} accessibilityRole="button" accessibilityLabel={copy.common.close} />
         {/* The form bar floats over a gap between the lifted sheet and the
             keyboard; fill it with the sheet's night so the screen behind the
@@ -1524,6 +1559,7 @@ export function Sheet({
         <ToastHost base={footer ? 0 : insets.bottom} lift={{ rest: footerHeight, open: footerHeight + (isForm ? TOOLBAR_SPACE : 0) }} />
         {/* A Modal sits above the root layout's lock cover: it draws its own. */}
         <LockCover />
+        </MultilineRoomSetter.Provider>
         </KeyboardScope.Provider>
       </GestureHandlerRootView>
     </Modal>

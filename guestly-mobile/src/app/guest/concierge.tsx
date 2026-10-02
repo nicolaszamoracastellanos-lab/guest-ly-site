@@ -129,8 +129,13 @@ export default function Ask() {
     for (const m of [...older, ...(data?.messages ?? [])]) byId.set(m.id, m);
     return [...byId.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
   }, [older, data?.messages]);
-  // The thread is the source once the portal has one for this guest.
-  const useServer = !!data && !data.pending && (server.length > 0 || !!data.conversation_id);
+  // The thread is the source once it holds the concierge's own answers. The
+  // production thread exists for every guest (the portal opens one on the
+  // first read) but does not store concierge Q&A yet: until it does, the chat
+  // saved on this phone stays on screen, with the couple's replies from the
+  // thread merged in by time (review fix, build 12).
+  const serverReady = !!data && !data.pending;
+  const useServer = serverReady && server.some((m) => m.role === "bot");
   const hasMore = olderHasMore ?? (data as { has_more?: boolean } | undefined)?.has_more ?? false;
   const loadOlder = useCallback(async () => {
     const oldest = server[0];
@@ -183,13 +188,23 @@ export default function Ask() {
 
   // ---- what is on screen
   const items: Item[] = useMemo(() => {
-    const out: Item[] = useServer ? server.map((m) => ({ kind: "server" as const, m })) : saved.map((t, i) => ({ kind: "local" as const, t, index: -1 - i }));
+    let out: Item[];
+    if (useServer) out = server.map((m) => ({ kind: "server" as const, m }));
+    else {
+      // Saved turns from before build 12 have no time: they stay first, in order.
+      const timed = [
+        ...saved.map((t, i) => ({ at: t.at ?? 0, order: i, item: { kind: "local" as const, t, index: -1 - i } as Item })),
+        ...(serverReady ? server.filter((m) => m.role === "couple") : []).map((m, i) => ({ at: Date.parse(m.created_at) || 0, order: saved.length + i, item: { kind: "server" as const, m } as Item })),
+      ];
+      timed.sort((a, b) => a.at - b.at || a.order - b.order);
+      out = timed.map((x) => x.item);
+    }
     // Without the server thread, answered turns are already in the saved chat.
     live.forEach((t, i) => {
       if (useServer || !t.done) out.push({ kind: "local", t, index: i });
     });
     return out;
-  }, [useServer, server, saved, live]);
+  }, [useServer, serverReady, server, saved, live]);
 
   const send = useCallback(
     async (text: string, retrying = false) => {
@@ -216,7 +231,7 @@ export default function Ask() {
         });
         const a: Turn = { role: "assistant", content: r.reply, escalated: r.escalated, at, key: `l${++keySeq.current}`, done: true };
         setLive((t) => [...t.map((x) => (x.key === q.key || (retrying && x.role === "user" && !x.done && x.content.trim() === msg) ? { ...x, done: true } : x)), a]);
-        setSaved((s) => [...s, { role: "user", content: msg }, { role: "assistant", content: r.reply, escalated: r.escalated }]);
+        setSaved((s) => [...s, { role: "user", content: msg, at }, { role: "assistant", content: r.reply, escalated: r.escalated, at: Date.now() }]);
         // The portal stored both lines in the guest's thread.
         void qc.invalidateQueries({ queryKey: ["guest-messages"] });
       } catch (err) {

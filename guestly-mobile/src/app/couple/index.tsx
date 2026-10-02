@@ -8,7 +8,7 @@
 // On the wedding day a banner opens Wedding day mode above the summary.
 
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
@@ -29,6 +29,11 @@ export default function CoupleHome() {
   const c = useCoupleCopy();
   const { lang } = useLang();
   const router = useRouter();
+  // The hero as tall as in the approved M7: 40% of the screen, but leaving
+  // room for the RSVP summary above the fold (never under 220 pt). On a Pro
+  // Max that shows the sleeves and both hands, not just the ring.
+  const { height: winH } = useWindowDimensions();
+  const heroMin = Math.round(Math.max(220, Math.min(winH * 0.4, winH - 470)));
   const user = useUserSession();
   const { dayOfManual } = useSession();
   const shareInvite = useShareInvite();
@@ -59,7 +64,7 @@ export default function CoupleHome() {
     // The photo starts at the top edge, behind the clock (I2); plain night
     // under it so the fade has no seam (I8). Pull down to refresh (S2).
     <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh={() => Promise.all([mainQuery.refetch(), rsvps.refetch()])}>
-      <PhotoHero source={photo} focal={HANDS_FOCAL} flow minHeight={250} maxHeightFraction={0.42} gradient={0.6} accessibilityLabel={couple}>
+      <PhotoHero source={photo} focal={HANDS_FOCAL} flow minHeight={heroMin} maxHeightFraction={0.44} gradient={0.6} accessibilityLabel={couple}>
         <SectionLabel color={colors.goldLight}>{c.home.yourWedding}</SectionLabel>
         <T v="title42" style={{ marginTop: 6 }}>
           {couple}

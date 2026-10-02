@@ -25,8 +25,14 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
 import { usePlannerSeating, initialsOf, seatLabel } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { useTenantKey } from "@/lib/session";
 
-export default function PlannerSeating() {
+// Keyed by the wedding, like the tab roots (F1).
+export default function PlannerSeatingRoute() {
+  return <PlannerSeating key={useTenantKey()} />;
+}
+
+function PlannerSeating() {
   const c = useFeatureCopy(COPY);
   const app = useCopy();
   const { lang } = useLang();
