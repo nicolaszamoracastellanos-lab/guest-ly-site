@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contact sheets for review.  python3 tools/sheets.py <out-dir>
+"""Contact sheets for review.  python3 tools/sheets.py <out-dir> [set]   (set defaults to v3)
 sheet-en.png / sheet-es.png : all panels at 440 px wide (one third scale)
 sheet-search-en.png / -es   : all panels at App Store search-result size (300 px wide)
 sheet-search-trio.png       : panels 1-3, EN over ES, 300 px wide, as in search results
@@ -9,10 +9,12 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = sys.argv[1] if len(sys.argv) > 1 else "."
+SET = sys.argv[2] if len(sys.argv) > 2 else "v3"
+os.makedirs(OUT, exist_ok=True)
 DIRS = {"en": "en-US", "es": "es-MX"}
 
 def panels(lang):
-    return sorted(glob.glob(os.path.join(HERE, "..", "ios-6.9", DIRS[lang], "v2", "*.png")))
+    return sorted(glob.glob(os.path.join(HERE, "..", "ios-6.9", DIRS[lang], SET, "*.png")))
 
 def row(files, w, gap, bg, pad=40):
     ims = [Image.open(f).convert("RGB") for f in files]

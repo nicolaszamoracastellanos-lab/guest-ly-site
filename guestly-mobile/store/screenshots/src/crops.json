@@ -3,78 +3,134 @@
   "en": {
    "guest-home": "g-en-home",
    "rsvp": "g-en-rsvp",
-   "concierge": "g-en-conc2",
-   "messages": "g-en-messages2",
+   "concierge": "g-en-conc",
    "dayof": "g-en-dayof",
-   "rsvps": "c-en-rsvps",
+   "guests": "c-en-guests",
+   "broadcast": "c-en-compose",
+   "tools": "c-en-tools",
    "seating": "c-en-seating",
    "checkin": "c-en-checkin-scan",
-   "signup": "en-signup",
    "couple-request": "c-en-request"
   },
   "es": {
    "guest-home": "g-es-home",
    "rsvp": "g-es-rsvp",
-   "concierge": "g-es-conc2",
-   "messages": "g-es-messages2",
+   "concierge": "g-es-conc",
    "dayof": "g-es-dayof",
-   "rsvps": "c-es-rsvps",
+   "guests": "c-es-guests",
+   "broadcast": "c-es-compose",
+   "tools": "c-es-tools",
    "seating": "c-es-seating",
    "checkin": "c-es-checkin-scan",
-   "signup": "es-signup",
    "couple-request": "c-es-request"
   }
  },
  "crops": {
   "en": {
-   "answer-shuttle": {
-    "src": "g-en-conc2",
+   "question-shuttle": {
+    "src": "g-en-conc",
     "box": [
-     130,
-     1670,
-     1090,
-     2080
+     200,
+     1555,
+     1295,
+     1800
+    ],
+    "tight": true
+   },
+   "answer-shuttle": {
+    "src": "g-en-conc",
+    "box": [
+     30,
+     1905,
+     1125,
+     2240
     ],
     "tight": true
    },
    "answer-parking": {
-    "src": "g-en-conc2",
+    "src": "g-en-conc",
     "box": [
-     130,
-     815,
-     1090,
-     1440
+     30,
+     995,
+     1125,
+     1545
     ],
     "tight": true
    },
    "rsvp-grant": {
     "src": "g-en-rsvp",
     "box": [
-     40,
-     1450,
-     1285,
-     2262
+     25,
+     1530,
+     1300,
+     2115
     ],
     "tight": true
    },
-   "couple-reply": {
-    "src": "g-en-messages2",
-    "box": [
-     40,
-     1915,
-     1100,
-     2262
-    ],
-    "tight": true,
-    "extend_top": 78
-   },
-   "getting-there": {
+   "schedule": {
     "src": "g-en-dayof",
     "box": [
-     40,
-     1690,
-     1285,
-     2075
+     35,
+     1315,
+     1290,
+     1640
+    ],
+    "tight": true
+   },
+   "rsvp-stats": {
+    "src": "c-en-home",
+    "box": [
+     35,
+     1165,
+     1290,
+     1825
+    ],
+    "tight": true
+   },
+   "template-chips": {
+    "src": "c-en-compose",
+    "box": [
+     60,
+     684,
+     1192,
+     815
+    ]
+   },
+   "message-preview": {
+    "src": "c-en-compose",
+    "box": [
+     72,
+     1648,
+     1248,
+     2173
+    ]
+   },
+   "tool-budget": {
+    "src": "c-en-tools",
+    "box": [
+     680,
+     1005,
+     1248,
+     1573
+    ]
+   },
+   "seat-stat-0": {
+    "src": "c-en-seating",
+    "box": [
+     50,
+     585,
+     462,
+     872
+    ],
+    "tight": true
+   },
+   "seat-stat-1": {
+    "src": "c-en-seating",
+    "box": [
+     456,
+     585,
+     862,
+     872
     ],
     "tight": true
    },
@@ -88,132 +144,130 @@
     ]
    },
    "planner-card": {
-    "src": "p-en-requests",
+    "src": "p-en-today",
     "box": [
-     40,
-     720,
-     1285,
-     1040
-    ],
-    "tight": true
-   },
-   "seat-stat-0": {
-    "src": "c-en-seating",
-    "box": [
-     50,
-     585,
-     462,
-     872
-    ],
-    "tight": true
-   },
-   "seat-stat-1": {
-    "src": "c-en-seating",
-    "box": [
-     456,
-     585,
-     862,
-     872
-    ],
-    "tight": true
-   },
-   "seat-stat-2": {
-    "src": "c-en-seating",
-    "box": [
-     852,
-     585,
+     45,
+     1375,
      1275,
-     872
+     1760
     ],
     "tight": true
    },
-   "guest-question": {
-    "src": "g-en-messages2",
+   "tool-tasks": {
+    "src": "c-en-tools",
     "box": [
-     253,
-     1141,
-     1258,
-     1361
+     72,
+     1609,
+     640,
+     2177
     ]
-   },
-   "rsvp-stats": {
-    "src": "c-en-rsvps",
-    "box": [
-     44,
-     634,
-     1276,
-     1064
-    ]
-   },
-   "question-shuttle": {
-    "src": "g-en-conc2",
-    "box": [
-     452,
-     1444,
-     1258,
-     1664
-    ]
-   },
-   "signup-apple": {
-    "src": "en-signup",
-    "box": [
-     40,
-     1480,
-     1285,
-     1700
-    ],
-    "tight": true
-   },
-   "signup-google": {
-    "src": "en-signup",
-    "box": [
-     40,
-     1695,
-     1285,
-     1905
-    ],
-    "tight": true
    }
   },
   "es": {
-   "answer-shuttle": {
-    "src": "g-es-conc2",
+   "question-shuttle": {
+    "src": "g-es-conc",
     "box": [
-     130,
-     1680,
-     1100,
-     2080
+     200,
+     1550,
+     1295,
+     1800
+    ],
+    "tight": true
+   },
+   "answer-shuttle": {
+    "src": "g-es-conc",
+    "box": [
+     30,
+     1880,
+     1125,
+     2240
+    ],
+    "tight": true
+   },
+   "answer-parking": {
+    "src": "g-es-conc",
+    "box": [
+     30,
+     840,
+     1125,
+     1540
     ],
     "tight": true
    },
    "rsvp-grant": {
     "src": "g-es-rsvp",
     "box": [
-     40,
-     1235,
-     1285,
-     1835
+     25,
+     1510,
+     1300,
+     2100
     ],
     "tight": true
    },
-   "couple-reply": {
-    "src": "g-es-messages2",
-    "box": [
-     40,
-     1925,
-     1100,
-     2262
-    ],
-    "tight": true,
-    "extend_top": 78
-   },
-   "getting-there": {
+   "schedule": {
     "src": "g-es-dayof",
     "box": [
-     40,
-     1690,
-     1285,
-     2075
+     35,
+     1300,
+     1290,
+     1640
+    ],
+    "tight": true
+   },
+   "rsvp-stats": {
+    "src": "c-es-home",
+    "box": [
+     35,
+     1150,
+     1290,
+     1810
+    ],
+    "tight": true
+   },
+   "template-chips": {
+    "src": "c-es-compose-chips",
+    "box": [
+     474,
+     642,
+     1113,
+     773
+    ]
+   },
+   "message-preview": {
+    "src": "c-es-compose",
+    "box": [
+     72,
+     1630,
+     1248,
+     2227
+    ]
+   },
+   "tool-budget": {
+    "src": "c-es-tools",
+    "box": [
+     680,
+     1005,
+     1248,
+     1573
+    ]
+   },
+   "seat-stat-0": {
+    "src": "c-es-seating",
+    "box": [
+     50,
+     575,
+     462,
+     862
+    ],
+    "tight": true
+   },
+   "seat-stat-1": {
+    "src": "c-es-seating",
+    "box": [
+     456,
+     575,
+     862,
+     862
     ],
     "tight": true
    },
@@ -227,101 +281,23 @@
     ]
    },
    "planner-card": {
-    "src": "p-es-requests",
+    "src": "p-es-today",
     "box": [
-     40,
-     720,
-     1285,
-     1040
-    ],
-    "tight": true
-   },
-   "seat-stat-0": {
-    "src": "c-es-seating",
-    "box": [
-     50,
-     585,
-     462,
-     872
-    ],
-    "tight": true
-   },
-   "seat-stat-1": {
-    "src": "c-es-seating",
-    "box": [
-     456,
-     585,
-     862,
-     872
-    ],
-    "tight": true
-   },
-   "seat-stat-2": {
-    "src": "c-es-seating",
-    "box": [
-     852,
-     585,
+     45,
+     1375,
      1275,
-     872
+     1760
     ],
     "tight": true
    },
-   "guest-question": {
-    "src": "g-es-messages2",
+   "tool-tasks": {
+    "src": "c-es-tools",
     "box": [
-     261,
-     996,
-     1258,
-     1146
+     72,
+     1609,
+     640,
+     2177
     ]
-   },
-   "rsvp-stats": {
-    "src": "c-es-rsvps",
-    "box": [
-     44,
-     634,
-     1276,
-     1064
-    ]
-   },
-   "question-shuttle": {
-    "src": "g-es-conc2",
-    "box": [
-     452,
-     1444,
-     1258,
-     1664
-    ]
-   },
-   "answer-parking": {
-    "src": "g-es-conc2",
-    "box": [
-     130,
-     560,
-     1090,
-     1440
-    ],
-    "tight": true
-   },
-   "signup-apple": {
-    "src": "es-signup",
-    "box": [
-     40,
-     1480,
-     1285,
-     1700
-    ],
-    "tight": true
-   },
-   "signup-google": {
-    "src": "es-signup",
-    "box": [
-     40,
-     1695,
-     1285,
-     1905
-    ],
-    "tight": true
    }
   }
  }

@@ -1,4 +1,4 @@
-/* Guest-ly App Store set v2. One long strip, sliced into 1320 x 2868 panels. */
+/* Guest-ly App Store set v3 (v2 visual system). One long strip, sliced into 1320 x 2868 panels. */
 
 @font-face { font-family: "Jost"; font-weight: 400; src: url("assets/fonts/Jost_400Regular.ttf"); }
 @font-face { font-family: "Jost"; font-weight: 500; src: url("assets/fonts/Jost_500Medium.ttf"); }
@@ -105,6 +105,10 @@ body { width: calc(var(--pw) * var(--n)); height: var(--ph); overflow: hidden; }
   position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none;
   backdrop-filter: blur(9px) brightness(0.42) saturate(0.8);
   -webkit-backdrop-filter: blur(9px) brightness(0.42) saturate(0.8);
+}
+.device .soft.light {
+  backdrop-filter: blur(10px) brightness(0.9);
+  -webkit-backdrop-filter: blur(10px) brightness(0.9);
 }
 .device .fade { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .device .glass { /* faint reflection across the screen */

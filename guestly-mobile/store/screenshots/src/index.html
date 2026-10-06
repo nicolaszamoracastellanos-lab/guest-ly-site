@@ -28,6 +28,7 @@ const radiusFor = {
   decline: [999, 999, 999, 999], approve: [999, 999, 999, 999],
   "question-shuttle": ME, "guest-question": ME,
   "answer-shuttle": BOT, "answer-parking": BOT,
+  "template-chips": [30, 30, 30, 30],
 };
 
 // ---------- backdrops ----------
@@ -87,11 +88,22 @@ function device(parent, d, z) {
   // soft: [[y0, y1], ...] in native px. The screen under a lifted card is blurred
   // and dimmed (feathered edges), so nothing half-covered stays legible.
   const soft = typeof d.soft === "function" ? d.soft(lang) : d.soft;
-  for (const [y0, y1] of soft || []) {
-    const f = el("div", "soft", screen);
+  // A band is [y0, y1] (full width) or [x0, y0, x1, y1] (a rectangle, feathered on all sides);
+  // a trailing "light" blurs without dimming (for text over a photo).
+  for (const raw of soft || []) {
+    const light = raw[raw.length - 1] === "light";
+    const band = light ? raw.slice(0, -1) : raw;
+    const [x0, y0, x1, y1] = band.length === 4 ? band : [0, band[0], NATIVE, band[1]];
+    const f = el("div", "soft" + (light ? " light" : ""), screen);
     const fe = Math.min(90, (y1 - y0) / 4) * s;
     Object.assign(f.style, { top: y0 * s + "px", height: (y1 - y0) * s + "px" });
-    const m = `linear-gradient(180deg, transparent 0, #000 ${fe}px, #000 calc(100% - ${fe}px), transparent 100%)`;
+    let m = `linear-gradient(180deg, transparent 0, #000 ${fe}px, #000 calc(100% - ${fe}px), transparent 100%)`;
+    if (band.length === 4) {
+      const fx = Math.min(60, (x1 - x0) / 4) * s;
+      Object.assign(f.style, { left: x0 * s + "px", right: "auto", width: (x1 - x0) * s + "px" });
+      m += `, linear-gradient(90deg, transparent 0, #000 ${fx}px, #000 calc(100% - ${fx}px), transparent 100%)`;
+      f.style.maskComposite = "intersect"; f.style.webkitMaskComposite = "source-in";
+    }
     f.style.maskImage = m; f.style.webkitMaskImage = m;
   }
   // fade: native y from which the screen sinks into the night (the hook's lower half).

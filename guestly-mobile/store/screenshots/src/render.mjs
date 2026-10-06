@@ -1,5 +1,5 @@
 // Renders the Guest-ly App Store set: node render.mjs [en|es|all] [--only 03-concierge]
-// Output: ../ios-6.9/{en-US,es-MX}/v2/NN-name.png, 1320 x 2868, sRGB, no alpha.
+// Output: ../ios-6.9/{en-US,es-MX}/<SET>/NN-name.png (SET defaults to v3), 1320 x 2868, sRGB, no alpha.
 import { createRequire } from "module";
 import { execFileSync } from "child_process";
 import fs from "fs";
@@ -22,6 +22,7 @@ const which = args.find((a) => !a.startsWith("--")) ?? "all";
 const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : null;
 const langs = which === "all" ? ["en", "es"] : [which];
 const OUT = { en: "en-US", es: "es-MX" };
+const SET = process.env.SET ?? "v3";
 
 const browser = await chromium.launch();
 for (const lang of langs) {
@@ -39,7 +40,7 @@ for (const lang of langs) {
   for (const c of clash) if (c.copyBottom > c.deviceTop - 20) console.warn(`  ! ${lang} ${c.id}: copy ends at ${c.copyBottom}, phone starts at ${c.deviceTop}`);
   await page.setViewportSize({ width: 1320 * ids.length, height: 2868 });
   await page.waitForTimeout(400);
-  const dir = path.join(HERE, "..", "ios-6.9", OUT[lang], "v2");
+  const dir = path.join(HERE, "..", "ios-6.9", OUT[lang], SET);
   fs.mkdirSync(dir, { recursive: true });
   const files = [];
   for (let i = 0; i < ids.length; i++) {
