@@ -11,7 +11,7 @@
 # flow therefore asserts that the password field is on screen BEFORE it taps
 # submit, and fails otherwise. Never screenshot while the password is typed.
 # hideKeyboard is unreliable on iOS 26.5 with Maestro 2.10; Enter blurs the
-# single-line fields instead (neither field has a submit handler).
+# single-line fields instead; the flow is in password mode before any Enter.
 appId: com.zcventures.guestly
 env:
   HOME_TAB: ${HOME_TAB || 'tab-rsvps'}
@@ -29,6 +29,16 @@ env:
     timeout: 15000
 # On the 667 pt phone the email field starts below the fold, and iOS only
 # reports what is on screen.
+# Password mode FIRST: in link mode, Enter (or submit) on the email field
+# emails a real sign-in link (build 13 walk, Oct 5 2026).
+- scrollUntilVisible:
+    element:
+      text: "Use a password instead|Usar una contraseña"
+    direction: DOWN
+- tapOn:
+    text: "Use a password instead|Usar una contraseña"
+- assertVisible:
+    id: "signin-password"
 - scrollUntilVisible:
     element:
       id: "signin-email"
@@ -37,12 +47,6 @@ env:
     id: "signin-email"
 - inputText: ${EMAIL}
 - pressKey: Enter
-- scrollUntilVisible:
-    element:
-      text: "Use a password instead|Usar una contraseña"
-    direction: DOWN
-- tapOn:
-    text: "Use a password instead|Usar una contraseña"
 - scrollUntilVisible:
     element:
       id: "signin-password"

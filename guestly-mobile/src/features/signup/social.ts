@@ -246,6 +246,10 @@ export function authErrorKind(err: unknown): AuthErrorKind {
   const e = (err ?? {}) as { message?: string; status?: number; code?: string; name?: string };
   const text = `${e.code ?? ""} ${e.message ?? ""} ${e.name ?? ""}`.toLowerCase();
   if (text.includes("err_request_canceled") || text.includes("cancel")) return "cancel";
+  // An emailed link or code for an address with no account: Supabase says
+  // "Signups not allowed for otp" (otp_disabled). Checked before the
+  // Apple/Google signup case, which shares the wording.
+  if (text.includes("otp_disabled") || text.includes("not allowed for otp")) return "no_account";
   if (text.includes("signup_disabled") || text.includes("signups not allowed")) return "signup_disabled";
   if (e.status === 429 || text.includes("rate limit") || text.includes("too many") || text.includes("over_request")) return "rate";
   if (text.includes("invalid login") || text.includes("invalid_credentials") || text.includes("invalid_grant")) return "invalid";
