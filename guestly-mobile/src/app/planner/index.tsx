@@ -212,10 +212,10 @@ function PlannerTodayBody() {
       ["assistant", "/assistant"],
     ];
     const hit = map.find(([web]) => href.includes(web));
-    // A tool that is off for this planner opens the Wedding tab, where it
+    // A tool that is off for this planner opens the Tools tab, where it
     // says "Not shared with you", instead of a refusal.
     const tool = hit ? (hit[0] === "assistant" ? "coordinator" : hit[0] === "requests" ? "tasks" : hit[0] === "vendors" ? "budget" : hit[0]) : null;
-    router.push((hit && (!tool || can(me, tool)) ? hit[1] : "/planner/wedding") as never);
+    router.push((hit && (!tool || can(me, tool)) ? hit[1] : "/planner/tools") as never);
   }
 }
 

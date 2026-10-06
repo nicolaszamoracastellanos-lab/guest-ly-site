@@ -2,7 +2,9 @@
 //
 // Tabs: Hoy (index), Pendientes (requests: my tasks + requests to the couple),
 // Invitados (guests), Boda (wedding: Budget, Tasks, Seating, Day-of schedule,
-// guest reminders) and Más (more). The tab list is the same on every wedding:
+// guest reminders) and Más (more). Build 13: Boda is Herramientas / Tools
+// (route "tools"; /planner/wedding redirects there) and adds Broadcast and the
+// Coordinator as tiles. The tab list is the same on every wedding:
 // a tool the couple did not share shows "Not shared with you in this wedding"
 // inside its tab or tile instead of a tab that comes and goes (F1: switching
 // weddings never reshuffles the bar under the planner's thumb). The server
@@ -47,8 +49,9 @@ import { errorText } from "@/features/tasks/ui";
  *  app instead of closing it, and is reported. */
 export { ErrorBoundary } from "@/ui/ErrorScreen";
 
-/** Routes that are not tabs. Each pops to its first screen when left. */
-const HIDDEN = ["tasks", "budget", "runsheet", "seating", "broadcasts", "vendors"];
+/** Routes that are not tabs. Each pops to its first screen when left.
+ *  "wedding" is the build 12 name of Tools, kept as a redirect. */
+const HIDDEN = ["tasks", "budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"];
 
 export default function PlannerTabs() {
   const c = useCopy().planner.b12.tabs;
@@ -65,7 +68,7 @@ export default function PlannerTabs() {
     { name: "guests", icon: "guests", label: c.guests },
     // Vendors stays a route (budget lines and pushes open it) but is no tool
     // of its own any more (F5).
-    { name: "wedding", icon: "rings", label: c.wedding, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors"] },
+    { name: "tools", icon: "grid", label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
     { name: "more", icon: "more", label: c.more },
   ];
   return (
@@ -189,7 +192,7 @@ type NavLike = { getState: () => { type?: string }; getParent: () => NavLike | u
 
 /** The planner tabs whose stacks go back to their lists on a wedding switch,
  *  plus the hidden tasks stack Hoy pushes a task into. */
-const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "requests", "guests", "wedding", "more", "tasks"]);
+const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "requests", "guests", "tools", "more", "tasks"]);
 
 /** Pops every tab stack to its root (F1). From any screen inside the tabs. */
 export function popAllStacks(navigation: unknown) {
@@ -203,7 +206,7 @@ export function popAllStacks(navigation: unknown) {
 
 /** The one header of every planner tab root: the wedding pill at the top
  *  left, an optional action on the right. `glass` darkens the pill over a
- *  photo (Boda). Same padding everywhere, so the pill never moves (F1). */
+ *  photo (Tools). Same padding everywhere, so the pill never moves (F1). */
 export function PlannerTop({ right, glass }: { right?: ReactNode; glass?: boolean }) {
   const { lang } = useLang();
   const c = useCopy().planner.b12;

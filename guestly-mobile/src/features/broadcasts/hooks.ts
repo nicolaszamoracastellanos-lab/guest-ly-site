@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { get } from "@/lib/api";
+import { api, get, post } from "@/lib/api";
 import { postLong, postOnce } from "@/features/shared/requests";
 
 export type Lang = "en" | "es";
@@ -30,7 +30,67 @@ export type AudienceOption = {
   skipped_no_phone: number;
 };
 
-export type TemplateSummary = { key: string; label: string; vars: string[]; preview: Record<Lang, string> };
+/** One approved template this wedding can send. Build 13 (per-wedding
+ *  templates): the portal lists only sendable ones and adds id, version,
+ *  languages, simulated and category. A portal from before build 13 sends
+ *  only key, label, vars and preview, so every new field is optional and read
+ *  through the helpers below. */
+export type TemplateSummary = {
+  key: string;
+  label: string;
+  vars: string[];
+  preview: Partial<Record<Lang, string>>;
+  id?: string;
+  version?: number;
+  languages?: Lang[];
+  /** Demo wedding (App Review): recorded, never delivered. */
+  simulated?: boolean;
+  category?: string;
+};
+
+/** The languages a template can go out in: the portal's list, else the
+ *  languages its preview has text for (older portal). */
+export function templateLanguages(t: TemplateSummary): Lang[] {
+  const listed = Array.isArray(t.languages) ? t.languages.filter((l): l is Lang => l === "en" || l === "es") : [];
+  if (listed.length) return listed;
+  return (["en", "es"] as const).filter((l) => typeof t.preview?.[l] === "string" && !!t.preview[l]?.trim());
+}
+
+export type TemplateRequestKind = "rsvp_closing" | "transport" | "thank_you" | "schedule_change" | "welcome" | "meal_choice" | "other";
+export const TEMPLATE_REQUEST_KINDS: TemplateRequestKind[] = ["rsvp_closing", "transport", "thank_you", "schedule_change", "welcome", "meal_choice", "other"];
+export type TemplateRequestStatus = "submitted" | "in_review" | "needs_info" | "with_whatsapp" | "approved" | "rejected" | "cancelled";
+/** A request still in play (counts toward the portal's 3 open per wedding). */
+export const OPEN_REQUEST_STATUSES: TemplateRequestStatus[] = ["submitted", "in_review", "needs_info", "with_whatsapp"];
+
+export type TemplateRequestSummary = {
+  id: string;
+  kind: TemplateRequestKind | string;
+  title: string;
+  status: TemplateRequestStatus | string;
+  /** The Guest-ly team's note to the requester (plain text). */
+  ops_note: string | null;
+  languages: Lang[];
+  created_at: string;
+  updated_at: string;
+  /** Present when the portal returns the full request (create, edit). */
+  purpose?: string | null;
+  send_when?: string | null;
+  draft_en?: string | null;
+  draft_es?: string | null;
+  /** Whether this person may edit or cancel it (a couple cannot change a
+   *  request their planner filed). Absent on older portals. */
+  editable?: boolean;
+};
+
+export type TemplateRequestBody = {
+  kind: TemplateRequestKind;
+  title: string;
+  purpose: string;
+  send_when?: string;
+  draft_en?: string;
+  draft_es?: string;
+  languages: Lang[];
+};
 
 export type DeliveryRollup = { delivered: number; read: number; failed: number; pending: number; total: number };
 
@@ -52,6 +112,13 @@ export type HistoryGroup =
 
 export type BroadcastSurface = {
   can_send: boolean;
+  /** False until this wedding has an approved template (build 13). Missing
+   *  on an older portal: read as "ready when any template is listed". */
+  templates_ready?: boolean;
+  /** Build 13: the couple can ask Guest-ly for a new template. */
+  can_request_template?: boolean;
+  /** Build 13: open requests plus the last closed ones, newest first. */
+  template_requests?: TemplateRequestSummary[];
   guests: BroadcastGuest[];
   audiences: AudienceOption[];
   templates: TemplateSummary[];
@@ -67,6 +134,9 @@ export type PlannerBroadcasts = {
   ledger_available: boolean;
   guests_with_phone: number;
   guests_without_phone: number;
+  /** Build 13 (missing on an older portal). */
+  can_request_template?: boolean;
+  template_requests?: TemplateRequestSummary[];
 };
 
 export type Composition = {
@@ -75,6 +145,11 @@ export type Composition = {
   custom_message: string | null;
   lang: Lang | "auto";
   template_vars: Record<string, string>;
+  /** Build 13: the template as the person saw it. A portal that knows these
+   *  answers 409 `template_changed` (nothing sent) when it was edited since;
+   *  an older one ignores them. */
+  template_id?: string;
+  template_version?: number;
 };
 
 export type Preview = {
@@ -91,6 +166,8 @@ export type SendResult = {
   failed_batches: { lang: Lang; count: number; error: string }[];
   invalid: number;
   recipients_count: number;
+  /** Build 13: the demo wedding records the send but delivers nothing. */
+  simulated?: boolean;
 };
 
 export const useBroadcasts = () => useQuery({ queryKey: ["broadcasts"], queryFn: () => get<BroadcastSurface>("/couple/broadcasts") });
@@ -112,3 +189,15 @@ export const sendBroadcast = (c: Composition, confirm: string, sendKey: string, 
     typeof expectedRecipients === "number" ? { ...c, confirm, expected_recipients: expectedRecipients } : { ...c, confirm },
     sendKey
   );
+
+// ------------------------------------------------------------ template requests
+// Build 13. A request never makes anything sendable: the Guest-ly team builds
+// the template with WhatsApp and only then does it appear in `templates`.
+
+type RequestSurface = "couple" | "planner";
+const requestsPath = (surface: RequestSurface) => `/${surface}/template-requests`;
+
+export const createTemplateRequest = (surface: RequestSurface, body: TemplateRequestBody) => post<{ request: TemplateRequestSummary }>(requestsPath(surface), body);
+export const updateTemplateRequest = (surface: RequestSurface, id: string, body: Partial<TemplateRequestBody>) =>
+  api<{ request: TemplateRequestSummary }>(`${requestsPath(surface)}/${encodeURIComponent(id)}`, { method: "PATCH", body });
+export const cancelTemplateRequest = (surface: RequestSurface, id: string) => post<{ request: TemplateRequestSummary }>(`${requestsPath(surface)}/${encodeURIComponent(id)}/cancel`, {});

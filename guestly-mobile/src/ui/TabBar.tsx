@@ -29,13 +29,19 @@
 //   in any tab.
 // - A tab badge can be a count or a dot.
 //
+// Build 13 (couple Broadcast and Tools tabs, planner Tools):
+// - A label fits on one line, shrinking to 80% at most (70% on a window under
+//   360 pt). Only a long label of several words ("Guest Messages") takes two
+//   centered lines at 11 pt instead, so no word is ever cut.
+// - The couple has no More tab any more: its fallback tab is Tools.
+//
 // Tabs' tabBar prop is a render function that the navigator CALLS (it is not
 // mounted as a component), so hooks cannot live in that function. RoleTabs
 // passes `(props) => <GlassTabBar {...props} ... />` and this component owns
 // the hooks.
 
 import React, { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, View, Pressable, StyleSheet, Text } from "react-native";
+import { AccessibilityInfo, View, Pressable, StyleSheet, Text, useWindowDimensions } from "react-native";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Tabs, usePathname } from "expo-router";
@@ -132,6 +138,12 @@ function litSpecName(routeName: string, specs: TabSpec[], fallback: string): str
   return specs.some((s) => s.name === fallback) ? fallback : null;
 }
 
+/** Two centered lines only for a long label of several words (build 13). */
+export function tabLabelLines(label: string): 1 | 2 {
+  const t = label.trim();
+  return t.length > 10 && /\s/.test(t) ? 2 : 1;
+}
+
 /** Solid bar with Reduce Transparency (plan v1.2 c). */
 function useReduceTransparency(): boolean {
   const [on, setOn] = useState(false);
@@ -170,6 +182,8 @@ export function GlassTabBar({
   const solid = useReduceTransparency();
   const pathname = usePathname();
   const surface = pathname.split("/")[1] ?? "";
+  const { width } = useWindowDimensions();
+  const minScale = width < 360 ? 0.7 : 0.8;
 
   // The safe back of an owned section returns to its tab (lib/nav).
   const specKey = specs.map((s) => `${s.name}:${(s.owns ?? []).join(",")}`).join("|");
@@ -256,9 +270,15 @@ export function GlassTabBar({
                   <View style={styles.dot} />
                 ) : null}
               </View>
-              <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.label, { color }]}>
-                {spec.label}
-              </Text>
+              {tabLabelLines(spec.label) === 2 ? (
+                <Text allowFontScaling={false} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={minScale} style={[styles.label, styles.label2, { color }]}>
+                  {spec.label}
+                </Text>
+              ) : (
+                <Text allowFontScaling={false} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={minScale} style={[styles.label, { color }]}>
+                  {spec.label}
+                </Text>
+              )}
             </Pressable>
           );
         })}
@@ -276,9 +296,10 @@ export function GlassTabBar({
  *       { name: "index", icon: "home", label: c.home },
  *       { name: "guests", icon: "guests", label: c.guests },
  *       { name: "messages", icon: "chat", label: c.messages, badge: unread },
- *       { name: "plan", icon: "grid", label: c.plan, owns: ["budget", "tasks", "seating", "runsheet"] },
- *       { name: "more", icon: "more", label: c.more },
+ *       { name: "broadcasts", icon: "megaphone", label: c.broadcast },
+ *       { name: "tools", icon: "grid", label: c.tools, owns: ["budget", "tasks", "seating", "runsheet"] },
  *     ]}
+ *     fallback="tools"
  *     hidden={["dayof", "checkin", "budget", "tasks", "seating", "runsheet", "settings"]}
  *   />
  *
@@ -344,6 +365,8 @@ const styles = StyleSheet.create({
   },
   tabLit: { backgroundColor: colors.goldWash },
   label: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 14, letterSpacing: 0.1, alignSelf: "stretch", textAlign: "center" },
+  // Two lines in the same 52 pt: 24 icon + 2 gap + 2 x 12.
+  label2: { fontSize: 11, lineHeight: 12, letterSpacing: 0 },
   badge: {
     position: "absolute",
     top: -5,

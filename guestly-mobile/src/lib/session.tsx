@@ -27,6 +27,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState, type AppStateStatus } from "react-native";
 import { api, ApiFailure, setAuthHandlers, setCredential, setTokenSource, type Credential } from "@/lib/api";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import type { Session } from "@supabase/supabase-js";
+import { interactiveSignInRecent } from "@/features/signup/social";
 import { bindCacheScope, clearQueryCache } from "@/lib/query";
 import { loadPushPrefs, registerPush, unregisterPush, type Surface } from "@/lib/push";
 import { resetUserScopedState, runScopedResets, setStorageScope } from "@/lib/scope";
@@ -206,6 +208,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     langDefaultRef.current = applyTenantDefault;
   }, [applyTenantDefault]);
   const booting = useRef(true);
+  // A sign-in that lands while the boot runs (a cold start from the emailed
+  // link or a code typed in the first seconds) waits here and is processed
+  // when the boot ends, so the callback screen never spins forever. The token
+  // the boot itself restored is remembered to tell that one apart.
+  const queuedSignIn = useRef<Session | null>(null);
+  const bootToken = useRef<string | null>(null);
+  const handleSignedIn = useRef<((session: Session) => void) | null>(null);
   const ending = useRef(false);
 
   // Every write goes through here, so stateRef is current the moment a
@@ -362,6 +371,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             const r = await supabase().auth.getSession();
             session = r.data.session;
             authError = r.error;
+            bootToken.current = session?.access_token ?? null;
           } catch (e) {
             authError = e;
           }
@@ -409,6 +419,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) setState({ status: "none" });
       } finally {
         booting.current = false;
+        // auth-js also emits SIGNED_IN while it restores the saved session at
+        // launch (P2-21): only a different token, from a sign-in started on
+        // this phone, is a new sign-in.
+        const queued = queuedSignIn.current;
+        queuedSignIn.current = null;
+        if (!cancelled && queued && queued.access_token !== bootToken.current && interactiveSignInRecent()) handleSignedIn.current?.(queued);
       }
     })();
     return () => {
@@ -451,41 +467,54 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
         return;
       }
-      if (event === "SIGNED_IN") {
+      if (event === "SIGNED_IN" && session) {
         // auth-js emits SIGNED_IN while it restores the session at launch;
-        // the boot owns that one (P2-21).
-        if (booting.current) return;
-        const s = stateRef.current;
-        if (s.status === "user" && s.me.user.id === session?.user.id) {
-          setCredential({ kind: "user", jwt, tenantSlug: s.me.tenant.slug });
-          setState({ ...s, jwt });
+        // the boot owns that one (P2-21). Anything else that lands during the
+        // boot is queued and handled when it ends (see the boot's finally).
+        if (booting.current) {
+          queuedSignIn.current = session;
           return;
         }
-        setTimeout(() => {
-          void (async () => {
-            const preferred = await AsyncStorage.getItem(K_TENANT);
-            const r = await fetchMe(jwt, preferred);
-            if (r.ok) {
-              // A different person than the one on screen (a guest, or another
-              // account): nothing of theirs may stay, and a saved guest pass
-              // must not win the next cold start.
-              const cur = stateRef.current;
-              if (cur.status === "guest" || (cur.status === "user" && cur.me.user.id !== r.me.user.id)) {
-                await resetUserScopedState();
-                await SecureStore.deleteItemAsync(K_GUEST).catch(() => {});
-                await AsyncStorage.removeItem(K_GUEST_META).catch(() => {});
-              }
-              enterUser(jwt, r.me);
-            } else if (r.reason === "no_wedding") {
-              enterOnboarding(jwt, session?.user.email ?? "");
-            } else {
-              setState({ status: "none" });
-            }
-          })();
-        }, 0);
+        handleSignedIn.current?.(session);
       }
     });
-    return () => sub.subscription.unsubscribe();
+    // A new sign-in (the emailed link or code, Apple, Google, password).
+    // Work that calls the API is deferred out of the auth-js callback.
+    handleSignedIn.current = (session: Session) => {
+      const jwt = session.access_token;
+      const s = stateRef.current;
+      if (s.status === "user" && s.me.user.id === session.user.id) {
+        setCredential({ kind: "user", jwt, tenantSlug: s.me.tenant.slug });
+        setState({ ...s, jwt });
+        return;
+      }
+      setTimeout(() => {
+        void (async () => {
+          const preferred = await AsyncStorage.getItem(K_TENANT);
+          const r = await fetchMe(jwt, preferred);
+          if (r.ok) {
+            // A different person than the one on screen (a guest, or another
+            // account): nothing of theirs may stay, and a saved guest pass
+            // must not win the next cold start.
+            const cur = stateRef.current;
+            if (cur.status === "guest" || (cur.status === "user" && cur.me.user.id !== r.me.user.id)) {
+              await resetUserScopedState();
+              await SecureStore.deleteItemAsync(K_GUEST).catch(() => {});
+              await AsyncStorage.removeItem(K_GUEST_META).catch(() => {});
+            }
+            enterUser(jwt, r.me);
+          } else if (r.reason === "no_wedding") {
+            enterOnboarding(jwt, session.user.email ?? "");
+          } else {
+            setState({ status: "none" });
+          }
+        })();
+      }, 0);
+    };
+    return () => {
+      sub.subscription.unsubscribe();
+      handleSignedIn.current = null;
+    };
   }, [endSession, enterOnboarding, enterUser, setState]);
 
   // 401 anywhere (after one token refresh) means the session is gone; 426

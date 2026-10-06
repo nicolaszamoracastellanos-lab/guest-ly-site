@@ -5,8 +5,8 @@
 //
 // Parent rule when no explicit fallback is passed:
 //   /couple/tasks/abc      -> /couple/tasks      (the section list)
-//   /couple/settings/x     -> /couple/more       (that section has no index)
-//   /couple/tasks          -> /couple/more       (sections hang off the More menu)
+//   /couple/settings/x     -> /couple/tools      (that section has no index)
+//   /couple/tasks          -> /couple/tools      (sections hang off Tools)
 //   /guest/rsvp, tab roots -> the surface home
 //   /settings, /assistant, /web, entrance screens -> the home of the session
 //
@@ -18,6 +18,10 @@
 // own tab roots, and a section a tab `owns` (Budget under Plan, Day-of under
 // the guest's Invitation) goes back to that tab instead of More. Until a
 // layout registers, the build 11 table below applies.
+//
+// Build 13: the couple's tabs are Home, Guests, Messages, Broadcast and Tools
+// (no More: Tools is the couple's fallback); the planner's Wedding tab is
+// Tools.
 
 import { useCallback } from "react";
 import { useNavigation, usePathname, useRouter, type Href } from "expo-router";
@@ -28,9 +32,11 @@ const TAB_ROOTS: Record<string, string[]> = {
   // Build 12 tabs (used only until the layout registers). Sections a tab
   // owns that hang off the home (rsvp, dayof) are listed so they return home.
   guest: ["rsvp", "dayof", "schedule", "concierge", "more"],
-  couple: ["guests", "rsvps", "messages", "plan", "more"],
-  planner: ["requests", "guests", "wedding", "more"],
+  couple: ["guests", "rsvps", "messages", "broadcasts", "tools"],
+  planner: ["requests", "guests", "tools", "more"],
 };
+/** The tab that owns unlisted sections before a layout registers. */
+const FALLBACK: Record<string, string> = { guest: "more", couple: "tools", planner: "more" };
 const NO_INDEX = ["settings"];
 
 type Registered = { roots: string[]; owners: Record<string, string>; fallback: string };
@@ -56,7 +62,7 @@ export function parentOf(pathname: string, home: string): string {
   const surface = seg[0] ?? "";
   if (!SURFACES.includes(surface)) return home;
   const reg = registered[surface];
-  const ownerOf = (section: string) => (reg ? reg.owners[section] ?? reg.fallback : "more");
+  const ownerOf = (section: string) => (reg ? reg.owners[section] ?? reg.fallback : FALLBACK[surface] ?? "more");
   if (seg.length >= 3) return NO_INDEX.includes(seg[1]) ? tabPath(surface, ownerOf(seg[1])) : `/${surface}/${seg[1]}`;
   if (seg.length === 2) return (reg ? reg.roots : TAB_ROOTS[surface]).includes(seg[1]) ? `/${surface}` : tabPath(surface, ownerOf(seg[1]));
   return home;

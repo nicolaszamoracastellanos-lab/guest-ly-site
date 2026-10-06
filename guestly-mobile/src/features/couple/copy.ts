@@ -1,12 +1,13 @@
-// Couple surface copy for build 12 (v1.2): the five tabs (Inicio, Invitados,
-// Mensajes, Plan, Más), the guest card, add guest and the merged reminders.
+// Couple surface copy for build 12 (v1.2): the five tabs, the guest card, add
+// guest and the merged reminders. Build 13 tabs: Inicio, Invitados, Mensajes,
+// Avisos, Herramientas (Plan and Más folded into Herramientas).
 // Spanish uses tú. No em or en dashes.
 
 const plural = (n: number, one: string, other: string) => (n === 1 ? one : other).replace("{n}", String(n));
 
 export const COPY = {
   en: {
-    tabs: { home: "Home", guests: "Guests", messages: "Messages", plan: "Plan", more: "More" },
+    tabs: { home: "Home", guests: "Guests", messages: "Guest Messages", broadcasts: "Broadcast", tools: "Tools" },
     home: {
       yourWedding: "Your wedding",
       days: (n: number) => plural(n, "{n} day", "{n} days"),
@@ -105,7 +106,7 @@ export const COPY = {
       member: { going: "Going", notGoing: "Not going", pending: "Pending" },
       saved: "Saved",
       rsvpSaved: "RSVP saved",
-      noThread: "This guest has not written yet. Send them an announcement from Messages.",
+      noThread: "This guest has not written yet. Send them a broadcast from the Broadcast tab.",
     },
     add: {
       title: "New guest",
@@ -132,7 +133,7 @@ export const COPY = {
       discardBody: "What you typed will be lost.",
     },
     messages: {
-      title: "Messages",
+      title: "Guest messages",
       conversations: "Conversations",
       announcements: "Announcements",
       compose: "Compose",
@@ -211,6 +212,20 @@ export const COPY = {
       settings: "Settings",
       settingsSub: "Account, notifications, reminders, your partner",
     },
+    // Build 13: Herramientas / Tools (Plan and More in one tab).
+    tools: {
+      title: "Tools",
+      site: "Wedding site",
+      sitePublished: "Published",
+      siteDraft: "Not published yet",
+      siteSee: "See your site",
+      coordinator: "Coordinator",
+      coordinatorNum: "Ask anything",
+      more: "More",
+      vendors: "Vendors",
+      vendorsSub: "Every vendor you work with",
+      settings: "Settings",
+    },
     budget: {
       vendors: "Vendors",
       vendorsSub: "Every vendor you work with",
@@ -225,7 +240,7 @@ export const COPY = {
     shareText: (names: string, url: string, code: string) => `${names ? `${names} invite you. ` : ""}Reply here: ${url} (code ${code})`,
   },
   es: {
-    tabs: { home: "Inicio", guests: "Invitados", messages: "Mensajes", plan: "Plan", more: "Más" },
+    tabs: { home: "Inicio", guests: "Invitados", messages: "Mensajes", broadcasts: "Avisos", tools: "Herramientas" },
     home: {
       yourWedding: "Tu boda",
       days: (n: number) => plural(n, "{n} día", "{n} días"),
@@ -324,7 +339,7 @@ export const COPY = {
       member: { going: "Va", notGoing: "No va", pending: "Pendiente" },
       saved: "Guardado",
       rsvpSaved: "Respuesta guardada",
-      noThread: "Este invitado todavía no te escribe. Mándale un aviso desde Mensajes.",
+      noThread: "Este invitado todavía no te escribe. Mándale un aviso desde la pestaña Avisos.",
     },
     add: {
       title: "Nuevo invitado",
@@ -429,6 +444,19 @@ export const COPY = {
       guideSub: "Cómo funciona cada parte",
       settings: "Ajustes",
       settingsSub: "Cuenta, notificaciones, recordatorios, tu pareja",
+    },
+    tools: {
+      title: "Herramientas",
+      site: "Sitio de la boda",
+      sitePublished: "Publicado",
+      siteDraft: "Sin publicar",
+      siteSee: "Ver tu sitio",
+      coordinator: "Coordinador",
+      coordinatorNum: "Pregúntale lo que sea",
+      more: "Más",
+      vendors: "Proveedores",
+      vendorsSub: "Todos los proveedores con los que trabajas",
+      settings: "Ajustes",
     },
     budget: {
       vendors: "Proveedores",

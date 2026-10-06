@@ -2,8 +2,9 @@
 // Coordinator, Switch wedding, the Guide, Settings, language and sign out.
 //
 // Build 11 listed every tool here. They moved, none removed: Tasks to
-// Pendientes, Budget, Seating, Day-of schedule and Guest reminders to Boda;
-// Vendors lives inside the Budget (F5). Coordinator and Guide keep their
+// Pendientes, Budget, Seating, Day-of schedule and Guest reminders to Boda
+// (Herramientas / Tools since build 13, where Broadcast and the Coordinator
+// are tiles too); Vendors lives inside the Budget (F5). Coordinator and Guide keep their
 // per-tool permission.
 
 import React, { useState } from "react";

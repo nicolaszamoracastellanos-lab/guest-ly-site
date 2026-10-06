@@ -1,5 +1,13 @@
 // New broadcast: audience, message, preview, then a typed confirmation.
 // Phones never reach the app; the server resolves the audience.
+//
+// Build 13 (per-wedding templates): the portal lists only the templates this
+// wedding can send, so the app's old couple-name fence is gone. The composer
+// offers only a template's own languages, sends its id and version with the
+// preview and the send (409 `template_changed` means it was edited: nothing
+// went out, look again), and says so on the demo wedding, where nothing is
+// delivered. No approved template: the not-set-up state with Request a
+// template, never a dead button.
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, FlatList } from "react-native";
@@ -12,10 +20,10 @@ import { errorText, newSendKey, outcomeUnknown } from "@/features/shared/request
 import { Screen, TopBar, BigTitle, Card, Chip, ChipRow, Segmented, Input, Button, Badge, Banner, Sheet, Skeleton, Stack, SectionLabel, T, ListRow, Avatar, Hairline } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
-import { previewBroadcast, sendBroadcast, useBroadcasts, type AudienceFilter, type BroadcastGuest, type Composition, type Preview, type SendResult } from "@/features/broadcasts/hooks";
+import { previewBroadcast, sendBroadcast, templateLanguages, useBroadcasts, type AudienceFilter, type BroadcastGuest, type Composition, type Lang, type Preview, type SendResult } from "@/features/broadcasts/hooks";
+import { languageList } from "@/features/broadcasts/requests";
 import { useSafeBack } from "@/lib/nav";
-import { useLocalSearchParams } from "expo-router";
-import { useUserSession } from "@/lib/session";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 type Mode = "template" | "custom";
 type LangMode = "auto" | "es" | "en";
@@ -25,7 +33,7 @@ export default function NewBroadcast() {
   const { lang } = useLang();
   const copyCommonError = useCopy().common.error;
   const back = useSafeBack();
-  const user = useUserSession();
+  const router = useRouter();
   const qc = useQueryClient();
   const mainQuery = useBroadcasts();
   const { data, isLoading } = mainQuery;
@@ -40,7 +48,8 @@ export default function NewBroadcast() {
   const [pickOpen, setPickOpen] = useState(false);
   const [pickQuery, setPickQuery] = useState("");
   const [mode, setMode] = useState<Mode>("template");
-  const [templateKey, setTemplateKey] = useState<string>(typeof params.template === "string" && params.template ? params.template : "invite");
+  const presetTemplate = typeof params.template === "string" && params.template ? params.template : null;
+  const [templateKey, setTemplateKey] = useState<string>(presetTemplate ?? "invite");
   const [vars, setVars] = useState<Record<string, string>>({});
   const [custom, setCustom] = useState("");
   const [langMode, setLangMode] = useState<LangMode>("auto");
@@ -55,6 +64,7 @@ export default function NewBroadcast() {
   // What the confirm sheet showed, frozen when it opened: exactly this is sent.
   const [confirmed, setConfirmed] = useState<{ composition: Composition; recipients: number } | null>(null);
   const [recipientsChanged, setRecipientsChanged] = useState<string | null>(null);
+  const [templateChanged, setTemplateChanged] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -68,9 +78,19 @@ export default function NewBroadcast() {
   const [unknownOutcome, setUnknownOutcome] = useState(false);
 
   const audiences = useMemo(() => data?.audiences ?? [], [data?.audiences]);
-  const templates = data?.templates ?? [];
-  const template = templates.find((t) => t.key === templateKey) ?? templates[0] ?? null;
+  const templates = useMemo(() => data?.templates ?? [], [data?.templates]);
+  // A preset template this wedding does not have ("Send reminder" on Guests
+  // without an approved rsvp_reminder) shows the not-set-up state for it
+  // instead of quietly switching to another template.
+  const presetMissing = !!data && !!presetTemplate && templateKey === presetTemplate && !templates.some((t) => t.key === presetTemplate);
+  const template = presetMissing ? null : templates.find((t) => t.key === templateKey) ?? templates[0] ?? null;
+  const ready = data ? data.templates_ready ?? templates.length > 0 : true;
+  const templateLangs: Lang[] = useMemo(() => (template ? templateLanguages(template) : []), [template]);
+  // Every listed template is a demo one: the demo wedding, where custom
+  // messages are recorded but not delivered either.
+  const demoWedding = templates.length > 0 && templates.every((t) => !!t.simulated);
   const guests = useMemo(() => data?.guests ?? [], [data?.guests]);
+  const templateName = (t: { key: string; label: string; id?: string }) => (t.id ? t.label : (c.templateNames as Record<string, string>)[t.key] ?? t.label);
 
   // A preset audience this portal does not offer falls back to everyone.
   if (audiences.length && audienceKey !== "picked" && !audiences.some((a) => a.key === audienceKey)) setAudienceKey("all");
@@ -80,18 +100,30 @@ export default function NewBroadcast() {
     return audiences.find((a) => a.key === audienceKey)?.filter ?? null;
   }, [audienceKey, audiences, picked]);
 
+  // A template in one language goes out in that language; the language
+  // choice offers only what the template has.
+  const effectiveLang: LangMode = mode === "template" && templateLangs.length === 1 ? templateLangs[0] : mode === "template" && langMode !== "auto" && !templateLangs.includes(langMode) ? "auto" : langMode;
+
   const composition: Composition | null = useMemo(() => {
     if (!audience) return null;
     if (mode === "template" && !template) return null;
     if (mode === "custom" && !custom.trim()) return null;
-    return {
+    const base: Composition = {
       audience,
       template_key: mode === "template" ? template!.key : null,
       custom_message: mode === "custom" ? custom.trim() : null,
-      lang: langMode,
-      template_vars: vars,
+      lang: effectiveLang,
+      // Only the chosen template's own fields (a field typed for another
+      // template is not sent with this one).
+      template_vars: mode === "template" ? Object.fromEntries(template!.vars.filter((v) => vars[v] !== undefined && vars[v] !== "").map((v) => [v, vars[v]])) : {},
     };
-  }, [audience, mode, template, custom, langMode, vars]);
+    // An older portal sends no id: the fields are left out, not sent empty.
+    if (mode === "template" && template?.id) {
+      base.template_id = template.id;
+      if (typeof template.version === "number") base.template_version = template.version;
+    }
+    return base;
+  }, [audience, mode, template, custom, effectiveLang, vars]);
 
   const compositionKey = JSON.stringify(composition);
   const preview = composition && previewState?.key === compositionKey ? previewState.data : null;
@@ -99,19 +131,8 @@ export default function NewBroadcast() {
   // The composition changed and its preview is on the way.
   const updating = !!composition && !preview && !previewError;
 
-  // Part 9 audit, D-001 (P0). The approved template bodies live in the portal
-  // and were written for one wedding. Until they are per wedding, a template
-  // preview that does not name THIS couple is never shown and never sent: it
-  // would put a stranger's names, date and links in front of the person, and
-  // send them to their guests. The portal fix is the lead's; this is the fence.
-  const coupleNames = user?.me.tenant.couple_names ?? "";
-  const templateMismatch = useMemo(() => {
-    if (mode !== "template" || !preview) return false;
-    const fold = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const names = coupleNames.split(/\s*(?:&|\sy\s|\sand\s)\s*/i).map((n) => fold(n.trim().split(/\s+/)[0] ?? "")).filter((n) => n.length > 1);
-    if (!names.length) return true;
-    return Object.values(preview.sample).some((body) => !names.every((n) => fold(body ?? "").includes(n)));
-  }, [mode, preview, coupleNames]);
+  // Demo wedding: recorded, not delivered (template or custom).
+  const simulated = mode === "template" ? !!template?.simulated : demoWedding;
 
   useEffect(() => {
     let alive = true;
@@ -125,7 +146,11 @@ export default function NewBroadcast() {
           setPreviewErrorState(null);
         }
       } catch (err) {
-        if (alive) setPreviewErrorState({ key, text: errorText(err, lang, copyCommonError) });
+        if (!alive) return;
+        // The template was edited since the list loaded: fetch the list again
+        // (its new version makes a new composition and a new preview).
+        if (err instanceof ApiFailure && err.code === "template_changed") void qc.invalidateQueries({ queryKey: ["broadcasts"] });
+        setPreviewErrorState({ key, text: errorText(err, lang, err instanceof ApiFailure && err.code === "template_changed" ? c.templateChanged : copyCommonError) });
       }
     }, 350);
     return () => {
@@ -156,6 +181,7 @@ export default function NewBroadcast() {
     if (!composition || !preview) return;
     setConfirmed({ composition, recipients: preview.recipients_count });
     setRecipientsChanged(null);
+    setTemplateChanged(null);
     setTyped("");
     setSendError(null);
     setSendKey(newSendKey());
@@ -181,6 +207,16 @@ export default function NewBroadcast() {
         setUnknownOutcome(true);
         setConfirmOpen(false);
         setTyped("");
+        void qc.invalidateQueries({ queryKey: ["broadcasts"] });
+      } else if (err instanceof ApiFailure && err.code === "template_changed") {
+        // Nothing was sent. The template was edited since this screen loaded:
+        // fetch the list again and let the person read the new text.
+        setConfirmOpen(false);
+        setTyped("");
+        setConfirmed(null);
+        setTemplateChanged(errorText(err, lang, c.templateChanged));
+        setPreviewState(null);
+        setPreviewNonce((n) => n + 1);
         void qc.invalidateQueries({ queryKey: ["broadcasts"] });
       } else if (err instanceof ApiFailure && err.code === "recipients_changed") {
         // Nothing was sent. Close the sheet, fetch the new count, and let the
@@ -215,6 +251,7 @@ export default function NewBroadcast() {
     setPreviewErrorState(null);
     setConfirmed(null);
     setRecipientsChanged(null);
+    setTemplateChanged(null);
     setAudienceKey("all");
     back();
   }
@@ -232,6 +269,11 @@ export default function NewBroadcast() {
     return (
       <Screen query={mainQuery} header={<TopBar onBack={finish} title={c.title} />}>
         <BigTitle label={c.sentTitle} title={fmt(c.sentOf, { sent: result.summary.sent, total: result.summary.total })} sub={fmt(c.sentBody, { sent: result.summary.sent, total: result.summary.total, failed: result.summary.failed })} size={38} />
+        {result.simulated ? (
+          <View style={{ marginTop: 16 }}>
+            <Banner icon="info" title={c.demoSent} kind="gold" />
+          </View>
+        ) : null}
         {result.failed_batches.length ? (
           <Stack gap={8} style={{ marginTop: 16 }}>
             {result.failed_batches.map((b) => (
@@ -244,13 +286,23 @@ export default function NewBroadcast() {
     );
   }
 
+  // No approved template at all: nothing can be sent yet (custom messages
+  // need a live template too). Say why and offer the request.
+  if (data && !ready) {
+    return (
+      <Screen query={mainQuery} header={<TopBar onBack={back} title={c.newBroadcast} />}>
+        <NotSetUp title={c.notReadyTitle} body={data.can_request_template ? c.notReadyBody : c.notReadyBodyNoRequest} action={data.can_request_template ? c.requestTemplate : null} onAction={() => router.navigate({ pathname: "/couple/broadcasts", params: { request: String(Date.now()) } } as never)} />
+      </Screen>
+    );
+  }
+
   return (
     <Screen
       header={<TopBar onBack={back} title={c.newBroadcast} />}
       bottomInset={40}
       keyboard
       // The main action rides above the keyboard while a field is focused.
-      dock={data ? <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : updating ? c.updatingPreview : c.review} icon="arrow-up" onPress={openConfirm} disabled={!canReview || templateMismatch} testID="broadcast-review" /> : undefined}
+      dock={data ? <Button label={preview ? fmt(c.sendTo, { n: preview.recipients_count }) : updating ? c.updatingPreview : c.review} icon="arrow-up" onPress={openConfirm} disabled={!canReview} testID="broadcast-review" /> : undefined}
     >
       <>
         {isLoading && !data ? (
@@ -290,9 +342,20 @@ export default function NewBroadcast() {
               <View style={{ marginTop: 12 }}>
                 <ChipRow>
                   {templates.map((t) => (
-                    <Chip key={t.key} label={(c.templateNames as Record<string, string>)[t.key] ?? t.label} on={template?.key === t.key} onPress={() => setTemplateKey(t.key)} />
+                    <Chip key={t.key} label={templateName(t)} on={template?.key === t.key} onPress={() => setTemplateKey(t.key)} />
                   ))}
                 </ChipRow>
+                {presetMissing && presetTemplate ? (
+                  <View style={{ marginTop: 12 }}>
+                    <NotSetUp
+                      compact
+                      title={fmt(c.templateMissing, { name: ((c.templateNames as Record<string, string>)[presetTemplate] ?? presetTemplate).toLowerCase() })}
+                      body={c.templateMissingBody}
+                      action={data.can_request_template ? c.requestTemplate : null}
+                      onAction={() => router.navigate({ pathname: "/couple/broadcasts", params: { request: String(Date.now()), kind: presetTemplate === "rsvp_reminder" ? "rsvp_closing" : "" } } as never)}
+                    />
+                  </View>
+                ) : null}
                 {template?.vars.length ? (
                   <Stack gap={8} style={{ marginTop: 12 }}>
                     {template.vars.map((v) => (
@@ -310,9 +373,25 @@ export default function NewBroadcast() {
               </View>
             )}
             <SectionLabel style={{ marginTop: 18 }}>{c.language}</SectionLabel>
-            <View style={{ marginTop: 8 }}>
-              <Segmented<LangMode> value={langMode} options={[{ value: "auto", label: c.langAuto }, { value: "es", label: c.langEs }, { value: "en", label: c.langEn }]} onChange={setLangMode} />
-            </View>
+            {mode === "template" && templateLangs.length === 1 ? (
+              <T v="meta13" color={colors.ivory70} style={{ marginTop: 8 }}>
+                {fmt(c.oneLanguage, { lang: c.langNames[templateLangs[0]] })}
+              </T>
+            ) : (
+              <View style={{ marginTop: 8 }}>
+                <Segmented<LangMode> value={effectiveLang} options={[{ value: "auto", label: c.langAuto }, { value: "es", label: c.langEs }, { value: "en", label: c.langEn }]} onChange={setLangMode} />
+              </View>
+            )}
+            {mode === "template" && template && templateLangs.length > 1 ? (
+              <T v="meta13" color={colors.ivory55} style={{ marginTop: 6 }}>
+                {languageList(c, templateLangs)}
+              </T>
+            ) : null}
+            {simulated ? (
+              <View style={{ marginTop: 12 }}>
+                <Banner icon="info" title={c.demoNote} kind="gold" />
+              </View>
+            ) : null}
 
             <SectionLabel color={colors.goldLight} style={{ marginTop: 28 }}>{c.stepReview}</SectionLabel>
             {recipientsChanged ? (
@@ -321,12 +400,12 @@ export default function NewBroadcast() {
               </View>
             ) : null}
             {previewError ? <Banner icon="warning" title={previewError} kind="red" /> : null}
-            {templateMismatch ? (
+            {templateChanged ? (
               <View style={{ marginTop: 10 }}>
-                <Banner icon="info" title={c.templateNotYours} kind="gold" />
+                <Banner icon="warning" title={templateChanged} kind="amber" />
               </View>
             ) : null}
-            {preview && !templateMismatch ? (
+            {preview ? (
               <Card kind="glass" padding={16} style={{ marginTop: 10 }}>
                 <T v="meta13" color={colors.ivory55}>
                   {fmt(c.perLang, { es: preview.by_lang.es, en: preview.by_lang.en })}
@@ -407,3 +486,19 @@ const PickRow = React.memo(function PickRow({ guest: g, on, noPhone, onToggle, l
     />
   );
 });
+
+/** "Broadcasts aren't set up yet" (or one template missing), with the way to
+ *  request one when the couple can. */
+function NotSetUp({ title, body, action, onAction, compact }: { title: string; body: string; action: string | null; onAction: () => void; compact?: boolean }) {
+  return (
+    <Card kind="solid" padding={compact ? 16 : 18} radiusKey="tile" border={colors.goldBorder} style={compact ? undefined : { marginTop: 8 }}>
+      <Stack gap={10}>
+        <T v={compact ? "body16" : "title26"}>{title}</T>
+        <T v="body15" color={colors.ivory70}>
+          {body}
+        </T>
+        {action ? <Button label={action} icon="plus" kind={compact ? "glass" : "primary"} onPress={onAction} testID="broadcast-request-template" style={{ marginTop: 4 }} /> : null}
+      </Stack>
+    </Card>
+  );
+}

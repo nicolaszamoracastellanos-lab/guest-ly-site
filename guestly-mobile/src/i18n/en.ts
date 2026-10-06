@@ -95,6 +95,19 @@ export const en = {
     linkExpiredBody: "Links work for 15 minutes. We can send a fresh one.",
     sendNew: "Send a new link",
     differentEmail: "Use a different email",
+    checkLabel: "Sign-in email sent",
+    checkTitle: "Check your email",
+    checkBody: "We sent a sign-in link and an 8-digit code to {email}. Tap the link on this phone, or type the code here.",
+    codeLabel: "8-digit code from the email",
+    codeSubmit: "Sign in with the code",
+    codeInvalid: "That code did not work. Use the code from the newest email, or send a new one.",
+    resend: "Resend the email",
+    resendIn: "You can resend it in {s} s.",
+    resent: "We sent a new email. Use the newest code.",
+    spam: "Nothing yet? Look in your spam or promotions folder.",
+    linkFailedTitle: "That link did not work.",
+    linkFailedBody: "Use the code from the email or send a new one.",
+    enterCode: "Type the code",
     noWedding: "This account has no wedding yet. Set one up on app.guest-ly.com first.",
   },
   invite: {
@@ -392,7 +405,7 @@ export const en = {
     open: "Open",
     escalated: "Escalated · {n}",
     answerBoth: "Answer",
-    noRunsheet: "No runsheet yet. Build it under More, Runsheet, and it appears here.",
+    noRunsheet: "No runsheet yet. Build it under Tools, Day-of schedule, and it appears here.",
     buildRunsheet: "Build the runsheet",
     notToday: "Day-of mode turns on by itself on the wedding day. You can switch it on early in Settings.",
   },
@@ -496,9 +509,10 @@ export const en = {
     taskStatus: { open: "Open", in_progress: "In progress", done: "Done" },
     budgetTitle: "Budget",
     budgetWeb: "The budget opens on the web, where you can edit it in full.",
-    // Build 12 planner surface (tabs Today, To do, Guests, Wedding, More).
+    // Build 12 planner surface (tabs Today, To do, Guests, Tools, More; Tools
+    // was Wedding until build 13).
     b12: {
-      tabs: { today: "Today", todo: "To do", guests: "Guests", wedding: "Wedding", more: "More" },
+      tabs: { today: "Today", todo: "To do", guests: "Guests", tools: "Tools", more: "More" },
       pillA11y: "Current wedding: {name}. Tap to switch.",
       switcherTitle: "Your weddings",
       daysToGo: { one: "{n} day to go", other: "{n} days to go" },

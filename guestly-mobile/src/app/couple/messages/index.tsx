@@ -1,10 +1,13 @@
-// Mensajes (build 12, F4, as in the prototype): two segments, Conversations
-// and Announcements (broadcasts moved here). Compose (top right) offers
-// "Announcement to guests" or "Message to one guest". On Conversations a card
-// says how many questions the concierge could not answer ("Teach it"), or
-// that nothing waits for you (opens the concierge insights).
+// Mensajes (build 12, F4, as in the prototype): the guest conversations.
+// Compose (top right) offers "Announcement to guests" (the Broadcast tab's
+// composer) or "Message to one guest". A card says how many questions the
+// concierge could not answer ("Teach it"), or that nothing waits for you
+// (opens the concierge insights).
+//
+// Build 13: announcements have their own tab (Avisos / Broadcast), so the
+// Announcements segment is gone; an old link with ?seg=avisos opens that tab.
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, FlatList, Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,24 +15,19 @@ import { relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { get } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Avatar, Badge, Row, T, Icon, EmptyState, Skeleton, Stack, Sheet, Input, ListRow, Button, Segmented, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Avatar, Badge, Row, T, Icon, EmptyState, Skeleton, Stack, Sheet, Input, ListRow, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
 import { useOnline } from "@/lib/query";
 import { colors, radius } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
-import { COPY as BCOPY } from "@/features/broadcasts/copy";
 import { useInboxList, type InboxItem } from "@/features/inbox/hooks";
-import { useBroadcasts, type HistoryGroup } from "@/features/broadcasts/hooks";
-import { groupTitle, deliveryLine } from "@/features/broadcasts/format";
 import { useGuestPages } from "@/features/guests/hooks";
 import { useCoupleCopy, MenuRow, MenuCard } from "@/features/couple/ui";
 
 const FILTERS = ["all", "needs_you", "whatsapp", "web", "app"] as const;
 type Filter = (typeof FILTERS)[number];
-type Seg = "conv" | "avisos";
 
 export default function Inbox() {
   const ic = useFeatureCopy(COPY);
-  const bc = useFeatureCopy(BCOPY);
   const c = useCoupleCopy();
   const { lang } = useLang();
   const router = useRouter();
@@ -40,30 +38,29 @@ export default function Inbox() {
   const scrim = useScrimScroll();
   const online = useOnline();
 
-  // Home's reminders open this tab on a filter or on Announcements.
+  // Home's reminders open this tab on a filter.
   const params = useLocalSearchParams<{ filter?: string; seg?: string }>();
-  const [seg, setSeg] = useState<Seg>(params.seg === "avisos" ? "avisos" : "conv");
   const [filter, setFilter] = useState<Filter>(FILTERS.find((f) => f === params.filter) ?? "all");
-  const [seen, setSeen] = useState(`${params.filter}|${params.seg}`);
-  if (`${params.filter}|${params.seg}` !== seen) {
-    setSeen(`${params.filter}|${params.seg}`);
+  const [seen, setSeen] = useState(params.filter);
+  if (params.filter !== seen) {
+    setSeen(params.filter);
     const f = FILTERS.find((x) => x === params.filter);
-    if (f) {
-      setFilter(f);
-      setSeg("conv");
-    }
-    if (params.seg === "avisos") setSeg("avisos");
+    if (f) setFilter(f);
   }
+  // Announcements moved to their own tab (build 13).
+  useEffect(() => {
+    if (params.seg === "avisos") router.navigate("/couple/broadcasts");
+  }, [params.seg, router]);
 
   const inbox = useInboxList(filter);
   const needsYou = useInboxList("needs_you");
-  const broadcasts = useBroadcasts();
   const { data, isLoading } = inbox;
   const unanswered = needsYou.data?.needs_you ?? data?.needs_you ?? 0;
   const firstWaiting = needsYou.data?.items.find((i) => i.needs_you) ?? null;
-  const canSend = (broadcasts.data?.can_send ?? user?.me.can_edit) ?? false;
-  const anyPhone = (broadcasts.data?.guests ?? []).some((g) => g.has_phone);
-  const pull = usePullRefresh(() => (seg === "conv" ? Promise.all([inbox.refetch(), needsYou.refetch()]) : broadcasts.refetch()));
+  // The composer explains itself when nothing can be sent yet, so an editor
+  // always gets the announcement entry.
+  const canSend = user?.me.can_edit ?? false;
+  const pull = usePullRefresh(() => Promise.all([inbox.refetch(), needsYou.refetch()]));
 
   const [composeOpen, setComposeOpen] = useState(false);
   const [pickOpen, setPickOpen] = useState(false);
@@ -82,94 +79,60 @@ export default function Inbox() {
         <View style={{ marginTop: 10 }}>
           <BigTitle title={c.messages.title} />
         </View>
-        <View style={{ marginTop: 14 }}>
-          <Segmented<Seg>
-            value={seg}
-            options={[
-              { value: "conv", label: c.messages.conversations },
-              { value: "avisos", label: c.messages.announcements },
-            ]}
-            onChange={setSeg}
-          />
-        </View>
-        {seg === "conv" && data && (!online || inbox.isError) ? (
+        {data && (!online || inbox.isError) ? (
           <View style={{ marginTop: 14 }}>
             <StaleBanner onRetry={() => retryConnection(inbox.refetch)} />
           </View>
         ) : null}
-        {seg === "avisos" && broadcasts.data && (!online || broadcasts.isError) ? (
-          <View style={{ marginTop: 14 }}>
-            <StaleBanner onRetry={() => retryConnection(broadcasts.refetch)} />
-          </View>
+      </View>
+      <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
+        {unanswered > 0 ? (
+          <Pressable onPress={teach} accessibilityRole="button" accessibilityLabel={`${c.messages.unanswered(unanswered)}. ${c.messages.teach}`} testID="messages-teach" style={({ pressed }) => [styles.card, styles.cardGold, pressed && { opacity: 0.8 }]}>
+            <Icon name="sparkle" size={22} color={colors.goldLight} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="body16">{c.messages.unanswered(unanswered)}</T>
+              {firstWaiting ? (
+                <T v="meta13" color={colors.ivory70} numberOfLines={1}>
+                  {firstWaiting.name}
+                  {firstWaiting.preview ? ` · ${firstWaiting.preview}` : ""}
+                </T>
+              ) : null}
+            </View>
+            <T v="meta13" color={colors.goldLight}>
+              {c.messages.teach}
+            </T>
+          </Pressable>
+        ) : needsYou.data || data ? (
+          <Pressable onPress={() => router.push("/couple/insights")} accessibilityRole="button" accessibilityLabel={`${c.messages.answered}. ${c.messages.answeredSub}`} style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}>
+            <Icon name="sparkle" size={22} color={colors.goldLight} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="body16">{c.messages.answered}</T>
+              <T v="meta13" color={colors.ivory70}>
+                {c.messages.answeredSub}
+              </T>
+            </View>
+            <Icon name="chev" size={18} color={colors.ivory40} />
+          </Pressable>
         ) : null}
       </View>
-      {seg === "conv" ? (
-        <>
-          <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
-            {unanswered > 0 ? (
-              <Pressable onPress={teach} accessibilityRole="button" accessibilityLabel={`${c.messages.unanswered(unanswered)}. ${c.messages.teach}`} testID="messages-teach" style={({ pressed }) => [styles.card, styles.cardGold, pressed && { opacity: 0.8 }]}>
-                <Icon name="sparkle" size={22} color={colors.goldLight} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <T v="body16">{c.messages.unanswered(unanswered)}</T>
-                  {firstWaiting ? (
-                    <T v="meta13" color={colors.ivory70} numberOfLines={1}>
-                      {firstWaiting.name}
-                      {firstWaiting.preview ? ` · ${firstWaiting.preview}` : ""}
-                    </T>
-                  ) : null}
-                </View>
-                <T v="meta13" color={colors.goldLight}>
-                  {c.messages.teach}
-                </T>
-              </Pressable>
-            ) : needsYou.data || data ? (
-              <Pressable onPress={() => router.push("/couple/insights")} accessibilityRole="button" accessibilityLabel={`${c.messages.answered}. ${c.messages.answeredSub}`} style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}>
-                <Icon name="sparkle" size={22} color={colors.goldLight} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <T v="body16">{c.messages.answered}</T>
-                  <T v="meta13" color={colors.ivory70}>
-                    {c.messages.answeredSub}
-                  </T>
-                </View>
-                <Icon name="chev" size={18} color={colors.ivory40} />
-              </Pressable>
-            ) : null}
-          </View>
-          {/* No channel chips (F4: exactly the prototype). A filter set by
-              "Teach it" or a reminder link says so, with the way back. */}
-          {filter !== "all" ? (
-            <Row gap={8} style={{ marginTop: 10, paddingHorizontal: 24 }}>
-              <T v="meta13" color={colors.ivory70} style={{ flex: 1 }}>
-                {c.messages.showing(c.messages.filters[filter] ?? filter)}
-              </T>
-              <Pressable onPress={() => setFilter("all")} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [{ minHeight: 44, justifyContent: "center" }, pressed && { opacity: 0.7 }]} testID="messages-show-all">
-                <T v="meta13" color={colors.goldLight}>
-                  {c.messages.showAll}
-                </T>
-              </Pressable>
-            </Row>
-          ) : null}
-        </>
-      ) : (
-        <View style={{ paddingHorizontal: 24, marginTop: 16, gap: 10 }}>
-          {canSend ? <Button label={c.messages.newAnnouncement} icon="megaphone" onPress={newAnnouncement} disabled={!!broadcasts.data && !anyPhone} testID="messages-new-announcement" /> : null}
-          {canSend && broadcasts.data && !anyPhone ? (
-            <T v="meta13" color={colors.ivory70}>
-              {bc.noPhones}
+      {/* No channel chips (F4: exactly the prototype). A filter set by
+          "Teach it" or a reminder link says so, with the way back. */}
+      {filter !== "all" ? (
+        <Row gap={8} style={{ marginTop: 10, paddingHorizontal: 24 }}>
+          <T v="meta13" color={colors.ivory70} style={{ flex: 1 }}>
+            {c.messages.showing(c.messages.filters[filter] ?? filter)}
+          </T>
+          <Pressable onPress={() => setFilter("all")} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [{ minHeight: 44, justifyContent: "center" }, pressed && { opacity: 0.7 }]} testID="messages-show-all">
+            <T v="meta13" color={colors.goldLight}>
+              {c.messages.showAll}
             </T>
-          ) : null}
-          {!canSend && broadcasts.data ? (
-            <T v="meta13" color={colors.ivory70}>
-              {bc.readOnly}
-            </T>
-          ) : null}
-        </View>
-      )}
+          </Pressable>
+        </Row>
+      ) : null}
       <View style={{ height: 8 }} />
     </View>
   );
 
-  const history = broadcasts.data?.history ?? [];
   const convEmpty =
     isLoading && !data ? (
       <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 8 }}>
@@ -184,66 +147,20 @@ export default function Inbox() {
     ) : (
       <EmptyState title={filter === "needs_you" ? ic.emptyNeedsYou : ic.empty} />
     );
-  const avisosEmpty =
-    broadcasts.isLoading && !broadcasts.data ? (
-      <Stack gap={10} style={{ paddingHorizontal: 24, marginTop: 8 }}>
-        <Skeleton h={66} />
-        <Skeleton h={66} />
-      </Stack>
-    ) : broadcasts.isError && !broadcasts.data ? (
-      <QueryError onRetry={() => void broadcasts.refetch()} />
-    ) : !online && !broadcasts.data ? (
-      <OfflineState onRetry={() => retryConnection(broadcasts.refetch)} />
-    ) : (
-      <EmptyState title={c.messages.noAnnouncements} body={c.messages.noAnnouncementsBody} />
-    );
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
-        {seg === "conv" ? (
-          <FlatList<InboxItem>
-            {...scrim.listProps}
-            key="conv"
-            refreshControl={pull.control ?? undefined}
-            data={data?.items ?? []}
-            keyExtractor={(i) => i.id}
-            ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
-            contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
-            ListEmptyComponent={convEmpty}
-            renderItem={({ item: m }) => <ThreadRow m={m} onOpen={(id) => router.push({ pathname: "/couple/messages/[id]", params: { id } })} channelLabel={ic.channel[m.channel] ?? m.channel} lang={lang} gapLabel={ic.gap} upsetLabel={m.sentiment === "frustrated" ? ic.frustrated : m.sentiment === "negative" ? ic.upset : null} emptyPreview={ic.messages(m.message_count)} />}
-          />
-        ) : (
-          <FlatList<HistoryGroup>
-            {...scrim.listProps}
-            key="avisos"
-            refreshControl={pull.control ?? undefined}
-            data={history}
-            keyExtractor={(g) => g.id}
-            ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
-            contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
-            ListEmptyComponent={avisosEmpty}
-            ListFooterComponent={
-              history.length ? (
-                <T v="meta13" color={colors.ivory55} style={{ paddingHorizontal: 24, marginTop: 14 }}>
-                  {broadcasts.data?.ledger_available === false ? (lang === "es" ? "Los estados de entrega no están disponibles en este momento." : "Delivery states are not available right now.") : c.messages.exactCount}
-                </T>
-              ) : null
-            }
-            renderItem={({ item: g, index }) => (
-              <View style={{ paddingHorizontal: 24 }}>
-                <ListRow
-                  leading={<Icon name="megaphone" size={22} color={colors.goldLight} />}
-                  title={groupTitle(g, bc.unknownBatch)}
-                  sub={`${deliveryLine(g, bc)} · ${relTime(g.ts, lang)}`}
-                  onPress={g.groupKind === "campaign" ? () => router.push({ pathname: "/couple/broadcasts/[id]", params: { id: g.id } }) : undefined}
-                  chevron={g.groupKind === "campaign"}
-                  last={index === history.length - 1}
-                />
-              </View>
-            )}
-          />
-        )}
+        <FlatList<InboxItem>
+          {...scrim.listProps}
+          key="conv"
+          refreshControl={pull.control ?? undefined}
+          data={data?.items ?? []}
+          keyExtractor={(i) => i.id}
+          ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
+          contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
+          ListEmptyComponent={convEmpty}
+          renderItem={({ item: m }) => <ThreadRow m={m} onOpen={(id) => router.push({ pathname: "/couple/messages/[id]", params: { id } })} channelLabel={ic.channel[m.channel] ?? m.channel} lang={lang} gapLabel={ic.gap} upsetLabel={m.sentiment === "frustrated" ? ic.frustrated : m.sentiment === "negative" ? ic.upset : null} emptyPreview={ic.messages(m.message_count)} />}
+        />
       </Screen>
 
       <Sheet visible={composeOpen} onClose={() => setComposeOpen(false)} top={380}>

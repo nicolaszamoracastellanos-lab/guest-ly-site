@@ -107,10 +107,18 @@ export async function registerPush(
 // Screens that exist in each surface. A push route is used as is only when
 // its first segment is one of these; anything else (a web-only page, a typo)
 // lands on the surface home instead of the "Unmatched route" page.
+// Build 13: the couple's Plan and More are Tools, the planner's Wedding is
+// Tools. The old names stay valid (their routes redirect) and are rewritten
+// to Tools here, so a push never lands on a redirect.
 const SECTIONS: Record<Surface, string[]> = {
   guest: ["rsvp", "schedule", "concierge", "messages", "dayof", "more", "site"],
-  couple: ["guests", "rsvps", "messages", "plan", "more", "requests", "tasks", "budget", "vendors", "seating", "runsheet", "brain", "insights", "broadcasts", "website", "dayof", "checkin", "settings"],
-  planner: ["guests", "requests", "tasks", "wedding", "budget", "vendors", "seating", "runsheet", "broadcasts", "more"],
+  couple: ["guests", "rsvps", "messages", "broadcasts", "tools", "plan", "more", "requests", "tasks", "budget", "vendors", "seating", "runsheet", "brain", "insights", "website", "dayof", "checkin", "settings"],
+  planner: ["guests", "requests", "tasks", "tools", "wedding", "budget", "vendors", "seating", "runsheet", "broadcasts", "more"],
+};
+const SECTION_ALIASES: Record<Surface, Record<string, string>> = {
+  guest: {},
+  couple: { plan: "tools", more: "tools" },
+  planner: { wedding: "tools" },
 };
 
 // Web bell hrefs (root-relative, one per surface) and where they live in the app.
@@ -158,7 +166,12 @@ export function routeFor(data: Record<string, unknown> | undefined, surface: Sur
   if (!route || route === home) return home;
   const seg = route.split("/").filter(Boolean);
   // An app route for this surface: only when its section exists.
-  if (seg[0] === surface) return seg.length === 1 || SECTIONS[surface].includes(seg[1]) ? route : home;
+  if (seg[0] === surface) {
+    if (seg.length === 1) return route;
+    if (!SECTIONS[surface].includes(seg[1])) return home;
+    const alias = SECTION_ALIASES[surface][seg[1]];
+    return alias && seg.length === 2 ? `/${surface}/${alias}` : route;
+  }
   // The planner web portal lives under /planner too: /planner/requests etc.
   // For any other surface a route into a different surface goes home.
   if (seg[0] === "guest" || seg[0] === "couple" || seg[0] === "planner") return home;

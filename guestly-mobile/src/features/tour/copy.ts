@@ -77,10 +77,10 @@ const en = {
         tryIt: "Tap Record an RSVP",
         scene: "RSVP counters and a list of answers. Tapping Record an RSVP adds an answer received in person.",
       },
-      plan: {
+      tools: {
         title: "Plan it, with help.",
-        body: "Plan holds Budget, Tasks, Seating and the Day-of schedule. Your Coordinator reads your wedding and proposes; nothing changes until you tap Confirm.",
-        where: "Plan tab, and the gold button on any screen",
+        body: "Tools holds your wedding site, Budget, Tasks, Seating and the Day-of schedule. Your Coordinator reads your wedding and proposes; nothing changes until you tap Confirm.",
+        where: "Tools tab, and the gold button on any screen",
         tip: "Replay this tour any time in Settings.",
         tryIt: "Tap Confirm",
         scene: "A chat with the Coordinator proposing a change. Tapping Confirm applies it.",
@@ -110,11 +110,11 @@ const en = {
         tryIt: "Tap Send",
         scene: "A request to add a seat. Tapping Send sends it to the couple, who approve it.",
       },
-      wedding: {
-        title: "Your tools, in Wedding.",
-        body: "Wedding has what the couple shares with you: {tools}.",
-        bodyNoName: "Wedding shows the tools the couple shares with you. A locked tile lets you ask them for access.",
-        where: "Wedding tab",
+      tools: {
+        title: "Every tool, one tab.",
+        body: "Tools has what the couple shares with you: {tools}.",
+        bodyNoName: "The Tools tab shows what the couple shares with you. A locked tile lets you ask them for access.",
+        where: "Tools tab",
         tip: "Replay this tour any time in Settings.",
         scene: "Four tool tiles. The ones the couple shares with you are lit; the others show a lock.",
       },
@@ -242,10 +242,10 @@ const es: TourCopy = {
         tryIt: "Toca Registrar una respuesta",
         scene: "Contadores de confirmación y una lista de respuestas. Al tocar Registrar una respuesta se agrega una recibida en persona.",
       },
-      plan: {
+      tools: {
         title: "Planéalo, con ayuda.",
-        body: "En Plan están Presupuesto, Tareas, Mesas e Itinerario del día. Tu Coordinador lee tu boda y propone; nada cambia hasta que tocas Confirmar.",
-        where: "Pestaña Plan, y el botón dorado en cualquier pantalla",
+        body: "En Herramientas están tu sitio, Presupuesto, Tareas, Mesas e Itinerario del día. Tu Coordinador lee tu boda y propone; nada cambia hasta que tocas Confirmar.",
+        where: "Pestaña Herramientas, y el botón dorado en cualquier pantalla",
         tip: "Puedes repetir este recorrido cuando quieras en Ajustes.",
         tryIt: "Toca Confirmar",
         scene: "Un chat con el Coordinador proponiendo un cambio. Al tocar Confirmar se aplica.",
@@ -275,11 +275,11 @@ const es: TourCopy = {
         tryIt: "Toca Enviar",
         scene: "Una solicitud para agregar un lugar. Al tocar Enviar llega a la pareja, que la aprueba.",
       },
-      wedding: {
-        title: "Tus herramientas, en Boda.",
-        body: "Boda tiene lo que la pareja comparte contigo: {tools}.",
-        bodyNoName: "Boda muestra las herramientas que la pareja comparte contigo. Desde una tarjeta con candado puedes pedirles acceso.",
-        where: "Pestaña Boda",
+      tools: {
+        title: "Cada herramienta, en una pestaña.",
+        body: "Herramientas tiene lo que la pareja comparte contigo: {tools}.",
+        bodyNoName: "La pestaña Herramientas muestra lo que la pareja comparte contigo. Desde una tarjeta con candado puedes pedirles acceso.",
+        where: "Pestaña Herramientas",
         tip: "Puedes repetir este recorrido cuando quieras en Ajustes.",
         scene: "Cuatro tarjetas de herramientas. Las que la pareja comparte contigo están encendidas; las demás muestran un candado.",
       },

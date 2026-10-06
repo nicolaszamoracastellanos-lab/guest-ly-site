@@ -1,5 +1,6 @@
 // Which steps each tour has, in order. Build 12: at most three cards, each
-// naming a real tab; the last card closes the tour (its button is the CTA).
+// naming a real tab (build 13: the couple's Plan and the planner's Wedding
+// cards name the Tools tab); the last card closes the tour (its button is the CTA).
 // The pending couple tour previews the couple tour. The planner tour is built
 // from the planner's real permissions on the open wedding.
 
@@ -24,7 +25,7 @@ export type TourStep = {
 export type TourNames = {
   name?: string | null;
   couple?: string | null;
-  /** Planner only: which Boda tools are shared, and whether the task and
+  /** Planner only: which Tools tiles are shared, and whether the task and
    *  Coordinator tools are on. Missing: everything counts as on. */
   planner?: { tools: Record<TourTool, boolean>; tasks: boolean; coordinator: boolean } | null;
 };
@@ -49,13 +50,13 @@ export function buildSteps(variant: TourVariant, t: TourCopy, names: TourNames, 
       return [
         { key: "home", copy: c.home, Scene: BriefingScene },
         { key: "guests", copy: c.guests, Scene: RsvpsScene },
-        { key: "plan", copy: c.plan, Scene: CoordinatorScene, final: true },
+        { key: "tools", copy: c.tools, Scene: CoordinatorScene, final: true },
       ];
     case "couple-pending":
       return [
         { key: "intro", copy: pend.intro, Scene: GemAssemble },
         { key: "guests", copy: c.guests, Scene: RsvpsScene },
-        { key: "plan", copy: { ...c.plan, tip: undefined }, Scene: CoordinatorScene, final: true },
+        { key: "tools", copy: { ...c.tools, tip: undefined }, Scene: CoordinatorScene, final: true },
       ];
     case "planner": {
       const perms = names.planner ?? null;
@@ -63,15 +64,15 @@ export function buildSteps(variant: TourVariant, t: TourCopy, names: TourNames, 
       const coordinator = perms ? perms.coordinator : true;
       const order: TourTool[] = ["budget", "tasks", "seating", "runsheet"];
       const labels = perms && toolLabels ? order.filter((k) => perms.tools[k]).map((k) => toolLabels[k]) : [];
-      const wedding: TourStepCopy = {
-        ...p.wedding,
-        body: labels.length ? fmt(p.wedding.body, { tools: labels.join(", ") }) : p.wedding.bodyNoName ?? p.wedding.body,
+      const tools: TourStepCopy = {
+        ...p.tools,
+        body: labels.length ? fmt(p.tools.body, { tools: labels.join(", ") }) : p.tools.bodyNoName ?? p.tools.body,
         // The Coordinator line only when that tool is on.
-        tip: coordinator ? `${p.coordinator} ${p.wedding.tip ?? ""}`.trim() : p.wedding.tip,
+        tip: coordinator ? `${p.coordinator} ${p.tools.tip ?? ""}`.trim() : p.tools.tip,
       };
       const steps: TourStep[] = [{ key: "weddings", copy: p.weddings, Scene: WeddingsScene }];
       if (tasks) steps.push({ key: "propose", copy: p.propose, Scene: ProposeScene });
-      steps.push({ key: "wedding", copy: wedding, Scene: ToolsScene, final: true });
+      steps.push({ key: "tools", copy: tools, Scene: ToolsScene, final: true });
       return steps;
     }
   }
