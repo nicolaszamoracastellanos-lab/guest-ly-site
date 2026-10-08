@@ -12,10 +12,11 @@
 // reply is unread.
 
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { get } from "@/lib/api";
-import { useGuestHome, type ThreadMessage } from "@/lib/hooks";
+import { useGuestHome, useGuestMessagesPeek } from "@/lib/hooks";
+import { useGuestSession } from "@/lib/session";
+import { useGuestPermissionCheck } from "@/features/guest/permission";
 import { RoleTabs, type TabSpec } from "@/ui/TabBar";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useAskSeen } from "@/features/guest/state";
@@ -24,16 +25,14 @@ export default function GuestTabs() {
   const c = useFeatureCopy(GUEST_COPY).tabs;
   const { data: home } = useGuestHome();
   const { seen } = useAskSeen();
-  // Same query as Ask (same key), without its polling. Only for a guest who
-  // has opened Ask on this phone (the seen mark exists): reading the thread
-  // creates the guest's app conversation on the server, which a guest who
-  // never asked anything should not get just by opening the app.
-  const { data: thread } = useQuery({
-    queryKey: ["guest-messages"],
-    queryFn: () => get<{ pending: boolean; conversation_id?: string; messages: ThreadMessage[] }>("/guest/messages"),
-    enabled: typeof seen === "string",
-    refetchInterval: 120_000,
-  });
+  // Oct 7 2026: the couple's broadcasts land in Ask too, so the dot must
+  // show for every signed-in guest, not only one who opened Ask before.
+  // The peek read has no side effects on the server (no conversation is
+  // created, nothing is marked read).
+  const session = useGuestSession();
+  const { data: thread } = useGuestMessagesPeek(!!session);
+  // Reports the notification permission and explains it once when denied.
+  useGuestPermissionCheck(useCopy());
   const pending = home?.rsvp?.status === "pending" && !home.day_of && !home.countdown?.passed;
   const newestCouple = (thread?.messages ?? []).reduce<string | null>((acc, m) => (m.role === "couple" && (!acc || Date.parse(m.created_at) > Date.parse(acc)) ? m.created_at : acc), null);
   // Unread only once the seen mark has loaded (undefined = still reading it).

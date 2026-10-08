@@ -155,6 +155,8 @@ export const en = {
     approvals: "Requests answered",
     blockedTitle: "Notifications are off for Guest-ly",
     blockedBody: "Turn them on in Settings to hear from the couple.",
+    deniedTitle: "Notifications are off for Guest-ly",
+    deniedBody: "The couple's messages still arrive in Ask. With notifications on, your phone also tells you when a new one comes in. You can turn them on in Settings at any time.",
     openSettings: "Open Settings",
   },
   guestHome: {

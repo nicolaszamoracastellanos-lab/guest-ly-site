@@ -165,6 +165,8 @@ export const es: Copy = {
     approvals: "Solicitudes respondidas",
     blockedTitle: "Las notificaciones de Guest-ly están desactivadas",
     blockedBody: "Actívalas en Ajustes para recibir noticias de la pareja.",
+    deniedTitle: "Las notificaciones de Guest-ly están apagadas",
+    deniedBody: "Los mensajes de la pareja igual llegan a Preguntar. Con las notificaciones activadas, tu teléfono también te avisa cuando llega uno nuevo. Puedes activarlas en Ajustes cuando quieras.",
     openSettings: "Abrir Ajustes",
   },
   guestHome: {

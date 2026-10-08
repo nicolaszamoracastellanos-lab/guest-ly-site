@@ -269,6 +269,11 @@ export default function Ask() {
           {g.ask.aiNotice}
         </T>
       </Pressable>
+      {mainQuery.dataUpdatedAt ? (
+        <T v="meta13" size={12} color={colors.ivory70} testID="ask-updated">
+          {fmt(g.ask.updated, { when: relTime(new Date(mainQuery.dataUpdatedAt).toISOString(), lang) })}
+        </T>
+      ) : null}
     </View>
   );
 

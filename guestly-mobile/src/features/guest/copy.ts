@@ -108,6 +108,7 @@ const en = {
     waiting: "Waiting for {couple}",
     newLabel: "New",
     earlier: "See earlier messages",
+    updated: "Updated {when}",
     chips: { wear: "What should I wear?", stay: "Where should I stay?", time: "What time does it start?", gifts: "Is there a gift registry?" },
   },
   schedule: {
@@ -258,6 +259,7 @@ const es: typeof en = {
     waiting: "Esperando a {couple}",
     newLabel: "Nuevo",
     earlier: "Ver mensajes anteriores",
+    updated: "Actualizado {when}",
     chips: { wear: "¿Qué me pongo?", stay: "¿Dónde me hospedo?", time: "¿A qué hora empieza?", gifts: "¿Hay mesa de regalos?" },
   },
   schedule: {
