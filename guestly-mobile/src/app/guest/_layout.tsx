@@ -34,7 +34,12 @@ export default function GuestTabs() {
   // Reports the notification permission and explains it once when denied.
   useGuestPermissionCheck(useCopy());
   const pending = home?.rsvp?.status === "pending" && !home.day_of && !home.countdown?.passed;
-  const newestCouple = (thread?.messages ?? []).reduce<string | null>((acc, m) => (m.role === "couple" && (!acc || Date.parse(m.created_at) > Date.parse(acc)) ? m.created_at : acc), null);
+  // The portal answers latest_couple_at directly (?latest=1); an older
+  // portal sends the thread instead and the newest couple line is found here.
+  const newestCouple =
+    thread?.latest_couple_at !== undefined
+      ? thread.latest_couple_at
+      : (thread?.messages ?? []).reduce<string | null>((acc, m) => (m.role === "couple" && (!acc || Date.parse(m.created_at) > Date.parse(acc)) ? m.created_at : acc), null);
   // Unread only once the seen mark has loaded (undefined = still reading it).
   const unread = !!newestCouple && seen !== undefined && (!seen || Date.parse(newestCouple) > Date.parse(seen));
 

@@ -43,8 +43,10 @@ export const useGuestSchedule = () => useQuery({ queryKey: ["guest-schedule"], q
 export const useGuestDayOf = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["guest-dayof"], queryFn: () => get<DayOf>("/guest/dayof"), refetchInterval: opts?.poll === false ? false : 60_000 });
 export const useGuestRsvp = () => useQuery({ queryKey: ["guest-rsvp"], queryFn: () => get<{ payload: GuestPayload; summary: RsvpSummary }>("/guest/rsvp") });
 /** Tab badge only: ?peek=1 never creates the app conversation and never
- *  marks broadcasts read, so it can poll for every signed-in guest. */
-export const useGuestMessagesPeek = (enabled: boolean) => useQuery({ queryKey: ["guest-messages-peek"], queryFn: () => get<{ messages: ThreadMessage[] }>("/guest/messages?peek=1"), enabled, refetchInterval: 60_000 });
+ *  marks broadcasts read, so it can poll for every signed-in guest.
+ *  &latest=1 (portal Oct 2026) answers just `latest_couple_at` instead of
+ *  the whole thread; an older portal ignores it and sends `messages`. */
+export const useGuestMessagesPeek = (enabled: boolean) => useQuery({ queryKey: ["guest-messages-peek"], queryFn: () => get<{ messages: ThreadMessage[]; latest_couple_at?: string | null }>("/guest/messages?peek=1&latest=1"), enabled, refetchInterval: 60_000 });
 export const useGuestMessages = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["guest-messages"], queryFn: () => get<{ pending: boolean; conversation_id?: string; messages: ThreadMessage[] }>("/guest/messages"), refetchInterval: opts?.poll === false ? false : 30_000 });
 
 // ---- couple
