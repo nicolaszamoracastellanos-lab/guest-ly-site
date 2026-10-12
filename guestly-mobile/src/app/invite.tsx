@@ -9,10 +9,17 @@
 // Build 12 (M2): "Continue" is docked and rides the keyboard (form screen),
 // so it is never under the keys, on an iPhone SE either. A success haptic when
 // the code opens a wedding; then one step (find your name) to the invitation.
+//
+// Oct 2026 (Nico's feedback): guests could not paste a copied code. The field
+// that takes the typing is hidden behind the boxes, so there was nothing to
+// long-press and iOS never offered Paste. A "Paste code" button under the
+// boxes reads the clipboard on tap (iOS asks once to allow it) and runs it
+// through the same cleaning as typing, so "abc-123" or a whole message works.
 
 import React, { useEffect, useRef, useState } from "react";
 import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions } from "react-native";
 import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -81,6 +88,21 @@ export default function InviteCode() {
     setCode("");
     setError(null);
     input.current?.focus();
+  };
+  const paste = async () => {
+    let text = "";
+    try {
+      text = await Clipboard.getStringAsync();
+    } catch {
+      text = "";
+    }
+    const next = extractInviteCode(text, LEN);
+    if (!next) {
+      setError(copy.invite.pasteEmpty);
+      return;
+    }
+    setError(null);
+    setCode(next);
   };
   const cells = Array.from({ length: LEN }, (_, i) => code[i] ?? "");
   return (
@@ -152,6 +174,13 @@ export default function InviteCode() {
           <T v={error ? "body15" : "meta13"} color={error ? colors.red : colors.ivory55} style={{ flex: 1, paddingTop: error ? 0 : 2 }} accessibilityLiveRegion="polite">
             {error ?? copy.invite.noCode}
           </T>
+          {!code && !busy ? (
+            <Pressable testID="invite-paste" onPress={paste} accessibilityRole="button" accessibilityLabel={copy.invite.pasteLabel} hitSlop={8} style={({ pressed }) => [styles.paste, pressed && { opacity: 0.6 }]}>
+              <T v="meta13" color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
+                {copy.invite.paste}
+              </T>
+            </Pressable>
+          ) : null}
           {code ? (
             <Pressable testID="invite-clear" onPress={clear} accessibilityRole="button" accessibilityLabel={copy.invite.clear} hitSlop={8} style={({ pressed }) => [styles.clear, pressed && { opacity: 0.6 }]}>
               <Icon name="x-circle" size={22} color={colors.ivory70} />
@@ -169,5 +198,6 @@ const styles = StyleSheet.create({
   cell: { flex: 1, height: 64, borderRadius: radius.chip, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", alignItems: "center", justifyContent: "center" },
   cellActive: { borderColor: "rgba(201,169,110,0.6)" },
   hidden: { position: "absolute", opacity: 0, height: 1, width: 1 },
+  paste: { minHeight: 44, marginTop: -12, paddingHorizontal: 4, justifyContent: "center" },
   clear: { width: 44, height: 44, marginTop: -12, marginRight: -10, alignItems: "center", justifyContent: "center" },
 });

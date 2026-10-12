@@ -131,6 +131,9 @@ export const es: Copy = {
     codeValue: "Código escrito: {code}",
     codeEmpty: "Todavía no escribiste el código",
     clear: "Borrar el código",
+    paste: "Pegar código",
+    pasteLabel: "Pegar el código que copiaste",
+    pasteEmpty: "No encontramos un código en lo que copiaste. Escribe los 6 caracteres.",
     fieldLabel: "Código de invitación, 6 caracteres",
   },
   find: {

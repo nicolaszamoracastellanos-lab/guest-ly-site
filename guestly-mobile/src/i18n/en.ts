@@ -121,6 +121,9 @@ export const en = {
     codeValue: "Code entered: {code}",
     codeEmpty: "No code entered yet",
     clear: "Clear the code",
+    paste: "Paste code",
+    pasteLabel: "Paste the code you copied",
+    pasteEmpty: "No code found in what you copied. Type the 6 characters instead.",
     fieldLabel: "Invitation code, 6 characters",
   },
   find: {
