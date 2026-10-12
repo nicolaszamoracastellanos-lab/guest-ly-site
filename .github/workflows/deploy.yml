@@ -36,8 +36,11 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      # Publish only the allowlisted public files, never the repository root.
+      - name: Stage public site files
+        run: bash scripts/stage-site.sh _site
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

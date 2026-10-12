@@ -13,3 +13,6 @@ wave4-screenshots/
 # nested repos owned by other work (never part of the published site)
 guestly-portal/
 guestly-portal-deploy/
+
+# staged GitHub Pages output (scripts/stage-site.sh)
+_site/
