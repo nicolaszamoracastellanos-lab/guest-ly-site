@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d1117">
+<title>Tu sesión de inicio con Guest-ly</title>
+<meta name="description" content="Miércoles 21 de octubre, 14:00 a 15:30 (hora de Bolivia). Unirte a la videollamada, agregar la cita a tu calendario y ver qué tener a mano.">
+<link rel="icon" type="image/svg+xml" href="/favicon-diamond.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #0d1117; --navy: #16213a; --ivory: #f7f3ec; --gold: #c9a96e; --gold-lt: #e0c791;
+    --muted: rgba(247, 243, 236, 0.68); --line: rgba(201, 169, 110, 0.28);
+    --display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    --body: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--night); color: var(--ivory); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(70% 45% at 85% -10%, rgba(201, 169, 110, 0.16), transparent 60%),
+                radial-gradient(60% 40% at 0% 100%, rgba(22, 33, 58, 0.9), transparent 70%); }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 28px 20px 56px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  header img { height: 30px; width: auto; display: block; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-lt); font-weight: 500; margin: 0 0 10px; display: flex; align-items: center; gap: 10px; }
+  .gem { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); flex: none; }
+  h1 { font-family: var(--display); font-weight: 500; font-size: clamp(34px, 8vw, 46px); line-height: 1.08; margin: 0 0 22px; }
+  h2 { font-family: var(--display); font-weight: 500; font-size: 28px; line-height: 1.15; margin: 0 0 12px; }
+  p { margin: 0 0 12px; }
+  .card { background: linear-gradient(155deg, #16213a 0%, #0d1117 70%); border: 1px solid var(--line); border-radius: 22px; padding: 26px 22px; }
+  .when { font-family: var(--display); font-size: 30px; line-height: 1.15; margin: 0; }
+  .when-sub { color: var(--muted); margin: 6px 0 0; }
+  .actions { display: grid; gap: 12px; margin-top: 22px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 22px; border-radius: 14px; border: 0; font: 600 16px/1 var(--body); text-decoration: none; cursor: pointer; transition: background-color .2s, color .2s; }
+  .btn-gold { background: var(--gold); color: var(--night); }
+  .btn-gold:hover { background: var(--gold-lt); }
+  .btn-ghost { background: rgba(247, 243, 236, 0.08); color: var(--ivory); }
+  .btn-ghost:hover { background: rgba(247, 243, 236, 0.14); }
+  .btn:focus-visible, summary:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  details { border-radius: 14px; background: rgba(247, 243, 236, 0.08); }
+  summary { list-style: none; display: flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 22px; border-radius: 14px; font-weight: 600; cursor: pointer; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; margin-left: 10px; color: var(--gold-lt); font-size: 20px; line-height: 1; }
+  details[open] summary::after { content: "\2212"; }
+  .cal { display: grid; gap: 4px; padding: 4px 8px 12px; }
+  .cal a { display: block; padding: 13px 14px; border-radius: 10px; color: var(--ivory); text-decoration: none; }
+  .cal a:hover { background: rgba(247, 243, 236, 0.08); }
+  .cal small { display: block; color: var(--muted); font-size: 13px; }
+  section { margin-top: 40px; }
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; }
+  ol.steps li::before { content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(201, 169, 110, 0.18); color: var(--gold-lt); font-weight: 600; }
+  ul.have { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  ul.have li { display: grid; grid-template-columns: 18px 1fr; gap: 12px; align-items: start; }
+  ul.have li::before { content: ""; width: 8px; height: 8px; margin-top: 9px; background: var(--gold); transform: rotate(45deg); }
+  .note { color: var(--muted); }
+  textarea { width: 100%; min-height: 120px; resize: vertical; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(247, 243, 236, 0.06); color: var(--ivory); font: 400 16px/1.5 var(--body); }
+  textarea::placeholder { color: rgba(247, 243, 236, 0.45); }
+  .row { display: grid; gap: 12px; margin-top: 12px; }
+  @media (min-width: 560px) { .actions.two, .row { grid-template-columns: 1fr 1fr; } }
+  footer { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  footer a { color: var(--gold-lt); }
+  .rise { animation: rise .45s cubic-bezier(.22, 1, .36, 1) backwards; }
+  .d1 { animation-delay: .05s; } .d2 { animation-delay: .12s; } .d3 { animation-delay: .19s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; } .btn { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="rise">
+    <img src="/guest-ly-white.svg" alt="Guest-ly" width="120" height="30">
+  </header>
+
+  <main>
+    <p class="eyebrow rise d1"><span class="gem" aria-hidden="true"></span>Sesión de inicio</p>
+    <h1 class="rise d1">Tu sesión de inicio con Guest-ly</h1>
+
+    <div class="card rise d2">
+      <p class="when">Miércoles 21 de octubre</p>
+      <p class="when-sub">14:00 a 15:30, hora de Bolivia. Son 90 minutos, por videollamada.</p>
+      <div class="actions">
+        <a class="btn btn-gold" id="join" href="https://meet.google.com/orc-szwp-uuo" target="_blank" rel="noopener">Unirme a la videollamada</a>
+        <details>
+          <summary>Agregar a mi calendario</summary>
+          <div class="cal">
+            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Tu%20sesi%C3%B3n%20de%20inicio%20con%20Guest-ly&dates=20261021T180000Z/20261021T193000Z&details=Vamos%20a%20dejar%20lista%20tu%20primera%20boda%20en%20Guest-ly%2C%20paso%20a%20paso.%20Videollamada%3A%20https%3A%2F%2Fmeet.google.com%2Forc-szwp-uuo%20%20Tu%20p%C3%A1gina%20con%20todo%20lo%20que%20necesitas%3A%20https%3A%2F%2Fguest-ly.com%2Freunion%2Fraquel%2F&location=https%3A%2F%2Fmeet.google.com%2Forc-szwp-uuo" target="_blank" rel="noopener">Google Calendar</a>
+            <a href="https://outlook.live.com/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&rru=addevent&subject=Tu%20sesi%C3%B3n%20de%20inicio%20con%20Guest-ly&startdt=2026-10-21T18:00:00Z&enddt=2026-10-21T19:30:00Z&body=Vamos%20a%20dejar%20lista%20tu%20primera%20boda%20en%20Guest-ly%2C%20paso%20a%20paso.%20Videollamada%3A%20https%3A%2F%2Fmeet.google.com%2Forc-szwp-uuo%20%20Tu%20p%C3%A1gina%20con%20todo%20lo%20que%20necesitas%3A%20https%3A%2F%2Fguest-ly.com%2Freunion%2Fraquel%2F&location=https%3A%2F%2Fmeet.google.com%2Forc-szwp-uuo" target="_blank" rel="noopener">Outlook</a>
+            <a href="/reunion/raquel/guest-ly-sesion-de-inicio.ics" download>Apple Calendario y otros<small>Descarga un archivo .ics</small></a>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <section class="rise d3" aria-labelledby="h-hacer">
+      <h2 id="h-hacer">Qué vamos a hacer</h2>
+      <p class="note">Vamos a dejar lista tu primera boda, de principio a fin y contigo al mando.</p>
+      <ol class="steps">
+        <li><span>Crear tu primera boda en tu panel.</span></li>
+        <li><span>Llenar la información: nombres, fecha, lugares e itinerario.</span></li>
+        <li><span>Pedir a Guest-ly que la revise y la active, aquí mismo en la llamada.</span></li>
+        <li><span>Importar tu lista de invitados desde tu Excel, una foto o un PDF.</span></li>
+        <li><span>Armar y publicar la web de los novios, con una foto de portada o tu save the date.</span></li>
+      </ol>
+      <p class="note" style="margin-top:14px">Al terminar, la web ya está publicada y lista para compartir con los novios.</p>
+    </section>
+
+    <section aria-labelledby="h-mano">
+      <h2 id="h-mano">Qué tener a mano</h2>
+      <ul class="have">
+        <li>La lista de invitados de esta boda, en Excel, en una foto o en PDF.</li>
+        <li>La imagen del save the date.</li>
+        <li>Los nombres de los novios, la fecha y el lugar de la boda.</li>
+        <li>El correo de los novios.</li>
+        <li>Un número de WhatsApp para la boda, si ya lo tienen. Si no, no pasa nada: lo pedimos después.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="h-antes">
+      <h2 id="h-antes">Antes de la llamada</h2>
+      <p class="note">Escríbeme aquí lo que quieras preguntar o tener listo, y me llega antes de que empecemos.</p>
+      <label for="msg" class="sr" style="position:absolute;left:-9999px">Tu mensaje</label>
+      <textarea id="msg" placeholder="Por ejemplo: quiero saber cómo mando la web a los novios, o tengo dos listas de invitados..."></textarea>
+      <div class="row">
+        <a class="btn btn-gold" id="wa" href="https://wa.me/19106107193?text=Hola%20Nicol%C3%A1s%2C%20antes%20de%20la%20llamada%3A%20" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+        <a class="btn btn-ghost" id="mail" href="mailto:nicolas@guest-ly.com?subject=Antes%20de%20la%20sesi%C3%B3n%20de%20inicio&body=Hola%20Nicol%C3%A1s%2C%20antes%20de%20la%20llamada%3A%20">Enviar por correo</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-panel">
+      <h2 id="h-panel">Tu panel</h2>
+      <p>Entra una vez antes de la llamada para comprobar tu acceso. Usa tu correo de siempre, y si no recuerdas la contraseña, toca <em>Olvidé mi contraseña</em>.</p>
+      <div class="actions"><a class="btn btn-ghost" href="https://app.guest-ly.com/planners" target="_blank" rel="noopener">Abrir mi panel de Guest-ly</a></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Nicolas Zamora, Guest-ly. Si algo no funciona, escríbeme por <a href="https://wa.me/19106107193">WhatsApp</a> o a <a href="mailto:nicolas@guest-ly.com">nicolas@guest-ly.com</a>.</p>
+    <p>Guest-ly&trade; y el logotipo de Guest-ly son marcas de ZC Ventures LLC.</p>
+  </footer>
+</div>
+<script>
+  (function () {
+    var msg = document.getElementById("msg");
+    var wa = document.getElementById("wa");
+    var mail = document.getElementById("mail");
+    var lead = 'Hola Nicolás, antes de la llamada: ';
+    function sync() {
+      var text = lead + (msg.value || "").trim();
+      wa.href = "https://wa.me/19106107193?text=" + encodeURIComponent(text);
+      mail.href = "mailto:nicolas@guest-ly.com?subject=" + encodeURIComponent("Antes de la sesión de inicio") + "&body=" + encodeURIComponent(text);
+    }
+    msg.addEventListener("input", sync);
+    sync();
+  })();
+</script>
+</body>
+</html>

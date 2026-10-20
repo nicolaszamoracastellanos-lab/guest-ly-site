@@ -1,0 +1,31 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Guest-ly//Sesion de inicio//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:sesion-inicio-raquel-20261021@guest-ly.com
+DTSTAMP:20261020T210000Z
+DTSTART:20261021T180000Z
+DTEND:20261021T193000Z
+SUMMARY:Tu sesión de inicio con Guest-ly
+DESCRIPTION:Vamos a dejar lista tu primera boda en Guest-ly\, paso a paso
+ . Antes de la llamada\, tu página con todo lo que necesitas: https://gu
+ est-ly.com/reunion/raquel/
+LOCATION:https://meet.google.com/orc-szwp-uuo
+URL:https://guest-ly.com/reunion/raquel/
+ORGANIZER;CN=Nicolas Zamora - Guest-ly:mailto:nicolas@guest-ly.com
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Tu sesión de inicio con Guest-ly empieza en 30 minutos
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT10M
+ACTION:DISPLAY
+DESCRIPTION:Tu sesión de inicio con Guest-ly empieza en 10 minutos
+END:VALARM
+END:VEVENT
+END:VCALENDAR
