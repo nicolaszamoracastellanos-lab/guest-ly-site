@@ -38,6 +38,7 @@ OPTIONAL=(
   robots.txt
   sitemap.xml
   404.html
+  reunion               # /reunion/<name>/: private session pages (noindex), one per planner call
 )
 
 cd "$ROOT"
