@@ -1,6 +1,10 @@
 // Read a budget from a paste, a spreadsheet or a photo, review every line,
 // then save into a new or an existing budget. Nothing is written before the
 // review step.
+//
+// ?mode=sync&b=<budget> is "Update from Excel" (build 15): the same read, then
+// the server compares it with that budget and the person ticks what to apply
+// (SyncReview). Nothing is deleted unless ticked; a blank cell never erases.
 
 import React, { useState } from "react";
 import { View, Pressable, Alert } from "react-native";
@@ -16,7 +20,8 @@ import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Input, Banner, Icon, Hairline, Chip, ChipRow } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
-import { useBudgetSurface, useBudgetWrites, type ExtractedBudget, type ExtractedItem } from "../hooks";
+import { useBudgetSurface, useBudgetWrites, type ExtractedBudget, type ExtractedItem, type SyncPlan } from "../hooks";
+import { SyncReview, buildSelection, emptySyncUi, isEmptyPlan, selectedCount, type SyncUi } from "../SyncReview";
 import { formatMoney, parseAmount } from "../money";
 import { useSafeBack } from "@/lib/nav";
 
@@ -31,7 +36,8 @@ export function BudgetImportScreen() {
   const { lang } = useLang();
   const back = useSafeBack();
   const online = useOnline();
-  const params = useLocalSearchParams<{ b?: string }>();
+  const params = useLocalSearchParams<{ b?: string; mode?: string }>();
+  const syncMode = params.mode === "sync" && !!params.b;
   const { data } = useBudgetSurface(params.b ?? null);
   const writes = useBudgetWrites();
 
@@ -40,6 +46,10 @@ export function BudgetImportScreen() {
   const [saving, setSaving] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedBudget | null>(null);
   const [target, setTarget] = useState<string | null>(params.b ?? null);
+  // Update from Excel: the server's comparison and the person's ticks.
+  const [plan, setPlan] = useState<SyncPlan | null>(null);
+  const [nameMatchSkipped, setNameMatchSkipped] = useState(false);
+  const [syncUi, setSyncUi] = useState<SyncUi>(() => emptySyncUi());
 
   function fail(err: unknown) {
     Alert.alert(errorText(err, lang, copy.nothingRead));
@@ -51,7 +61,12 @@ export function BudgetImportScreen() {
     try {
       const r = await writes.extract(body);
       if (!r.extracted.items.length) Alert.alert(copy.nothingRead);
-      else setExtracted(r.extracted);
+      else if (syncMode && params.b) {
+        const cmp = await writes.syncPreview(params.b, r.extracted);
+        setPlan(cmp.plan);
+        setNameMatchSkipped(cmp.nameMatchSkipped);
+        setSyncUi(emptySyncUi(cmp.plan));
+      } else setExtracted(r.extracted);
     } catch (err) {
       fail(err);
     } finally {
@@ -117,6 +132,20 @@ export function BudgetImportScreen() {
     setExtracted({ ...extracted, items: extracted.items.filter((_, j) => j !== i) });
   }
 
+  async function applySync() {
+    if (!plan || !params.b || saving) return;
+    setSaving(true);
+    try {
+      const r = await writes.syncApply(params.b, buildSelection(plan, syncUi));
+      Alert.alert(copy.syncDone(r.updated, r.added, r.removed));
+      back();
+    } catch (err) {
+      fail(err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function commit() {
     if (!extracted || saving) return;
     setSaving(true);
@@ -137,14 +166,30 @@ export function BudgetImportScreen() {
   return (
     <Screen header={<TopBar onBack={back} title={copy.title} />} keyboard>
       <>
-        <BigTitle title={extracted ? copy.previewTitle : copy.importTitle} sub={extracted ? copy.previewBody : copy.importIntro} size={34} />
+        <BigTitle
+          title={plan ? copy.syncReview : syncMode ? copy.syncTitle : extracted ? copy.previewTitle : copy.importTitle}
+          sub={plan ? undefined : syncMode ? copy.syncIntro : extracted ? copy.previewBody : copy.importIntro}
+          size={34}
+        />
         {!online ? (
           <View style={{ marginTop: 14 }}>
             <Banner icon="wifi-off" title={copy.offline} />
           </View>
         ) : null}
 
-        {!extracted ? (
+        {plan ? (
+          <View style={{ marginTop: 14 }}>
+            <SyncReview c={copy} currency={currency} plan={plan} nameMatchSkipped={nameMatchSkipped} ui={syncUi} setUi={setSyncUi} />
+            <Row gap={8} style={{ marginTop: 22 }}>
+              <View style={{ flex: 1 }}>
+                <Button label={copy.cancel} kind="ghost" onPress={() => setPlan(null)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button label={copy.syncApply} onPress={applySync} loading={saving} disabled={isEmptyPlan(plan) || selectedCount(plan, syncUi) === 0 || !online} testID="budget-sync-apply" />
+              </View>
+            </Row>
+          </View>
+        ) : !extracted ? (
           <Stack gap={10} style={{ marginTop: 20 }}>
             <Input accessibilityLabel={copy.pastePlaceholder} value={text} onChangeText={setText} placeholder={copy.pastePlaceholder} multiline style={{ borderRadius: 18, minHeight: 140 }} />
             <Button label={reading ? copy.reading : copy.read} onPress={() => read({ text })} loading={reading} disabled={!text.trim() || !online} />

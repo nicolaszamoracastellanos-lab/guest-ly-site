@@ -128,6 +128,36 @@ export type ExtractedBudget = {
   warnings: string[];
 };
 
+// ---- Update from a newer file (portal Oct 16): the comparison the server
+// proposes and the ticked selection the phone sends back. Mirrors
+// lib/budget-sync.ts on the portal.
+export type SyncFieldChange = { field: string; from: string | number | null; to: string | number | null };
+export type SyncPatch = Record<string, unknown>;
+export type SyncUpdate = { itemId: string; key: string; title: string; parentTitle: string | null; changes: SyncFieldChange[]; patch: SyncPatch };
+export type SyncAddition = { key: string; parentKey: string | null; parentItemId: string | null; parentTitle: string | null; item: ExtractedItem };
+export type SyncPaymentAdd = { itemId: string | null; itemKey: string | null; itemTitle: string; amount: number; currency: string | null; paid_on: string; kind: PaymentKind; paid_by: string };
+export type SyncPaymentConvert = { paymentId: string; itemTitle: string; amount: number; paid_on: string };
+export type SyncMissing = { itemId: string; title: string; parentTitle: string | null; total: number | null; payments: number; children: number };
+export type SyncPlan = {
+  matched: number;
+  unchanged: number;
+  updates: SyncUpdate[];
+  additions: SyncAddition[];
+  newCategories: string[];
+  paymentAdds: SyncPaymentAdd[];
+  paymentConverts: SyncPaymentConvert[];
+  missing: SyncMissing[];
+  warnings: string[];
+};
+export type SyncSelection = {
+  updates: { itemId: string; patch: SyncPatch }[];
+  additions: SyncAddition[];
+  paymentAdds: SyncPaymentAdd[];
+  paymentConverts: { paymentId: string; paid_on: string }[];
+  removeItemIds: string[];
+};
+export type SyncApplyCounts = { categories: number; updated: number; added: number; payments: number; converted: number; removed: number };
+
 /** "/couple/budget" or "/planner/budget", from the signed-in surface. */
 export function useBudgetBase(): string {
   const user = useUserSession();
@@ -177,6 +207,10 @@ export function useBudgetWrites() {
     addComment: (item_id: string, body: string, mentions: string[]) => run(post<{ item_id: string }>(`${base}/comments`, { item_id, body, mentions })),
     // A model read: normal latency is 25 to 50 s, past the 20 s default.
     extract: (body: { text?: string; file_base64?: string; filename?: string; mime?: string }) => postLong<{ extracted: ExtractedBudget }>(`${base}/import/extract`, body, AI_TIMEOUT_MS),
+    // Compare a read file with a budget (writes nothing; may call a model to
+    // pair renamed rows, so it gets the long timeout), then apply the ticks.
+    syncPreview: (budget_id: string, extracted: ExtractedBudget) => postLong<{ plan: SyncPlan; nameMatchSkipped: boolean }>(`${base}/import/sync-preview`, { budget_id, extracted }, AI_TIMEOUT_MS),
+    syncApply: (budget_id: string, selection: SyncSelection) => run(post<SyncApplyCounts>(`${base}/import/sync-apply`, { budget_id, selection })),
     commit: (extracted: ExtractedBudget, target_budget_id: string | null) => run(post<{ budgetId: string; items: number; payments: number }>(`${base}/import/commit`, { extracted, target_budget_id })),
   };
 }

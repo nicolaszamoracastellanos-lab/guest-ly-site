@@ -231,6 +231,11 @@ export function BudgetOverviewScreen() {
               <Button label={copy.importBudget} small kind="glass" icon="camera" onPress={() => router.push({ pathname: `${routePrefix}/import` as never, params: { b: active.budget.id } as never })} />
             </ButtonRow>
           ) : null}
+          {canEdit && active.items.length > 0 ? (
+            <ButtonRow style={{ marginTop: 8 }}>
+              <Button label={copy.syncButton} small kind="glass" icon="list" onPress={() => router.push({ pathname: `${routePrefix}/import` as never, params: { b: active.budget.id, mode: "sync" } as never })} disabled={!online} testID="budget-sync" />
+            </ButtonRow>
+          ) : null}
 
           {/* Vendors live inside Budget (F5): the ones on this budget's
               lines, and the way to every vendor. */}

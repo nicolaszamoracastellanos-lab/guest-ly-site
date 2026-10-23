@@ -99,6 +99,36 @@ const en = {
   imported: "{items} lines and {payments} payments saved.",
   removeLine: "Remove",
   nothingRead: "Nothing could be read from that.",
+  syncButton: "Update from Excel",
+  syncTitle: "Update from a newer file",
+  syncIntro: "Upload the latest version of your spreadsheet. We compare it with this budget and show only what changed. Nothing is saved until you confirm, and nothing is deleted unless you tick it.",
+  syncComparing: "Comparing with your budget",
+  syncReview: "Review the changes",
+  syncSummary: (changed: number, added: number, missing: number, same: number) => `${changed} changed, ${added} new, ${missing} not in the file, ${same} unchanged.`,
+  syncNothing: "This file matches your budget. There is nothing to update.",
+  syncChanged: "Changed",
+  syncAdded: "New in the file",
+  syncAddedUnder: (parent: string) => `Under ${parent}`,
+  syncNewCategories: (names: string[]) => `New ${names.length === 1 ? "category" : "categories"}: ${names.join(", ")}`,
+  syncMissing: "Not in the file anymore",
+  syncMissingHint: "These stay in your budget exactly as they are. Tick one only if you want it removed.",
+  syncRemoveWarn: (payments: number, children: number) => {
+    const bits: string[] = [];
+    if (payments > 0) bits.push(`${payments} ${payments === 1 ? "payment" : "payments"}`);
+    if (children > 0) bits.push(`${children} ${children === 1 ? "sub-line" : "sub-lines"}`);
+    return bits.length ? `Also removes ${bits.join(" and ")}` : "";
+  },
+  syncPayments: "Payments",
+  syncPaymentNew: (item: string) => `New payment on ${item}`,
+  syncPaymentConvert: (item: string) => `Planned payment on ${item} is now paid`,
+  syncConvertHint: "Planned payments the file now shows as paid start unticked. A month going by does not mean it was paid, so tick only the ones you know were.",
+  syncApply: "Apply changes",
+  syncDone: (updated: number, added: number, removed: number) => `Budget updated: ${updated} changed, ${added} added, ${removed} removed.`,
+  syncSkippedNames: "We could not check renamed rows this time. A row that changed its name may show up as both new and not in the file, so look at those two lists together.",
+  syncFields: { qty: "Quantity", unit_price: "Unit price", amount_override: "Total", unit_label: "Unit", currency: "Currency", status: "Status", vendor: "Vendor", category: "Category" } as Record<string, string>,
+  syncStatus: { quoted: "Quoted", confirmed: "Confirmed", pending: "Pending", cancelled: "Cancelled" } as Record<string, string>,
+  syncEmptyValue: "empty",
+  syncWhich: "Budget to update",
   permission: "Camera or photo access was not granted.",
 };
 
@@ -201,6 +231,36 @@ const es: typeof en = {
   imported: "Se guardaron {items} líneas y {payments} pagos.",
   removeLine: "Quitar",
   nothingRead: "No se pudo leer nada de eso.",
+  syncButton: "Actualizar desde Excel",
+  syncTitle: "Actualizar desde un archivo nuevo",
+  syncIntro: "Sube la última versión de tu hoja de cálculo. La comparamos con este presupuesto y te mostramos solo lo que cambió. No se guarda nada hasta que confirmes, y no se borra nada a menos que lo marques.",
+  syncComparing: "Comparando con tu presupuesto",
+  syncReview: "Revisa los cambios",
+  syncSummary: (changed: number, added: number, missing: number, same: number) => `${changed} ${changed === 1 ? "cambió" : "cambiaron"}, ${added} ${added === 1 ? "nueva" : "nuevas"}, ${missing} ya no ${missing === 1 ? "está" : "están"} en el archivo, ${same} sin cambios.`,
+  syncNothing: "Este archivo coincide con tu presupuesto. No hay nada que actualizar.",
+  syncChanged: "Cambiaron",
+  syncAdded: "Nuevas en el archivo",
+  syncAddedUnder: (parent: string) => `Dentro de ${parent}`,
+  syncNewCategories: (names: string[]) => `${names.length === 1 ? "Categoría nueva" : "Categorías nuevas"}: ${names.join(", ")}`,
+  syncMissing: "Ya no están en el archivo",
+  syncMissingHint: "Estas se quedan en tu presupuesto tal como están. Marca una solo si quieres quitarla.",
+  syncRemoveWarn: (payments: number, children: number) => {
+    const bits: string[] = [];
+    if (payments > 0) bits.push(`${payments} ${payments === 1 ? "pago" : "pagos"}`);
+    if (children > 0) bits.push(`${children} ${children === 1 ? "sublínea" : "sublíneas"}`);
+    return bits.length ? `También quita ${bits.join(" y ")}` : "";
+  },
+  syncPayments: "Pagos",
+  syncPaymentNew: (item: string) => `Pago nuevo en ${item}`,
+  syncPaymentConvert: (item: string) => `El pago planeado de ${item} ya está pagado`,
+  syncConvertHint: "Los pagos planeados que el archivo ahora muestra como pagados empiezan sin marcar. Que pase un mes no significa que se pagó, así que marca solo los que sabes que sí.",
+  syncApply: "Aplicar cambios",
+  syncDone: (updated: number, added: number, removed: number) => `Presupuesto actualizado: ${updated} ${updated === 1 ? "cambio" : "cambios"}, ${added} ${added === 1 ? "agregada" : "agregadas"}, ${removed} ${removed === 1 ? "quitada" : "quitadas"}.`,
+  syncSkippedNames: "Esta vez no pudimos revisar las filas con nombre cambiado. Una fila que cambió de nombre puede aparecer como nueva y también como ausente del archivo, así que mira esas dos listas juntas.",
+  syncFields: { qty: "Cantidad", unit_price: "Precio unitario", amount_override: "Total", unit_label: "Unidad", currency: "Moneda", status: "Estado", vendor: "Proveedor", category: "Categoría" } as Record<string, string>,
+  syncStatus: { quoted: "Cotizado", confirmed: "Confirmado", pending: "Pendiente", cancelled: "Cancelado" } as Record<string, string>,
+  syncEmptyValue: "vacío",
+  syncWhich: "Presupuesto a actualizar",
   permission: "No se concedió acceso a la cámara o a las fotos.",
 };
 
