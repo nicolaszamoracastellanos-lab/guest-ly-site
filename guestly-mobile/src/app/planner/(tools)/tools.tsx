@@ -33,7 +33,7 @@ import { PlannerTop, usePlannerBoardQ, daysToGo } from "@/app/planner/_layout";
 
 // Stock photos (no couple photo reaches the planner): one per wedding, the
 // same every time for the same wedding.
-const PHOTOS = [require("../../../assets/photos/courtyard.jpg"), require("../../../assets/photos/ceremony.jpg"), require("../../../assets/photos/bluehour.jpg"), require("../../../assets/photos/dance.jpg")];
+const PHOTOS = [require("../../../../assets/photos/courtyard.jpg"), require("../../../../assets/photos/ceremony.jpg"), require("../../../../assets/photos/bluehour.jpg"), require("../../../../assets/photos/dance.jpg")];
 
 /** Each tile is gated by the planner capability of the same name. */
 type Tool = "budget" | "tasks" | "seating" | "runsheet" | "broadcasts" | "coordinator";

@@ -28,7 +28,7 @@ import { DirectionsSheet, SiteSectionSheet } from "@/features/guest/sheets";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useRsvpDraft } from "@/features/guest/state";
 
-const fallback = require("../../../assets/photos/bluehour.jpg");
+const fallback = require("../../../../assets/photos/bluehour.jpg");
 
 type SheetName = "directions" | "dress" | "hotels" | "gifts" | null;
 

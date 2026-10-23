@@ -23,7 +23,7 @@ import { DressCodeSheet } from "@/features/guest/DressCodeSheet";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useGuestSite, sectionsOf } from "@/features/site/hooks";
 
-const storyFallback = require("../../../assets/photos/walk.jpg");
+const storyFallback = require("../../../../assets/photos/walk.jpg");
 
 export default function GuestInfo() {
   const copy = useCopy();

@@ -29,7 +29,7 @@ import { GUEST_COPY } from "@/features/guest/copy";
 import { useNotifLater } from "@/features/guest/state";
 import { enableGuestNotifications } from "@/features/guest/notifications";
 
-const photo = require("../../../../assets/photos/toast.jpg");
+const photo = require("../../../../../assets/photos/toast.jpg");
 const PAPER_GREEN = "#03694c";
 const PAPER_LINE = "rgba(20,17,12,0.1)";
 
