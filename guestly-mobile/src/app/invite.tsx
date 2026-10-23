@@ -17,7 +17,7 @@
 // through the same cleaning as typing, so "abc-123" or a whole message works.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions } from "react-native";
+import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions, type TextInputInstance } from "react-native";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -45,7 +45,7 @@ export default function InviteCode() {
   const [code, setCode] = useState(() => extractInviteCode(params.code ?? "", LEN));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   // A ref, not the busy state: the auto-open effect and a tap on Open can
   // land in the same frame, before a re-render.
   const inFlight = useRef(false);

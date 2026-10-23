@@ -25,45 +25,23 @@ export default function CoupleTabs() {
   }, [scopeKey]);
   const { data } = useInbox("needs_you");
   const badge = data?.needs_you ?? 0;
+  // Sections live inside the tab that opens them (route groups, URLs unchanged):
+  // Expo Router 58 redirects away from hidden tab routes.
   const specs: TabSpec[] = [
     { name: "index", icon: "home", label: c.home },
-    { name: "guests", icon: "guests", label: c.guests, owns: ["rsvps"] },
-    { name: "messages", icon: "chat", label: c.messages, badge, owns: ["broadcasts"] },
+    { name: "(guests)", icon: "guests", label: c.guests },
+    { name: "(messages)", icon: "chat", label: c.messages, badge },
     { name: "coordinator", icon: "sparkle", label: c.coordinator },
-    // Anything else (settings) lights Tools too: it is the fallback tab.
-    { name: "tools", icon: "grid", label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more"] },
+    { name: "(tools)", icon: "grid", label: c.tools },
   ];
   return (
     <RoleTabs
       specs={specs}
-      fallback="tools"
+      fallback="(tools)"
       // A wedding switch (Settings, or a notification for the other wedding)
       // sends the other tabs back to their lists: no record, thread or draft
       // of the previous wedding stays open (F1 for the couple).
       resetKey={tenantKey}
-      hidden={[
-        // RSVPs folded into Invitados: the route stays for pushes and the
-        // portal's links and redirects to the guest list (questions and
-        // record stay real screens).
-        "rsvps",
-        // Broadcasts folded into Mensajes (build 15).
-        "broadcasts",
-        // Build 12 tabs that now open Tools.
-        "plan",
-        "more",
-        "dayof",
-        "checkin",
-        "requests",
-        "tasks",
-        "seating",
-        "runsheet",
-        "brain",
-        "insights",
-        "budget",
-        "vendors",
-        "website",
-        "settings",
-      ]}
     />
   );
 }

@@ -162,7 +162,7 @@ function GuestList({ q, setQ, filter, setFilter, picked, setPicked, canRequest, 
             <T v="meta13" color={colors.ivory40} center style={{ marginTop: 14, paddingHorizontal: 24 }}>
               {c.tapHint}
             </T>
-          ) : null
+          ) : undefined
         }
         renderItem={({ item: g, index }) => (
           <View style={{ paddingHorizontal: 24 }}>

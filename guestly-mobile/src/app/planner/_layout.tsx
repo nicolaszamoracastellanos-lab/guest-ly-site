@@ -39,7 +39,7 @@ import { get, post } from "@/lib/api";
 import { usePlannerHome, type RequestRow, type TaskRow } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
-import { GlassTabBar, resetTabs, type TabSpec } from "@/ui/TabBar";
+import { GlassTabBar, resetTabs, tabNavigation, type TabSpec } from "@/ui/TabBar";
 import { T, Icon, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
@@ -98,7 +98,8 @@ type BarProps = React.ComponentProps<typeof GlassTabBar>;
  *  the screen a push for another wedding has just opened.) */
 function PlannerTabBar(props: BarProps) {
   const { tenantKey } = useSession();
-  const { state, navigation } = props;
+  const { state } = props;
+  const navigation = tabNavigation(props);
   const latest = useRef(state);
   useEffect(() => {
     latest.current = state;
@@ -109,7 +110,7 @@ function PlannerTabBar(props: BarProps) {
     last.current = tenantKey;
     if (!prev || !tenantKey || prev === tenantKey) return;
     const st = latest.current;
-    resetTabs(navigation as unknown as Parameters<typeof resetTabs>[0], { skip: st.routes[st.index]?.key, tabs: PLANNER_STACKS });
+    resetTabs(navigation, { skip: st.routes[st.index]?.key, tabs: PLANNER_STACKS });
   }, [tenantKey, navigation]);
   return <GlassTabBar {...props} />;
 }

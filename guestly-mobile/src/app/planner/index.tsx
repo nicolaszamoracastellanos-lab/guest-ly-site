@@ -16,7 +16,7 @@ import { usePlannerHome } from "@/lib/hooks";
 import { can, useTenantKey, useUserSession } from "@/lib/session";
 import { Screen, T, Row, SectionLabel, Skeleton, Card, ListRow, BriefingRow, Button, Icon, Stack } from "@/ui";
 import { colors, fonts, radius } from "@/ui/tokens";
-import { requestTitle } from "@/app/couple/requests/index";
+import { requestTitle } from "@/app/couple/(tools)/requests/index";
 import { PlannerTop, IconDisc, TaskCheckRow, usePlannerBoardQ, usePlannerRequestsQ, useTaskToggle, asksPlanner, dueOf, todayIso, daysToGo, kindIcon } from "@/app/planner/_layout";
 
 export default function PlannerToday() {

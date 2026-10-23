@@ -3,7 +3,7 @@
 // invitation action, and the status words of a guest row.
 
 import React, { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { View, ScrollView, Pressable, Share, StyleSheet, type LayoutChangeEvent } from "react-native";
+import { View, ScrollView, Pressable, Share, StyleSheet, type LayoutChangeEvent, type ScrollViewInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
@@ -23,7 +23,7 @@ export function useCoupleCopy() {
  *  "more this way") and that scrolls the selected chip into view. Children are
  *  `Chip`s; pass the index of the lit one. */
 export function FadedChipRow({ children, selected, padLeft = 24 }: { children: ReactNode; selected?: number; padLeft?: number }) {
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const xs = useRef<{ x: number; w: number }[]>([]);
   const [width, setWidth] = useState(0);
   const [atEnd, setAtEnd] = useState(false);

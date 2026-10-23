@@ -10,7 +10,7 @@
 // Reduce Motion turns the slide and parallax into a cross-fade.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AccessibilityInfo, BackHandler, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, BackHandler, Pressable, StyleSheet, View, useWindowDimensions, type HostInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -47,7 +47,7 @@ export function TourOverlay({ variant, names, onClose }: { variant: TourVariant;
   const shown = useSharedValue(0);
   // Not a ref: close() is handed to the gesture, which is built during render.
   const [closing] = useState(() => new Once());
-  const title = useRef<View>(null);
+  const title = useRef<HostInstance>(null);
 
   // ---------------------------------------------------------- open, close
   useEffect(() => {
@@ -261,7 +261,7 @@ class Once {
 
 // ---------------------------------------------------------------- one step
 
-function Page({ i, n, step, active, pos, width, reduced, t, titleRef }: { i: number; n: number; step: TourStep; active: boolean; pos: SharedValue<number>; width: number; reduced: boolean; t: TourCopy; titleRef?: React.RefObject<View | null> }) {
+function Page({ i, n, step, active, pos, width, reduced, t, titleRef }: { i: number; n: number; step: TourStep; active: boolean; pos: SharedValue<number>; width: number; reduced: boolean; t: TourCopy; titleRef?: React.RefObject<HostInstance | null> }) {
   const pageStyle = useAnimatedStyle(() => {
     const d = i - pos.get();
     if (reduced) return { opacity: Math.max(0, 1 - Math.abs(d)) };

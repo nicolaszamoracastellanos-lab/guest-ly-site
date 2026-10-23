@@ -257,7 +257,7 @@ function PickGuestSheet({ visible, onClose, onPick }: { visible: boolean; onClos
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           onEndReached={guests.loadMore}
-          ListEmptyComponent={guests.isLoading ? <Skeleton h={60} /> : null}
+          ListEmptyComponent={guests.isLoading ? <Skeleton h={60} /> : undefined}
           renderItem={({ item: g, index }) => (
             <ListRow
               leading={<Avatar initials={g.initials} />}

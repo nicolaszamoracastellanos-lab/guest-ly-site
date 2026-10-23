@@ -48,7 +48,7 @@ import { Tabs, usePathname } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Icon, type IconName } from "./Icon";
 import { useCovered } from "@/lib/lock";
-import { registerTabs } from "@/lib/nav";
+import { registerTabs, tabSlug } from "@/lib/nav";
 import { useCopy } from "@/i18n";
 import { colors, fonts, TAB_BAR_HEIGHT, TAB_BAR_MAX_WIDTH, FILL, tabBarOffset } from "./tokens";
 
@@ -161,9 +161,19 @@ function useReduceTransparency(): boolean {
   return on;
 }
 
+/** The tab navigator's navigation (getState, dispatch), taken from the focused
+ *  tab's descriptor. Expo Router 58 no longer passes `navigation` to a custom
+ *  tabBar: it passes `emitter`, `navigateToTab` and `descriptors` instead. */
+export function tabNavigation(props: Pick<BottomTabBarProps, "state" | "descriptors">): TabNav {
+  const route = props.state.routes[props.state.index] ?? props.state.routes[0];
+  return props.descriptors[route.key].navigation as unknown as TabNav;
+}
+
 export function GlassTabBar({
   state,
-  navigation,
+  descriptors,
+  emitter,
+  navigateToTab,
   specs,
   fallback = "more",
   resetKey,
@@ -176,6 +186,7 @@ export function GlassTabBar({
    *  another wedding switches first and then opens its screen there. */
   resetKey?: string | null;
 }) {
+  const navigation = tabNavigation({ state, descriptors });
   const insets = useSafeAreaInsets();
   const covered = useCovered();
   const common = useCopy().common;
@@ -199,7 +210,7 @@ export function GlassTabBar({
   useEffect(() => {
     if (!focusedRoute) return;
     const seg = pathname.split("/").filter(Boolean);
-    if (seg[1] === focusedRoute.name || (focusedRoute.name === "index" && seg.length === 1)) lastPaths.set(focusedRoute.key, pathname);
+    if (seg[1] === tabSlug(focusedRoute.name) || (focusedRoute.name === "index" && seg.length === 1)) lastPaths.set(focusedRoute.key, pathname);
   }, [pathname, focusedRoute]);
 
   // Wedding switch (F1): every other tab back to its root.
@@ -213,7 +224,7 @@ export function GlassTabBar({
     lastReset.current = resetKey;
     if (resetKey == null || prev == null || prev === resetKey) return;
     const st = latestState.current;
-    resetTabs(navigation as unknown as TabNav, { skip: st.routes[st.index]?.key, tabs: tabNames });
+    resetTabs(navigation, { skip: st.routes[st.index]?.key, tabs: tabNames });
   }, [resetKey, navigation, tabNames]);
 
   const bottom = tabBarOffset(Math.max(insets.bottom, 0));
@@ -238,14 +249,14 @@ export function GlassTabBar({
           return (
             <Pressable
               key={route.key}
-              testID={`tab-${route.name}`}
+              testID={`tab-${tabSlug(route.name)}`}
               accessibilityRole="tab"
               accessibilityState={{ selected: lit }}
               // A dot (RSVP pending, an unread reply) is not color alone.
               accessibilityLabel={count ? `${spec.label}, ${count}` : dot ? `${spec.label}, ${common.newItem}` : spec.label}
               onPress={() => {
                 void Haptics.selectionAsync();
-                const event = navigation.emit({
+                const event = emitter.emit({
                   type: "tabPress",
                   target: route.key,
                   canPreventDefault: true,
@@ -253,8 +264,8 @@ export function GlassTabBar({
                 if (focused || event.defaultPrevented) return;
                 // Back to the tab's own list: a screen pushed into it from
                 // another tab (Guests to RSVP questions) does not linger.
-                resetTabs(navigation as unknown as TabNav, { only: route.key, tabs: tabNames });
-                navigation.navigate(route.name);
+                resetTabs(navigation, { only: route.key, tabs: tabNames });
+                navigateToTab(route.key);
               }}
               style={[styles.tab, lit && styles.tabLit]}
             >

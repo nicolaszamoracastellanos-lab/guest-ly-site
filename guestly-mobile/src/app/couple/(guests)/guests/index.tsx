@@ -280,7 +280,7 @@ export default function CoupleGuests() {
           // Search results scroll clear of the keyboard (K9 to K12).
           automaticallyAdjustKeyboardInsets
           refreshControl={pull.control ?? undefined}
-          ListFooterComponent={filter !== "changed" && pages.isFetchingNextPage ? <ActivityIndicator color={colors.goldLight} style={{ marginVertical: 18 }} /> : null}
+          ListFooterComponent={filter !== "changed" && pages.isFetchingNextPage ? <ActivityIndicator color={colors.goldLight} style={{ marginVertical: 18 }} /> : undefined}
           ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
           contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
           ListEmptyComponent={

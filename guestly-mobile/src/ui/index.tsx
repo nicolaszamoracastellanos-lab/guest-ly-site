@@ -2,30 +2,7 @@
 // accents, glass surfaces, one paper (ivory) card per screen at most.
 
 import React, { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import {
-  View,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  TextInput,
-  Image,
-  ScrollView,
-  RefreshControl,
-  InputAccessoryView,
-  type ViewStyle,
-  type ImageStyle,
-  type StyleProp,
-  type TextInputProps,
-  Modal,
-  Platform,
-  Keyboard,
-  KeyboardAvoidingView,
-  useWindowDimensions,
-  type TextStyle,
-  type NativeScrollEvent,
-  type LayoutChangeEvent,
-  type NativeSyntheticEvent,
-} from "react-native";
+import { View, Pressable, StyleSheet, ActivityIndicator, TextInput, Image, ScrollView, RefreshControl, InputAccessoryView, type ViewStyle, type ImageStyle, type StyleProp, type TextInputProps, Modal, Platform, Keyboard, KeyboardAvoidingView, useWindowDimensions, type TextStyle, type NativeScrollEvent, type LayoutChangeEvent, type NativeSyntheticEvent, type TextInputInstance, type HostInstance, type ScrollViewInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -527,7 +504,7 @@ export function useKeyboardOpen(): boolean {
  *  667 pt phone the composer ended up under the keyboard (Part 9 audit, D-032).
  *  This wrapper measures its real place in the window and passes it on. */
 export function KeyboardFill({ children, modal = false }: { children: ReactNode; modal?: boolean }) {
-  const ref = useRef<View>(null);
+  const ref = useRef<HostInstance>(null);
   const insets = useSafeAreaInsets();
   const [offset, setOffset] = useState(0);
   // Inside an iOS modal sheet the measure is relative to the sheet, not to the
@@ -1026,7 +1003,7 @@ export function Input({
   icon?: IconName;
   right?: ReactNode;
   style?: StyleProp<ViewStyle>;
-  ref?: React.Ref<TextInput>;
+  ref?: React.Ref<TextInputInstance>;
   /** Show the clear button while there is text. Default: on for search fields. */
   clearable?: boolean;
   /** The iOS Done bar on numeric keyboards. Default on. */
@@ -1036,12 +1013,12 @@ export function Input({
   // and TalkBack; alone, its placeholder does. A call site's own label wins.
   const field = useContext(FieldContext);
   const c = useCopy().common;
-  const inner = useRef<TextInput | null>(null);
+  const inner = useRef<TextInputInstance | null>(null);
   const setRef = useCallback(
-    (node: TextInput | null) => {
+    (node: TextInputInstance | null) => {
       inner.current = node;
       if (typeof ref === "function") ref(node);
-      else if (ref && typeof ref === "object") (ref as React.RefObject<TextInput | null>).current = node;
+      else if (ref && typeof ref === "object") (ref as React.RefObject<TextInputInstance | null>).current = node;
     },
     [ref]
   );

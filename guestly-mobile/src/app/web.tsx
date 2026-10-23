@@ -18,7 +18,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, ActivityIndicator, Linking } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { WebView, type WebViewNavigation } from "react-native-webview";
+import { WebView as RNWebView, type WebViewNavigation } from "react-native-webview";
+
+// react-native-webview 14.0.1 (the SDK 58 pin) does not type-check as a JSX
+// component under React 19.3's types ("props: never"). Runtime is unaffected;
+// this keeps the props loosely typed until the library ships its own fix.
+const WebView = RNWebView as unknown as React.ComponentType<Record<string, unknown> & { ref?: React.Ref<RNWebView> }>;
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLang } from "@/i18n";
 import { ApiFailure } from "@/lib/api";
@@ -45,7 +50,7 @@ export default function InAppWeb() {
   const [fence, setFence] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
-  const ref = useRef<WebView>(null);
+  const ref = useRef<RNWebView>(null);
 
   useEffect(() => {
     let alive = true;

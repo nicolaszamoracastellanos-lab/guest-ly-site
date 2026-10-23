@@ -21,23 +21,7 @@
 // bindings fall back to plain views there.
 
 import React, { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Keyboard,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type GestureResponderEvent,
-  type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  type ScrollView,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type GestureResponderEvent, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView, type StyleProp, type ViewStyle, type TextInputInstance, type ScrollViewInstance, type HostInstance } from "react-native";
 import { makeMutable, runOnJS, type SharedValue } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -381,7 +365,7 @@ export type ComposerProps = {
   submitOnReturn?: boolean;
   /** Send button icon. Default the arrow up. */
   sendIcon?: IconName;
-  inputRef?: React.Ref<TextInput>;
+  inputRef?: React.Ref<TextInputInstance>;
   autoFocus?: boolean;
   testID?: string;
   sendTestID?: string;
@@ -494,8 +478,8 @@ export function ChatComposer({ accessory, below, children, ...composer }: ChatCo
  * View that wraps all of its content.
  */
 export function useKeepFocusedVisible({ gap = 16, enabled = true }: { gap?: number; enabled?: boolean } = {}) {
-  const scrollRef = useRef<ScrollView>(null);
-  const contentRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const contentRef = useRef<HostInstance>(null);
   const offset = useRef(0);
   const viewport = useRef(0);
   const contentHeight = useRef(0);

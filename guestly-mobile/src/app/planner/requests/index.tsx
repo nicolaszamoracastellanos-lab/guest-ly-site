@@ -20,7 +20,7 @@ import { can, useTenantKey, useUserSession } from "@/lib/session";
 import { Screen, BigTitle, Card, ListRow, Skeleton, Stack, SectionLabel, T, Chip, ChipRow, Segmented, Button, IconButton, Banner, Badge } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY as TASKS_COPY } from "@/features/tasks/copy";
-import { requestTitle } from "@/app/couple/requests/index";
+import { requestTitle } from "@/app/couple/(tools)/requests/index";
 import { PlannerTop, IconDisc, NotShared, TaskCheckRow, usePlannerBoardQ, usePlannerRequestsQ, useTaskToggle, asksPlanner, kindIcon } from "@/app/planner/_layout";
 import type { RequestRow } from "@/lib/hooks";
 

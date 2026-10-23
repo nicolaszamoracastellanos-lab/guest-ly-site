@@ -12,7 +12,7 @@
 // the person read their mail; /auth/callback opens it with ?step=code.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Pressable, StyleSheet, TextInput, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet, TextInput, useWindowDimensions, type TextInputInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -81,13 +81,13 @@ export default function SignIn() {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
   // The code step: the address the email went to, the typed digits, and the
   // seconds left before a resend.
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [wait, setWait] = useState(0);
-  const codeRef = useRef<TextInput>(null);
+  const codeRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     let alive = true;

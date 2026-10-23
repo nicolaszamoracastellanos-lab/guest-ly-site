@@ -18,8 +18,8 @@ import { usePlannerRequest } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, T, Badge, Card, Row, Button, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState, Composer, toast } from "@/ui";
 import { colors } from "@/ui/tokens";
-import { requestTitle } from "@/app/couple/requests/index";
-import { describeChanges } from "@/app/couple/requests/[id]";
+import { requestTitle } from "@/app/couple/(tools)/requests/index";
+import { describeChanges } from "@/app/couple/(tools)/requests/[id]";
 import { useSafeBack } from "@/lib/nav";
 
 /** Kinds the new-request form can rebuild, so they can be changed. */

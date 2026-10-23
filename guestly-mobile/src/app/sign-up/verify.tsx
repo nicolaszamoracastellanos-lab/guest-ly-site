@@ -5,7 +5,7 @@
 // account to /setup.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, TextInput, Pressable, StyleSheet, type TextInputInstance } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { fmt, useLang } from "@/i18n";
@@ -34,7 +34,7 @@ export default function VerifyEmail() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [wait, setWait] = useState(RESEND_AFTER_S);
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
 
   // No draft means this screen was opened cold (a restart): start over.
   useEffect(() => {

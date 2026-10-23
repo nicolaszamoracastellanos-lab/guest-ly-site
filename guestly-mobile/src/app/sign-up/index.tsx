@@ -6,7 +6,7 @@
 // they create the account, and the session provider routes it to /setup.
 
 import React, { useRef, useState } from "react";
-import { View, StyleSheet, Image, Linking, useWindowDimensions, type TextInput } from "react-native";
+import { View, StyleSheet, Image, Linking, useWindowDimensions, type TextInput, type TextInputInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
@@ -33,7 +33,7 @@ export default function SignUp() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState<"apple" | "google" | "email" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
   const configured = supabaseConfigured();
 
   const { height } = useWindowDimensions();

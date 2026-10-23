@@ -22,11 +22,13 @@ export async function ensureAndroidChannels(labels: { general: string; dayof: st
   if (Platform.OS !== "android") return;
   await Notifications.setNotificationChannelAsync("default", {
     name: labels.general,
+    // eslint-disable-next-line import/namespace -- exported by `export *`; the lint rule cannot follow it (eslint-config-expo 58)
     importance: Notifications.AndroidImportance.HIGH,
     lightColor: "#c9a96e",
   });
   await Notifications.setNotificationChannelAsync("dayof", {
     name: labels.dayof,
+    // eslint-disable-next-line import/namespace -- see above
     importance: Notifications.AndroidImportance.MAX,
     lightColor: "#c9a96e",
   });
