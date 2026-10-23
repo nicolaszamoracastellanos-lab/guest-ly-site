@@ -77,14 +77,16 @@ export default function CoupleGuests() {
   // One set of numbers everywhere: the wedding totals Home shows.
   const totals = home.data?.totals ?? pages.totals;
   const changedCount = changed.data?.items.length;
+  // All counts parties (one row each); Pending, Going and Not going count
+  // PEOPLE, like the portal's Guests cards (wave 13), so they add up to the
+  // people invited and match Home.
   const counts: Record<Filter, number | undefined> = {
     all: totals?.parties,
-    pending: totals?.pending_parties,
-    attending: totals?.attending_parties,
-    declined: totals?.declined_parties,
+    pending: totals ? Math.max(0, totals.people_expected - totals.attending_seats - totals.declined_seats) : undefined,
+    attending: totals?.attending_seats,
+    declined: totals?.declined_seats,
     changed: changedCount,
   };
-  const replied = totals ? totals.attending_parties + totals.declined_parties : 0;
 
   const rows: Row_[] = useMemo(() => {
     if (filter === "changed") {
@@ -215,7 +217,7 @@ export default function CoupleGuests() {
           }
         />
         <View style={{ marginTop: 10 }}>
-          <BigTitle title={c.guests.title} sub={totals ? c.guests.subtitle(totals.parties, replied) : ""} />
+          <BigTitle title={c.guests.title} sub={totals ? c.guests.subtitle(totals.parties, totals.people_expected) : ""} />
         </View>
         {/* Saved rows shown offline say so (QA Sep 29). */}
         {rows.length && (!online || listQuery.isError) ? (

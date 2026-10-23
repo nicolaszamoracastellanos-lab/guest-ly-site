@@ -1,6 +1,8 @@
-// Couple tabs (build 13): Inicio, Invitados, Mensajes, Avisos, Herramientas.
-// RSVPs live inside Invitados (the old /couple/rsvps redirects there),
-// broadcasts are their own tab, and Herramientas holds the planning tools and
+// Couple tabs (build 15): Inicio, Invitados, Mensajes, Coordinador,
+// Herramientas. RSVPs live inside Invitados (the old /couple/rsvps redirects
+// there), broadcasts live inside Mensajes (a switch at its top; the screens
+// stay under /couple/broadcasts), the Coordinator is a tab (a showcase when it
+// is off for the wedding) and Herramientas holds the planning tools and
 // everything the old Más listed. Settings is the gear on Inicio (and the last
 // row of Herramientas). Plan and Más stay as routes that redirect to
 // Herramientas, for old pushes and links.
@@ -26,8 +28,8 @@ export default function CoupleTabs() {
   const specs: TabSpec[] = [
     { name: "index", icon: "home", label: c.home },
     { name: "guests", icon: "guests", label: c.guests, owns: ["rsvps"] },
-    { name: "messages", icon: "chat", label: c.messages, badge },
-    { name: "broadcasts", icon: "megaphone", label: c.broadcasts },
+    { name: "messages", icon: "chat", label: c.messages, badge, owns: ["broadcasts"] },
+    { name: "coordinator", icon: "sparkle", label: c.coordinator },
     // Anything else (settings) lights Tools too: it is the fallback tab.
     { name: "tools", icon: "grid", label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more"] },
   ];
@@ -44,6 +46,8 @@ export default function CoupleTabs() {
         // portal's links and redirects to the guest list (questions and
         // record stay real screens).
         "rsvps",
+        // Broadcasts folded into Mensajes (build 15).
+        "broadcasts",
         // Build 12 tabs that now open Tools.
         "plan",
         "more",

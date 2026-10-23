@@ -19,9 +19,9 @@
 // the guest's Invitation) goes back to that tab instead of More. Until a
 // layout registers, the build 11 table below applies.
 //
-// Build 13: the couple's tabs are Home, Guests, Messages, Broadcast and Tools
-// (no More: Tools is the couple's fallback); the planner's Wedding tab is
-// Tools.
+// Build 15: the couple's tabs are Home, Guests, Guest messages (Broadcasts live
+// inside it), Coordinator and Tools (no More: Tools is the couple's fallback);
+// the planner's Wedding tab is Tools.
 
 import { useCallback } from "react";
 import { useNavigation, usePathname, useRouter, type Href } from "expo-router";
@@ -32,7 +32,7 @@ const TAB_ROOTS: Record<string, string[]> = {
   // Build 12 tabs (used only until the layout registers). Sections a tab
   // owns that hang off the home (rsvp, dayof) are listed so they return home.
   guest: ["rsvp", "dayof", "schedule", "concierge", "more"],
-  couple: ["guests", "rsvps", "messages", "broadcasts", "tools"],
+  couple: ["guests", "rsvps", "messages", "broadcasts", "coordinator", "tools"],
   planner: ["requests", "guests", "tools", "more"],
 };
 /** The tab that owns unlisted sections before a layout registers. */

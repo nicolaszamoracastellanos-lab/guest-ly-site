@@ -163,7 +163,9 @@ function Gate() {
   // the three surfaces, moves wherever the person drags it, and hides only on
   // the chat it opens, while the keyboard is up (the bubble itself) and behind
   // the lock, update and tour overlays. Screens no longer hide or lift it.
-  const bubbleSurface = state.status === "guest" ? "guest" : state.status === "user" ? (state.me.surface === "planner" ? "planner" : "couple") : null;
+  // The couple has a Coordinator tab (build 15), so only the guest (concierge)
+  // and the planner keep the floating button.
+  const bubbleSurface = state.status === "guest" ? "guest" : state.status === "user" && state.me.surface === "planner" ? "planner" : null;
   const tourOnScreen = useTourOnScreen();
   const bubbleHidden =
     !pathShowsBubble(pathname) ||

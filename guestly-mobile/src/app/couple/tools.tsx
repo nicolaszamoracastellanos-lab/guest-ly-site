@@ -85,7 +85,6 @@ export default function CoupleTools() {
   const siteNum = website.data ? (website.data.published ? c.tools.sitePublished : c.tools.siteDraft) : website.isError ? c.tools.siteSee : null;
 
   const tiles: Tool[] = [
-    { key: "coordinator", icon: "sparkle", name: c.tools.coordinator, num: c.tools.coordinatorNum, route: "/assistant" },
     { key: "budget", icon: "wallet", name: c.plan.budget, num: budgetNum, route: "/couple/budget" },
     { key: "tasks", icon: "tasks", name: c.plan.tasks, num: tasksNum, route: "/couple/tasks" },
     { key: "seating", icon: "grid", name: c.plan.seating, num: seatingNum, route: "/couple/seating" },
@@ -129,14 +128,14 @@ export default function CoupleTools() {
         <Icon name="chev" size={18} color={colors.ivory40} />
       </Pressable>
       <View style={styles.grid}>
-        {tiles.map((t) => (
+        {tiles.map((t, i) => (
           <Pressable
             key={t.key}
             testID={`tools-${t.key}`}
             onPress={() => router.push(t.route as never)}
             accessibilityRole="button"
             accessibilityLabel={t.num ? `${t.name}, ${t.num}` : t.name}
-            style={({ pressed }) => [styles.tile, oneColumn ? styles.tileWide : styles.tileSquare, t.key === "coordinator" && styles.coordTile, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.tile, oneColumn || (tiles.length % 2 === 1 && i === tiles.length - 1) ? styles.tileWide : styles.tileSquare, pressed && styles.pressed]}
           >
             <View style={styles.icon}>
               <Icon name={t.icon} size={24} color={colors.goldLight} />
@@ -203,7 +202,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, marginTop: 12 },
   tile: { borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", padding: 16, justifyContent: "space-between" },
   siteTile: { marginTop: 24, flexDirection: "row", alignItems: "center", gap: 14, minHeight: 92 },
-  coordTile: { borderColor: colors.goldBorder },
   tileSquare: { width: "48.3%", aspectRatio: 1 },
   tileWide: { width: "100%", minHeight: 120, gap: 16 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },

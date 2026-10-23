@@ -7,12 +7,12 @@ const plural = (n: number, one: string, other: string) => (n === 1 ? one : other
 
 export const COPY = {
   en: {
-    tabs: { home: "Home", guests: "Guests", messages: "Guest Messages", broadcasts: "Broadcast", tools: "Tools" },
+    tabs: { home: "Home", guests: "Guests", messages: "Guest Messages", broadcasts: "Broadcast", coordinator: "Coordinator", tools: "Tools" },
     home: {
       yourWedding: "Your wedding",
       days: (n: number) => plural(n, "{n} day", "{n} days"),
       replied: (a: number, b: number) => `${a} of ${b}`,
-      repliedWord: "replied",
+      repliedWord: "people replied",
       deadline: (d: string) => `Deadline: ${d}`,
       noDeadline: "Tap to see every reply",
       going: "Going",
@@ -33,7 +33,7 @@ export const COPY = {
     },
     guests: {
       title: "Guests",
-      subtitle: (total: number, replied: number) => `${plural(total, "{n} party", "{n} parties")} · ${replied} replied`,
+      subtitle: (total: number, people: number) => `${plural(total, "{n} party", "{n} parties")} · ${plural(people, "{n} person", "{n} people")}`,
       search: "Search by name",
       filters: { all: "All", pending: "Pending", attending: "Going", declined: "Not going", changed: "Changed" },
       sendReminder: "Send reminder",
@@ -240,12 +240,12 @@ export const COPY = {
     shareText: (names: string, url: string, code: string) => `${names ? `${names} invite you. ` : ""}Reply here: ${url} (code ${code})`,
   },
   es: {
-    tabs: { home: "Inicio", guests: "Invitados", messages: "Mensajes", broadcasts: "Avisos", tools: "Herramientas" },
+    tabs: { home: "Inicio", guests: "Invitados", messages: "Mensajes", broadcasts: "Avisos", coordinator: "Coordinador", tools: "Herramientas" },
     home: {
       yourWedding: "Tu boda",
       days: (n: number) => plural(n, "{n} día", "{n} días"),
       replied: (a: number, b: number) => `${a} de ${b}`,
-      repliedWord: "respondieron",
+      repliedWord: "personas respondieron",
       deadline: (d: string) => `Fecha límite: ${d}`,
       noDeadline: "Toca para ver cada respuesta",
       going: "Van",
@@ -266,7 +266,7 @@ export const COPY = {
     },
     guests: {
       title: "Invitados",
-      subtitle: (total: number, replied: number) => `${plural(total, "{n} grupo", "{n} grupos")} · ${replied} respondieron`,
+      subtitle: (total: number, people: number) => `${plural(total, "{n} grupo", "{n} grupos")} · ${plural(people, "{n} persona", "{n} personas")}`,
       search: "Buscar por nombre",
       filters: { all: "Todos", pending: "Pendientes", attending: "Van", declined: "No van", changed: "Cambiaron" },
       sendReminder: "Mandar recordatorio",

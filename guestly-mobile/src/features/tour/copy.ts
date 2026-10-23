@@ -79,8 +79,8 @@ const en = {
       },
       tools: {
         title: "Plan it, with help.",
-        body: "Tools holds your wedding site, Budget, Tasks, Seating and the Day-of schedule. Your Coordinator reads your wedding and proposes; nothing changes until you tap Confirm.",
-        where: "Tools tab, and the gold button on any screen",
+        body: "Tools holds your wedding site, Budget, Tasks, Seating and the Day-of schedule. The Coordinator tab reads your wedding and proposes; nothing changes until you tap Confirm.",
+        where: "Tools tab, and the Coordinator tab",
         tip: "Replay this tour any time in Settings.",
         tryIt: "Tap Confirm",
         scene: "A chat with the Coordinator proposing a change. Tapping Confirm applies it.",
@@ -245,7 +245,7 @@ const es: TourCopy = {
       tools: {
         title: "Planéalo, con ayuda.",
         body: "En Herramientas están tu sitio, Presupuesto, Tareas, Mesas e Itinerario del día. Tu Coordinador lee tu boda y propone; nada cambia hasta que tocas Confirmar.",
-        where: "Pestaña Herramientas, y el botón dorado en cualquier pantalla",
+        where: "Pestaña Herramientas, y la pestaña Coordinador",
         tip: "Puedes repetir este recorrido cuando quieras en Ajustes.",
         tryIt: "Toca Confirmar",
         scene: "Un chat con el Coordinador proponiendo un cambio. Al tocar Confirmar se aplica.",

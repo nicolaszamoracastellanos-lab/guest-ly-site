@@ -17,6 +17,11 @@ export type InboxItem = {
   has_gap: boolean;
   message_count: number;
   lang: string | null;
+  /** Portal wave 13 (additive, absent on an older portal): this thread holds a
+   *  message for the couple that is still to handle. */
+  for_couple?: boolean;
+  /** Portal wave 13: up to 3 open questions the concierge could not answer. */
+  unanswered_questions?: string[];
 };
 
 export type TranscriptLine = {

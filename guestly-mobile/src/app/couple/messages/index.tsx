@@ -4,10 +4,12 @@
 // concierge could not answer ("Teach it"), or that nothing waits for you
 // (opens the concierge insights).
 //
-// Build 13: announcements have their own tab (Avisos / Broadcast), so the
-// Announcements segment is gone; an old link with ?seg=avisos opens that tab.
+// Build 15: broadcasts are back inside this tab, behind a Conversations /
+// Broadcasts switch under the title (they had their own tab in build 13). The
+// switch is local state; ?seg=avisos opens it on Broadcasts (the old
+// /couple/broadcasts route redirects here).
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { View, FlatList, Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,13 +17,14 @@ import { relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { get } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Wordmark, IconButton, BigTitle, Avatar, Badge, Row, T, Icon, EmptyState, Skeleton, Stack, Sheet, Input, ListRow, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
+import { Screen, TopBar, Wordmark, IconButton, BigTitle, Segmented, Avatar, Badge, Row, T, Icon, EmptyState, Skeleton, Stack, Sheet, Input, ListRow, useTopInset, useBottomClearance, COLUMN, QueryError, useScrimScroll, usePullRefresh, OfflineState, retryConnection, StaleBanner } from "@/ui";
 import { useOnline } from "@/lib/query";
 import { colors, radius } from "@/ui/tokens";
 import { COPY } from "@/features/inbox/copy";
 import { useInboxList, type InboxItem } from "@/features/inbox/hooks";
 import { useGuestPages } from "@/features/guests/hooks";
 import { useCoupleCopy, MenuRow, MenuCard } from "@/features/couple/ui";
+import { BroadcastsPanel } from "@/features/broadcasts/Panel";
 
 const FILTERS = ["all", "needs_you", "whatsapp", "web", "app"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -47,10 +50,14 @@ export default function Inbox() {
     const f = FILTERS.find((x) => x === params.filter);
     if (f) setFilter(f);
   }
-  // Announcements moved to their own tab (build 13).
-  useEffect(() => {
-    if (params.seg === "avisos") router.navigate("/couple/broadcasts");
-  }, [params.seg, router]);
+  // The Conversations / Broadcasts switch. A link with ?seg=avisos (the old
+  // Broadcast tab, a hop from the composer) opens Broadcasts.
+  const [seg, setSeg] = useState<"chats" | "avisos">(params.seg === "avisos" ? "avisos" : "chats");
+  const [seenSeg, setSeenSeg] = useState(params.seg);
+  if (params.seg !== seenSeg) {
+    setSeenSeg(params.seg);
+    if (params.seg === "avisos" || params.seg === "chats") setSeg(params.seg);
+  }
 
   const inbox = useInboxList(filter);
   const needsYou = useInboxList("needs_you");
@@ -72,13 +79,21 @@ export default function Inbox() {
 
   const newAnnouncement = () => router.push("/couple/broadcasts/new");
 
+  const composeButton = <IconButton name="edit" label={c.messages.compose} onPress={() => setComposeOpen(true)} testID="messages-compose" />;
+  const switcher = (
+    <View style={{ marginTop: 14 }}>
+      <Segmented value={seg} onChange={setSeg} options={[{ value: "chats", label: c.messages.conversations }, { value: "avisos", label: c.messages.announcements }]} />
+    </View>
+  );
+
   const header = (
     <View>
       <View style={{ paddingHorizontal: 24 }}>
-        <TopBar left={<Wordmark height={20} />} right={<IconButton name="edit" label={c.messages.compose} onPress={() => setComposeOpen(true)} testID="messages-compose" />} />
+        <TopBar left={<Wordmark height={20} />} right={composeButton} />
         <View style={{ marginTop: 10 }}>
           <BigTitle title={c.messages.title} />
         </View>
+        {switcher}
         {data && (!online || inbox.isError) ? (
           <View style={{ marginTop: 14 }}>
             <StaleBanner onRetry={() => retryConnection(inbox.refetch)} />
@@ -149,6 +164,17 @@ export default function Inbox() {
     );
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
+      {seg === "avisos" ? (
+        <BroadcastsPanel
+          headerRight={composeButton}
+          lead={
+            <>
+              <BigTitle title={c.messages.title} />
+              {switcher}
+            </>
+          }
+        />
+      ) : (
       <Screen scroll={false} padded={false} topInset={false} contentStyle={{ flex: 1 }} scrollY={scrim.scrollY}>
         <FlatList<InboxItem>
           {...scrim.listProps}
@@ -159,9 +185,10 @@ export default function Inbox() {
           ListHeaderComponent={<View style={{ paddingTop: top }}>{header}</View>}
           contentContainerStyle={[COLUMN, { paddingBottom: clearance }]}
           ListEmptyComponent={convEmpty}
-          renderItem={({ item: m }) => <ThreadRow m={m} onOpen={(id) => router.push({ pathname: "/couple/messages/[id]", params: { id } })} channelLabel={ic.channel[m.channel] ?? m.channel} lang={lang} gapLabel={ic.gap} upsetLabel={m.sentiment === "frustrated" ? ic.frustrated : m.sentiment === "negative" ? ic.upset : null} emptyPreview={ic.messages(m.message_count)} />}
+          renderItem={({ item: m }) => <ThreadRow m={m} onOpen={(id) => router.push({ pathname: "/couple/messages/[id]", params: { id } })} channelLabel={ic.channel[m.channel] ?? m.channel} lang={lang} gapLabel={ic.gap} forYouLabel={ic.forYou} upsetLabel={m.sentiment === "frustrated" ? ic.frustrated : m.sentiment === "negative" ? ic.upset : null} emptyPreview={ic.messages(m.message_count)} />}
         />
       </Screen>
+      )}
 
       <Sheet visible={composeOpen} onClose={() => setComposeOpen(false)} top={380}>
         <T v="title26">{c.messages.compose}</T>
@@ -255,7 +282,7 @@ function PickGuestSheet({ visible, onClose, onPick }: { visible: boolean; onClos
   );
 }
 
-const ThreadRow = React.memo(function ThreadRow({ m, onOpen, channelLabel, lang, gapLabel, upsetLabel, emptyPreview }: { m: InboxItem; onOpen: (id: string) => void; channelLabel: string; lang: "en" | "es"; gapLabel: string; upsetLabel: string | null; emptyPreview: string }) {
+const ThreadRow = React.memo(function ThreadRow({ m, onOpen, channelLabel, lang, gapLabel, forYouLabel, upsetLabel, emptyPreview }: { m: InboxItem; onOpen: (id: string) => void; channelLabel: string; lang: "en" | "es"; gapLabel: string; forYouLabel: string; upsetLabel: string | null; emptyPreview: string }) {
   return (
     <View style={{ paddingHorizontal: 24 }}>
       <Pressable onPress={() => onOpen(m.id)} accessibilityRole="button" accessibilityLabel={`${m.name}, ${channelLabel}, ${m.preview || emptyPreview}`} style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}>
@@ -270,11 +297,17 @@ const ThreadRow = React.memo(function ThreadRow({ m, onOpen, channelLabel, lang,
               {m.preview || emptyPreview}
             </T>
           </Row>
-          {upsetLabel || m.has_gap ? (
+          {upsetLabel || m.has_gap || m.for_couple ? (
             <Row gap={6} style={{ marginTop: 2 }}>
               {upsetLabel ? <Badge label={upsetLabel} kind="red" /> : null}
+              {m.for_couple ? <Badge label={forYouLabel} kind="gold" /> : null}
               {m.has_gap ? <Badge label={gapLabel} kind="amber" /> : null}
             </Row>
+          ) : null}
+          {m.has_gap && m.unanswered_questions?.[0] ? (
+            <T v="meta13" color={colors.ivory55} numberOfLines={1}>
+              {m.unanswered_questions[0]}
+            </T>
           ) : null}
         </View>
         <View style={{ alignItems: "flex-end", gap: 8 }}>

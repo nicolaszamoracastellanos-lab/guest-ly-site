@@ -51,12 +51,14 @@ export default function CoupleHome() {
   const dayOf = (data?.day_of ?? false) || dayOfManual;
   const canEdit = user?.me.can_edit ?? false;
 
-  // Parties everywhere, so the numbers here match the chips on Guests.
+  // PEOPLE, the way the portal's dashboard and Guests cards count since wave 13
+  // (one attendance definition: attending + declined + pending = everyone
+  // invited). The chips on Guests use the same three numbers.
   const t = data?.totals;
-  const going = t?.attending_parties ?? 0;
-  const notGoing = t?.declined_parties ?? 0;
-  const pending = t?.pending_parties ?? 0;
-  const total = t ? Math.max(t.parties, going + notGoing + pending) : 0;
+  const going = t?.attending_seats ?? 0;
+  const notGoing = t?.declined_seats ?? 0;
+  const total = t?.people_expected ?? 0;
+  const pending = Math.max(0, total - going - notGoing);
   const replied = going + notGoing;
   const deadline = rsvps.data?.deadline ? dayMonth(rsvps.data.deadline, lang) : "";
   const briefing = (data?.briefing ?? []) as BriefingLike[];
@@ -156,7 +158,7 @@ export default function CoupleHome() {
           </View>
 
           {/* 4. The Coordinator */}
-          <Pressable onPress={() => router.push("/assistant" as never)} accessibilityRole="button" accessibilityLabel={`${c.home.ask}. ${c.home.askBody}`} testID="home-coordinator" style={({ pressed }) => [{ marginTop: 18 }, pressed && { opacity: 0.85 }]}>
+          <Pressable onPress={() => router.push("/couple/coordinator" as never)} accessibilityRole="button" accessibilityLabel={`${c.home.ask}. ${c.home.askBody}`} testID="home-coordinator" style={({ pressed }) => [{ marginTop: 18 }, pressed && { opacity: 0.85 }]}>
             <Card kind="solid" padding={16} radiusKey="tile" border={colors.goldBorder}>
               <Row gap={14}>
                 <View style={styles.askIcon}>
