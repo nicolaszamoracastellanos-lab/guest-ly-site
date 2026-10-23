@@ -32,7 +32,8 @@
       "extends": "preview",
       "channel": "simulator",
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "image": "macos-tahoe-26.6-xcode-27.1"
       }
     },
     "production": {
@@ -40,6 +41,9 @@
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_API_BASE": "https://app.guest-ly.com"
+      },
+      "ios": {
+        "image": "macos-tahoe-26.6-xcode-27.1"
       }
     }
   },

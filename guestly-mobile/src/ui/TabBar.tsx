@@ -210,7 +210,7 @@ export function GlassTabBar({
   useEffect(() => {
     if (!focusedRoute) return;
     const seg = pathname.split("/").filter(Boolean);
-    if (seg[1] === tabSlug(focusedRoute.name) || (focusedRoute.name === "index" && seg.length === 1)) lastPaths.set(focusedRoute.key, pathname);
+    if (seg[1] === tabSlug(focusedRoute.name) || (tabSlug(focusedRoute.name) === "index" && seg.length === 1)) lastPaths.set(focusedRoute.key, pathname);
   }, [pathname, focusedRoute]);
 
   // Wedding switch (F1): every other tab back to its root.

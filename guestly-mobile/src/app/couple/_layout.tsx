@@ -29,10 +29,10 @@ export default function CoupleTabs() {
   // Expo Router 58 redirects away from hidden tab routes.
   const specs: TabSpec[] = [
     { name: "index", icon: "home", label: c.home },
-    { name: "(guests)", icon: "guests", label: c.guests },
-    { name: "(messages)", icon: "chat", label: c.messages, badge },
+    { name: "(guests)", icon: "guests", label: c.guests, owns: ["rsvps"] },
+    { name: "(messages)", icon: "chat", label: c.messages, badge, owns: ["broadcasts"] },
     { name: "coordinator", icon: "sparkle", label: c.coordinator },
-    { name: "(tools)", icon: "grid", label: c.tools },
+    { name: "(tools)", icon: "grid", label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more", "settings"] },
   ];
   return (
     <RoleTabs

@@ -49,9 +49,9 @@ import { errorText } from "@/features/tasks/ui";
  *  app instead of closing it, and is reported. */
 export { ErrorBoundary } from "@/ui/ErrorScreen";
 
-/** Routes that are not tabs. Each pops to its first screen when left.
- *  "wedding" is the build 12 name of Tools, kept as a redirect. */
-const HIDDEN = ["tasks", "budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"];
+// Sections live inside the tab that opens them (route groups, URLs unchanged):
+// Expo Router 58 redirects away from hidden tab routes. "wedding" is the build
+// 12 name of Tools, kept as a redirect inside (tools).
 
 export default function PlannerTabs() {
   const c = useCopy().planner.b12.tabs;
@@ -64,11 +64,11 @@ export default function PlannerTabs() {
   const badge = canTasks ? (home.data?.open_tasks ?? 0) + (reqs.data?.requests ?? []).filter(asksPlanner).length : 0;
   const specs: TabSpec[] = [
     { name: "index", icon: "home", label: c.today },
-    { name: "requests", icon: "tasks", label: c.todo, badge, owns: ["tasks"] },
+    { name: "(requests)", icon: "tasks", label: c.todo, badge, owns: ["tasks"] },
     { name: "guests", icon: "guests", label: c.guests },
     // Vendors stays a route (budget lines and pushes open it) but is no tool
     // of its own any more (F5).
-    { name: "tools", icon: "grid", label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
+    { name: "(tools)", icon: "grid", label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
     { name: "more", icon: "more", label: c.more },
   ];
   return (
@@ -81,10 +81,7 @@ export default function PlannerTabs() {
       {specs.map((s) => (
         // A tab left with a detail open reopens on its list (Pendientes with a
         // request open, then Hoy, then "See all in To do").
-        <Tabs.Screen key={s.name} name={s.name} options={{ popToTopOnBlur: s.name === "requests" }} />
-      ))}
-      {HIDDEN.map((name) => (
-        <Tabs.Screen key={name} name={name} options={{ href: null, popToTopOnBlur: true }} />
+        <Tabs.Screen key={s.name} name={s.name} options={{ popToTopOnBlur: s.name === "(requests)" }} />
       ))}
     </Tabs>
   );
@@ -193,7 +190,7 @@ type NavLike = { getState: () => { type?: string }; getParent: () => NavLike | u
 
 /** The planner tabs whose stacks go back to their lists on a wedding switch,
  *  plus the hidden tasks stack Hoy pushes a task into. */
-const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "requests", "guests", "tools", "more", "tasks"]);
+const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "(requests)", "guests", "(tools)", "more"]);
 
 /** Pops every tab stack to its root (F1). From any screen inside the tabs. */
 export function popAllStacks(navigation: unknown) {

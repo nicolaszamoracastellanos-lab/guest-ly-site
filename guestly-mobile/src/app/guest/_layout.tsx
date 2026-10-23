@@ -44,10 +44,10 @@ export default function GuestTabs() {
   const unread = !!newestCouple && seen !== undefined && (!seen || Date.parse(newestCouple) > Date.parse(seen));
 
   const specs: TabSpec[] = [
-    { name: "index", icon: "mail", label: c.invitation, owns: ["rsvp", "dayof"], badge: pending ? "dot" : null },
+    { name: "(index)", icon: "mail", label: c.invitation, owns: ["rsvp", "dayof"], badge: pending ? "dot" : null },
     { name: "schedule", icon: "calendar", label: c.schedule },
-    { name: "concierge", icon: "chat", label: c.ask, owns: ["messages"], badge: unread ? "dot" : null },
-    { name: "more", icon: "info", label: c.info, owns: ["site"] },
+    { name: "(concierge)", icon: "chat", label: c.ask, owns: ["messages"], badge: unread ? "dot" : null },
+    { name: "(more)", icon: "info", label: c.info, owns: ["site"] },
   ];
-  return <RoleTabs specs={specs} hidden={["rsvp", "dayof", "messages", "site"]} />;
+  return <RoleTabs specs={specs} fallback="(more)" />;
 }
