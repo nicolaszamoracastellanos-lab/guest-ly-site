@@ -23,7 +23,7 @@ import { fmt, plural, longDate, useCopy, useLang } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { can, useTenantKey, useUserSession } from "@/lib/session";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, T, Sheet, Button, Stack, SectionLabel, Icon, PhotoHero, Row, useTopInset, type IconName } from "@/ui";
+import { Screen, T, Sheet, Button, Stack, SectionLabel, Icon, PhotoHero, Row, useTopInset, useLayout, type IconName } from "@/ui";
 import { colors, radius, space, COLUMN } from "@/ui/tokens";
 import { useBudgetSurface } from "@/features/budget/hooks";
 import { usePlannerSeating } from "@/features/seating/hooks";
@@ -52,6 +52,7 @@ export default function PlannerTools() {
 }
 
 function PlannerToolsBody() {
+  const cols = useLayout().columns;
   const copy = useCopy();
   const c = copy.planner.b12;
   const bc = useFeatureCopy(BCOPY);
@@ -100,7 +101,7 @@ function PlannerToolsBody() {
           <SectionLabel color={colors.goldLight} style={{ marginTop: 24, marginBottom: 10 }}>
             {c.tools}
           </SectionLabel>
-          <View style={styles.tiles}>
+          <View style={[styles.tiles, cols === 4 && styles.tilesQuad]}>
             {TOOLS.map((t) => (
               <Tile key={t.id} icon={t.icon} title={name(t.id)} locked={!can(me, t.id)} onPress={() => openTool(t.id)} testID={`planner-tool-${t.id}`}>
                 {can(me, t.id) ? t.id === "broadcasts" ? <Line text={home.data ? fmt(c.remindersSub, { n: pendingParties }) : null} /> : t.id === "coordinator" ? <Line text={c.askCoordinatorSub} /> : <ToolNumber tool={t.id} /> : null}
@@ -220,6 +221,7 @@ function Tile({ icon, title, locked, onPress, children, testID }: { icon: IconNa
   // Large text on a narrow phone: full-width tiles instead of squares, so the
   // title and its line never run past the tile (the couple Plan rule, D-031).
   const { width, fontScale } = useWindowDimensions();
+  const cols = useLayout().columns;
   const oneColumn = width < 340 || (width < 380 && fontScale > 1.15);
   return (
     <Pressable
@@ -229,7 +231,7 @@ function Tile({ icon, title, locked, onPress, children, testID }: { icon: IconNa
       // live number inside ("Presupuesto, 17% pagado").
       accessibilityLabel={locked ? `${title}, ${c.notSharedShort}` : undefined}
       onPress={onPress}
-      style={({ pressed }) => [styles.tile, oneColumn && styles.tileWide, locked && styles.tileLocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+      style={({ pressed }) => [styles.tile, oneColumn && styles.tileWide, cols === 4 && !oneColumn && styles.tileQuad, locked && styles.tileLocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
     >
       <View style={[styles.tileIcon, locked && { backgroundColor: colors.ivory09 }]}>
         <Icon name={locked ? "lock" : icon} size={24} color={locked ? colors.ivory70 : colors.goldLight} />
@@ -255,6 +257,9 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 },
   tile: { width: "48.5%", aspectRatio: 1, minHeight: 140, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.ivory14, backgroundColor: colors.navy, padding: 16, justifyContent: "space-between" },
   tileWide: { width: "100%", aspectRatio: undefined, minHeight: 120, gap: 16 },
+  // Even columns on the Duo's inner display (four at 900 pt and up).
+  tilesQuad: { justifyContent: "flex-start", columnGap: 8 },
+  tileQuad: { width: "23.5%" },
   tileLocked: { backgroundColor: "transparent", borderStyle: "dashed", borderColor: colors.ivory25 },
   tileIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: colors.goldWash },
   lockDisc: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: colors.ivory09 },

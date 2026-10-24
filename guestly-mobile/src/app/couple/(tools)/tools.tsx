@@ -19,7 +19,7 @@ import { useBudgetSurface } from "@/features/budget/hooks";
 import { useCoupleSettings } from "@/features/settings/hooks";
 import { useWebsite } from "@/features/website/hooks";
 import { useCoupleCopy, useShareInvite, MenuRow, MenuCard } from "@/features/couple/ui";
-import { Screen, TopBar, Wordmark, BigTitle, T, Icon, Footer, Skeleton, SectionLabel, type IconName } from "@/ui";
+import { Screen, TopBar, Wordmark, BigTitle, T, Icon, Footer, Skeleton, SectionLabel, useLayout, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 
 type Tool = { key: string; icon: IconName; name: string; num: string | null; route: string };
@@ -38,6 +38,7 @@ export default function CoupleTools() {
   const settings = useCoupleSettings();
   const shareInvite = useShareInvite();
   const { width, fontScale } = useWindowDimensions();
+  const cols = useLayout().columns;
   const oneColumn = width < 340 || (width < 380 && fontScale > 1.3);
 
   // "% paid" of the budget the Budget screen has open, as on Home (B3).
@@ -127,7 +128,7 @@ export default function CoupleTools() {
         </View>
         <Icon name="chev" size={18} color={colors.ivory40} />
       </Pressable>
-      <View style={styles.grid}>
+      <View style={[styles.grid, cols === 4 && styles.gridQuad]}>
         {tiles.map((t, i) => (
           <Pressable
             key={t.key}
@@ -135,7 +136,7 @@ export default function CoupleTools() {
             onPress={() => router.push(t.route as never)}
             accessibilityRole="button"
             accessibilityLabel={t.num ? `${t.name}, ${t.num}` : t.name}
-            style={({ pressed }) => [styles.tile, oneColumn || (tiles.length % 2 === 1 && i === tiles.length - 1) ? styles.tileWide : styles.tileSquare, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.tile, cols === 4 && !oneColumn ? styles.tileQuad : oneColumn || (tiles.length % 2 === 1 && i === tiles.length - 1) ? styles.tileWide : styles.tileSquare, pressed && styles.pressed]}
           >
             <View style={styles.icon}>
               <Icon name={t.icon} size={24} color={colors.goldLight} />
@@ -203,6 +204,9 @@ const styles = StyleSheet.create({
   tile: { borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", padding: 16, justifyContent: "space-between" },
   siteTile: { marginTop: 24, flexDirection: "row", alignItems: "center", gap: 14, minHeight: 92 },
   tileSquare: { width: "48.3%", aspectRatio: 1 },
+  // Even columns on the Duo's inner display (four at 900 pt and up).
+  gridQuad: { justifyContent: "flex-start", columnGap: 8 },
+  tileQuad: { width: "23.5%", aspectRatio: 1 },
   tileWide: { width: "100%", minHeight: 120, gap: 16 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" },
