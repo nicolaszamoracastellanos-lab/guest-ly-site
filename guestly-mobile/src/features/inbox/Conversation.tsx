@@ -245,7 +245,8 @@ function Mine({ o, onRetry }: { o: Outgoing; onRetry: () => void }) {
   );
 }
 
-function Bubble({ m, name, onAddToBrain }: { m: TranscriptLine; name: string; onAddToBrain: (q: string) => void }) {
+/** One transcript line. Without `onAddToBrain` (read-only viewers) the "teach this answer" action is not shown. */
+export function Bubble({ m, name, onAddToBrain }: { m: TranscriptLine; name: string; onAddToBrain?: (q: string) => void }) {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const guest = m.role === "guest";
@@ -290,7 +291,7 @@ function Bubble({ m, name, onAddToBrain }: { m: TranscriptLine; name: string; on
               {c.couldNotAnswer}
             </T>
           </Row>
-          {m.gap_question ? (
+          {m.gap_question && onAddToBrain ? (
             <Pressable onPress={() => onAddToBrain(m.gap_question!)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: "center" }}>
               <T v="meta13" color={colors.goldLight}>
                 {c.addToBrain}

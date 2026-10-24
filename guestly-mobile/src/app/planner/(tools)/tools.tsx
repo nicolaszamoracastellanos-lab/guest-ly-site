@@ -36,13 +36,14 @@ import { PlannerTop, usePlannerBoardQ, daysToGo } from "@/app/planner/_layout";
 const PHOTOS = [require("../../../../assets/photos/courtyard.jpg"), require("../../../../assets/photos/ceremony.jpg"), require("../../../../assets/photos/bluehour.jpg"), require("../../../../assets/photos/dance.jpg")];
 
 /** Each tile is gated by the planner capability of the same name. */
-type Tool = "budget" | "tasks" | "seating" | "runsheet" | "checkin" | "broadcasts" | "coordinator";
+type Tool = "budget" | "tasks" | "seating" | "runsheet" | "checkin" | "conversations" | "broadcasts" | "coordinator";
 const TOOLS: { id: Tool; icon: IconName }[] = [
   { id: "budget", icon: "wallet" },
   { id: "tasks", icon: "tasks" },
   { id: "seating", icon: "grid" },
   { id: "runsheet", icon: "clock" },
   { id: "checkin", icon: "qr" },
+  { id: "conversations", icon: "chat" },
   { id: "broadcasts", icon: "megaphone" },
   { id: "coordinator", icon: "sparkle" },
 ];
@@ -69,7 +70,7 @@ function PlannerToolsBody() {
   const parties = home.data?.totals.parties ?? 0;
   const pendingParties = home.data?.totals.pending_parties ?? 0;
   const canBudget = can(me, "budget");
-  const name = (t: Tool) => (t === "budget" ? c.budget : t === "tasks" ? c.tasks : t === "seating" ? c.seating : t === "runsheet" ? c.runsheet : t === "checkin" ? c.checkin : t === "broadcasts" ? bc.plannerTabTitle : c.coordinator);
+  const name = (t: Tool) => (t === "budget" ? c.budget : t === "tasks" ? c.tasks : t === "seating" ? c.seating : t === "runsheet" ? c.runsheet : t === "checkin" ? c.checkin : t === "conversations" ? c.messagesTool : t === "broadcasts" ? bc.plannerTabTitle : c.coordinator);
 
   function openTool(t: Tool) {
     if (!can(me, t)) return setLocked(t);
@@ -79,6 +80,7 @@ function PlannerToolsBody() {
     else if (t === "seating") router.push("/planner/seating" as never);
     else if (t === "runsheet") router.push("/planner/runsheet" as never);
     else if (t === "checkin") router.push("/planner/checkin" as never);
+    else if (t === "conversations") router.push("/planner/messages" as never);
     else if (t === "broadcasts") router.push("/planner/broadcasts" as never);
     else router.push("/assistant" as never);
   }
@@ -106,7 +108,7 @@ function PlannerToolsBody() {
           <View style={[styles.tiles, cols === 4 && styles.tilesQuad]}>
             {TOOLS.map((t) => (
               <Tile key={t.id} icon={t.icon} title={name(t.id)} locked={!can(me, t.id)} onPress={() => openTool(t.id)} testID={`planner-tool-${t.id}`}>
-                {can(me, t.id) ? t.id === "broadcasts" ? <Line text={home.data ? fmt(c.remindersSub, { n: pendingParties }) : null} /> : t.id === "coordinator" ? <Line text={c.askCoordinatorSub} /> : t.id === "checkin" ? <Line text={c.checkinSub} /> : <ToolNumber tool={t.id} /> : null}
+                {can(me, t.id) ? t.id === "broadcasts" ? <Line text={home.data ? fmt(c.remindersSub, { n: pendingParties }) : null} /> : t.id === "coordinator" ? <Line text={c.askCoordinatorSub} /> : t.id === "checkin" ? <Line text={c.checkinSub} /> : t.id === "conversations" ? <Line text={c.messagesSub} /> : <ToolNumber tool={t.id} /> : null}
               </Tile>
             ))}
           </View>

@@ -284,7 +284,7 @@ function PickGuestSheet({ visible, onClose, onPick }: { visible: boolean; onClos
   );
 }
 
-const ThreadRow = React.memo(function ThreadRow({ m, onOpen, selected, channelLabel, lang, gapLabel, forYouLabel, upsetLabel, emptyPreview }: { m: InboxItem; onOpen: (id: string) => void; selected?: boolean; channelLabel: string; lang: "en" | "es"; gapLabel: string; forYouLabel: string; upsetLabel: string | null; emptyPreview: string }) {
+export const ThreadRow = React.memo(function ThreadRow({ m, onOpen, selected, channelLabel, lang, gapLabel, forYouLabel, upsetLabel, emptyPreview }: { m: InboxItem; onOpen: (id: string) => void; selected?: boolean; channelLabel: string; lang: "en" | "es"; gapLabel: string; forYouLabel: string; upsetLabel: string | null; emptyPreview: string }) {
   return (
     <View style={{ paddingHorizontal: 24 }}>
       <Pressable onPress={() => onOpen(m.id)} accessibilityRole="button" accessibilityLabel={`${m.name}, ${channelLabel}, ${m.preview || emptyPreview}`} accessibilityState={{ selected: !!selected }} style={({ pressed }) => [styles.row, selected && styles.rowSelected, pressed && { opacity: 0.75 }]}>

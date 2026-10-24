@@ -550,6 +550,8 @@ export const es: Copy = {
       hello: "Hola, {name}",
       helloNoName: "Hola",
       replied: "{n} de {total} respondieron",
+      messagesTool: "Mensajes",
+      messagesSub: "Lee lo que los invitados le preguntan al concierge",
       checkin: "Check-in en la puerta",
       checkinSub: "Escanea pases o busca un nombre en la puerta",
       coordinator: "Coordinador",
