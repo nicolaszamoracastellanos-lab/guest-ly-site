@@ -14,7 +14,8 @@ import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "./layout";
-import { setDevPose } from "./devPose";
+import { setDevOpenness, setDevPose } from "./devPose";
+import { InviteEnvelope, resetEnvelope } from "@/features/guest/InviteEnvelope";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useReservedRegions } from "@/lib/duo";
@@ -25,7 +26,7 @@ import { clearTourRequest, markTourSeen } from "@/features/tour/state";
 
 const BASE = "http://127.0.0.1:8099";
 
-type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; widgetsDump?: boolean; liveActivities?: boolean; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto" };
+type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; widgetsDump?: boolean; envelope?: boolean; open?: number | null; liveActivities?: boolean; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto" };
 
 export function DevProbe() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export function DevProbe() {
   const regions = useReservedRegions();
   const [hud, setHud] = React.useState(true);
   const [dump, setDump] = React.useState("");
+  const [envelope, setEnvelope] = React.useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -66,6 +68,11 @@ export function DevProbe() {
         }
         if (cmd.liveActivities) setDump(await startSampleActivities("en"));
         if (cmd.widgetsDump) setDump(await dumpWidgetTimelines());
+        if (cmd.envelope !== undefined) {
+          if (cmd.envelope) resetEnvelope();
+          setEnvelope(cmd.envelope);
+        }
+        if (cmd.open !== undefined) setDevOpenness(cmd.open);
         if (cmd.pose) setDevPose(cmd.pose === "auto" ? null : cmd.pose);
         if (cmd.go) router.navigate(cmd.go as never);
       } catch {
@@ -80,9 +87,12 @@ export function DevProbe() {
     };
   }, [router, signOut]);
 
-  if (!hud) return null;
+  const sample = envelope ? <InviteEnvelope names="Camila & Andrés" date="Sunday, 21 March 2027" hint="Open it to see your invitation" ready /> : null;
+  if (!hud) return sample;
   const fold = regions.division ? `fold ${Math.round(regions.division.x)},${Math.round(regions.division.y)} ${Math.round(regions.division.width)}x${Math.round(regions.division.height)}${regions.division.active ? "*" : ""}` : regions.available ? "fold none" : "fold n/a";
   return (
+    <>
+    {sample}
     <View pointerEvents="none" style={[styles.box, { top: insets.top + 2, left: insets.left + 4 }]}>
       <Text style={styles.text}>
         {Math.round(win.width)}x{Math.round(win.height)} {l.bucket} {l.pose}
@@ -95,6 +105,7 @@ export function DevProbe() {
       </Text>
       {dump ? <Text style={styles.text}>{dump}</Text> : null}
     </View>
+    </>
   );
 }
 

@@ -163,6 +163,7 @@ export const en = {
     openSettings: "Open Settings",
   },
   guestHome: {
+    openIt: "Open it to see your invitation",
     invited: "You are invited to the wedding of",
     yourRsvp: "Your RSVP",
     awaiting: "Awaiting",

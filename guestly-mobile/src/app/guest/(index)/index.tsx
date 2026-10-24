@@ -19,6 +19,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
+import { InviteEnvelope } from "@/features/guest/InviteEnvelope";
 import { T, Card, Button, Row, Icon, Banner, Skeleton, Stack, QueryError, OfflineState, StaleBanner, useQueryBlocked, retryConnection, useBottomClearance, COLUMN, useSideInsetsStyle, StatusScrim, useScrimScroll, PhotoHero, type PhotoFocal, type IconName } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { splitNames, dayMonth } from "@/features/guest/format";
@@ -256,6 +257,7 @@ export default function GuestHome() {
         </Stack>
       </ScrollView>
       <StatusScrim y={scrim.scrollY} />
+      <InviteEnvelope names={couple} date={cap(longDate(when, lang))} hint={copy.guestHome.openIt} ready={!!data} />
       <DirectionsSheet visible={sheet === "directions"} onClose={() => setSheet(null)} />
       <DressCodeSheet visible={sheet === "dress"} onClose={() => setSheet(null)} />
       <SiteSectionSheet kind="hotels" visible={sheet === "hotels"} onClose={() => setSheet(null)} />

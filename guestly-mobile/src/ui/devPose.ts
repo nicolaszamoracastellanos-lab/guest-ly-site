@@ -23,3 +23,13 @@ function subscribe(f: () => void) {
 export function useDevPose(): Pose | null {
   return useSyncExternalStore(subscribe, () => override, () => null);
 }
+
+// Forces the hinge openness (0 closed .. 1 flat) for the effects that follow it.
+let openOverride: number | null = null;
+export function setDevOpenness(n: number | null) {
+  openOverride = n;
+  subs.forEach((f) => f());
+}
+export function useDevOpenness(): number | null {
+  return useSyncExternalStore(subscribe, () => openOverride, () => null);
+}

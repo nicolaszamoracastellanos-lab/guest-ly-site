@@ -173,6 +173,7 @@ export const es: Copy = {
     openSettings: "Abrir Ajustes",
   },
   guestHome: {
+    openIt: "Ábrelo para ver tu invitación",
     invited: "Estás invitado a la boda de",
     yourRsvp: "Tu confirmación",
     awaiting: "Pendiente",
