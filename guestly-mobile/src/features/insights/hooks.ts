@@ -27,5 +27,5 @@ export type InsightsView = {
 };
 
 export const INSIGHTS_KEY = ["couple-insights"];
-export const useInsights = () => useQuery({ queryKey: INSIGHTS_KEY, queryFn: () => get<InsightsView>("/couple/insights") });
-export const usePlannerInsights = () => useQuery({ queryKey: ["planner-insights"], queryFn: () => get<InsightsView>("/planner/insights") });
+export const useInsights = (opts?: { enabled?: boolean }) => useQuery({ queryKey: INSIGHTS_KEY, queryFn: () => get<InsightsView>("/couple/insights"), enabled: opts?.enabled ?? true });
+export const usePlannerInsights = (opts?: { enabled?: boolean }) => useQuery({ queryKey: ["planner-insights"], queryFn: () => get<InsightsView>("/planner/insights"), enabled: opts?.enabled ?? true });

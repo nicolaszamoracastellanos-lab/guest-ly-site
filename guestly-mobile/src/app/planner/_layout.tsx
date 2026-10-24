@@ -75,7 +75,7 @@ export default function PlannerTabs() {
     // Vendors stays a route (budget lines and pushes open it) but is no tool
     // of its own any more (F5). "more" (settings, guide, language, sign out) is
     // a screen of this stack now, opened from the header menu.
-    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more"] },
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more", "checkin", "messages", "insights"] },
   ];
   const tenantReset = useTenantStackReset(PLANNER_STACKS, true);
   return (

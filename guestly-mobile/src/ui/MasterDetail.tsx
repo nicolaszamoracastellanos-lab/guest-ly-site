@@ -35,6 +35,14 @@ const PaneContext = createContext<PaneCtx>({ embedded: false, selected: null, se
 /** Inside a list or a detail screen: are we in a two pane layout, and what is
  *  selected? Row presses use `open` instead of pushing; the detail's back
  *  button clears the selection instead of popping. */
+/** Marks its children as living inside a two-pane layout, so their Screens skip the
+ *  window's side insets (the layout applies them once). For screens that build their
+ *  own panes instead of using MasterDetail (the assistant: history beside the chat). */
+export function PaneEmbed({ children }: { children: React.ReactNode }) {
+  const value = useMemo<PaneCtx>(() => ({ embedded: true, selected: null, select: () => {} }), []);
+  return <PaneContext.Provider value={value}>{children}</PaneContext.Provider>;
+}
+
 export function usePane(): PaneCtx & { open: (id: string, push: () => void) => void } {
   const ctx = useContext(PaneContext);
   const open = useCallback((id: string, push: () => void) => (ctx.embedded ? ctx.select(id) : push()), [ctx]);

@@ -12,7 +12,8 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, ChatList, ChatComposer, useKeyboardOpen, renderInlineBold } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, ChatList, ChatComposer, useKeyboardOpen, renderInlineBold, TwoPane, useLayout, useSideInsetsStyle } from "@/ui";
+import { PaneEmbed } from "@/ui/MasterDetail";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
@@ -29,6 +30,8 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
   const qc = useQueryClient();
   const online = useOnline();
   const user = useUserSession();
+  const { twoPane } = useLayout();
+  const sideInsets = useSideInsetsStyle();
   const surface: AssistantSurface = user?.me.surface === "planner" ? "planner" : "couple";
   const canSend = surface === "planner" ? true : (user?.me.can_edit ?? false);
   const base = coordinatorBase(surface);
@@ -234,7 +237,35 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
   const typing = useKeyboardOpen();
   const showEmpty = !busy && items.length === 0 && (!sessionId || detailQ.isFetched);
 
-  return (
+  const historyRows = (
+    <>
+          {sessionsQ.data && sessionsQ.data.sessions.length === 0 ? (
+            <T v="body15" color={colors.ivory55} style={{ paddingVertical: 16 }}>
+              {copy.noChats}
+            </T>
+          ) : null}
+          {(sessionsQ.data?.sessions ?? []).map((s, i, arr) => (
+            <ListRow
+              key={s.id}
+              leading={<Icon name="chat" size={20} color={s.id === sessionId ? colors.goldLight : colors.ivory55} />}
+              title={s.title ?? copy.untitled}
+              sub={relTime(s.last_active_at, lang)}
+              onPress={() => openChat(s.id)}
+              chevron={false}
+              trailing={
+                deleting === s.id ? (
+                  <ActivityIndicator color={colors.goldLight} size="small" />
+                ) : canSend ? (
+                  <IconButton name="x" onPress={() => removeChat(s.id)} label={copy.delete} />
+                ) : undefined
+              }
+              last={i === arr.length - 1}
+            />
+          ))}
+    </>
+  );
+
+  const chat = (
     <Screen
       scroll={false}
       padded={false}
@@ -247,7 +278,7 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
             showcase ? undefined : (
               <Row gap={8}>
                 <IconButton name="plus" onPress={newChat} label={copy.newChat} />
-                <IconButton name="list" onPress={() => setDrawer(true)} label={copy.chats} />
+                {twoPane ? null : <IconButton name="list" onPress={() => setDrawer(true)} label={copy.chats} />}
               </Row>
             )
           }
@@ -370,33 +401,31 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
         </Row>
         <Hairline />
         <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ paddingBottom: 24 }}>
-          {sessionsQ.data && sessionsQ.data.sessions.length === 0 ? (
-            <T v="body15" color={colors.ivory55} style={{ paddingVertical: 16 }}>
-              {copy.noChats}
-            </T>
-          ) : null}
-          {(sessionsQ.data?.sessions ?? []).map((s, i, arr) => (
-            <ListRow
-              key={s.id}
-              leading={<Icon name="chat" size={20} color={s.id === sessionId ? colors.goldLight : colors.ivory55} />}
-              title={s.title ?? copy.untitled}
-              sub={relTime(s.last_active_at, lang)}
-              onPress={() => openChat(s.id)}
-              chevron={false}
-              trailing={
-                deleting === s.id ? (
-                  <ActivityIndicator color={colors.goldLight} size="small" />
-                ) : canSend ? (
-                  <IconButton name="x" onPress={() => removeChat(s.id)} label={copy.delete} />
-                ) : undefined
-              }
-              last={i === arr.length - 1}
-            />
-          ))}
+          {historyRows}
         </ScrollView>
       </Sheet>
     </Screen>
   );
+
+  // Wide windows (the Duo's inner display, the outer display sideways): the chat
+  // history sits beside the conversation instead of in a drawer.
+  if (twoPane && !showcase && !waiting) {
+    return (
+      <PaneEmbed>
+        <View style={[{ flex: 1 }, sideInsets]}>
+          <TwoPane
+            list={
+              <Screen scroll padded={false} header={<TopBar title={copy.chats} right={<IconButton name="plus" onPress={newChat} label={copy.newChat} />} />}>
+                {historyRows}
+              </Screen>
+            }
+            detail={chat}
+          />
+        </View>
+      </PaneEmbed>
+    );
+  }
+  return chat;
 }
 
 type Copy = (typeof COPY)["en"];
