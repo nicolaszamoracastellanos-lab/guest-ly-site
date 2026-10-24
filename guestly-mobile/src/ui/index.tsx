@@ -22,6 +22,7 @@ import { useOnline } from "@/lib/query";
 import { useNavigation, useRoute } from "expo-router";
 import { ChatArea, DockedAction, FormGroup, FormToolbar, FORM_SCOPE, KeyboardScope, MultilineRoomSetter, MultilineRoomValue, TOOLBAR_SPACE, focusedTextInput, multilineRoomFor, useInFormScope, useKeepFocusedVisible } from "./keyboard";
 import { ToastHost, useDockLift } from "./Toast";
+import { usePane } from "./MasterDetail";
 
 export { T } from "./Text";
 export { renderInlineBold } from "./MarkdownText";
@@ -44,9 +45,10 @@ export { toast, dismissToast, ToastHost, useDockLift } from "./Toast";
 export type { ToastOptions, DockLift } from "./Toast";
 export { RoleNativeTabs } from "./NativeRoleTabs";
 export type { RoleTab } from "./NativeRoleTabs";
-export { useLayout } from "./layout";
+export { useLayout, useSideInsetsStyle } from "./layout";
 export type { Layout, Bucket, Pose } from "./layout";
 export { TwoPane, TwoPanePlaceholder } from "./TwoPane";
+export { MasterDetail, usePane } from "./MasterDetail";
 
 // ---------------------------------------------------------------- layout
 
@@ -133,6 +135,7 @@ export function Screen({
   scrollY?: SharedValue<number>;
 }) {
   const insets = useSafeAreaInsets();
+  const pane = usePane();
   const pull = usePullRefresh(typeof refresh === "function" ? refresh : refresh && query ? () => query.refetch() : null);
   const top = useTopInset();
   const { lang } = useLang();
@@ -213,14 +216,19 @@ export function Screen({
     <KeyboardScope.Provider value={form ? FORM_SCOPE : null}>
     <MultilineRoomSetter.Provider value={form ? setMlRoom : null}>
     <MultilineRoomValue.Provider value={mlRoom}>
-    <View style={[styles.screen, { paddingLeft: insets.left, paddingRight: insets.right }, style]}>
+    <View style={[styles.screen, pane.embedded ? null : { paddingLeft: insets.left, paddingRight: insets.right }, style]}>
       {/* The night backdrop (navy to night to deep night, with the gold wash
           from the top right) as one small baked image, stretched. It used to
           be two full-screen gradient layers per screen: every screen kept in
           the tabs held about 50 MB of drawing (QA Sep 29: 130 MB at launch,
           860 MB after visiting each section once). One decoded bitmap is
           now shared by every screen. Photo screens skip it (plain night). */}
-      {backdrop ? <Image source={SCREEN_BACKDROP} style={COVER} resizeMode="stretch" accessible={false} importantForAccessibility="no" /> : null}
+      {backdrop ? (
+        // COVER wrapper (relative to the padding box, so the backdrop also runs under the side insets) with the image at FILL inside it: a local image keeps its intrinsic size under COVER alone.
+        <View style={COVER} pointerEvents="none">
+          <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" />
+        </View>
+      ) : null}
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
       {scroll && form ? (
         // Forms: the focused field scrolls into the band above the keyboard,

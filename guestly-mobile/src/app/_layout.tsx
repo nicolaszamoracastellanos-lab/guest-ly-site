@@ -17,6 +17,7 @@ import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { DevProbe } from "@/ui/DevProbe";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { onlineManager } from "@tanstack/react-query";
@@ -302,6 +303,7 @@ function Gate() {
       </Stack>
       {/* Toasts (v1.2 d): above the screens and the bubble, under the tour,
           the update screen and the lock. */}
+      {process.env.EXPO_PUBLIC_DUO_PROBE === "1" ? <DevProbe /> : null}
       {locked || updateRequired ? null : <ToastHost />}
       {/* Welcome tour: after a fresh sign-in, account creation or a guest's
           first open, and on replay from Settings. Under the lock and update

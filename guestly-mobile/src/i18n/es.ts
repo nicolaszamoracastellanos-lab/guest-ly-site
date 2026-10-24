@@ -255,6 +255,7 @@ export const es: Copy = {
     planner: "Escribir al planner",
   },
   messages: {
+    pickOne: "Elige una conversación para leerla",
     title: "Mensajes",
     guestSubtitle: "Las respuestas de la pareja llegan aquí.",
     empty: "Todavía no hay mensajes aquí. Pregunta lo que quieras al concierge; las preguntas que solo la pareja puede responder aparecen aquí con su respuesta.",
@@ -292,6 +293,7 @@ export const es: Copy = {
     tabs: { home: "Inicio", guests: "Invitados", rsvps: "RSVPs", messages: "Mensajes", more: "Más" },
   },
   guests: {
+    pickOne: "Elige un invitado para ver su ficha",
     title: "Invitados",
     subtitle: "{parties} grupos · {people} personas esperadas",
     search: "Buscar invitados",

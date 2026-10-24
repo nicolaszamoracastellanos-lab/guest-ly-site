@@ -13,7 +13,7 @@ import { errorText } from "@/features/shared/requests";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -102,6 +102,7 @@ export default function DoorCheckin() {
   // to (Part 9 audit, D-003). The block ends clear of the tab bar; with the
   // keyboard up it rides on top of the keyboard instead.
   const { clearance } = useBottomClearance();
+  const side = useSideInsetsStyle();
   const keyboardOpen = useKeyboardOpen();
   // Denied is only what the person answered; while iOS is still asking, the
   // status is "undetermined" and the scanner frame stays. With the camera
@@ -112,7 +113,7 @@ export default function DoorCheckin() {
   const denied = !!permission && !permission.granted && permission.status !== "undetermined";
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, side]}>
       {permission?.granted && focused ? (
         <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={typing ? undefined : onScan} />
       ) : (

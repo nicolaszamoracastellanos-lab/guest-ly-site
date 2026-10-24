@@ -22,7 +22,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { T } from "@/ui/Text";
 import { Icon } from "@/ui/Icon";
 import { Button, IconButton } from "@/ui";
-import { colors, fonts, COLUMN, FILL, radius } from "@/ui/tokens";
+import { colors, fonts, COLUMN, COVER, radius } from "@/ui/tokens";
 import { TOUR_COPY, type TourCopy } from "./copy";
 import { buildSteps, ctaFor, type TourNames, type TourStep } from "./steps";
 import type { TourVariant } from "./state";
@@ -34,8 +34,11 @@ const PAGE_SPRING = { damping: 24, stiffness: 210, mass: 1 };
 export function TourOverlay({ variant, names, onClose }: { variant: TourVariant; names: TourNames; onClose: (how: "done" | "skipped") => void }) {
   const t = useFeatureCopy(TOUR_COPY);
   const reduced = useReducedMotion();
-  const { width, height } = useWindowDimensions();
+  const { width: windowWidth, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // On the iPhone Duo the status column and the vertical bar rail take the right
+  // side: the tour keeps clear of both (insets are per edge, never mirrored).
+  const width = windowWidth - insets.left - insets.right;
   const b12 = useCopy().planner.b12;
   const toolLabels = useMemo(() => ({ budget: b12.budget, tasks: b12.tasks, seating: b12.seating, runsheet: b12.runsheet }), [b12]);
   const steps = useMemo(() => buildSteps(variant, t, names, toolLabels), [variant, t, names, toolLabels]);
@@ -188,13 +191,13 @@ export function TourOverlay({ variant, names, onClose }: { variant: TourVariant;
   return (
     <TourToolsContext.Provider value={names.planner?.tools ?? null}>
     <Animated.View
-      style={[StyleSheet.absoluteFill, styles.root, rootStyle]}
+      style={[StyleSheet.absoluteFill, styles.root, { paddingLeft: insets.left, paddingRight: insets.right }, rootStyle]}
       accessibilityViewIsModal
       onAccessibilityEscape={skip}
       accessibilityLabel={t.a11yTitle}
     >
-      <LinearGradient colors={[colors.navy, colors.night, colors.nightDeep]} locations={[0, 0.45, 1]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={FILL} />
-      <LinearGradient colors={["rgba(201,169,110,0.16)", "rgba(201,169,110,0)"]} start={{ x: 1, y: 0 }} end={{ x: 0.3, y: 0.55 }} style={FILL} />
+      <LinearGradient colors={[colors.navy, colors.night, colors.nightDeep]} locations={[0, 0.45, 1]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={COVER} />
+      <LinearGradient colors={["rgba(201,169,110,0.16)", "rgba(201,169,110,0)"]} start={{ x: 1, y: 0 }} end={{ x: 0.3, y: 0.55 }} style={COVER} />
 
       <View style={{ paddingTop: Math.max(insets.top, 20) + 6 }}>
         <View style={styles.grabber} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />

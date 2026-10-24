@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome, useCoupleRsvps } from "@/lib/hooks";
-import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, useTopInset, type IconName } from "@/ui";
+import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, ProgressRing, fullDate, dayMonth, statusIcon } from "@/features/couple/ui";
 
@@ -38,6 +38,7 @@ export default function CoupleHome() {
   const heroMin = Math.round(Math.max(220, Math.min(winH * 0.4, winH - 470)));
   const user = useUserSession();
   const top = useTopInset();
+  const side = useSideInsetsStyle();
   const { dayOfManual } = useSession();
   const shareInvite = useShareInvite();
   const mainQuery = useCoupleHome();
@@ -177,7 +178,7 @@ export default function CoupleHome() {
         </View>
       </Screen>
       {/* Settings (build 13): over the photo, top right, under the clock. */}
-      <View pointerEvents="box-none" style={[styles.over, { top }]}>
+      <View pointerEvents="box-none" style={[styles.over, { top, right: 14 + side.paddingRight }]}>
         <IconButton name="gear" label={c.tools.settings} onPress={() => router.push("/settings")} testID="home-settings" />
       </View>
     </View>

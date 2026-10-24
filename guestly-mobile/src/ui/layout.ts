@@ -58,3 +58,12 @@ export function useLayout(): Layout {
     };
   }, [width, height, fontScale, insets.left, insets.right, hinge]);
 }
+
+/** Left and right padding equal to the safe area, for a screen that does not
+ *  go through <Screen> (which applies it itself). On the iPhone Duo's outer
+ *  display the status column and the vertical bar rail take 84 pt at the right:
+ *  nothing of ours may sit under it. Zero on a phone without side insets. */
+export function useSideInsetsStyle(): { paddingLeft: number; paddingRight: number } {
+  const insets = useSafeAreaInsets();
+  return useMemo(() => ({ paddingLeft: insets.left, paddingRight: insets.right }), [insets.left, insets.right]);
+}

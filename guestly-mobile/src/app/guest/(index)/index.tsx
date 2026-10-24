@@ -19,7 +19,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { T, Card, Button, Row, Icon, Banner, Skeleton, Stack, QueryError, OfflineState, StaleBanner, useQueryBlocked, retryConnection, useBottomClearance, COLUMN, StatusScrim, useScrimScroll, PhotoHero, type PhotoFocal, type IconName } from "@/ui";
+import { T, Card, Button, Row, Icon, Banner, Skeleton, Stack, QueryError, OfflineState, StaleBanner, useQueryBlocked, retryConnection, useBottomClearance, COLUMN, useSideInsetsStyle, StatusScrim, useScrimScroll, PhotoHero, type PhotoFocal, type IconName } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { splitNames, dayMonth } from "@/features/guest/format";
 import { GuestDayOfView } from "@/features/guest/DayOfView";
@@ -39,6 +39,7 @@ export default function GuestHome() {
   const router = useRouter();
   const session = useGuestSession();
   const { clearance } = useBottomClearance();
+  const side = useSideInsetsStyle();
   const online = useOnline();
   const mainQuery = useGuestHome();
   const { data, isLoading, refetch } = mainQuery;
@@ -155,7 +156,7 @@ export default function GuestHome() {
     );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, side]}>
       <ScrollView
         {...scrim.listProps}
         contentContainerStyle={{ paddingBottom: clearance }}

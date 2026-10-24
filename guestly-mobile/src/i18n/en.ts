@@ -245,6 +245,7 @@ export const en = {
     planner: "Message the planner",
   },
   messages: {
+    pickOne: "Pick a conversation to read it",
     title: "Messages",
     guestSubtitle: "Replies from the couple land here.",
     empty: "No messages here yet. Ask the concierge anything; questions only the couple can answer show up here with their reply.",
@@ -282,6 +283,7 @@ export const en = {
     tabs: { home: "Home", guests: "Guests", rsvps: "RSVPs", messages: "Messages", more: "More" },
   },
   guests: {
+    pickOne: "Pick a guest to see their card",
     title: "Guests",
     subtitle: "{parties} parties · {people} people expected",
     search: "Search guests",
