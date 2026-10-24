@@ -29,9 +29,9 @@
 // src/app would become a route): PlannerTop, NotShared, the gated queries,
 // the task check row and its toggle.
 
-import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { View, Pressable, ActivityIndicator, StyleSheet } from "react-native";
-import { Tabs, useNavigation } from "expo-router";
+import { useNavigation } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, plural, shortDate, useCopy, useLang } from "@/i18n";
@@ -39,7 +39,8 @@ import { get, post } from "@/lib/api";
 import { usePlannerHome, type RequestRow, type TaskRow } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
-import { GlassTabBar, resetTabs, tabNavigation, type TabSpec } from "@/ui/TabBar";
+import { resetTabs } from "@/ui/tabNav";
+import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
 import { T, Icon, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
@@ -62,57 +63,44 @@ export default function PlannerTabs() {
   // Pendientes counts what waits on the planner: their own open tasks and the
   // requests the couple answered with a question (plan b; prototype badge).
   const badge = canTasks ? (home.data?.open_tasks ?? 0) + (reqs.data?.requests ?? []).filter(asksPlanner).length : 0;
-  const specs: TabSpec[] = [
-    { name: "index", icon: "home", label: c.today },
-    { name: "(requests)", icon: "tasks", label: c.todo, badge, owns: ["tasks"] },
-    { name: "guests", icon: "guests", label: c.guests },
+  const tabs: RoleTab[] = [
+    { name: "index", sf: { default: "sun.horizon", selected: "sun.horizon.fill" }, label: c.today },
+    { name: "(requests)", sf: { default: "checklist", selected: "checklist.checked" }, label: c.todo, badge, owns: ["tasks"] },
+    { name: "guests", sf: { default: "person.2", selected: "person.2.fill" }, label: c.guests },
     // Vendors stays a route (budget lines and pushes open it) but is no tool
     // of its own any more (F5).
-    { name: "(tools)", icon: "grid", label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
-    { name: "more", icon: "more", label: c.more },
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
+    { name: "more", sf: { default: "ellipsis.circle", selected: "ellipsis.circle.fill" }, label: c.more },
   ];
-  return (
-    <Tabs
-      // Back means the screen the person came from, not the first tab.
-      backBehavior="history"
-      tabBar={(props) => <PlannerTabBar {...props} specs={specs} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.night }, lazy: true }}
-    >
-      {specs.map((s) => (
-        // A tab left with a detail open reopens on its list (Pendientes with a
-        // request open, then Hoy, then "See all in To do").
-        <Tabs.Screen key={s.name} name={s.name} options={{ popToTopOnBlur: s.name === "(requests)" }} />
-      ))}
-    </Tabs>
-  );
+  const tenantReset = useTenantStackReset();
+  return <RoleNativeTabs surface="planner" tabs={tabs} fallback="more" screenListeners={tenantReset} />;
 }
 
-type BarProps = React.ComponentProps<typeof GlassTabBar>;
+type TabNavigation = Parameters<typeof resetTabs>[0];
 
-/** The kit's bar, plus F1 for switches that did not start at the pill: when
- *  the wedding changes, every tab stack except the focused one pops to its
- *  root. (The kit's own `resetKey` pops the focused one too, which would close
- *  the screen a push for another wedding has just opened.) */
-function PlannerTabBar(props: BarProps) {
+/** F1 for switches that did not start at the pill: when the wedding changes,
+ *  every tab stack except the focused one pops to its root. The system tab bar
+ *  has no custom bar component to hang this on, so the tab navigation is taken
+ *  from the screen listeners (React Navigation calls `screenListeners` with the
+ *  navigation of each tab screen). */
+function useTenantStackReset() {
   const { tenantKey } = useSession();
-  const { state } = props;
-  const navigation = tabNavigation(props);
-  const latest = useRef(state);
-  useEffect(() => {
-    latest.current = state;
-  });
+  const nav = useRef<TabNavigation | null>(null);
   const last = useRef(tenantKey);
   useEffect(() => {
     const prev = last.current;
     last.current = tenantKey;
     if (!prev || !tenantKey || prev === tenantKey) return;
-    const st = latest.current;
+    const navigation = nav.current;
+    if (!navigation) return;
+    const st = navigation.getState();
     resetTabs(navigation, { skip: st.routes[st.index]?.key, tabs: PLANNER_STACKS });
-  }, [tenantKey, navigation]);
-  return <GlassTabBar {...props} />;
+  }, [tenantKey]);
+  return useCallback(({ navigation }: { navigation: unknown }) => {
+    nav.current = navigation as TabNavigation;
+    return {};
+  }, []);
 }
-
-// ------------------------------------------------------------------ data
 
 export type PlannerRequests = { pending: boolean; requests: RequestRow[]; tasks: TaskRow[]; tasks_pending: boolean };
 

@@ -42,8 +42,11 @@ export { KeyboardAvoidingView as KeyboardLiftView } from "react-native-keyboard-
 export type { ChatListHandle, ComposerProps } from "./keyboard";
 export { toast, dismissToast, ToastHost, useDockLift } from "./Toast";
 export type { ToastOptions, DockLift } from "./Toast";
-export { RoleTabs, GlassTabBar } from "./TabBar";
-export type { TabSpec, HiddenRoute } from "./TabBar";
+export { RoleNativeTabs } from "./NativeRoleTabs";
+export type { RoleTab } from "./NativeRoleTabs";
+export { useLayout } from "./layout";
+export type { Layout, Bucket, Pose } from "./layout";
+export { TwoPane, TwoPanePlaceholder } from "./TwoPane";
 
 // ---------------------------------------------------------------- layout
 
@@ -210,14 +213,14 @@ export function Screen({
     <KeyboardScope.Provider value={form ? FORM_SCOPE : null}>
     <MultilineRoomSetter.Provider value={form ? setMlRoom : null}>
     <MultilineRoomValue.Provider value={mlRoom}>
-    <View style={[styles.screen, style]}>
+    <View style={[styles.screen, { paddingLeft: insets.left, paddingRight: insets.right }, style]}>
       {/* The night backdrop (navy to night to deep night, with the gold wash
           from the top right) as one small baked image, stretched. It used to
           be two full-screen gradient layers per screen: every screen kept in
           the tabs held about 50 MB of drawing (QA Sep 29: 130 MB at launch,
           860 MB after visiting each section once). One decoded bitmap is
           now shared by every screen. Photo screens skip it (plain night). */}
-      {backdrop ? <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" /> : null}
+      {backdrop ? <Image source={SCREEN_BACKDROP} style={COVER} resizeMode="stretch" accessible={false} importantForAccessibility="no" /> : null}
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
       {scroll && form ? (
         // Forms: the focused field scrolls into the band above the keyboard,

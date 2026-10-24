@@ -12,7 +12,7 @@ import { useInbox } from "@/lib/hooks";
 import { useSession } from "@/lib/session";
 import { enterTenantScope } from "@/features/shared/tenantScope";
 import { useCoupleCopy } from "@/features/couple/ui";
-import { RoleTabs, type TabSpec } from "@/ui/TabBar";
+import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
 
 export default function CoupleTabs() {
   const c = useCoupleCopy().tabs;
@@ -27,21 +27,12 @@ export default function CoupleTabs() {
   const badge = data?.needs_you ?? 0;
   // Sections live inside the tab that opens them (route groups, URLs unchanged):
   // Expo Router 58 redirects away from hidden tab routes.
-  const specs: TabSpec[] = [
-    { name: "index", icon: "home", label: c.home },
-    { name: "(guests)", icon: "guests", label: c.guests, owns: ["rsvps"] },
-    { name: "(messages)", icon: "chat", label: c.messages, badge, owns: ["broadcasts"] },
-    { name: "coordinator", icon: "sparkle", label: c.coordinator },
-    { name: "(tools)", icon: "grid", label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more", "settings"] },
+  const tabs: RoleTab[] = [
+    { name: "index", sf: { default: "house", selected: "house.fill" }, label: c.home },
+    { name: "(guests)", sf: { default: "person.2", selected: "person.2.fill" }, label: c.guests, owns: ["rsvps"] },
+    { name: "(messages)", sf: { default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }, label: c.messages, badge, owns: ["broadcasts"] },
+    { name: "coordinator", sf: { default: "sparkles", selected: "sparkles" }, label: c.coordinator },
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more", "settings"] },
   ];
-  return (
-    <RoleTabs
-      specs={specs}
-      fallback="(tools)"
-      // A wedding switch (Settings, or a notification for the other wedding)
-      // sends the other tabs back to their lists: no record, thread or draft
-      // of the previous wedding stays open (F1 for the couple).
-      resetKey={tenantKey}
-    />
-  );
+  return <RoleNativeTabs surface="couple" tabs={tabs} fallback="(tools)" />;
 }

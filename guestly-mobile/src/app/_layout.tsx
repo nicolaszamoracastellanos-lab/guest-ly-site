@@ -31,8 +31,6 @@ import { setLockHandlers } from "@/lib/lock";
 import { flushPendingReports, installGlobalErrorHandlers, setTelemetryRoute } from "@/lib/telemetry";
 import { colors } from "@/ui/tokens";
 import { T, Button, Gem, Stack as VStack, LockCover, ToastHost } from "@/ui";
-import AssistantBubble from "@/ui/AssistantBubble";
-import { pathShowsBubble } from "@/ui/chrome";
 import { TourHost, useTourOnScreen } from "@/features/tour";
 import * as ExpoLinking from "expo-linking";
 
@@ -156,26 +154,6 @@ function Gate() {
       // nothing presented
     }
   }, [sessionKind, router]);
-
-  // The floating assistant (v1.2, AssistiveTouch style): concierge for guests,
-  // Coordinator for couples and planners. Mounted once here so it rides above
-  // every signed-in screen and keeps its place. It shows on every screen of
-  // the three surfaces, moves wherever the person drags it, and hides only on
-  // the chat it opens, while the keyboard is up (the bubble itself) and behind
-  // the lock, update and tour overlays. Screens no longer hide or lift it.
-  // The couple has a Coordinator tab (build 15), so only the guest (concierge)
-  // and the planner keep the floating button.
-  const bubbleSurface = state.status === "guest" ? "guest" : state.status === "user" && state.me.surface === "planner" ? "planner" : null;
-  const tourOnScreen = useTourOnScreen();
-  const bubbleHidden =
-    !pathShowsBubble(pathname) ||
-    locked ||
-    updateRequired ||
-    // The welcome tour covers the screen: no floating control under it.
-    tourOnScreen ||
-    (state.status === "user" && state.me.locked === true) ||
-    // A planner whose Coordinator is switched off gets no bubble for it.
-    (state.status === "user" && !can(state.me, "coordinator"));
 
   // A link into a couple or planner screen that arrives while nobody is signed
   // in (a push or a shared link opened on the sign-in screen, or while the
@@ -322,7 +300,6 @@ function Gate() {
         {/* /tour only asks for the welcome tour and steps back; it is never seen. */}
         <Stack.Screen name="tour" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
       </Stack>
-      {bubbleSurface ? <AssistantBubble surface={bubbleSurface} hidden={bubbleHidden} /> : null}
       {/* Toasts (v1.2 d): above the screens and the bubble, under the tour,
           the update screen and the lock. */}
       {locked || updateRequired ? null : <ToastHost />}

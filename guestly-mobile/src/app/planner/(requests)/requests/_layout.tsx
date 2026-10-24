@@ -6,7 +6,7 @@ import { colors } from "@/ui/tokens";
 // list, never as its only screen (review fix, build 12). An in-app push from
 // another tab can still be the only screen (Back then returns to that tab,
 // lib/nav useSafeBack); the tab bar and a wedding switch reset such a stack
-// to its list (ui/TabBar resetStackToRoot).
+// to its list (ui/tabNav resetStackToRoot).
 export const unstable_settings = { initialRouteName: "index" };
 
 // The Pendientes / To do tab (build 12). Its first screen is the list of my

@@ -31,7 +31,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // and the per-role navigation. The fingerprint changes with the new native
   // module, so build 11 never receives this JS over the air.
   version: "1.2.0",
-  orientation: "portrait",
+  // The iPhone Duo's inner display ignores declared orientations and Apple asks
+  // every app to support them all (tent pose, inner landscape, Split View).
+  orientation: "default",
   scheme: "guestly",
   userInterfaceStyle: "dark",
   icon: "./assets/brand/icon.png",
