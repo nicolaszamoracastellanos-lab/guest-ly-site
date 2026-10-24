@@ -13,7 +13,8 @@ import { errorText } from "@/features/shared/requests";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout } from "@/ui";
+import { useReservedRegions } from "@/lib/duo";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -103,6 +104,8 @@ export default function DoorCheckin() {
   // keyboard up it rides on top of the keyboard instead.
   const { clearance } = useBottomClearance();
   const side = useSideInsetsStyle();
+  const layout = useLayout();
+  const regions = useReservedRegions();
   const keyboardOpen = useKeyboardOpen();
   // Denied is only what the person answered; while iOS is still asking, the
   // status is "undetermined" and the scanner frame stays. With the camera
@@ -111,6 +114,91 @@ export default function DoorCheckin() {
   // 667 pt window the frame plus the denied sentence pushed the name search
   // back behind the tab bar (Part 9 release walk, camera denied in Spanish).
   const denied = !!permission && !permission.granted && permission.status !== "undetermined";
+
+  // Reception mode (iPhone Duo, half folded on the table, "laptop" pose): the
+  // top half is for what is read from a distance, the bottom half for what is
+  // touched (Apple, "Strike a pose"). Same function as the normal screen, only
+  // arranged: the result is read big above the fold; the camera preview, name
+  // search and counter sit below it. The guest holds the pass to the back
+  // camera of the half-folded phone while the planner reads the screen.
+  if (layout.pose === "table") {
+    const fold = regions.division;
+    const foldH = fold && fold.active ? fold.height : 36;
+    const topH = fold && fold.active ? fold.y : Math.round(layout.height / 2 - foldH / 2);
+    const mark = card?.result?.already ? copy.guests.detail.checkedIn : copy.checkin.scanned;
+    return (
+      <View style={[styles.root, side]}>
+        <View style={{ height: topH, paddingTop: top }}>
+          <TopBar onBack={back} title={copy.checkin.reception} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
+          <View style={styles.receptionResult} accessibilityLiveRegion="polite">
+            {card ? (
+              <>
+                <T v="display44" center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>
+                  {guest?.name ?? card.pending?.name ?? ""}
+                </T>
+                <T v="title30" color={colors.goldLight} center>
+                  {[guest?.table ? fmt(copy.checkin.table, { t: guest.table }) : null, fmt(copy.guests.partyOf, { n: seats })].filter(Boolean).join(" · ")}
+                </T>
+                <View style={styles.okPill}>
+                  <T v="label11" color="#047857" style={{ letterSpacing: 1 }}>
+                    {mark}
+                  </T>
+                </View>
+              </>
+            ) : (
+              <>
+                <T v="display44" center>
+                  {dayof?.parties_in ?? "·"}
+                  <T v="title30" color={colors.ivory70}>{`  ${fmt(copy.checkin.partiesIn, { n: "", total: dayof?.parties_total ?? "·" }).replace(/^\s*of\s*/i, "/ ").replace(/^\s*de\s*/i, "/ ")}`}</T>
+                </T>
+                <T v="body15" color={colors.ivory70} center>
+                  {copy.checkin.receptionHint}
+                </T>
+              </>
+            )}
+          </View>
+        </View>
+        <View style={{ height: foldH }} accessible={false} importantForAccessibility="no" />
+        <KeyboardLiftView behavior="padding" style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 10 }}>
+            {!typing && !denied ? (
+              <View style={styles.receptionCamera}>
+                {permission?.granted && focused ? <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={onScan} /> : <View style={[FILL, { backgroundColor: colors.night }]} />}
+                <View style={[styles.frame, { width: 120, height: 120, marginTop: 0 }]} pointerEvents="none">
+                  {[styles.tl, styles.tr, styles.bl, styles.br].map((c, i) => (
+                    <View key={i} style={[styles.corner, c]} />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+            {typing ? <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} /> : null}
+            {typing && results.length ? (
+              <Card kind="glass" padding={0} style={{ flexShrink: 1, paddingHorizontal: 10 }}>
+                <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+                  {results.map((g, i) => (
+                    <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : undefined} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
+                  ))}
+                </ScrollView>
+              </Card>
+            ) : null}
+            <Row style={{ justifyContent: "space-between" }}>
+              <T v="body15" color={colors.ivory70}>
+                {dayof ? `${dayof.parties_in} ${fmt(copy.checkin.partiesIn, { n: "", total: dayof.parties_total }).replace(/^\s*of\s*/i, "/ ").replace(/^\s*de\s*/i, "/ ")}` : "·"}
+              </T>
+              <Pressable onPress={() => setTyping((v) => !v)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: "center" }}>
+                <Row gap={6}>
+                  <Icon name={typing ? "camera" : "search"} size={16} color={colors.ivory70} />
+                  <T v="meta13" color={colors.ivory70}>
+                    {typing ? copy.checkin.title : copy.checkin.typeName}
+                  </T>
+                </Row>
+              </Pressable>
+            </Row>
+          </View>
+        </KeyboardLiftView>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, side]}>
@@ -223,6 +311,8 @@ export default function DoorCheckin() {
 }
 
 const styles = StyleSheet.create({
+  receptionResult: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 24 },
+  receptionCamera: { height: 150, borderRadius: 18, overflow: "hidden", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.goldBorder, backgroundColor: colors.night },
   root: { flex: 1, backgroundColor: colors.night },
   frame: { alignSelf: "center", width: 280, height: 280, marginTop: 60 },
   corner: { position: "absolute", width: 26, height: 26, borderColor: colors.gold },

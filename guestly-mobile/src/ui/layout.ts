@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHinge } from "expo-hinge";
+import { useDevPose } from "./devPose";
 import { LARGE_TEXT_SCALE, bucketFor, columnsFor, listWidthFor, openness, poseFor, twoPaneFor, type Bucket, type HingeLike, type Pose } from "./layoutMath";
 
 export type { Bucket, Pose } from "./layoutMath";
@@ -40,6 +41,7 @@ export function useLayout(): Layout {
   const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const hinge = useHinge() as HingeLike;
+  const devPose = useDevPose();
   return useMemo(() => {
     const bucket = bucketFor(width);
     const largeText = fontScale >= LARGE_TEXT_SCALE;
@@ -50,13 +52,13 @@ export function useLayout(): Layout {
       twoPane: twoPaneFor(bucket, largeText),
       columns: columnsFor(bucket, largeText),
       listWidth: listWidthFor(bucket),
-      pose: poseFor(hinge, width, height),
+      pose: devPose ?? poseFor(hinge, width, height),
       hinge: hinge ?? null,
       openness: openness(hinge),
       largeText,
       sideBar: Math.max(insets.left, insets.right) >= SIDE_COLUMN_MIN,
     };
-  }, [width, height, fontScale, insets.left, insets.right, hinge]);
+  }, [width, height, fontScale, insets.left, insets.right, hinge, devPose]);
 }
 
 /** Left and right padding equal to the safe area, for a screen that does not

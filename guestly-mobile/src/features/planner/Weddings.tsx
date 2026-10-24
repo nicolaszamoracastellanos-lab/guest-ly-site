@@ -27,7 +27,7 @@ export function WeddingsList() {
   const rows = q.data?.weddings ?? [];
   return (
     <Screen query={q} refresh header={<PlannerTop />}>
-      <BigTitle title={l.tabs.weddings} sub={rows.length ? fmt(l.weddingsSub, { n: rows.length }) : ""} />
+      <BigTitle title={l.tabs.weddings} sub={rows.length ? plural(rows.length, l.weddingsSub) : ""} />
       <Stack gap={12} style={{ marginTop: 20 }}>
         {q.isLoading && !q.data ? (
           <>

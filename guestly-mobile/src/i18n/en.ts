@@ -404,6 +404,11 @@ export const en = {
     },
   },
   coupleDayOf: {
+    nowLabel: "Now",
+    nextLabel: "Next",
+    markDone: "Mark done",
+    markedDone: "Marked as done",
+    nothingNow: "Nothing in progress",
     title: "Day-of mode",
     partiesIn: "Parties in",
     seats: "Seats",
@@ -417,6 +422,8 @@ export const en = {
     notToday: "Day-of mode turns on by itself on the wedding day. You can switch it on early in Settings.",
   },
   checkin: {
+    reception: "Reception mode",
+    receptionHint: "Half fold the phone on the table: guests hold their pass to the back camera and you read the name from here",
     title: "Check-in at the door",
     hint: "Point at the guest pass or type a name",
     typeName: "Type a name",

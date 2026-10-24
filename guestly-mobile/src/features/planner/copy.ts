@@ -36,7 +36,7 @@ export type PlannerCopy = {
   openBudget: string;
   openRunsheet: string;
   pickWedding: string;
-  weddingsSub: string; // "{n} weddings"
+  weddingsSub: { one: string; other: string };
   loadFailed: string;
   retry: string;
   kinds: { request_answered: string; task_overdue: string; task_due_today: string; wedding_soon: string };
@@ -77,7 +77,7 @@ const en: PlannerCopy = {
   openBudget: "Budget",
   openRunsheet: "Day-of schedule",
   pickWedding: "Pick a wedding to see its summary",
-  weddingsSub: "{n} weddings",
+  weddingsSub: { one: "{n} wedding", other: "{n} weddings" },
   loadFailed: "Could not load your weddings",
   retry: "Try again",
   kinds: { request_answered: "Request", task_overdue: "Task", task_due_today: "Task", wedding_soon: "Wedding" },
@@ -118,7 +118,7 @@ const es: PlannerCopy = {
   openBudget: "Presupuesto",
   openRunsheet: "Programa del día",
   pickWedding: "Elige una boda para ver su resumen",
-  weddingsSub: "{n} bodas",
+  weddingsSub: { one: "{n} boda", other: "{n} bodas" },
   loadFailed: "No pudimos cargar tus bodas",
   retry: "Reintentar",
   kinds: { request_answered: "Solicitud", task_overdue: "Tarea", task_due_today: "Tarea", wedding_soon: "Boda" },

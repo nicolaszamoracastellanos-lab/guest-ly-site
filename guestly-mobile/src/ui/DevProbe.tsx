@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "./layout";
+import { setDevPose } from "./devPose";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useReservedRegions } from "@/lib/duo";
@@ -22,7 +23,7 @@ import { clearTourRequest, markTourSeen } from "@/features/tour/state";
 
 const BASE = "http://127.0.0.1:8099";
 
-type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages" };
+type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto" };
 
 export function DevProbe() {
   const router = useRouter();
@@ -60,6 +61,7 @@ export function DevProbe() {
           const id = res.items?.[0]?.id ?? res.threads?.[0]?.id;
           if (id) router.navigate({ pathname: cmd.selFirst === "guests" ? "/couple/guests" : "/couple/messages", params: { sel: id } } as never);
         }
+        if (cmd.pose) setDevPose(cmd.pose === "auto" ? null : cmd.pose);
         if (cmd.go) router.navigate(cmd.go as never);
       } catch {
         // server not running: stay quiet

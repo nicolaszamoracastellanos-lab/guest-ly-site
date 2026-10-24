@@ -414,6 +414,11 @@ export const es: Copy = {
     },
   },
   coupleDayOf: {
+    nowLabel: "Ahora",
+    nextLabel: "Siguiente",
+    markDone: "Marcar hecho",
+    markedDone: "Marcado como hecho",
+    nothingNow: "Nada en curso",
     title: "Modo del día",
     partiesIn: "Grupos dentro",
     seats: "Lugares",
@@ -427,6 +432,8 @@ export const es: Copy = {
     notToday: "El modo del día se activa solo el día de la boda. Puedes activarlo antes en Ajustes.",
   },
   checkin: {
+    reception: "Modo Recepción",
+    receptionHint: "Apoya el teléfono medio plegado en la mesa: los invitados muestran su pase a la cámara trasera y tú lees el nombre aquí",
     title: "Check-in en la puerta",
     hint: "Apunta al pase del invitado o escribe un nombre",
     typeName: "Escribir un nombre",

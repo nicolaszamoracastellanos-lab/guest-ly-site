@@ -5,7 +5,12 @@ import { View } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { fmt, useCopy } from "@/i18n";
 import { useCoupleDayOf } from "@/lib/hooks";
-import { Screen, TopBar, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon } from "@/ui";
+import { Screen, TopBar, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon, useLayout, useSideInsetsStyle, useTopInset, toast } from "@/ui";
+import { useReservedRegions } from "@/lib/duo";
+import { useQueryClient } from "@tanstack/react-query";
+import { post } from "@/lib/api";
+import { useUserSession } from "@/lib/session";
+import { StyleSheet } from "react-native";
 import { colors } from "@/ui/tokens";
 import { nightOrder } from "@/features/runsheet/list";
 import { useSafeBack } from "@/lib/nav";
@@ -26,7 +31,74 @@ export default function CoupleDayOf() {
   const blocks = [...(data?.runsheet ?? [])]
     .sort((a, b) => nightOrder(a.starts_at) - nightOrder(b.starts_at))
     .map((b) => ({ ...b, state: live ? b.state : ("later" as const) }));
+  const layout = useLayout();
+  const regions = useReservedRegions();
+  const side = useSideInsetsStyle();
+  const topInset = useTopInset();
+  const qc = useQueryClient();
+  const canEdit = useUserSession()?.me.can_edit ?? false;
+  const [marking, setMarking] = React.useState(false);
   const pct = data && data.parties_total ? Math.min(100, Math.round((data.parties_in / data.parties_total) * 100)) : 0;
+
+  // Wedding-day mode (iPhone Duo, half folded on the table): "Now" and "Next"
+  // big above the fold, to read at arm's length; marking it done and the door
+  // below it, where the thumbs are (Apple, "Strike a pose"). Same function as
+  // the normal screen, only arranged.
+  if (layout.pose === "table") {
+    const now = blocks.find((b) => b.state === "now") ?? null;
+    const next = blocks.find((b) => b.state === "next") ?? blocks.find((b) => b.state === "later") ?? null;
+    const fold = regions.division;
+    const foldH = fold && fold.active ? fold.height : 36;
+    const topH = fold && fold.active ? fold.y : Math.round(layout.height / 2 - foldH / 2);
+    const markDone = async () => {
+      if (!now || marking) return;
+      setMarking(true);
+      try {
+        await post(`/couple/runsheet/${now.id}/status`, { status: "done" });
+        await qc.invalidateQueries({ queryKey: ["couple-dayof"] });
+        toast(copy.coupleDayOf.markedDone, { icon: "check" });
+      } catch {
+        toast(copy.common.errorBody, { icon: "warning" });
+      } finally {
+        setMarking(false);
+      }
+    };
+    return (
+      <View style={[tableStyles.root, side]}>
+        <View style={{ height: topH, paddingTop: topInset }}>
+          <TopBar onBack={back} right={<Badge label={copy.coupleDayOf.title} kind="green" />} />
+          <View style={tableStyles.read}>
+            {now ? (
+              <>
+                <T v="label11" color={colors.goldLight}>{copy.coupleDayOf.nowLabel}</T>
+                <T v="display44" center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>{now.title}</T>
+                <T v="title30" color={colors.goldLight}>{[now.starts_at.slice(0, 5), now.location].filter(Boolean).join(" · ")}</T>
+              </>
+            ) : (
+              <T v="body16" color={colors.ivory70} center>{data && !data.day_of ? copy.coupleDayOf.notToday : copy.coupleDayOf.nothingNow}</T>
+            )}
+            {next ? (
+              <View style={{ marginTop: 6, alignItems: "center" }}>
+                <T v="label11" color={colors.ivory55}>{copy.coupleDayOf.nextLabel}</T>
+                <T v="title30" center numberOfLines={1}>{`${next.starts_at.slice(0, 5)} · ${next.title}`}</T>
+              </View>
+            ) : null}
+          </View>
+        </View>
+        <View style={{ height: foldH }} accessible={false} importantForAccessibility="no" />
+        <View style={tableStyles.controls}>
+          {now && canEdit ? <Button label={copy.coupleDayOf.markDone} icon="check" onPress={() => void markDone()} loading={marking} testID="dayof-mark-done" /> : null}
+          <Button label={copy.coupleDayOf.checkIn} icon="qr" kind={now && canEdit ? "glass" : "primary"} onPress={() => router.push("/couple/checkin")} />
+          <Row style={{ justifyContent: "space-between" }}>
+            <T v="body15" color={colors.ivory70}>
+              {data ? `${data.parties_in} / ${data.parties_total} ${copy.coupleDayOf.partiesIn.toLowerCase()}` : "·"}
+            </T>
+            <Button label={copy.coupleDayOf.open} kind="text" small full={false} haptic={false} onPress={() => router.push("/couple/runsheet")} />
+          </Row>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <Screen query={mainQuery} refresh header={<TopBar onBack={back} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
@@ -118,3 +190,9 @@ export default function CoupleDayOf() {
     </Screen>
   );
 }
+
+const tableStyles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.night },
+  read: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 24 },
+  controls: { flex: 1, paddingHorizontal: 20, paddingTop: 16, gap: 12 },
+});
