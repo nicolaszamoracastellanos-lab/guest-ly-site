@@ -26,11 +26,15 @@ Rama `feat/duo-v2` (app) y `feat/duo-v2-api` en el worktree `~/Desktop/guestly-p
 | T2.7 Modos de pose | hecho y verificado con pose forzada | Modo Recepción (check-in) y Modo Día B (pantalla del día) en pose mesa. Falta verlos con el aparato realmente medio plegado |
 | T2.8 Widgets | construidos, compilan con el prebuild | 5 widgets (Countdown, Replies, Today, Weddings, DayOf) en `src/widgets`, alimentados por `features/widgets/sync` con líneas de tiempo. No verificados a la vista: añadirlos a la pantalla de inicio requiere la interfaz del Duo |
 | T2.9 Live Activities | construidas, sin conectar | `GuestlyDayOfActivity` y `GuestlyCheckinActivity` listas; falta arrancarlas desde Día B y check-in, y el push por APNs (necesita la clave) |
-| T2.10 a T2.13 | pendientes | Invitación que se abre, bienvenida en la pantalla exterior (spike), capturas, matriz F2 |
+| T2.9 (Live Activities) | arrancan, sin ver la isla | `startSampleActivities` devuelve "started" para las dos; el simulador del Duo no dibuja la isla. Se arrancan solas desde Día B (pareja) y el check-in. Sin push (falta la clave APNs) |
+| T2.10 Invitación con la bisagra | hecho y verificado con ángulo forzado | `InviteEnvelope` en el inicio del invitado: sobre cerrado, solapa a la mitad, abierto; una vez por lanzamiento; toque y Reducir movimiento lo abren sin bisagra |
+| T2.11 Bienvenida en la pantalla exterior | spike, compila y se monta | `WelcomeAccessoryView` (SwiftUI `sceneAccessory` + `CameraCaptureAccessory`) dentro del check-in con interruptor. Sin cámara en el simulador no se puede ver; verificar en un aparato real con el escáner activo |
+| T2.12, T2.13 | pendientes | Capturas del App Store de las 4 medidas del Duo y la matriz F2 completa |
+| Herramientas | hecho | Rejillas con 2 columnas en regular y 4 en ancho (pareja y planner) |
 
 ### Decisiones y hallazgos de esta tanda
 
-- `systemExtraLargePortrait` NO está en `expo-widgets` 58.0.23 (el plugin lista small, medium, large, extraLarge y accesorios). Mi Mi Boda (C7) usará `systemLarge`; se revisa cuando Expo lo agregue.
+- `systemExtraLargePortrait` NO está en `expo-widgets` 58.0.23 (el plugin lista small, medium, large, extraLarge y accesorios). Mi C7 (Mi boda) usará `systemLarge`; se revisa cuando Expo lo agregue.
 - Privacidad: el código móvil documenta que el teléfono y el correo de un invitado "nunca entran en un payload de planner" (más estricto que la web, decisión del dueño del 12 de agosto, en BUILD-LOG). El rediseño con paridad total toca ese límite. Plan: exponer contactos al planner solo cuando el permiso `contacts` de esa boda lo conceda, igual que la web. No está hecho; espera tu confirmación.
 - `useHinge()` devuelve un objeto (no null) en el Duo, también con la pantalla exterior: es la señal para distinguir un Duo. La política de orientación (`lib/duo.ts`) deja libre la orientación solo con bisagra.
 - EAS necesitará el grupo de apps `group.com.zcventures.guestly` y un perfil de aprovisionamiento para el destino `com.zcventures.guestly.ExpoWidgetsTarget` en el primer build real.
