@@ -40,8 +40,24 @@ function attempt(fn: () => void) {
   try {
     fn();
   } catch {
-    // a widget that cannot update must never break the app
+    // A widget that cannot update must never break the app.
   }
+}
+
+/** Probe build only: what each widget's timeline holds right now, as text. */
+export async function dumpWidgetTimelines(): Promise<string> {
+  const w = load();
+  if (!w) return "widgets: module not available";
+  const out: string[] = [];
+  for (const [name, widget] of Object.entries(w)) {
+    try {
+      const t = await (widget as unknown as { getTimeline: () => Promise<{ date: Date; props: object }[]> }).getTimeline();
+      out.push(`${name.replace("Guestly", "")}: ${t.length} · ${JSON.stringify(t[0]?.props ?? null).slice(0, 70)}`);
+    } catch (e) {
+      out.push(`${name}: ERR ${String(e).slice(0, 80)}`);
+    }
+  }
+  return out.join("\n");
 }
 
 /** The next `n` local midnights, the moments the day count changes. */
