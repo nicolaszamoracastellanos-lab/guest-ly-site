@@ -202,7 +202,10 @@ export function GuestsList() {
         <TopBar
           right={
             <Row gap={4}>
-              {canEdit ? (
+              {canEdit && pane.embedded ? (
+                // Beside the card the list pane is narrow: the reminder is an icon, like the other two.
+                <IconButton name="bell" label={c.guests.sendReminder} onPress={() => router.push({ pathname: "/couple/broadcasts/new", params: { audience: "pending", template: "rsvp_reminder" } } as never)} testID="guests-send-reminder" />
+              ) : canEdit ? (
                 <Button
                   label={c.guests.sendReminder}
                   icon="bell"

@@ -4,7 +4,8 @@
 
 import React, { useMemo, useState } from "react";
 import { View, Pressable } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { usePane } from "@/ui/MasterDetail";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
@@ -18,7 +19,7 @@ import { StatusBadge, TextField, ConfirmSheet, useAction } from "../ui";
 import { useSafeBack } from "@/lib/nav";
 import { VendorChip, useLineVendorOf } from "../VendorLink";
 
-export function BudgetCategoryScreen() {
+export function BudgetCategoryScreen({ id, b, add }: { id: string; b?: string; add?: string }) {
   const copy = useFeatureCopy(COPY);
   const vendorOf = useLineVendorOf();
   const { lang } = useLang();
@@ -27,7 +28,8 @@ export function BudgetCategoryScreen() {
   const online = useOnline();
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
-  const params = useLocalSearchParams<{ id: string; b?: string; add?: string }>();
+  const params = { id, b, add };
+  const pane = usePane();
   const mainQuery = useBudgetSurface(params.b ?? null);
   const { data, isLoading } = mainQuery;
   const writes = useBudgetWrites();
@@ -62,7 +64,7 @@ export function BudgetCategoryScreen() {
     <Screen query={mainQuery} refresh
       header={
         <TopBar
-          onBack={back}
+          onBack={pane.embedded ? undefined : back}
           title={active?.budget.name ?? copy.title}
           right={
             canEdit && category ? (

@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { View, Linking, Alert, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import * as Clipboard from "expo-clipboard";
 import { usePane } from "@/ui/MasterDetail";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, localized, useCopy, useLang, relTime, mediumDate } from "@/i18n";
@@ -13,7 +14,7 @@ import { get, post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { useGuestDetail, useCoupleRsvps, type InboxItem } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Field, ButtonRow, type IconName } from "@/ui";
+import { Screen, TopBar, toast, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Field, ButtonRow, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
@@ -248,7 +249,11 @@ export function GuestDetail({ id }: { id: string }) {
 
                 <Section label={c.card.contact}>
                   {phone ? (
-                    <Line icon="phone" title={phone} sub={c.card.phoneSub} onPress={() => void Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`).catch(() => {})} last={!email} />
+                    <>
+                      <Line icon="phone" title={phone} sub={c.card.phoneSub} onPress={() => void Linking.openURL(`https://wa.me/${phone.replace(/\D/g, "")}`).catch(() => {})} />
+                      {/* Beside WhatsApp in Split View: copy the number to paste it there. */}
+                      <Line icon="copy" title={c.card.copyPhone} onPress={() => void Clipboard.setStringAsync(phone).then(() => toast(c.card.phoneCopied, { icon: "check" }))} last={!email} />
+                    </>
                   ) : d.scope === "full" ? (
                     <Line icon="phone" title={c.card.addPhone} sub={c.card.addPhoneSub} onPress={canEdit ? startEdit : undefined} last={!email} />
                   ) : null}

@@ -7,14 +7,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, useWindowDimensions } from "react-native";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { useHinge } from "expo-hinge";
 import * as Haptics from "expo-haptics";
 import GuestlyDuo, { type NativeRegion, type NativeRegions } from "../../modules/guestly-duo/src/GuestlyDuoModule";
 
 export type Region = { x: number; y: number; width: number; height: number; active: boolean; margins: { top: number; left: number; bottom: number; right: number } };
-export type Regions = { division: Region | null; occlusions: Region[] };
+export type Regions = { division: Region | null; occlusions: Region[]; /** The native module is linked and iOS reports regions (27.1+). */ available: boolean };
 
-const NONE: Regions = { division: null, occlusions: [] };
+const NONE: Regions = { division: null, occlusions: [], available: false };
 
 function toRegion(r: NativeRegion): Region {
   return { x: r.x, y: r.y, width: r.width, height: r.height, active: r.active, margins: { top: r.marginTop, left: r.marginLeft, bottom: r.marginBottom, right: r.marginRight } };
@@ -26,7 +27,7 @@ function sameRegion(a: Region | null, b: Region | null): boolean {
 }
 
 function convert(n: NativeRegions): Regions {
-  return { division: n.division ? toRegion(n.division) : null, occlusions: (n.occlusions ?? []).map(toRegion) };
+  return { division: n.division ? toRegion(n.division) : null, occlusions: (n.occlusions ?? []).map(toRegion), available: true };
 }
 
 /** True when this build and this OS can report reserved regions. */
@@ -55,7 +56,7 @@ export function useReservedRegions(): Regions {
       .then((n) => {
         if (!alive) return;
         const next = convert(n);
-        setRegions((prev) => (sameRegion(prev.division, next.division) && prev.occlusions.length === next.occlusions.length ? prev : next));
+        setRegions((prev) => (prev.available && sameRegion(prev.division, next.division) && prev.occlusions.length === next.occlusions.length ? prev : next));
       })
       .catch(() => {});
     return () => {
@@ -92,4 +93,19 @@ export function useReduceMotion(): boolean {
     };
   }, []);
   return on;
+}
+
+/** Orientation policy. The app config leaves every orientation open because
+ *  the iPhone Duo ignores declared orientations on its inner display and
+ *  Apple asks apps to support them all (tent pose, inner landscape, Split
+ *  View). Any phone WITHOUT a hinge keeps the portrait lock the app always had:
+ *  its screens were never designed for landscape. A device that reports a
+ *  hinge (the Duo, an Android foldable) stays free. */
+export function useOrientationPolicy() {
+  const hinge = useHinge();
+  const hasHinge = hinge != null;
+  useEffect(() => {
+    const run = hasHinge ? ScreenOrientation.unlockAsync() : ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    run.catch(() => {});
+  }, [hasHinge]);
 }

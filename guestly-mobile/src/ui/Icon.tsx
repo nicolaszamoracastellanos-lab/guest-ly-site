@@ -10,7 +10,7 @@ export type IconName =
   | "back" | "down" | "search" | "sparkle" | "hanger" | "bus" | "qr" | "check" | "clock" | "wallet" | "tasks"
   | "plus" | "x" | "x-circle" | "filter" | "map" | "camera" | "share" | "phone" | "contacts" | "lock" | "warning" | "info"
   | "edit" | "coins" | "grid" | "store" | "list" | "megaphone" | "globe" | "book" | "gear" | "signout"
-  | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift";
+  | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift" | "copy";
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -37,6 +37,7 @@ export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 
       // Two linked rings (planner wedding pill and Boda tab).
       case "rings": return <><Circle {...p} cx="9" cy="14" r="5" /><Circle {...p} cx="15" cy="14" r="5" /><Path {...p} d="m10.5 5 1.5-2 1.5 2-1.5 1.5z" /></>;
       case "bed": return <><Path {...p} d="M3.5 18.5V6M3.5 14.5h17v4M20.5 14.5V12a2.5 2.5 0 0 0-2.5-2.5h-7v5" /><Circle {...p} cx="7.5" cy="11" r="1.8" /></>;
+      case "copy": return <><Rect {...p} x="9" y="9" width="11" height="11" rx="2" /><Path {...p} d="M15 9V6.5A1.5 1.5 0 0 0 13.5 5h-7A1.5 1.5 0 0 0 5 6.5v7A1.5 1.5 0 0 0 6.5 15H9" /></>;
       case "gift": return <><Rect {...p} x="4" y="9" width="16" height="4" rx="1" /><Path {...p} d="M5.5 13v7h13v-7M12 9v11M12 9c-1.5-3.5-5-4-5-1.5S10 9 12 9zM12 9c1.5-3.5 5-4 5-1.5S14 9 12 9z" /></>;
       case "search": return <><Circle {...p} cx="11" cy="11" r="6" /><Path {...p} d="m20 20-4.5-4.5" /></>;
       case "sparkle": return <><Path {...p} d="M12 4v4M12 16v4M4 12h4M16 12h4M7 7l1.5 1.5M15.5 15.5 17 17M17 7l-1.5 1.5M8.5 15.5 7 17" /><Circle {...p} cx="12" cy="12" r="2.5" /></>;

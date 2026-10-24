@@ -13,6 +13,7 @@
 import React, { type ReactNode } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { usePane } from "@/ui/MasterDetail";
 import { fmt, relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
@@ -32,6 +33,7 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const pane = usePane();
   const user = useUserSession();
   const mainQuery = useBroadcasts();
   const { data, isLoading } = mainQuery;
@@ -70,7 +72,7 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
         {data && ready ? (
           <>
             {canSend && !anyPhone ? <Banner icon="phone" title={c.noPhones} /> : null}
-            {canSend ? <Button label={c.newBroadcast} icon="megaphone" onPress={() => router.push("/couple/broadcasts/new")} disabled={!anyPhone} testID="broadcasts-new" /> : null}
+            {canSend ? <Button label={c.newBroadcast} icon="megaphone" onPress={() => pane.open("new", () => router.push("/couple/broadcasts/new"))} disabled={!anyPhone} testID="broadcasts-new" /> : null}
           </>
         ) : null}
         {data && !ready ? (
@@ -137,7 +139,7 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
                 title={groupTitle(g, c.unknownBatch)}
                 sub={`${deliveryLine(g, c)} · ${relTime(g.ts, lang)}`}
                 trailing={g.groupKind === "campaign" ? <Badge label={g.failed ? fmt(c.failed, { n: g.failed }) : fmt(c.recipients, { n: g.audience })} kind={g.failed ? "amber" : "green"} /> : undefined}
-                onPress={g.groupKind === "campaign" ? () => router.push({ pathname: "/couple/broadcasts/[id]", params: { id: g.id } }) : undefined}
+                onPress={g.groupKind === "campaign" ? () => pane.open(`b:${g.id}`, () => router.push({ pathname: "/couple/broadcasts/[id]", params: { id: g.id } })) : undefined}
                 chevron={g.groupKind === "campaign"}
                 last={i === history.length - 1}
               />

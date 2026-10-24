@@ -18,6 +18,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { DevProbe } from "@/ui/DevProbe";
+import { useHingeHaptics, useOrientationPolicy } from "@/lib/duo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { onlineManager } from "@tanstack/react-query";
@@ -78,6 +79,10 @@ export default function RootLayout() {
 }
 
 function Gate() {
+  // iPhone Duo: free orientation and a tick at fully open / closed. Any phone
+  // without a hinge stays portrait (lib/duo).
+  useOrientationPolicy();
+  useHingeHaptics();
   const { state, locked, unlock, updateRequired, signOut, switchTenant, notice, clearNotice } = useSession();
   const router = useRouter();
   const segments = useSegments();

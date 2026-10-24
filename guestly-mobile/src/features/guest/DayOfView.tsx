@@ -50,7 +50,7 @@ export function GuestDayOfView() {
         </View>
         <Row style={[styles.top, { top }]}>
           <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
-            <Gem />
+            <Gem followHinge />
             <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={1} style={{ letterSpacing: 2, flexShrink: 1 }}>
               {copy.common.today}
               {now ? ` · ${clockLabel(now.hour * 60 + now.minute, null, lang)}` : ""}

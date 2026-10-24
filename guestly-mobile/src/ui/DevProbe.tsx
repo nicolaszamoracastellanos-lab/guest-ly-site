@@ -11,22 +11,26 @@
 import React, { useEffect } from "react";
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "./layout";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useReservedRegions } from "@/lib/duo";
+import { get } from "@/lib/api";
 import { clearTourRequest, markTourSeen } from "@/features/tour/state";
 
 const BASE = "http://127.0.0.1:8099";
 
-type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean };
+type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages" };
 
 export function DevProbe() {
   const router = useRouter();
   const { signOut, state } = useSession();
   const stateRef = React.useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
   const l = useLayout();
   const win = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -48,6 +52,14 @@ export function DevProbe() {
           if (st.status === "user") for (const v of ["couple", "planner", "couple-pending"] as const) await markTourSeen(v, st.me.user.id, "skipped");
         }
         if (cmd.signIn) await supabase().auth.signInWithPassword(cmd.signIn);
+        if (cmd.orient === "landscape") await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
+        if (cmd.orient === "portrait") await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        if (cmd.orient === "auto") await ScreenOrientation.unlockAsync();
+        if (cmd.selFirst) {
+          const res = await get<{ items?: { id: string }[]; threads?: { id: string }[] }>(cmd.selFirst === "guests" ? "/couple/guests?limit=1" : "/couple/messages?limit=1");
+          const id = res.items?.[0]?.id ?? res.threads?.[0]?.id;
+          if (id) router.navigate({ pathname: cmd.selFirst === "guests" ? "/couple/guests" : "/couple/messages", params: { sel: id } } as never);
+        }
         if (cmd.go) router.navigate(cmd.go as never);
       } catch {
         // server not running: stay quiet
@@ -62,7 +74,7 @@ export function DevProbe() {
   }, [router, signOut]);
 
   if (!hud) return null;
-  const fold = regions.division ? `fold ${Math.round(regions.division.x)},${Math.round(regions.division.y)} ${Math.round(regions.division.width)}x${Math.round(regions.division.height)}${regions.division.active ? "*" : ""}` : "fold -";
+  const fold = regions.division ? `fold ${Math.round(regions.division.x)},${Math.round(regions.division.y)} ${Math.round(regions.division.width)}x${Math.round(regions.division.height)}${regions.division.active ? "*" : ""}` : regions.available ? "fold none" : "fold n/a";
   return (
     <View pointerEvents="none" style={[styles.box, { top: insets.top + 2, left: insets.left + 4 }]}>
       <Text style={styles.text}>

@@ -37,6 +37,7 @@ import { useCopy } from "@/i18n";
 import { Icon, type IconName } from "./Icon";
 import { colors, fonts, COLUMN, HIT_TARGET, space } from "./tokens";
 import { useBottomClearance, useTabBarTop } from "./chrome";
+import { usePane } from "./MasterDetail";
 import { useDockLift } from "./Toast";
 
 // ------------------------------------------------------------------ sizes
@@ -185,6 +186,11 @@ function useDockRest(): number {
  */
 export function DockedAction({ children, toolbar = false, onHeight, style }: { children: ReactNode; toolbar?: boolean; onHeight?: (h: number) => void; style?: StyleProp<ViewStyle> }) {
   const rest = useDockRest();
+  const pane = usePane();
+  const insets = useSafeAreaInsets();
+  // The window's side insets (Duo status column / bar rail) apply to a dock that
+  // spans the window, not to one inside a pane (the pane's container did it).
+  const side = pane.embedded ? null : { paddingLeft: insets.left, paddingRight: insets.right };
   const [height, setHeight] = useState(0);
   const lifted = toolbar ? TOOLBAR_SPACE : 0;
   useDockLift(height ? { rest: height + DOCK_GAP_OVER_TAB_BAR, open: height + lifted } : null);
@@ -195,7 +201,7 @@ export function DockedAction({ children, toolbar = false, onHeight, style }: { c
     onHeight?.(h);
   };
   return (
-    <KeyboardStickyView pointerEvents="box-none" style={styles.dock} offset={{ closed: -rest, opened: -lifted }}>
+    <KeyboardStickyView pointerEvents="box-none" style={[styles.dock, side]} offset={{ closed: -rest, opened: -lifted }}>
       <View style={styles.dockSurface} onLayout={onLayout}>
         <LinearGradient pointerEvents="none" colors={["rgba(13,17,23,0)", colors.night]} style={styles.dockFade} />
         <View style={[styles.column, styles.dockInner, style]}>{children}</View>

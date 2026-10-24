@@ -16,6 +16,7 @@ import { formatMoney, formatMoneyShort, formatMonth, parseAmount, numText } from
 import { ProgressBar, TextField, ConfirmSheet, useAction } from "../ui";
 import { AddLineSheet } from "../AddLineSheet";
 import { useSafeBack } from "@/lib/nav";
+import { usePane } from "@/ui/MasterDetail";
 import { BudgetVendors } from "../VendorLink";
 
 const SELECTED_KEY = "budget-selected";
@@ -25,6 +26,7 @@ export function BudgetOverviewScreen() {
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
+  const pane = usePane();
   const online = useOnline();
   const base = useBudgetBase();
   const routePrefix = base.startsWith("/planner") ? "/planner/budget" : "/couple/budget";
@@ -209,7 +211,8 @@ export function BudgetOverviewScreen() {
                       {formatMoneyShort(g.totalBase, currency, lang)}
                     </T>
                   }
-                  onPress={() => router.push({ pathname: `${routePrefix}/category/[id]` as never, params: { id, b: active.budget.id } as never })}
+                  selected={pane.selected === `${id}~${active.budget.id}`}
+                  onPress={() => pane.open(`${id}~${active.budget.id}`, () => router.push({ pathname: `${routePrefix}/category/[id]` as never, params: { id, b: active.budget.id } as never }))}
                   last={i === computed!.groups.length - 1}
                 />
               );

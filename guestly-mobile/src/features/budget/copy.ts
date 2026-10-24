@@ -1,6 +1,7 @@
 // Budget copy, EN and neutral LatAm ES (tú).
 
 const en = {
+  pickCategory: "Pick a category to see its lines",
   title: "Budget",
   subtitle: "Every line, every payment, one total.",
   pending: "The budget is still being set up for this wedding. Nothing is lost, check back shortly.",
@@ -133,6 +134,7 @@ const en = {
 };
 
 const es: typeof en = {
+  pickCategory: "Elige una categoría para ver sus renglones",
   title: "Presupuesto",
   subtitle: "Cada línea, cada pago, un solo total.",
   pending: "El presupuesto todavía se está preparando para esta boda. No se pierde nada, vuelve a intentarlo en un momento.",

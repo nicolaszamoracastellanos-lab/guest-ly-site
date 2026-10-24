@@ -23,6 +23,8 @@ import { useNavigation, useRoute } from "expo-router";
 import { ChatArea, DockedAction, FormGroup, FormToolbar, FORM_SCOPE, KeyboardScope, MultilineRoomSetter, MultilineRoomValue, TOOLBAR_SPACE, focusedTextInput, multilineRoomFor, useInFormScope, useKeepFocusedVisible } from "./keyboard";
 import { ToastHost, useDockLift } from "./Toast";
 import { usePane } from "./MasterDetail";
+import { useLayout } from "./layout";
+import { useReduceMotion } from "@/lib/duo";
 
 export { T } from "./Text";
 export { renderInlineBold } from "./MarkdownText";
@@ -566,8 +568,14 @@ export function Hairline({ gold = false, style }: { gold?: boolean; style?: Styl
 
 // ---------------------------------------------------------------- brand
 
-export function Gem({ size = 7, color = colors.gold }: { size?: number; color?: string }) {
-  return <View style={{ width: size, height: size, backgroundColor: color, transform: [{ rotate: "45deg" }] }} />;
+/** The brand gem. `followHinge` turns it a quarter turn as the iPhone Duo
+ *  opens (a hinge effect, allowed and encouraged by Apple; never layout).
+ *  Still without a hinge and with Reduce Motion. */
+export function Gem({ size = 7, color = colors.gold, followHinge = false }: { size?: number; color?: string; followHinge?: boolean }) {
+  const { hinge, openness } = useLayout();
+  const reduce = useReduceMotion();
+  const turn = followHinge && hinge && !reduce ? (1 - openness) * 90 : 0;
+  return <View style={{ width: size, height: size, backgroundColor: color, transform: [{ rotate: `${45 + turn}deg` }] }} />;
 }
 
 const wordmark = require("../../assets/brand/wordmark-ivory.png");
@@ -1192,12 +1200,12 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
  *  when it has no `onLongPress` of its own. */
 export const ListRowLongPress = createContext<{ onLongPress: () => void; label: string } | null>(null);
 
-export function ListRow({ leading, title, sub, trailing, below, onPress, onLongPress, longPressLabel, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; /** Held press; also offered to VoiceOver and TalkBack as a named action. */ onLongPress?: () => void; longPressLabel?: string; chevron?: boolean; last?: boolean; testID?: string }) {
+export function ListRow({ leading, title, sub, trailing, below, onPress, onLongPress, longPressLabel, chevron = true, last, selected, testID }: { /** The record open beside this list (two panes): a gold wash and edge. */ selected?: boolean; leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; /** Held press; also offered to VoiceOver and TalkBack as a named action. */ onLongPress?: () => void; longPressLabel?: string; chevron?: boolean; last?: boolean; testID?: string }) {
   const ctx = useContext(ListRowLongPress);
   const held = onLongPress ?? ctx?.onLongPress;
   const heldLabel = longPressLabel ?? ctx?.label;
   const inner = (
-    <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
+    <View style={[styles.row, last && { borderBottomWidth: 0 }, selected && styles.rowSelected]}>
       {leading}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <T v="body16" color={colors.ivory90} numberOfLines={2}>
@@ -1721,6 +1729,7 @@ const styles = StyleSheet.create({
   dock: { position: "absolute", left: 0, right: 0, bottom: 0 },
   sheetHost: { flex: 1, justifyContent: "flex-end" },
   input: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, borderRadius: radius.pill, paddingHorizontal: 18, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)" },
+  rowSelected: { backgroundColor: colors.goldWash, borderLeftWidth: 2, borderLeftColor: colors.gold, paddingLeft: 10, borderRadius: radius.chip },
   row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
   actionTile: { flex: 1, minHeight: 72, paddingHorizontal: 6, paddingVertical: 10, borderRadius: radius.chip, backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", justifyContent: "center", gap: 5 },
   scrim: { ...{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, backgroundColor: colors.scrim },
