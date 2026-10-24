@@ -25,15 +25,13 @@ export function InviteEnvelope({ names, date, hint, ready }: { names: string; da
   const { hinge, openness, width } = useLayout();
   const side = useSideInsetsStyle();
   const reduce = useReduceMotion();
-  const [dismissed, setDismissed] = useState(openedThisLaunch);
+  const [tapped, setTapped] = useState(false);
   const fully = hinge?.status === "fullyOpen";
-
+  // Fully open (or tapped) the envelope is done for this launch.
   useEffect(() => {
-    if (fully) {
-      openedThisLaunch = true;
-      setDismissed(true);
-    }
+    if (fully) openedThisLaunch = true;
   }, [fully]);
+  const dismissed = openedThisLaunch || tapped || fully;
 
   if (!hinge || dismissed || !ready) return null;
   const t = reduce ? 0 : openness;
@@ -42,7 +40,7 @@ export function InviteEnvelope({ names, date, hint, ready }: { names: string; da
   const flapH = Math.round(h * 0.56);
   const tap = () => {
     openedThisLaunch = true;
-    setDismissed(true);
+    setTapped(true);
   };
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={hint} onPress={tap} style={[styles.cover, side]} testID="invite-envelope">
