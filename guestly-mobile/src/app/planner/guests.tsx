@@ -13,7 +13,8 @@ import { fmt, useCopy } from "@/i18n";
 import { usePlannerGuests, type PlannerGuest } from "@/lib/hooks";
 import { can, useTenantKey, useUserSession } from "@/lib/session";
 import { useOnline } from "@/lib/query";
-import { Screen, BigTitle, Input, ListRow, Avatar, T, Skeleton, Stack, Icon, Row, Chip, ChipRow, Card, Sheet, SectionLabel, useBottomClearance, COLUMN, QueryState, StaleBanner, useQueryBlocked, retryConnection, EmptyState } from "@/ui";
+import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, T, Skeleton, Stack, Icon, Row, Chip, ChipRow, Card, Sheet, SectionLabel, useBottomClearance, COLUMN, QueryState, StaleBanner, useQueryBlocked, retryConnection, EmptyState } from "@/ui";
+import { MasterDetail, usePane } from "@/ui/MasterDetail";
 import { colors } from "@/ui/tokens";
 import { PlannerTop, IconDisc, NotShared } from "@/app/planner/_layout";
 
@@ -21,9 +22,29 @@ type Filter = "all" | "pending" | "attending" | "declined";
 const FILTERS: Filter[] = ["all", "pending", "attending", "declined"];
 
 export default function PlannerGuests() {
-  // A wedding switch remounts the body: search, filter and an open sheet
-  // never carry over to the next wedding (F1).
-  return <PlannerGuestsBody key={useTenantKey()} />;
+  // A wedding switch remounts the body: search, filter, the open record and an
+  // open sheet never carry over to the next wedding (F1).
+  const { sel } = useLocalSearchParams<{ sel?: string }>();
+  const copy = useCopy();
+  const listHref = useCallback((s?: string) => (s ? { pathname: "/planner/guests", params: { sel: s } } : "/planner/guests") as never, []);
+  return (
+    <MasterDetail
+      key={useTenantKey()}
+      detailRoute={false}
+      selected={sel ?? null}
+      list={<PlannerGuestsBody />}
+      renderDetail={(id) => <PlannerGuestCard id={id} />}
+      listHref={listHref}
+      placeholder={
+        <>
+          <Icon name="guests" size={34} color={colors.goldLight} />
+          <T v="body15" color={colors.ivory70} style={{ textAlign: "center" }}>
+            {copy.guests.pickOne}
+          </T>
+        </>
+      }
+    />
+  );
 }
 
 function PlannerGuestsBody() {
@@ -77,6 +98,7 @@ function GuestList({ q, setQ, filter, setFilter, picked, setPicked, canRequest, 
   const copy = useCopy();
   const c = copy.planner.b12;
   const guestsQuery = usePlannerGuests(slug);
+  const pane = usePane();
   const { data, isLoading } = guestsQuery;
   // Offline or failed with nothing cached: say so, never "no guests yet" (S1).
   const blocked = useQueryBlocked(guestsQuery);
@@ -173,7 +195,9 @@ function GuestList({ q, setQ, filter, setFilter, picked, setPicked, canRequest, 
               sub={[statusLine(g, c), g.members.length > 1 ? g.members.join(", ") : null].filter(Boolean).join(" · ")}
               trailing={<Icon name="more" size={20} color={colors.ivory55} />}
               chevron={false}
-              onPress={() => setPicked(g)}
+              selected={pane.selected === g.id}
+              // Beside the card the row selects it; alone it opens the sheet.
+              onPress={() => (pane.embedded ? pane.select(g.id) : setPicked(g))}
               last={index === items.length - 1}
             />
           </View>
@@ -213,4 +237,77 @@ function statusLine(g: PlannerGuest, c: { going: string; goingN: string; decline
   if (g.status === "attending") return g.party_size > 1 ? fmt(c.goingN, { n: g.party_size }) : c.going;
   if (g.status === "declined") return c.declined;
   return g.party_size > 1 ? fmt(c.pendingN, { n: g.party_size }) : c.pending;
+}
+
+/** One guest's card, in the right-hand pane beside the list. Same facts the
+ *  sheet shows (names, answer, party, tags, scrubbed notes) and the same three
+ *  requests; contact details never arrive on a planner payload. */
+function PlannerGuestCard({ id }: { id: string }) {
+  const copy = useCopy();
+  const c = copy.planner.b12;
+  const router = useRouter();
+  const me = useUserSession()?.me;
+  const canRequest = can(me, "tasks");
+  const q = usePlannerGuests(me?.tenant.slug ?? "");
+  const g = q.data?.guests.find((x) => x.id === id);
+  const ask = (kind: "plus_one" | "edit_guest" | "guest_help") => router.push({ pathname: "/planner/requests/new", params: { kind, guest: id } });
+  return (
+    <Screen query={q} refresh header={<TopBar title={g?.name ?? ""} />}>
+      {!g ? (
+        <Skeleton h={160} r={18} />
+      ) : (
+        <Stack gap={16}>
+          <Row gap={14}>
+            <Avatar initials={g.initials} size={56} />
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+              <T v="title30" numberOfLines={2}>
+                {g.name}
+              </T>
+              <T v="body15" color={colors.ivory70}>
+                {statusLine(g, c)}
+              </T>
+            </View>
+          </Row>
+          {g.members.length ? (
+            <Card kind="solid" padding={2} style={{ paddingHorizontal: 16 }}>
+              {g.members.map((m, i) => (
+                <ListRow key={`${m}-${i}`} leading={<IconDisc name="guests" muted />} title={m} chevron={false} last={i === g.members.length - 1} />
+              ))}
+            </Card>
+          ) : null}
+          {g.tags.length ? (
+            <Row gap={8} style={{ flexWrap: "wrap" }}>
+              {g.tags.map((t) => (
+                <Chip key={t} label={t} on={false} />
+              ))}
+            </Row>
+          ) : null}
+          {g.notes ? (
+            <Card kind="solid" padding={16}>
+              <T v="body15" color={colors.ivory90}>
+                {g.notes}
+              </T>
+            </Card>
+          ) : null}
+          <Row gap={8}>
+            <Icon name="lock" size={16} color={colors.ivory55} />
+            <T v="meta13" color={colors.ivory55} style={{ flex: 1 }}>
+              {copy.planner.guestsNote}
+            </T>
+          </Row>
+          {canRequest ? (
+            <Card kind="solid" padding={2} style={{ paddingHorizontal: 16 }}>
+              <ListRow leading={<IconDisc name="guests" />} title={c.addSeats} sub={c.addSeatsSub} onPress={() => ask("plus_one")} />
+              <ListRow leading={<IconDisc name="edit" />} title={c.editGuest} sub={c.editGuestSub} onPress={() => ask("edit_guest")} />
+              <ListRow leading={<IconDisc name="contacts" />} title={c.helpGuest} sub={c.helpGuestSub} onPress={() => ask("guest_help")} last />
+            </Card>
+          ) : (
+            <T v="body15" color={colors.ivory70}>
+              {c.requestsOff}
+            </T>
+          )}
+        </Stack>
+      )}
+    </Screen>
+  );
 }

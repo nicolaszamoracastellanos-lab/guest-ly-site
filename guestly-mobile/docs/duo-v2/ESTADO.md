@@ -13,3 +13,24 @@ Rama `feat/duo-v2` (desde `spike/sdk58` fab39dd). Plan: `~/Desktop/Guest-ly Docs
 | T1.5 Módulo `guestly-duo` v1 | compilado y cargado | regiones reservadas (`fold none` cerrado), haptic al abrir y cerrar, gem que sigue la bisagra (`Gem followHinge`). Falta ver el pliegue activo con el aparato medio plegado |
 | T1.6 Teclado | pendiente de aparato | la barra Prev / Next / Done aparece sin teclado en el simulador con teclado de hardware (también en la ficha de una columna); confirmar en un aparato real |
 | T1.7 Matriz F1 y medidas | parcial | `MEDIDAS.md`. Celdas de exterior vertical y horizontal pasadas en Invitados, Mensajes, Presupuesto, Inicio |
+
+## Fase 2: planner, modos Duo, widgets, Live Activities
+
+Rama `feat/duo-v2` (app) y `feat/duo-v2-api` en el worktree `~/Desktop/guestly-portal-duo` (portal). Nada se subió, mezcló ni desplegó.
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| T2.1 API del portal | parcial | Hechas y probadas contra el portal local con la cuenta demo: `GET /planner/portfolio` (por boda, con permisos propios de cada boda; sin teléfono, correo ni texto de invitados) y `GET /planner/agenda`. El rol pareja recibe `forbidden`. Pendientes: mensajes del planner, edición de invitados con permiso `contacts`, escritura de proveedores, programa, avisos, check-in, logística, documentos, analítica, Cerebro, sitio web, snapshot de widgets, registro de Live Activities |
+| T2.2 Arquitectura del planner | parcial | Pestañas Hoy, Bodas, Invitados, Pendientes, Herramientas (barra del sistema); Hoy como cockpit entre bodas (se activa con 2 o más bodas); Bodas con lista y resumen en dos paneles y "Trabajar en esta boda"; menú del encabezado (Coordinador y Más). Mensajes del planner espera a su API |
+| T2.3 Invitados del planner | parcial | Lista + ficha en dos paneles (misma información que la hoja, sin contacto). Edición directa y contactos esperan la decisión de privacidad de abajo |
+| T2.7 Modos de pose | hecho y verificado con pose forzada | Modo Recepción (check-in) y Modo Día B (pantalla del día) en pose mesa. Falta verlos con el aparato realmente medio plegado |
+| T2.8 Widgets | construidos, compilan con el prebuild | 5 widgets (Countdown, Replies, Today, Weddings, DayOf) en `src/widgets`, alimentados por `features/widgets/sync` con líneas de tiempo. No verificados a la vista: añadirlos a la pantalla de inicio requiere la interfaz del Duo |
+| T2.9 Live Activities | construidas, sin conectar | `GuestlyDayOfActivity` y `GuestlyCheckinActivity` listas; falta arrancarlas desde Día B y check-in, y el push por APNs (necesita la clave) |
+| T2.10 a T2.13 | pendientes | Invitación que se abre, bienvenida en la pantalla exterior (spike), capturas, matriz F2 |
+
+### Decisiones y hallazgos de esta tanda
+
+- `systemExtraLargePortrait` NO está en `expo-widgets` 58.0.23 (el plugin lista small, medium, large, extraLarge y accesorios). Mi Mi Boda (C7) usará `systemLarge`; se revisa cuando Expo lo agregue.
+- Privacidad: el código móvil documenta que el teléfono y el correo de un invitado "nunca entran en un payload de planner" (más estricto que la web, decisión del dueño del 12 de agosto, en BUILD-LOG). El rediseño con paridad total toca ese límite. Plan: exponer contactos al planner solo cuando el permiso `contacts` de esa boda lo conceda, igual que la web. No está hecho; espera tu confirmación.
+- `useHinge()` devuelve un objeto (no null) en el Duo, también con la pantalla exterior: es la señal para distinguir un Duo. La política de orientación (`lib/duo.ts`) deja libre la orientación solo con bisagra.
+- EAS necesitará el grupo de apps `group.com.zcventures.guestly` y un perfil de aprovisionamiento para el destino `com.zcventures.guestly.ExpoWidgetsTarget` en el primer build real.

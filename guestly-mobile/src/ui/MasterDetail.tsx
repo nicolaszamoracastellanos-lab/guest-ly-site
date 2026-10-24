@@ -58,7 +58,10 @@ export function MasterDetail({
   detailRoute: boolean;
   /** Href of the list route, with ?sel= when a record is selected. */
   listHref: (sel?: string) => Href;
-  detailHref: (id: string) => Href;
+  /** The screen that shows a record on its own (one pane). Omit it when the
+   *  list shows the record another way (a sheet): a selection is then ignored
+   *  and cleared when the window folds back to one pane. */
+  detailHref?: (id: string) => Href;
   placeholder: ReactNode;
 }) {
   const router = useRouter();
@@ -77,7 +80,7 @@ export function MasterDetail({
   useEffect(() => {
     if (!twoPane && !detailRoute && selected) {
       router.setParams({ sel: undefined } as never);
-      router.push(detailHref(selected));
+      if (detailHref) router.push(detailHref(selected));
     }
   }, [twoPane, detailRoute, selected, router, detailHref]);
 
@@ -97,6 +100,6 @@ export function MasterDetail({
     );
   }
   if (detailRoute && selected) return <>{renderDetail(selected)}</>;
-  if (!detailRoute && selected) return null;
+  if (!detailRoute && selected && detailHref) return null;
   return <>{list}</>;
 }
