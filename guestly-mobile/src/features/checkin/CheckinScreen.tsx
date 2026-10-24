@@ -10,13 +10,13 @@ import { useIsFocused } from "expo-router";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { get } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
-import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
+import { checkIn, drainQueue, isForOpenWedding, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, usePlannerCheckin, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout } from "@/ui";
 import { reservedRegionsAvailable, useReservedRegions } from "@/lib/duo";
 import { WelcomeAccessory } from "../../../modules/guestly-duo/src/WelcomeAccessoryView";
-import { useUserSession } from "@/lib/session";
+import { can, useUserSession } from "@/lib/session";
 import { endCheckinActivity, syncCheckinActivity } from "@/features/widgets/liveActivities";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
@@ -63,6 +63,15 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const [welcomeOn, setWelcomeOn] = useState(true);
   const canWelcome = reservedRegionsAvailable();
   const coupleNames = useUserSession()?.me.tenant.couple_names ?? "";
+  // A planner whose check-in access is view-only (or goes through the couple) can look,
+  // not check anyone in: no scanner, no taps, and a line that says why.
+  const me = useUserSession()?.me;
+  const canEdit = role === "planner" ? can(me, "checkin", "edit") : true;
+  const viewOnlyNote = canEdit ? null : (
+    <T v="meta13" color={colors.amber}>
+      {copy.checkin.viewOnly}
+    </T>
+  );
   const welcomeGuest = card?.result?.guest ?? null;
   const welcome = canWelcome ? (
     <WelcomeAccessory
@@ -81,7 +90,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   }, [focused, arrivedIn, partiesTotal, lastIn, lang]);
   useEffect(() => () => void endCheckinActivity(), []);
 
-  const refreshQueue = useCallback(() => readQueue().then((items) => setQueued(items.length)), []);
+  const refreshQueue = useCallback(() => readQueue().then((items) => setQueued(items.filter(isForOpenWedding).length)), []);
   useEffect(() => {
     void refreshQueue();
     if (!permission?.granted) void requestPermission();
@@ -89,7 +98,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   }, []);
   useEffect(() => {
     if (online) drainQueue().then(() => { void refreshQueue(); void qc.invalidateQueries({ queryKey: [countsKey] }); });
-  }, [online, qc, refreshQueue]);
+  }, [online, qc, refreshQueue, countsKey]);
   useEffect(() => {
     const term = q.trim();
     const t = setTimeout(async () => {
@@ -108,7 +117,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   }, [q, typing, role]);
 
   async function doCheckIn(guestId: string, name: string, seats: number) {
-    if (busy) return;
+    if (busy || !canEdit) return;
     setBusy(true);
     try {
       const item = { client_event_id: newEventId(), guest_id: guestId, seats, scanned_at: new Date().toISOString(), name, path: postPath };
@@ -208,7 +217,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
           <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: keyboardOpen ? 12 : clearance, gap: 10 }}>
             {!typing && !denied ? (
               <View style={styles.receptionCamera}>
-                {permission?.granted && focused ? <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={onScan} /> : <View style={[FILL, { backgroundColor: colors.night }]} />}
+                {permission?.granted && focused && canEdit ? <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={onScan} /> : <View style={[FILL, { backgroundColor: colors.night }]} />}
                 <View style={[styles.frame, { width: 120, height: 120, marginTop: 0 }]} pointerEvents="none">
                   {[styles.tl, styles.tr, styles.bl, styles.br].map((c, i) => (
                     <View key={i} style={[styles.corner, c]} />
@@ -216,6 +225,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
                 </View>
               </View>
             ) : null}
+            {viewOnlyNote}
             {welcomeToggle}
             {typing ? <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} /> : null}
             {typing && results.length ? (
@@ -249,7 +259,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   return (
     <View style={[styles.root, side]}>
       {welcome}
-      {permission?.granted && focused ? (
+      {permission?.granted && focused && canEdit ? (
         <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={typing ? undefined : onScan} />
       ) : (
         <View style={[FILL, { backgroundColor: colors.night }]} />
@@ -333,6 +343,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             <Button label={copy.common.done} kind="paper" onPress={() => setCard(null)} style={{ marginTop: 14, backgroundColor: colors.gold, borderColor: colors.gold }} />
           </Card>
         ) : null}
+        {viewOnlyNote}
         {welcomeToggle ? <View style={{ alignItems: "flex-start" }}>{welcomeToggle}</View> : null}
         <Row style={{ justifyContent: "space-between" }}>
           <Row gap={6} align="baseline">

@@ -11,7 +11,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
-import { post, ApiFailure } from "@/lib/api";
+import { post, ApiFailure, getCredential } from "@/lib/api";
 
 export const QUEUE_KEY = "gl.checkin.queue";
 
@@ -23,6 +23,8 @@ export type QueuedCheckin = {
   name: string;
   /** Which door route to post to; the couple's when absent (older queued items). */
   path?: string;
+  /** The wedding (slug) the pass was scanned for. Sent only while that wedding is the open one. */
+  tenant?: string;
 };
 
 export type CheckinResult = {
@@ -42,9 +44,21 @@ export type CheckinResult = {
 /** The one call the queue makes; replaceable in tests. */
 export type Sender = (item: QueuedCheckin) => Promise<unknown>;
 let send: Sender = (item) => {
-  const { path, ...body } = item;
+  const { path, tenant, ...body } = item;
+  void tenant;
   return post<CheckinResult>(path ?? "/couple/checkin", body);
 };
+
+/** The wedding the open session works on (a planner can hold several). */
+function openTenant(): string | undefined {
+  const c = getCredential();
+  return c.kind === "user" && c.tenantSlug ? c.tenantSlug : undefined;
+}
+/** True when the entry belongs to the wedding that is open now (entries from before the stamp count as open). */
+export function isForOpenWedding(item: QueuedCheckin): boolean {
+  const open = openTenant();
+  return !item.tenant || !open || item.tenant === open;
+}
 export function setQueueSender(s: Sender) {
   send = s;
 }
@@ -104,7 +118,8 @@ export function retryable(err: unknown): boolean {
 
 /** Sends one check-in; when it cannot reach the server, queues it and
  *  returns null. */
-export async function checkIn(item: QueuedCheckin): Promise<CheckinResult | null> {
+export async function checkIn(raw: QueuedCheckin): Promise<CheckinResult | null> {
+  const item = { ...raw, tenant: raw.tenant ?? openTenant() };
   try {
     return (await send(item)) as CheckinResult;
   } catch (err) {
@@ -129,7 +144,11 @@ export function drainQueue(): Promise<{ sent: number; remaining: number }> {
     const snapshot = await readQueue();
     const done = new Set<string>();
     let sent = 0;
+    const open = openTenant();
     for (const item of snapshot) {
+      // Another wedding's entry waits for its wedding: sent now it would hit the
+      // wrong tenant, be refused as "guest not found" and be dropped for good.
+      if (item.tenant && open && item.tenant !== open) continue;
       try {
         await send(item);
         sent += 1;

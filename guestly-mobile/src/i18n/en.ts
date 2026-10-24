@@ -423,6 +423,7 @@ export const en = {
     notToday: "Day-of mode turns on by itself on the wedding day. You can switch it on early in Settings.",
   },
   checkin: {
+    viewOnly: "View only: your access to check-in cannot check guests in.",
     showWelcome: "Welcome on the outer display",
     reception: "Reception mode",
     receptionHint: "Half fold the phone on the table: guests hold their pass to the back camera and you read the name from here",
