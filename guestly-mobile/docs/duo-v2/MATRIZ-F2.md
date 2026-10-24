@@ -38,6 +38,6 @@ Leyenda: **Sim** = visto en el simulador del Duo (pantalla exterior); **Contrato
 ## Decisiones que siguen abiertas
 
 - Clave APNs para que las Live Activities se actualicen con la app cerrada.
-- Subir o integrar la rama `feat/duo-v2` (mi push fue denegado).
-- Mostrar a los planners teléfono y correo de los invitados (hoy nunca, por tu regla del 12 de agosto).
+- Decidido el 24 de octubre: la rama `feat/duo-v2` la sube Nicolas. No se integra a `main` desde esta sesión.
+- Decidido el 24 de octubre: los planners verán teléfono y correo solo con el permiso `contacts`, como la web. Esto reemplaza la regla del 12 de agosto. Todavía no está construido: hoy ningún payload de planner lleva contactos.
 - Responder y traspasar desde Mensajes del planner, y las herramientas Documentos, Logística, Sitio y Cerebro: piden rutas nuevas en el servidor.
