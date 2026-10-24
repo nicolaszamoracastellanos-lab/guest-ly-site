@@ -56,6 +56,18 @@ public class GuestlyDuoModule: Module {
       out.occlusions = window.reservedRegions(kind: .occlusion, options: [.includeInactive]).map(Self.convert)
       return out
     }.runOnQueue(.main)
+
+    // The outer-display welcome (CameraCaptureAccessory, iOS 27.1): see WelcomeAccessory.swift.
+    View(WelcomeAccessoryView.self) {
+      Events("onAvailabilityChange")
+      Prop("enabled") { (view: WelcomeAccessoryView, value: Bool) in view.model.enabled = value }
+      Prop("state") { (view: WelcomeAccessoryView, value: String) in view.model.state = value }
+      Prop("couple") { (view: WelcomeAccessoryView, value: String) in view.model.couple = value }
+      Prop("name") { (view: WelcomeAccessoryView, value: String) in view.model.name = value }
+      Prop("table") { (view: WelcomeAccessoryView, value: String) in view.model.table = value }
+      Prop("seats") { (view: WelcomeAccessoryView, value: Int) in view.model.seats = value }
+      Prop("lang") { (view: WelcomeAccessoryView, value: String) in view.model.lang = value }
+    }
   }
 
   private static func keyWindow() -> UIWindow? {

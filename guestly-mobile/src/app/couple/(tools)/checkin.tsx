@@ -13,8 +13,10 @@ import { errorText } from "@/features/shared/requests";
 import { checkIn, drainQueue, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout } from "@/ui";
-import { useReservedRegions } from "@/lib/duo";
+import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout } from "@/ui";
+import { reservedRegionsAvailable, useReservedRegions } from "@/lib/duo";
+import { WelcomeAccessory } from "../../../../modules/guestly-duo/src/WelcomeAccessoryView";
+import { useUserSession } from "@/lib/session";
 import { endCheckinActivity, syncCheckinActivity } from "@/features/widgets/liveActivities";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
@@ -43,6 +45,25 @@ export default function DoorCheckin() {
   const arrivedIn = dayof?.parties_in;
   const partiesTotal = dayof?.parties_total;
   const lastIn = card?.result?.guest?.name ?? "";
+  // Outer-display welcome (Duo, iOS 27.1): "Welcome, {name}. Table {n}" faces the guest
+  // while the planner scans on the inner display. An extra: the system decides
+  // when it can show, and the check-in is the same without it.
+  const [welcomeOn, setWelcomeOn] = useState(true);
+  const canWelcome = reservedRegionsAvailable();
+  const coupleNames = useUserSession()?.me.tenant.couple_names ?? "";
+  const welcomeGuest = card?.result?.guest ?? null;
+  const welcome = canWelcome ? (
+    <WelcomeAccessory
+      enabled={welcomeOn}
+      state={welcomeGuest ? "checked" : card?.pending ? "found" : "idle"}
+      couple={coupleNames}
+      name={welcomeGuest?.name ?? card?.pending?.name ?? ""}
+      table={welcomeGuest?.table ? String(welcomeGuest.table) : ""}
+      seats={welcomeGuest?.party_size ?? card?.pending?.seats ?? 1}
+      lang={lang}
+    />
+  ) : null;
+  const welcomeToggle = canWelcome ? <Chip label={copy.checkin.showWelcome} on={welcomeOn} onPress={() => setWelcomeOn((v) => !v)} testID="checkin-welcome-toggle" /> : null;
   useEffect(() => {
     if (focused && arrivedIn !== undefined && partiesTotal !== undefined) void syncCheckinActivity(arrivedIn, partiesTotal, lastIn, lang);
   }, [focused, arrivedIn, partiesTotal, lastIn, lang]);
@@ -137,6 +158,7 @@ export default function DoorCheckin() {
     const mark = card?.result?.already ? copy.guests.detail.checkedIn : copy.checkin.scanned;
     return (
       <View style={[styles.root, side]}>
+        {welcome}
         <View style={{ height: topH, paddingTop: top }}>
           <TopBar onBack={back} title={copy.checkin.reception} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
           <View style={styles.receptionResult} accessibilityLiveRegion="polite">
@@ -180,6 +202,7 @@ export default function DoorCheckin() {
                 </View>
               </View>
             ) : null}
+            {welcomeToggle}
             {typing ? <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} /> : null}
             {typing && results.length ? (
               <Card kind="glass" padding={0} style={{ flexShrink: 1, paddingHorizontal: 10 }}>
@@ -211,6 +234,7 @@ export default function DoorCheckin() {
 
   return (
     <View style={[styles.root, side]}>
+      {welcome}
       {permission?.granted && focused ? (
         <CameraView style={FILL} facing="back" barcodeScannerSettings={{ barcodeTypes: ["qr"] }} onBarcodeScanned={typing ? undefined : onScan} />
       ) : (
@@ -295,6 +319,7 @@ export default function DoorCheckin() {
             <Button label={copy.common.done} kind="paper" onPress={() => setCard(null)} style={{ marginTop: 14, backgroundColor: colors.gold, borderColor: colors.gold }} />
           </Card>
         ) : null}
+        {welcomeToggle ? <View style={{ alignItems: "flex-start" }}>{welcomeToggle}</View> : null}
         <Row style={{ justifyContent: "space-between" }}>
           <Row gap={6} align="baseline">
             <T v="title26" size={22}>

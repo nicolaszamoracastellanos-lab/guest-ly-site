@@ -433,6 +433,7 @@ export const es: Copy = {
     notToday: "El modo del día se activa solo el día de la boda. Puedes activarlo antes en Ajustes.",
   },
   checkin: {
+    showWelcome: "Bienvenida en la pantalla exterior",
     reception: "Modo Recepción",
     receptionHint: "Apoya el teléfono medio plegado en la mesa: los invitados muestran su pase a la cámara trasera y tú lees el nombre aquí",
     title: "Check-in en la puerta",
