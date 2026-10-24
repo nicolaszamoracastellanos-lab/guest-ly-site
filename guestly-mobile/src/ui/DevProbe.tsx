@@ -20,11 +20,12 @@ import { useSession } from "@/lib/session";
 import { useReservedRegions } from "@/lib/duo";
 import { get } from "@/lib/api";
 import { dumpWidgetTimelines } from "@/features/widgets/sync";
+import { startSampleActivities } from "@/features/widgets/liveActivities";
 import { clearTourRequest, markTourSeen } from "@/features/tour/state";
 
 const BASE = "http://127.0.0.1:8099";
 
-type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; widgetsDump?: boolean; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto" };
+type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; widgetsDump?: boolean; liveActivities?: boolean; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto" };
 
 export function DevProbe() {
   const router = useRouter();
@@ -63,6 +64,7 @@ export function DevProbe() {
           const id = res.items?.[0]?.id ?? res.threads?.[0]?.id;
           if (id) router.navigate({ pathname: cmd.selFirst === "guests" ? "/couple/guests" : "/couple/messages", params: { sel: id } } as never);
         }
+        if (cmd.liveActivities) setDump(await startSampleActivities("en"));
         if (cmd.widgetsDump) setDump(await dumpWidgetTimelines());
         if (cmd.pose) setDevPose(cmd.pose === "auto" ? null : cmd.pose);
         if (cmd.go) router.navigate(cmd.go as never);

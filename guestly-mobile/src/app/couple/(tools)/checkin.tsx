@@ -15,6 +15,7 @@ import { useCoupleDayOf, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { TopBar, T, Badge, Card, Button, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout } from "@/ui";
 import { useReservedRegions } from "@/lib/duo";
+import { endCheckinActivity, syncCheckinActivity } from "@/features/widgets/liveActivities";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 
@@ -38,6 +39,14 @@ export default function DoorCheckin() {
   const [card, setCard] = useState<{ result: CheckinResult | null; pending?: { name: string; seats: number } } | null>(null);
   const [busy, setBusy] = useState(false);
   const lastScan = useRef<{ id: string; at: number } | null>(null);
+  // The check-in count rides the Dynamic Island while this screen is open.
+  const arrivedIn = dayof?.parties_in;
+  const partiesTotal = dayof?.parties_total;
+  const lastIn = card?.result?.guest?.name ?? "";
+  useEffect(() => {
+    if (focused && arrivedIn !== undefined && partiesTotal !== undefined) void syncCheckinActivity(arrivedIn, partiesTotal, lastIn, lang);
+  }, [focused, arrivedIn, partiesTotal, lastIn, lang]);
+  useEffect(() => () => void endCheckinActivity(), []);
 
   const refreshQueue = useCallback(() => readQueue().then((items) => setQueued(items.length)), []);
   useEffect(() => {

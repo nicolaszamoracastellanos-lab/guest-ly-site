@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import { useLang } from "@/i18n";
 import { useCoupleDayOf, useCoupleHome, useGuestHome, usePlannerAgenda, usePlannerPortfolio } from "@/lib/hooks";
+import { syncDayOfActivity } from "./liveActivities";
 import { syncCoupleWidgets, syncDayOfWidget, syncGuestWidgets, syncPlannerWidgets } from "./sync";
 
 export function CoupleWidgetSync() {
@@ -14,7 +15,10 @@ export function CoupleWidgetSync() {
     if (home.data) syncCoupleWidgets(home.data, lang);
   }, [home.data, lang]);
   useEffect(() => {
-    if (dayof.data) syncDayOfWidget(dayof.data.runsheet, dayof.data.day_of, lang, "couple/dayof");
+    if (dayof.data) {
+      syncDayOfWidget(dayof.data.runsheet, dayof.data.day_of, lang, "couple/dayof");
+      void syncDayOfActivity(dayof.data.runsheet, dayof.data.day_of, lang, "couple/dayof");
+    }
   }, [dayof.data, lang]);
   return null;
 }
