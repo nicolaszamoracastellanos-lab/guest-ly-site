@@ -541,6 +541,8 @@ export const en = {
       hello: "Hi, {name}",
       helloNoName: "Hi",
       replied: "{n} of {total} replied",
+      checkin: "Door check-in",
+      checkinSub: "Scan passes or search a name at the door",
       coordinator: "Coordinator",
       needsYou: "Needs you ({n})",
       nothingNeeds: "Nothing needs you today.",

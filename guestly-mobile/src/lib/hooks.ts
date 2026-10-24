@@ -99,6 +99,10 @@ export const useCoupleRsvps = (filter: string) => useQuery({ queryKey: ["couple-
 export const useInbox = (filter: string) => useQuery({ queryKey: ["couple-inbox", filter], queryFn: () => get<{ items: InboxItem[]; needs_you: number }>(`/couple/messages?filter=${filter}`), refetchInterval: 30_000, placeholderData: (prev) => prev });
 /** Polls only while `poll` is true: screens pass useIsFocused(), so a day-of or
  *  door screen left behind in a tab stops asking the server every 30 s. */
+export type PlannerCheckinCounts = { day_of: boolean; parties_in: number; parties_total: number; seats_in: number; seats_total: number };
+/** Door counts for the wedding a planner is working on (planner "checkin" tool). */
+export const usePlannerCheckin = (opts?: { poll?: boolean; enabled?: boolean }) =>
+  useQuery({ queryKey: ["planner-checkin"], queryFn: () => get<PlannerCheckinCounts>("/planner/checkin"), refetchInterval: opts?.poll === false ? false : 30_000, enabled: opts?.enabled ?? true });
 export const useCoupleDayOf = (opts?: { poll?: boolean; enabled?: boolean }) => useQuery({ queryKey: ["couple-dayof"], queryFn: () => get<CoupleDayOf>("/couple/dayof"), refetchInterval: opts?.poll === false ? false : 30_000, enabled: opts?.enabled ?? true });
 export const useMore = () => useQuery({ queryKey: ["couple-more"], queryFn: () => get<{ entries: Record<string, MoreEntry>; site_slug: string; tier: string }>("/couple/more") });
 export const useCoupleRequests = () => useQuery({ queryKey: ["couple-requests"], queryFn: () => get<{ pending: boolean; requests: RequestRow[] }>("/couple/requests") });

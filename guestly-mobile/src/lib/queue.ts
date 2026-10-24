@@ -21,6 +21,8 @@ export type QueuedCheckin = {
   seats: number;
   scanned_at: string;
   name: string;
+  /** Which door route to post to; the couple's when absent (older queued items). */
+  path?: string;
 };
 
 export type CheckinResult = {
@@ -39,7 +41,10 @@ export type CheckinResult = {
 
 /** The one call the queue makes; replaceable in tests. */
 export type Sender = (item: QueuedCheckin) => Promise<unknown>;
-let send: Sender = (item) => post<CheckinResult>("/couple/checkin", item);
+let send: Sender = (item) => {
+  const { path, ...body } = item;
+  return post<CheckinResult>(path ?? "/couple/checkin", body);
+};
 export function setQueueSender(s: Sender) {
   send = s;
 }
