@@ -10,7 +10,11 @@ import { syncCoupleWidgets, syncDayOfWidget, syncGuestWidgets, syncPlannerWidget
 export function CoupleWidgetSync() {
   const { lang } = useLang();
   const home = useCoupleHome();
-  const dayof = useCoupleDayOf({ poll: false });
+  // The day-of widget and Live Activity only matter around the wedding, so the
+  // run sheet is not fetched at every launch for weddings months away.
+  const days = home.data?.countdown?.days;
+  const nearWedding = home.data?.countdown ? home.data.countdown.passed || (days != null && days <= 2) : false;
+  const dayof = useCoupleDayOf({ poll: false, enabled: nearWedding });
   useEffect(() => {
     if (home.data) syncCoupleWidgets(home.data, lang);
   }, [home.data, lang]);

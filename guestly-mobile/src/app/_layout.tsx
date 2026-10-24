@@ -17,7 +17,6 @@ import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { DevProbe } from "@/ui/DevProbe";
 import { useHingeHaptics, useOrientationPolicy } from "@/lib/duo";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -35,6 +34,12 @@ import { colors } from "@/ui/tokens";
 import { T, Button, Gem, Stack as VStack, LockCover, ToastHost } from "@/ui";
 import { TourHost, useTourOnScreen } from "@/features/tour";
 import * as ExpoLinking from "expo-linking";
+
+// Measurement probe for the iPhone Duo (local command server, forced poses).
+// Metro folds this constant at build time, so a release bundle contains none of
+// it: the require sits in a branch that is dead unless EXPO_PUBLIC_DUO_PROBE=1.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const DevProbe: React.ComponentType | null = process.env.EXPO_PUBLIC_DUO_PROBE === "1" ? require("@/ui/DevProbe").DevProbe : null;
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 installGlobalErrorHandlers();
@@ -308,7 +313,7 @@ function Gate() {
       </Stack>
       {/* Toasts (v1.2 d): above the screens and the bubble, under the tour,
           the update screen and the lock. */}
-      {process.env.EXPO_PUBLIC_DUO_PROBE === "1" ? <DevProbe /> : null}
+      {DevProbe ? <DevProbe /> : null}
       {locked || updateRequired ? null : <ToastHost />}
       {/* Welcome tour: after a fresh sign-in, account creation or a guest's
           first open, and on replay from Settings. Under the lock and update
