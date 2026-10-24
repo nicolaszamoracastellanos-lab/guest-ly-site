@@ -114,6 +114,29 @@ export type PlannerHome = {
 };
 export type PlannerGuest = { id: string; name: string; initials: string; party_size: number; members: string[]; tags: string[]; status: "attending" | "declined" | "pending"; hasPhone: boolean; hasEmail: boolean; language: string | null; notes: string | null; checked_in_at: string | null };
 
+// ---- Planner cockpit (Duo v2): every wedding at once. Permission-aware on the
+// portal: a tool the couple did not share is null/false here, never zero.
+export type PlannerSeats = { invited: number; attending: number; declined: number; pending: number; parties: number; pending_parties: number };
+export type PlannerPortfolioWedding = {
+  slug: string;
+  couple_names: string;
+  wedding_date: string | null;
+  days_to_go: number | null;
+  status: string;
+  current: boolean;
+  health: "ok" | "watch" | "urgent";
+  access: { guests: boolean; tasks: boolean; runsheet: boolean; budget: boolean };
+  seats: PlannerSeats | null;
+  open_requests: number | null;
+  asks_planner: number | null;
+  tasks: { open: number; overdue: number; due_soon: number } | null;
+};
+export type PlannerNeedItem = { id: string; kind: "request_answered" | "task_overdue" | "task_due_today" | "wedding_soon"; wedding_slug: string; couple_names: string; title: string; why: string; ref: { type: "request" | "task" | "wedding"; id: string | null }; urgent: boolean };
+export type PlannerAgendaItem = { id: string; wedding_slug: string; couple_names: string; time: string | null; title: string; location: string | null; kind: "runsheet" | "wedding_day" };
+export type PlannerWeekItem = { id: string; wedding_slug: string; couple_names: string; date: string; title: string; kind: "task_due" | "wedding" };
+export const usePlannerPortfolio = () => useQuery({ queryKey: ["planner-portfolio"], queryFn: () => get<{ weddings: PlannerPortfolioWedding[]; generated_at: string }>("/planner/portfolio") });
+export const usePlannerAgenda = () => useQuery({ queryKey: ["planner-agenda"], queryFn: () => get<{ today: string; needs_you: PlannerNeedItem[]; agenda: PlannerAgendaItem[]; week: PlannerWeekItem[] }>("/planner/agenda") });
+
 export const usePlannerHome = () => useQuery({ queryKey: ["planner-home"], queryFn: () => get<PlannerHome>("/planner/home") });
 export const usePlannerGuests = (slug: string) => useQuery({ queryKey: ["planner-guests", slug], queryFn: () => get<{ guests: PlannerGuest[]; count: number }>(`/planner/weddings/${slug}/guests`), enabled: !!slug });
 export const usePlannerRequests = () => useQuery({ queryKey: ["planner-requests"], queryFn: () => get<{ pending: boolean; requests: RequestRow[]; tasks: TaskRow[]; tasks_pending: boolean }>("/planner/requests") });

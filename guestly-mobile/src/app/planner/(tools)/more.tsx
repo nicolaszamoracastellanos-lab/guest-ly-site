@@ -13,9 +13,10 @@ import { useRouter } from "expo-router";
 import { fmt, plural, useCopy, useLang } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { can, useSession, useTenantKey, useUserSession } from "@/lib/session";
-import { Screen, BigTitle, Card, ListRow, Footer, Stack, Avatar, T, Row, LangToggle, Button } from "@/ui";
+import { Screen, TopBar, Card, ListRow, Footer, Stack, Avatar, T, Row, LangToggle, Button } from "@/ui";
 import { colors } from "@/ui/tokens";
-import { PlannerTop, IconDisc, WeddingSwitcher, weddingLabel } from "@/app/planner/_layout";
+import { useSafeBack } from "@/lib/nav";
+import { IconDisc, WeddingSwitcher, weddingLabel } from "@/app/planner/_layout";
 
 export default function PlannerMore() {
   return <PlannerMoreBody key={useTenantKey()} />;
@@ -27,6 +28,7 @@ function PlannerMoreBody() {
   const { lang, setLang } = useLang();
   const router = useRouter();
   const { signOut } = useSession();
+  const back = useSafeBack();
   const me = useUserSession()?.me;
   const home = usePlannerHome();
   const [switching, setSwitching] = useState(false);
@@ -47,8 +49,7 @@ function PlannerMoreBody() {
   }
 
   return (
-    <Screen header={<PlannerTop />}>
-      <BigTitle title={c.tabs.more} />
+    <Screen header={<TopBar onBack={back} title={c.tabs.more} />}>
       <Stack gap={12} style={{ marginTop: 20 }}>
         <Card kind="solid" padding={16}>
           <Row gap={14}>

@@ -15,9 +15,10 @@ import * as Crypto from "expo-crypto";
 import * as SecureStore from "@/lib/secure";
 
 export const API_BASE: string =
-  (Constants.expoConfig?.extra as { apiBase?: string } | undefined)?.apiBase ??
-  process.env.EXPO_PUBLIC_API_BASE ??
-  "https://app.guest-ly.com";
+  // Development only: point a simulator build at a local portal (never set in
+  // a store or TestFlight build).
+  process.env.EXPO_PUBLIC_DUO_API_BASE ||
+  ((Constants.expoConfig?.extra as { apiBase?: string } | undefined)?.apiBase ?? process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com");
 
 export type ApiError = { code: string; message_en: string; message_es: string };
 

@@ -31,7 +31,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { View, Pressable, ActivityIndicator, StyleSheet } from "react-native";
-import { useNavigation } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, plural, shortDate, useCopy, useLang } from "@/i18n";
@@ -41,7 +41,9 @@ import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
 import { resetTabs } from "@/ui/tabNav";
 import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
-import { T, Icon, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
+import { useFeatureCopy } from "@/i18n/feature";
+import { COPY } from "@/features/planner/copy";
+import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
 import { errorText } from "@/features/tasks/ui";
@@ -63,17 +65,19 @@ export default function PlannerTabs() {
   // Pendientes counts what waits on the planner: their own open tasks and the
   // requests the couple answered with a question (plan b; prototype badge).
   const badge = canTasks ? (home.data?.open_tasks ?? 0) + (reqs.data?.requests ?? []).filter(asksPlanner).length : 0;
+  const lw = useFeatureCopy(COPY);
   const tabs: RoleTab[] = [
     { name: "index", sf: { default: "sun.horizon", selected: "sun.horizon.fill" }, label: c.today },
-    { name: "(requests)", sf: { default: "checklist", selected: "checklist.checked" }, label: c.todo, badge, owns: ["tasks"] },
+    { name: "(weddings)", sf: { default: "heart.text.square", selected: "heart.text.square.fill" }, label: lw.tabs.weddings, owns: ["weddings"] },
     { name: "guests", sf: { default: "person.2", selected: "person.2.fill" }, label: c.guests },
+    { name: "(requests)", sf: { default: "checklist", selected: "checklist.checked" }, label: c.todo, badge, owns: ["tasks"] },
     // Vendors stays a route (budget lines and pushes open it) but is no tool
-    // of its own any more (F5).
-    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
-    { name: "more", sf: { default: "ellipsis.circle", selected: "ellipsis.circle.fill" }, label: c.more },
+    // of its own any more (F5). "more" (settings, guide, language, sign out) is
+    // a screen of this stack now, opened from the header menu.
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more"] },
   ];
   const tenantReset = useTenantStackReset();
-  return <RoleNativeTabs surface="planner" tabs={tabs} fallback="more" screenListeners={tenantReset} />;
+  return <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />;
 }
 
 type TabNavigation = Parameters<typeof resetTabs>[0];
@@ -178,7 +182,7 @@ type NavLike = { getState: () => { type?: string }; getParent: () => NavLike | u
 
 /** The planner tabs whose stacks go back to their lists on a wedding switch,
  *  plus the hidden tasks stack Hoy pushes a task into. */
-const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "(requests)", "guests", "(tools)", "more"]);
+const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "(weddings)", "(requests)", "guests", "(tools)"]);
 
 /** Pops every tab stack to its root (F1). From any screen inside the tabs. */
 export function popAllStacks(navigation: unknown) {
@@ -215,9 +219,28 @@ export function PlannerTop({ right, glass }: { right?: ReactNode; glass?: boolea
         </T>
         <Icon name="down" size={16} color={colors.ivory70} />
       </Pressable>
-      <View>{right}</View>
+      <Row gap={4}>
+        {right}
+        <PlannerActions />
+      </Row>
       <WeddingSwitcher visible={open} onClose={() => setOpen(false)} />
     </View>
+  );
+}
+
+/** The two buttons every planner header carries: the Coordinator (when this
+ *  wedding shares it) and the menu (settings, guide, language, sign out). Real
+ *  toolbar items: icon and title, so the system can place them in the Duo's
+ *  vertical rail or the overflow menu. */
+function PlannerActions() {
+  const router = useRouter();
+  const lm = useFeatureCopy(COPY).menu;
+  const me = useUserSession()?.me;
+  return (
+    <Row gap={4}>
+      {can(me, "coordinator") ? <IconButton name="sparkle" label={lm.coordinator} onPress={() => router.push("/assistant" as never)} testID="planner-top-coordinator" /> : null}
+      <IconButton name="more" label={lm.title} onPress={() => router.push("/planner/more" as never)} testID="planner-top-menu" />
+    </Row>
   );
 }
 
