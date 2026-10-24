@@ -18,6 +18,7 @@ import { useGuestHome, useGuestMessagesPeek } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { useGuestPermissionCheck } from "@/features/guest/permission";
 import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
+import { GuestWidgetSync } from "@/features/widgets/WidgetSync";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useAskSeen } from "@/features/guest/state";
 
@@ -49,5 +50,10 @@ export default function GuestTabs() {
     { name: "(concierge)", sf: { default: "bubble.left", selected: "bubble.left.fill" }, label: c.ask, owns: ["messages"], badge: unread ? "dot" : null },
     { name: "(more)", sf: { default: "info.circle", selected: "info.circle.fill" }, label: c.info, owns: ["site"] },
   ];
-  return <RoleNativeTabs surface="guest" tabs={tabs} fallback="(more)" />;
+  return (
+    <>
+      <RoleNativeTabs surface="guest" tabs={tabs} fallback="(more)" />
+      <GuestWidgetSync />
+    </>
+  );
 }

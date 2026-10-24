@@ -207,6 +207,50 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-build-properties",
       { ios: { deploymentTarget: "16.4" }, android: { minSdkVersion: 26, compileSdkVersion: 36, targetSdkVersion: 36 } },
     ],
+    // Home screen, Lock Screen and StandBy widgets, plus Live Activities for the
+    // wedding day (iPhone Duo v2; plan 03-WIDGETS). The widget code lives in
+    // src/widgets and runs in its own extension; the app feeds it timelines
+    // (features/widgets/sync). Live Activity push (APNs) stays off until the APNs
+    // key exists: the app starts and updates them locally.
+    [
+      "expo-widgets",
+      {
+        groupIdentifier: "group.com.zcventures.guestly",
+        enablePushNotifications: false,
+        widgets: [
+          {
+            name: "GuestlyCountdown",
+            displayName: "Countdown · Cuenta regresiva",
+            description: "Days to the wedding · Días para la boda",
+            ios: { supportedFamilies: ["systemSmall", "systemMedium", "accessoryCircular", "accessoryRectangular", "accessoryInline"], initialLayout: "src/widgets/GuestlyCountdown.tsx" },
+          },
+          {
+            name: "GuestlyReplies",
+            displayName: "Replies · Respuestas",
+            description: "Who has answered · Quién ya respondió",
+            ios: { supportedFamilies: ["systemSmall", "systemMedium", "accessoryRectangular"], initialLayout: "src/widgets/GuestlyReplies.tsx" },
+          },
+          {
+            name: "GuestlyToday",
+            displayName: "Today · Hoy",
+            description: "What needs you today · Lo que necesita de ti hoy",
+            ios: { supportedFamilies: ["systemMedium", "systemLarge", "accessoryRectangular"], initialLayout: "src/widgets/GuestlyToday.tsx" },
+          },
+          {
+            name: "GuestlyWeddings",
+            displayName: "Weddings · Bodas",
+            description: "All your weddings at a glance · Todas tus bodas",
+            ios: { supportedFamilies: ["systemMedium", "systemLarge"], initialLayout: "src/widgets/GuestlyWeddings.tsx" },
+          },
+          {
+            name: "GuestlyDayOf",
+            displayName: "Wedding day · Día B",
+            description: "Now and next · Ahora y siguiente",
+            ios: { supportedFamilies: ["systemMedium", "accessoryRectangular"], initialLayout: "src/widgets/GuestlyDayOf.tsx" },
+          },
+        ],
+      },
+    ],
   ],
   // Info.plist purpose strings in both languages (es.lproj and en.lproj InfoPlist.strings).
   locales: { en: "./locales/en.json", es: "./locales/es.json" },

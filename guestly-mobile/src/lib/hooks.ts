@@ -135,7 +135,8 @@ export type PlannerNeedItem = { id: string; kind: "request_answered" | "task_ove
 export type PlannerAgendaItem = { id: string; wedding_slug: string; couple_names: string; time: string | null; title: string; location: string | null; kind: "runsheet" | "wedding_day" };
 export type PlannerWeekItem = { id: string; wedding_slug: string; couple_names: string; date: string; title: string; kind: "task_due" | "wedding" };
 export const usePlannerPortfolio = () => useQuery({ queryKey: ["planner-portfolio"], queryFn: () => get<{ weddings: PlannerPortfolioWedding[]; generated_at: string }>("/planner/portfolio") });
-export const usePlannerAgenda = () => useQuery({ queryKey: ["planner-agenda"], queryFn: () => get<{ today: string; needs_you: PlannerNeedItem[]; agenda: PlannerAgendaItem[]; week: PlannerWeekItem[] }>("/planner/agenda") });
+export type PlannerAgenda = { today: string; needs_you: PlannerNeedItem[]; agenda: PlannerAgendaItem[]; week: PlannerWeekItem[] };
+export const usePlannerAgenda = () => useQuery({ queryKey: ["planner-agenda"], queryFn: () => get<PlannerAgenda>("/planner/agenda") });
 
 export const usePlannerHome = () => useQuery({ queryKey: ["planner-home"], queryFn: () => get<PlannerHome>("/planner/home") });
 export const usePlannerGuests = (slug: string) => useQuery({ queryKey: ["planner-guests", slug], queryFn: () => get<{ guests: PlannerGuest[]; count: number }>(`/planner/weddings/${slug}/guests`), enabled: !!slug });

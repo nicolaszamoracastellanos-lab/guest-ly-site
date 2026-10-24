@@ -13,6 +13,7 @@ import { useSession } from "@/lib/session";
 import { enterTenantScope } from "@/features/shared/tenantScope";
 import { useCoupleCopy } from "@/features/couple/ui";
 import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
+import { CoupleWidgetSync } from "@/features/widgets/WidgetSync";
 
 export default function CoupleTabs() {
   const c = useCoupleCopy().tabs;
@@ -34,5 +35,10 @@ export default function CoupleTabs() {
     { name: "coordinator", sf: { default: "sparkles", selected: "sparkles" }, label: c.coordinator },
     { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more", "settings"] },
   ];
-  return <RoleNativeTabs surface="couple" tabs={tabs} fallback="(tools)" />;
+  return (
+    <>
+      <RoleNativeTabs surface="couple" tabs={tabs} fallback="(tools)" />
+      <CoupleWidgetSync />
+    </>
+  );
 }

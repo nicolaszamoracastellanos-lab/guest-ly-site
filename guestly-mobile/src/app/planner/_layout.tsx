@@ -41,6 +41,7 @@ import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
 import { resetTabs } from "@/ui/tabNav";
 import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
+import { PlannerWidgetSync } from "@/features/widgets/WidgetSync";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "@/features/planner/copy";
 import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
@@ -77,7 +78,12 @@ export default function PlannerTabs() {
     { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more"] },
   ];
   const tenantReset = useTenantStackReset();
-  return <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />;
+  return (
+    <>
+      <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
+      <PlannerWidgetSync />
+    </>
+  );
 }
 
 type TabNavigation = Parameters<typeof resetTabs>[0];
