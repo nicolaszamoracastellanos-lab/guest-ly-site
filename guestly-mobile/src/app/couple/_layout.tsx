@@ -12,12 +12,14 @@ import { useInbox } from "@/lib/hooks";
 import { useSession } from "@/lib/session";
 import { enterTenantScope } from "@/features/shared/tenantScope";
 import { useCoupleCopy } from "@/features/couple/ui";
-import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
+import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRoleTabs";
 import { CoupleWidgetSync } from "@/features/widgets/WidgetSync";
+
+const COUPLE_STACKS: ReadonlySet<string> = new Set(["(guests)", "(messages)", "(tools)"]);
 
 export default function CoupleTabs() {
   const c = useCoupleCopy().tabs;
-  const { state, tenantKey } = useSession();
+  const { state } = useSession();
   const scopeKey = state.status === "user" ? `${state.me.user.id}:${state.me.tenant.slug}` : null;
   // The brain and seating drafts are module stores: a different account or
   // wedding than last time starts them empty.
@@ -35,9 +37,13 @@ export default function CoupleTabs() {
     { name: "coordinator", sf: { default: "sparkles", selected: "sparkles" }, label: c.coordinator },
     { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["website", "budget", "tasks", "seating", "runsheet", "vendors", "requests", "brain", "insights", "checkin", "dayof", "plan", "more", "settings"] },
   ];
+  // A wedding switch (Settings, or a notification for the other wedding) sends
+  // every tab back to its list: no record, thread or draft of the previous
+  // wedding stays open (F1 for the couple).
+  const tenantReset = useTenantStackReset(COUPLE_STACKS, false);
   return (
     <>
-      <RoleNativeTabs surface="couple" tabs={tabs} fallback="(tools)" />
+      <RoleNativeTabs surface="couple" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
       <CoupleWidgetSync />
     </>
   );

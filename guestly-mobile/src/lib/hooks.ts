@@ -122,6 +122,8 @@ export type PlannerPortfolioWedding = {
   couple_names: string;
   wedding_date: string | null;
   days_to_go: number | null;
+  /** True once the wedding has happened (newer portals). */
+  passed?: boolean;
   status: string;
   current: boolean;
   health: "ok" | "watch" | "urgent";

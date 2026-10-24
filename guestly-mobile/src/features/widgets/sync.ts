@@ -86,6 +86,11 @@ function countdownTimeline(daysNow: number | null, build: (days: number | null) 
   return [first, ...midnights(DAYS_AHEAD).map((date, i) => ({ date, props: build(Math.max(0, daysNow - (i + 1))) }))];
 }
 
+function localIso(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 const url = (path: string) => `guestly://${path}`;
 
 export function syncCoupleWidgets(home: CoupleHome, lang: Lang) {
@@ -95,7 +100,6 @@ export function syncCoupleWidgets(home: CoupleHome, lang: Lang) {
   const names = home.couple_names;
   const days = home.countdown ? (home.countdown.passed ? 0 : home.countdown.days) : null;
   const t = home.totals;
-  const replied = t.attending_parties + t.declined_parties;
   attempt(() =>
     w.Countdown.updateTimeline(
       countdownTimeline(days, (d) => ({ names, ...dayText(d, c), dateText: shortDay(home.wedding_date, lang), line: home.needs_you ? c.needYou(home.needs_you) : "", url: url("couple") }))
@@ -105,7 +109,7 @@ export function syncCoupleWidgets(home: CoupleHome, lang: Lang) {
     w.Replies.updateTimeline([
       {
         date: new Date(),
-        props: { names, replied: t.attending_seats + t.declined_seats, total: t.people_expected, going: t.attending_seats, declined: t.declined_seats, pending: Math.max(0, t.people_expected - t.attending_seats - t.declined_seats), repliedLabel: c.replied, goingLabel: c.going, declinedLabel: c.notGoing, pendingLabel: c.noReply, deadline: replied >= t.parties ? "" : "", url: url("couple/guests") },
+        props: { names, replied: t.attending_seats + t.declined_seats, total: t.people_expected, going: t.attending_seats, declined: t.declined_seats, pending: Math.max(0, t.people_expected - t.attending_seats - t.declined_seats), repliedLabel: c.replied, goingLabel: c.going, declinedLabel: c.notGoing, pendingLabel: c.noReply, deadline: "", url: url("couple/guests") },
       },
     ])
   );
@@ -129,7 +133,10 @@ export function syncPlannerWidgets(portfolio: PlannerPortfolioWedding[], agenda:
   const w = load();
   if (!w) return;
   const c = COPY[lang];
-  const next = portfolio.find((x) => x.days_to_go !== null) ?? portfolio[0];
+  // The portal reports a wedding already held as 0 days and sorts it first, so
+  // the next wedding is the first one not in the past.
+  const todayIso = localIso(new Date());
+  const next = portfolio.find((x) => x.days_to_go !== null && (x.days_to_go > 0 || (x.wedding_date ?? "").slice(0, 10) >= todayIso)) ?? portfolio.find((x) => x.days_to_go === null);
   if (next) {
     attempt(() =>
       w.Countdown.updateTimeline(
@@ -169,4 +176,20 @@ export function syncDayOfWidget(blocks: DayOfBlock[], live: boolean, lang: Lang,
       { date: new Date(), props: { nowLabel: c.now, nextLabel: c.next, now: now?.title ?? "", nowTime: now?.starts_at.slice(0, 5) ?? "", nowPlace: now?.location ?? "", next: next?.title ?? "", nextTime: next?.starts_at.slice(0, 5) ?? "", idle: c.idle, url: url(path) } },
     ])
   );
+}
+
+/** Sign out and wedding switch: nothing of the previous person or wedding
+ *  stays on the Home Screen or Lock Screen. Each widget goes back to its empty
+ *  state; the sync effects fill them again for whoever is signed in next. */
+export function clearWidgets() {
+  const w = load();
+  if (!w) return;
+  const empty: Record<keyof typeof w, object> = {
+    Countdown: { names: "Guest-ly", days: "·", unit: "", dateText: "", line: "", url: "guestly://" },
+    Replies: { names: "Guest-ly", replied: 0, total: 0, going: 0, declined: 0, pending: 0, repliedLabel: "", goingLabel: "", declinedLabel: "", pendingLabel: "", deadline: "", url: "guestly://" },
+    Today: { title: "Guest-ly", headline: "", empty: "", lines: [], url: "guestly://" },
+    Weddings: { title: "Guest-ly", rows: [], empty: "", url: "guestly://" },
+    DayOf: { nowLabel: "", nextLabel: "", now: "", nowTime: "", nowPlace: "", next: "", nextTime: "", idle: "Guest-ly", url: "guestly://" },
+  };
+  for (const key of Object.keys(empty) as (keyof typeof w)[]) attempt(() => w[key].updateTimeline([{ date: new Date(), props: empty[key] }]));
 }

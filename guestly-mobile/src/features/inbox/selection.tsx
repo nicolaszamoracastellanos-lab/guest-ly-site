@@ -18,8 +18,13 @@ export function renderMessagesDetail(sel: string) {
 }
 
 /** The screen that shows a selection on its own (one pane). */
-export function messagesDetailHref(sel: string): Href {
-  if (sel === "new") return "/couple/broadcasts/new" as Href;
+export function messagesDetailHref(sel: string, extra?: Record<string, string | undefined>): Href {
+  if (sel === "new") {
+    // Folding to one pane keeps the composer preset (audience, template, guest).
+    const params: Record<string, string> = {};
+    for (const [k, v] of Object.entries(extra ?? {})) if (v) params[k] = v;
+    return (Object.keys(params).length ? { pathname: "/couple/broadcasts/new", params } : "/couple/broadcasts/new") as Href;
+  }
   if (sel.startsWith("b:")) return { pathname: "/couple/broadcasts/[id]", params: { id: sel.slice(2) } } as Href;
   return { pathname: "/couple/messages/[id]", params: { id: sel } } as Href;
 }

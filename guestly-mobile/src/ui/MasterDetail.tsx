@@ -38,7 +38,9 @@ const PaneContext = createContext<PaneCtx>({ embedded: false, selected: null, se
 export function usePane(): PaneCtx & { open: (id: string, push: () => void) => void } {
   const ctx = useContext(PaneContext);
   const open = useCallback((id: string, push: () => void) => (ctx.embedded ? ctx.select(id) : push()), [ctx]);
-  return { ...ctx, open };
+  // Stable between renders: rows memoized on a callback built from this (the
+  // guest and thread rows) would otherwise re-render on every parent render.
+  return useMemo(() => ({ ...ctx, open }), [ctx, open]);
 }
 
 export function MasterDetail({
@@ -84,7 +86,9 @@ export function MasterDetail({
     }
   }, [twoPane, detailRoute, selected, router, detailHref]);
 
-  const select = useCallback((id: string | null) => router.setParams({ sel: id ?? undefined } as never), [router]);
+  // A new selection also drops the composer preset (audience, template, guest) a
+  // link may have left in the address, so the next composer starts clean.
+  const select = useCallback((id: string | null) => router.setParams({ sel: id ?? undefined, audience: undefined, template: undefined, guest: undefined } as never), [router]);
   const ctx = useMemo<PaneCtx>(() => ({ embedded: twoPane, selected: detailRoute ? null : selected, select }), [twoPane, detailRoute, selected, select]);
 
   if (twoPane) {

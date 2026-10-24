@@ -15,6 +15,7 @@ export type PlannerCopy = {
   health: { ok: string; watch: string; urgent: string };
   days: { one: string; other: string };
   weddingToday: string;
+  weddingPassed: string;
   noDate: string;
   seatsAnswered: string; // "{done} of {total} seats answered"
   openRequests: { one: string; other: string };
@@ -56,6 +57,7 @@ const en: PlannerCopy = {
   health: { ok: "On track", watch: "Keep an eye", urgent: "Needs attention" },
   days: { one: "{n} day", other: "{n} days" },
   weddingToday: "Today",
+  weddingPassed: "Wedding done",
   noDate: "No date yet",
   seatsAnswered: "{done} of {total} seats answered",
   openRequests: { one: "{n} open request", other: "{n} open requests" },
@@ -97,6 +99,7 @@ const es: PlannerCopy = {
   health: { ok: "Al día", watch: "Atención", urgent: "Requiere atención" },
   days: { one: "{n} día", other: "{n} días" },
   weddingToday: "Hoy",
+  weddingPassed: "Boda realizada",
   noDate: "Sin fecha aún",
   seatsAnswered: "{done} de {total} asientos respondieron",
   openRequests: { one: "{n} solicitud abierta", other: "{n} solicitudes abiertas" },

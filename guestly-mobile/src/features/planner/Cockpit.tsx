@@ -31,8 +31,9 @@ export function SeatsBar({ attending, declined, invited }: { attending: number; 
   );
 }
 
-export function daysLabel(w: Pick<PlannerPortfolioWedding, "days_to_go" | "wedding_date">, l: ReturnType<typeof useFeatureCopy<typeof COPY.en>>): string {
+export function daysLabel(w: Pick<PlannerPortfolioWedding, "days_to_go" | "wedding_date" | "passed">, l: ReturnType<typeof useFeatureCopy<typeof COPY.en>>): string {
   if (w.days_to_go === null) return l.noDate;
+  if (w.passed) return l.weddingPassed;
   if (w.days_to_go === 0) return l.weddingToday;
   return plural(w.days_to_go, l.days);
 }

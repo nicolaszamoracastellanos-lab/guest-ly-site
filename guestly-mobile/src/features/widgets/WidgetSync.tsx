@@ -4,8 +4,17 @@
 import { useEffect } from "react";
 import { useLang } from "@/i18n";
 import { useCoupleDayOf, useCoupleHome, useGuestHome, usePlannerAgenda, usePlannerPortfolio } from "@/lib/hooks";
-import { syncDayOfActivity } from "./liveActivities";
-import { syncCoupleWidgets, syncDayOfWidget, syncGuestWidgets, syncPlannerWidgets } from "./sync";
+import { registerScopedReset } from "@/lib/scope";
+import { endAllActivities, syncDayOfActivity } from "./liveActivities";
+import { clearWidgets, syncCoupleWidgets, syncDayOfWidget, syncGuestWidgets, syncPlannerWidgets } from "./sync";
+
+// Runs on sign out, guest change, 401 and wedding switch (lib/scope): the
+// widgets and Live Activities hold the couple's names, so they are emptied with
+// everything else that belongs to the person signed in.
+registerScopedReset(async () => {
+  clearWidgets();
+  await endAllActivities();
+});
 
 export function CoupleWidgetSync() {
   const { lang } = useLang();
@@ -14,7 +23,7 @@ export function CoupleWidgetSync() {
   // run sheet is not fetched at every launch for weddings months away.
   const days = home.data?.countdown?.days;
   const nearWedding = home.data?.countdown ? home.data.countdown.passed || (days != null && days <= 2) : false;
-  const dayof = useCoupleDayOf({ poll: false, enabled: nearWedding });
+  const dayof = useCoupleDayOf({ poll: nearWedding, enabled: nearWedding });
   useEffect(() => {
     if (home.data) syncCoupleWidgets(home.data, lang);
   }, [home.data, lang]);

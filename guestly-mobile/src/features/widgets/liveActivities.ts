@@ -78,3 +78,9 @@ export async function startSampleActivities(lang: Lang): Promise<string> {
   const b = await upsert(factory<CheckinActivityProps>("checkin"), { title: c.checkin, arrived: 142, total: 180, last: "Whitney Adler · table 5" }, "guestly://couple/checkin");
   return `dayof: ${a}\ncheckin: ${b}`;
 }
+
+/** Sign out and wedding switch: end whatever Live Activity is running. */
+export async function endAllActivities() {
+  await endAll(factory<DayOfActivityProps>("dayof"), "immediate");
+  await endAll(factory<CheckinActivityProps>("checkin"), "immediate");
+}

@@ -10,9 +10,11 @@
 // Every tab has an SF Symbol AND a label: an item without an icon would stay
 // in the horizontal bar and never go vertical.
 
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { NativeTabs, type SFSymbolIcon } from "expo-router/native-tabs";
 import { registerTabs } from "@/lib/nav";
+import { useSession } from "@/lib/session";
+import { resetTabs, type TabNav } from "./tabNav";
 import { colors, fonts } from "./tokens";
 
 type Sf = NonNullable<SFSymbolIcon["sf"]>;
@@ -35,6 +37,32 @@ function badgeText(badge: RoleTab["badge"]): string | undefined {
 }
 
 type NativeTabsProps = React.ComponentProps<typeof NativeTabs>;
+
+/** F1: when the wedding changes, the tab stacks named in `stacks` go back to
+ *  their lists, so no record, thread or draft of the previous wedding stays
+ *  open. The system tab bar has no custom component to hang this on, so the tab
+ *  navigation is taken from `screenListeners` (React Navigation calls it with
+ *  the navigation of each tab screen). Pass the result as `screenListeners`.
+ *  `skipFocused` leaves the tab on screen alone (a push for the other wedding
+ *  has just opened a screen there). */
+export function useTenantStackReset(stacks: ReadonlySet<string>, skipFocused: boolean): NativeTabsProps["screenListeners"] {
+  const { tenantKey } = useSession();
+  const nav = useRef<TabNav | null>(null);
+  const last = useRef(tenantKey);
+  useEffect(() => {
+    const prev = last.current;
+    last.current = tenantKey;
+    if (!prev || !tenantKey || prev === tenantKey) return;
+    const navigation = nav.current;
+    if (!navigation) return;
+    const st = navigation.getState();
+    resetTabs(navigation, { skip: skipFocused ? st.routes[st.index]?.key : undefined, tabs: stacks });
+  }, [tenantKey, skipFocused, stacks]);
+  return useCallback(({ navigation }: { navigation: unknown }) => {
+    nav.current = navigation as TabNav;
+    return {};
+  }, []) as NativeTabsProps["screenListeners"];
+}
 
 export function RoleNativeTabs({
   surface,

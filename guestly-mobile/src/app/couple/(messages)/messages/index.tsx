@@ -13,9 +13,10 @@ import { T, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 
 export default function MessagesIndex() {
-  const { sel } = useLocalSearchParams<{ sel?: string }>();
+  const { sel, audience, template, guest } = useLocalSearchParams<{ sel?: string; audience?: string; template?: string; guest?: string }>();
   const copy = useCopy();
   const listHref = useCallback((s?: string) => messagesListHref(s), []);
+  const detailHref = useCallback((s: string) => messagesDetailHref(s, { audience, template, guest }), [audience, template, guest]);
   return (
     <MasterDetail
       detailRoute={false}
@@ -23,7 +24,7 @@ export default function MessagesIndex() {
       list={<Inbox />}
       renderDetail={renderMessagesDetail}
       listHref={listHref}
-      detailHref={messagesDetailHref}
+      detailHref={detailHref}
       placeholder={<><Icon name="chat" size={34} color={colors.goldLight} /><T v="body15" color={colors.ivory70} style={{ textAlign: "center" }}>{copy.messages.pickOne}</T></>}
     />
   );

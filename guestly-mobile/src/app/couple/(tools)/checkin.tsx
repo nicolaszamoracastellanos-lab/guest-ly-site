@@ -44,7 +44,10 @@ export default function DoorCheckin() {
   // The check-in count rides the Dynamic Island while this screen is open.
   const arrivedIn = dayof?.parties_in;
   const partiesTotal = dayof?.parties_total;
-  const lastIn = card?.result?.guest?.name ?? "";
+  // The last guest in stays on the Live Activity after the card is dismissed.
+  const cardName = card?.result?.guest?.name ?? "";
+  const [lastIn, setLastIn] = useState("");
+  if (cardName && cardName !== lastIn) setLastIn(cardName);
   // Outer-display welcome (Duo, iOS 27.1): "Welcome, {name}. Table {n}" faces the guest
   // while the planner scans on the inner display. An extra: the system decides
   // when it can show, and the check-in is the same without it.
@@ -161,7 +164,9 @@ export default function DoorCheckin() {
         {welcome}
         <View style={{ height: topH, paddingTop: top }}>
           <TopBar onBack={back} title={copy.checkin.reception} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
-          <View style={styles.receptionResult} accessibilityLiveRegion="polite">
+          {/* Tap the result to clear it: the outer-display welcome goes back to
+              "show your pass" and the counter returns for the next guest. */}
+          <Pressable style={styles.receptionResult} accessibilityLiveRegion="polite" accessibilityRole={card ? "button" : undefined} accessibilityLabel={card ? copy.common.done : undefined} disabled={!card} onPress={() => setCard(null)} testID="checkin-reception-result">
             {card ? (
               <>
                 <T v="display44" center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>
@@ -187,7 +192,7 @@ export default function DoorCheckin() {
                 </T>
               </>
             )}
-          </View>
+          </Pressable>
         </View>
         <View style={{ height: foldH }} accessible={false} importantForAccessibility="no" />
         <KeyboardLiftView behavior="padding" style={{ flex: 1 }}>

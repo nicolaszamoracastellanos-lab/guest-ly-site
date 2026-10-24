@@ -29,7 +29,7 @@
 // src/app would become a route): PlannerTop, NotShared, the gated queries,
 // the task check row and its toggle.
 
-import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import React, { useMemo, useState, type ReactNode } from "react";
 import { View, Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { useNavigation, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,7 +40,7 @@ import { usePlannerHome, type RequestRow, type TaskRow } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
 import { resetTabs } from "@/ui/tabNav";
-import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
+import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRoleTabs";
 import { PlannerWidgetSync } from "@/features/widgets/WidgetSync";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "@/features/planner/copy";
@@ -77,39 +77,13 @@ export default function PlannerTabs() {
     // a screen of this stack now, opened from the header menu.
     { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more"] },
   ];
-  const tenantReset = useTenantStackReset();
+  const tenantReset = useTenantStackReset(PLANNER_STACKS, true);
   return (
     <>
       <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
       <PlannerWidgetSync />
     </>
   );
-}
-
-type TabNavigation = Parameters<typeof resetTabs>[0];
-
-/** F1 for switches that did not start at the pill: when the wedding changes,
- *  every tab stack except the focused one pops to its root. The system tab bar
- *  has no custom bar component to hang this on, so the tab navigation is taken
- *  from the screen listeners (React Navigation calls `screenListeners` with the
- *  navigation of each tab screen). */
-function useTenantStackReset() {
-  const { tenantKey } = useSession();
-  const nav = useRef<TabNavigation | null>(null);
-  const last = useRef(tenantKey);
-  useEffect(() => {
-    const prev = last.current;
-    last.current = tenantKey;
-    if (!prev || !tenantKey || prev === tenantKey) return;
-    const navigation = nav.current;
-    if (!navigation) return;
-    const st = navigation.getState();
-    resetTabs(navigation, { skip: st.routes[st.index]?.key, tabs: PLANNER_STACKS });
-  }, [tenantKey]);
-  return useCallback(({ navigation }: { navigation: unknown }) => {
-    nav.current = navigation as TabNavigation;
-    return {};
-  }, []);
 }
 
 export type PlannerRequests = { pending: boolean; requests: RequestRow[]; tasks: TaskRow[]; tasks_pending: boolean };

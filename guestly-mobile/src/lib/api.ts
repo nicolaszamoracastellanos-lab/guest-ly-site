@@ -15,9 +15,10 @@ import * as Crypto from "expo-crypto";
 import * as SecureStore from "@/lib/secure";
 
 export const API_BASE: string =
-  // Development only: point a simulator build at a local portal (never set in
-  // a store or TestFlight build).
-  process.env.EXPO_PUBLIC_DUO_API_BASE ||
+  // Development only: point a simulator build at a local portal. Honored only
+  // in a dev bundle or the Duo probe build, so a stray value in a store or
+  // TestFlight build's environment can never redirect production traffic.
+  ((__DEV__ || process.env.EXPO_PUBLIC_DUO_PROBE === "1") && process.env.EXPO_PUBLIC_DUO_API_BASE) ||
   ((Constants.expoConfig?.extra as { apiBase?: string } | undefined)?.apiBase ?? process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com");
 
 export type ApiError = { code: string; message_en: string; message_es: string };
