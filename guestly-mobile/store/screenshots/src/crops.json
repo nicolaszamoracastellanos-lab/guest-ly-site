@@ -6,7 +6,7 @@
    "concierge": "g-en-conc2",
    "messages": "g-en-messages2",
    "dayof": "g-en-dayof",
-   "rsvps": "c-en-rsvps",
+   "rsvps": "c-en-guests",
    "seating": "c-en-seating",
    "checkin": "c-en-checkin-scan",
    "signup": "en-signup",
@@ -18,7 +18,7 @@
    "concierge": "g-es-conc2",
    "messages": "g-es-messages2",
    "dayof": "g-es-dayof",
-   "rsvps": "c-es-rsvps",
+   "rsvps": "c-es-guests",
    "seating": "c-es-seating",
    "checkin": "c-es-checkin-scan",
    "signup": "es-signup",
@@ -88,12 +88,12 @@
     ]
    },
    "planner-card": {
-    "src": "p-en-requests",
+    "src": "p-en-home",
     "box": [
-     40,
-     720,
-     1285,
-     1040
+     64,
+     1796,
+     1256,
+     2158
     ],
     "tight": true
    },
@@ -103,7 +103,7 @@
      50,
      585,
      462,
-     872
+     880
     ],
     "tight": true
    },
@@ -113,7 +113,7 @@
      456,
      585,
      862,
-     872
+     880
     ],
     "tight": true
    },
@@ -123,7 +123,7 @@
      852,
      585,
      1275,
-     872
+     880
     ],
     "tight": true
    },
@@ -137,13 +137,14 @@
     ]
    },
    "rsvp-stats": {
-    "src": "c-en-rsvps",
+    "src": "c-en-home",
     "box": [
-     44,
-     634,
-     1276,
-     1064
-    ]
+     56,
+     1180,
+     1264,
+     1826
+    ],
+    "tight": true
    },
    "question-shuttle": {
     "src": "g-en-conc2",
@@ -227,12 +228,12 @@
     ]
    },
    "planner-card": {
-    "src": "p-es-requests",
+    "src": "p-es-home",
     "box": [
-     40,
-     720,
-     1285,
-     1040
+     64,
+     1796,
+     1256,
+     2158
     ],
     "tight": true
    },
@@ -242,7 +243,7 @@
      50,
      585,
      462,
-     872
+     880
     ],
     "tight": true
    },
@@ -252,7 +253,7 @@
      456,
      585,
      862,
-     872
+     880
     ],
     "tight": true
    },
@@ -262,7 +263,7 @@
      852,
      585,
      1275,
-     872
+     880
     ],
     "tight": true
    },
@@ -276,13 +277,14 @@
     ]
    },
    "rsvp-stats": {
-    "src": "c-es-rsvps",
+    "src": "c-es-home",
     "box": [
-     44,
-     634,
-     1276,
-     1064
-    ]
+     56,
+     1180,
+     1264,
+     1826
+    ],
+    "tight": true
    },
    "question-shuttle": {
     "src": "g-es-conc2",

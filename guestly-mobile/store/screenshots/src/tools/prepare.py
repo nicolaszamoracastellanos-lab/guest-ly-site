@@ -18,6 +18,10 @@ from PIL import Image
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "raw")
 spec = json.load(open(os.path.join(HERE, "crops.json")))
+# Partial runs: ONLY_SCREENS=a,b ONLY_CROPS=x,y rebuild just those assets and leave the rest as they are.
+ONLY_SCREENS = set(filter(None, os.environ.get("ONLY_SCREENS", "").split(",")))
+ONLY_CROPS = set(filter(None, os.environ.get("ONLY_CROPS", "").split(",")))
+PARTIAL = bool(ONLY_SCREENS or ONLY_CROPS)
 
 def lum(p):
     return 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]
@@ -43,11 +47,16 @@ for lang in ("en", "es"):
     os.makedirs(os.path.join(HERE, "assets", "screens", lang), exist_ok=True)
     os.makedirs(os.path.join(HERE, "assets", "callouts", lang), exist_ok=True)
     for key, name in spec["screens"][lang].items():
+        if PARTIAL and key not in ONLY_SCREENS:
+            continue
         im = Image.open(os.path.join(RAW, name + ".png")).convert("RGB")
         assert im.size == (1320, 2868), (name, im.size)
         im.save(os.path.join(HERE, "assets", "screens", lang, key + ".jpg"), quality=94, subsampling=0)
-    out = {}
+    bpath = os.path.join(HERE, "assets", "callouts", lang, "boxes.json")
+    out = json.load(open(bpath)) if PARTIAL and os.path.exists(bpath) else {}
     for key, c in spec["crops"][lang].items():
+        if PARTIAL and key not in ONLY_CROPS:
+            continue
         im = Image.open(os.path.join(RAW, c["src"] + ".png")).convert("RGB")
         box = tuple(c["box"])
         if c.get("tight"):

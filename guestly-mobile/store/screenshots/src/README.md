@@ -1,4 +1,4 @@
-# Guest-ly App Store screenshots, set v2 (app 1.1)
+# Guest-ly App Store screenshots, set v2 (panels 01-05 and 10: app 1.1; panels 06-09 recaptured on app 1.2, Oct 25 2026)
 
 Ten panels per language, 1320 x 2868 PNG (App Store 6.9 inch), sRGB, no alpha.
 
@@ -47,3 +47,7 @@ A lifted card is bigger than its source, so it would half-cover neighbouring UI.
 ## Recapturing
 
 The demo account credentials are in `~/Desktop/guest-ly/guestly-mobile/credentials/demo-accounts.env`; guest invite code CAMAND, guest Whitney Adler. Capture from a copy of the app built for the simulator (never inside the worktree). After a recapture, rerun `tools/prepare.py`, check the crops in `crops.json` (text length moves cards), then render.
+
+## Recapture notes (Oct 25 2026, panels 06-09)
+
+Captured on the iPhone 18 Pro Max simulator (1320 x 2868), Release bundle with `EXPO_PUBLIC_DUO_PROBE=1` driven by the local probe server, demo couple and planner of `demo-review`, EN and es-MX. 06 now shows the Guests list with the Home reply card lifted (the old RSVPs screen no longer exists in 1.2); 07 and 08 are the Tools screens; 09 uses the planner Today card "Waiting on the couple". The check-in result card callout is the 1.1 one (the card is unchanged). Partial rebuilds: `ONLY_SCREENS=... ONLY_CROPS=... python3 tools/prepare.py raw`. If Playwright's browser is missing, set `CHROMIUM_PATH` to a headless shell binary.
