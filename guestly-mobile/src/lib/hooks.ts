@@ -55,6 +55,9 @@ export type CoupleHome = {
   couple_names: string; wedding_date: string | null; countdown: { days: number; hours: number; minutes: number; passed: boolean } | null;
   day_of: boolean; concierge_live: boolean; briefing: { text: string; href: string; tone: "risk" | "warn" | "info" }[];
   needs_you: number; totals: Totals; budget_percent_paid: number | null;
+  /** v1.2 portal, additive: what `needs_you` is made of (open planner requests
+   *  and guest threads waiting on the couple). The two sum to `needs_you`. */
+  needs_you_breakdown?: { requests: number; conversations: number };
   /** v1.2 portal, additive: the percent per active budget id. Absent on older portals. */
   budget_percent_paid_by_id?: Record<string, number | null>;
 };

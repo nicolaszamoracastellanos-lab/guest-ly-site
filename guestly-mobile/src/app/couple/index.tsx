@@ -1,36 +1,42 @@
-// Couple home (Inicio, build 12, F2): in this order and nothing else
-//   1. the RSVP summary ("86 of 120 replied" and Going / Not going / Pending,
-//      each opening Guests filtered),
-//   2. quick actions (Add guest, Share invite, Send announcement),
-//   3. Reminders: the rows that used to be "Today's briefing" / "Needs you",
-//      each opening exactly its item,
-//   4. the Coordinator card.
-// On the wedding day a banner opens Wedding day mode above the summary.
-// Build 13: Settings is the gear at the top right, over the photo (the More
-// tab is gone), and Send announcement opens the Broadcast tab's composer.
+// Couple home (Inicio). HH craft pass, Oct 30 2026: wedding-first, the same
+// order as the web dashboard, and nothing else:
+//   0. the names, the countdown and the date over the night surface,
+//   1. Today: requests from the planner, guest messages that need the couple
+//      and the reminder rows, each opening exactly its item,
+//   2. Replies: a funnel (invited, replied, going) that opens Guests filtered,
+//      with Share invite and Send announcement under it,
+//   3. Getting ready: the setup steps the Home payload can prove, done or not,
+//   4. Recent replies: the last answers, newest first,
+//   5. the Coordinator (the one gold mark).
+// It replaces the progress ring, the three stat boxes and the three quick
+// tiles (audit 1.6.6). Every number comes from GET /couple/home except the
+// deadline and the recent replies, which come from GET /couple/rsvps (already
+// loaded by Guests). Fields Home still lacks are in docs/hh/SCREENS-PLAN.md.
 
 import React from "react";
 import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { useLang } from "@/i18n";
+import { useLang, relTime } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
-import { useCoupleHome, useCoupleRsvps } from "@/lib/hooks";
-import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
+import { useCoupleHome, useCoupleRsvps, type RsvpListItem } from "@/lib/hooks";
+import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
-import { useCoupleCopy, useShareInvite, ProgressRing, fullDate, dayMonth, statusIcon } from "@/features/couple/ui";
+import { useCoupleCopy, useShareInvite, fullDate, dayMonth, statusIcon, statusColor } from "@/features/couple/ui";
 
+import { recentReplies, funnelFrom, share } from "@/features/couple/home";
 
 type BriefingLike = { text: string; href: string; tone: "risk" | "warn" | "info"; kind?: unknown; target_id?: unknown; filter?: unknown };
+type Step = { key: string; title: string; sub: string; done: boolean; onPress: () => void };
+
 
 export default function CoupleHome() {
   const c = useCoupleCopy();
+  const h = c.home;
   const { lang } = useLang();
   const router = useRouter();
-  // The hero as tall as in the approved M7: 40% of the screen, but leaving
-  // room for the RSVP summary above the fold (never under 220 pt). On a Pro
-  // Max that shows the sleeves and both hands, not just the ring.
   const { height: winH } = useWindowDimensions();
-  const heroMin = Math.round(Math.max(220, Math.min(winH * 0.4, winH - 470)));
+  // A shorter hero than the photo had: the names and date, then the work.
+  const heroMin = Math.round(Math.max(200, Math.min(winH * 0.3, 280)));
   const user = useUserSession();
   const top = useTopInset();
   const side = useSideInsetsStyle();
@@ -38,42 +44,49 @@ export default function CoupleHome() {
   const shareInvite = useShareInvite();
   const mainQuery = useCoupleHome();
   const { data, isLoading } = mainQuery;
-  // The RSVP deadline lives on the RSVP list (the pending page is the one
-  // Guests reads for its reminder bar, so this is usually cached already).
-  const rsvps = useCoupleRsvps("pending");
+  // All replies: the deadline and the recent answers (Guests reads the same list).
+  const rsvps = useCoupleRsvps("all");
   const couple = data?.couple_names ?? user?.me.tenant.couple_names ?? "";
   const days = data?.countdown && !data.countdown.passed ? data.countdown.days : null;
   const date = fullDate(data?.wedding_date, lang);
   const dayOf = (data?.day_of ?? false) || dayOfManual;
   const canEdit = user?.me.can_edit ?? false;
 
-  // PEOPLE, the way the portal's dashboard and Guests cards count since wave 13
-  // (one attendance definition: attending + declined + pending = everyone
-  // invited). The chips on Guests use the same three numbers.
+  // PEOPLE, the way the portal's dashboard and Guests count since wave 13
+  // (attending + declined + pending = everyone invited).
   const t = data?.totals;
-  const going = t?.attending_seats ?? 0;
-  const notGoing = t?.declined_seats ?? 0;
-  const total = t?.people_expected ?? 0;
-  const pending = Math.max(0, total - going - notGoing);
-  const replied = going + notGoing;
+  const { invited: total, replied, going, notGoing, pending } = funnelFrom(t);
   const deadline = rsvps.data?.deadline ? dayMonth(rsvps.data.deadline, lang) : "";
   const briefing = (data?.briefing ?? []) as BriefingLike[];
+  const breakdown = data?.needs_you_breakdown;
+  const recent = recentReplies(rsvps.data?.items);
 
   const openGuests = (filter: string) => router.push({ pathname: "/couple/guests", params: { filter } } as never);
 
+  const steps: Step[] = data
+    ? [
+        { key: "date", title: h.steps.date, sub: data.wedding_date ? date : h.steps.dateTodo, done: !!data.wedding_date, onPress: () => router.push({ pathname: "/web", params: { path: "/dashboard", title: h.steps.date } } as never) },
+        { key: "guests", title: h.steps.guests, sub: (t?.parties ?? 0) > 0 ? h.steps.guestsDone(t?.parties ?? 0) : h.steps.guestsTodo, done: (t?.parties ?? 0) > 0, onPress: () => router.push((t?.parties ? "/couple/guests" : "/couple/guests/new") as never) },
+        { key: "invite", title: h.steps.invite, sub: replied > 0 ? h.steps.inviteDone(replied) : h.steps.inviteTodo, done: replied > 0, onPress: () => (replied > 0 ? openGuests("all") : void shareInvite()) },
+        { key: "concierge", title: h.steps.concierge, sub: data.concierge_live ? h.steps.conciergeDone : h.steps.conciergeTodo, done: data.concierge_live, onPress: () => router.push("/couple/brain") },
+        { key: "budget", title: h.steps.budget, sub: data.budget_percent_paid !== null ? h.steps.budgetDone(data.budget_percent_paid) : h.steps.budgetTodo, done: data.budget_percent_paid !== null, onPress: () => router.push("/couple/budget") },
+      ]
+    : [];
+  const stepsDone = steps.filter((s) => s.done).length;
+
   return (
-    // The photo starts at the top edge, behind the clock (I2); plain night
-    // under it so the fade has no seam (I8). Pull down to refresh (S2).
+    // The hero starts at the top edge, behind the clock; plain night under it
+    // so the fade has no seam. Pull down to refresh.
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh={() => Promise.all([mainQuery.refetch(), rsvps.refetch()])}>
-        <PhotoHero motif={0} flow minHeight={heroMin} maxHeightFraction={0.44} gradient={0.6} accessibilityLabel={couple}>
-          <SectionLabel color={colors.goldLight}>{c.home.yourWedding}</SectionLabel>
+        <PhotoHero motif={0} flow minHeight={heroMin} maxHeightFraction={0.36} gradient={0.6} accessibilityLabel={couple}>
+          <SectionLabel color={colors.goldLight}>{h.yourWedding}</SectionLabel>
           <T v="title42" style={{ marginTop: 6 }}>
             {couple}
           </T>
           {days !== null || date ? (
             <T v="body16" color={colors.ivory90} style={{ marginTop: 6 }}>
-              {days !== null ? <T v="body16" color={colors.ivory} style={{ fontWeight: "600" }}>{c.home.days(days)}</T> : null}
+              {days !== null ? <T v="body16" color={colors.ivory} style={{ fontWeight: "600" }}>{h.days(days)}</T> : null}
               {days !== null && date ? " · " : ""}
               {date}
             </T>
@@ -81,89 +94,98 @@ export default function CoupleHome() {
         </PhotoHero>
 
         <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
-          {/* The one connection banner of this screen, under the photo (S4). */}
           <ScreenBannerSlot />
           {dayOf ? (
-            <Pressable onPress={() => router.push("/couple/dayof")} accessibilityRole="button" accessibilityLabel={`${c.home.dayOf}. ${c.home.dayOfBody}`} style={{ marginBottom: 12 }}>
-              <Banner icon="clock" title={c.home.dayOf} body={c.home.dayOfBody} kind="gold" action={<Icon name="chev" size={18} color={colors.ivory40} />} />
+            <Pressable onPress={() => router.push("/couple/dayof")} accessibilityRole="button" accessibilityLabel={`${h.dayOf}. ${h.dayOfBody}`} style={{ marginBottom: 12 }}>
+              <Banner icon="clock" title={h.dayOf} body={h.dayOfBody} kind="gold" action={<Icon name="chev" size={18} color={colors.ivory40} />} />
             </Pressable>
           ) : null}
 
-          {/* 1. RSVP summary */}
+          {/* 1. Today */}
+          <SectionLabel style={styles.label}>{h.today}</SectionLabel>
+          {!data ? (
+            <Stack gap={8}>
+              <Skeleton h={58} />
+              <Skeleton h={58} />
+            </Stack>
+          ) : (breakdown?.requests ?? 0) + (breakdown?.conversations ?? 0) + briefing.length > 0 ? (
+            <View>
+              {breakdown && breakdown.requests > 0 ? <TodayRow icon="tasks" text={h.requestsWaiting(breakdown.requests)} onPress={() => router.push("/couple/requests")} testID="home-today-requests" /> : null}
+              {breakdown && breakdown.conversations > 0 ? <TodayRow icon="chat" text={h.messagesWaiting(breakdown.conversations)} onPress={() => router.push({ pathname: "/couple/messages", params: { filter: "needs_you" } } as never)} testID="home-today-messages" /> : null}
+              {briefing.map((b, i) => (
+                <BriefingRow key={i} text={b.text} tone={b.tone} onPress={() => open(b)} />
+              ))}
+            </View>
+          ) : (
+            <Row gap={12} align="flex-start" style={styles.quiet}>
+              <Icon name="check" size={22} color={colors.greenText} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <T v="body16">{h.nothingToday}</T>
+                <T v="meta13" color={colors.ivory70}>
+                  {h.nothingTodayBody}
+                </T>
+              </View>
+            </Row>
+          )}
+
+          {/* 2. Replies: the funnel */}
+          <SectionLabel style={styles.label}>{h.replies}</SectionLabel>
           {isLoading && !data ? (
-            <Skeleton h={190} r={16} />
+            <Skeleton h={170} r={16} />
           ) : (
             <Card kind="solid" padding={16} radiusKey="tile">
-              <Pressable onPress={() => openGuests("all")} accessibilityRole="button" accessibilityLabel={`${c.home.replied(replied, total)} ${c.home.repliedWord}. ${deadline ? c.home.deadline(deadline) : c.home.noDeadline}`} testID="home-replies" style={({ pressed }) => [styles.replyTop, pressed && { opacity: 0.8 }]}>
-                <ProgressRing value={replied} total={total} size={84} label={total ? `${Math.round((replied / total) * 100)}%` : "·"} />
-                <View style={{ flex: 1, gap: 4 }}>
-                  <T v="title26">
-                    {c.home.replied(replied, total)} {c.home.repliedWord}
-                  </T>
-                  <T v="meta13" color={colors.ivory70}>
-                    {deadline ? c.home.deadline(deadline) : c.home.noDeadline}
-                  </T>
-                </View>
-                <Icon name="chev" size={18} color={colors.ivory40} />
-              </Pressable>
-              <Row gap={8} style={{ marginTop: 14 }}>
-                <Stat status="attending" n={going} label={c.home.going} onPress={() => openGuests("attending")} />
-                <Stat status="declined" n={notGoing} label={c.home.notGoing} onPress={() => openGuests("declined")} />
-                <Stat status="pending" n={pending} label={c.home.pending} onPress={() => openGuests("pending")} />
+              <FunnelRow label={h.invited} n={total} of={total} sub={h.people(total)} onPress={() => openGuests("all")} testID="home-funnel-invited" />
+              <FunnelRow label={h.repliedRow} n={replied} of={total} sub={deadline ? c.home.deadline(deadline) : c.home.noDeadline} onPress={() => openGuests("all")} testID="home-replies" />
+              <FunnelRow label={h.goingRow} n={going} of={total} sub={h.notGoingPending(notGoing, pending)} onPress={() => openGuests("attending")} gold testID="home-funnel-going" last />
+              <Row gap={10} style={{ marginTop: 14 }} align="stretch">
+                <TextAction icon="share" label={h.share} onPress={() => void shareInvite()} testID="home-share" />
+                {canEdit ? <TextAction icon="megaphone" label={h.announce} onPress={() => router.push("/couple/broadcasts/new")} testID="home-announce" /> : null}
               </Row>
             </Card>
           )}
 
-          {/* 2. Quick actions */}
-          <Row gap={8} style={{ marginTop: 16 }} align="stretch">
-            {canEdit ? <Quick icon="plus" label={c.home.addGuest} onPress={() => router.push("/couple/guests/new")} testID="home-add-guest" /> : null}
-            <Quick icon="share" label={c.home.share} onPress={() => void shareInvite()} testID="home-share" />
-            {canEdit ? <Quick icon="megaphone" label={c.home.announce} onPress={() => router.push("/couple/broadcasts/new")} testID="home-announce" /> : null}
-          </Row>
-
-          {/* 3. Reminders (what used to be "Needs you") */}
-          <View style={{ marginTop: 22 }}>
-            {briefing.length ? (
-              <>
-                <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
-                  {c.home.remindersCount(briefing.length)}
-                </SectionLabel>
-                {briefing.map((b, i) => (
-                  <BriefingRow key={i} text={b.text} tone={b.tone} onPress={() => open(b)} />
+          {/* 3. Getting ready */}
+          {steps.length ? (
+            <>
+              <Row style={[styles.label, { justifyContent: "space-between" }]}>
+                <SectionLabel>{h.setup}</SectionLabel>
+                <T v="caption14" color={colors.ivory55}>
+                  {h.setupCount(stepsDone, steps.length)}
+                </T>
+              </Row>
+              <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+                {steps.map((s, i) => (
+                  <StepRow key={s.key} step={s} last={i === steps.length - 1} />
                 ))}
-              </>
-            ) : data ? (
-              <Card kind="solid" padding={16} radiusKey="tile">
-                <SectionLabel style={{ marginBottom: 8 }}>{c.home.remindersCount(0)}</SectionLabel>
-                <Row gap={12} align="flex-start">
-                  <Icon name="check" size={22} color={colors.greenText} />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <T v="body16">{c.home.noReminders}</T>
-                    <T v="meta13" color={colors.ivory70}>
-                      {c.home.noRemindersBody}
-                    </T>
-                  </View>
-                </Row>
               </Card>
-            ) : (
-              <Stack gap={8}>
-                <Skeleton h={58} />
-                <Skeleton h={58} />
-              </Stack>
-            )}
-          </View>
+            </>
+          ) : null}
 
-          {/* 4. The Coordinator */}
-          <Pressable onPress={() => router.push("/couple/coordinator" as never)} accessibilityRole="button" accessibilityLabel={`${c.home.ask}. ${c.home.askBody}`} testID="home-coordinator" style={({ pressed }) => [{ marginTop: 18 }, pressed && { opacity: 0.85 }]}>
+          {/* 4. Recent replies */}
+          <SectionLabel style={styles.label}>{h.activity}</SectionLabel>
+          {!rsvps.data ? (
+            <Skeleton h={120} r={16} />
+          ) : recent.length ? (
+            <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+              {recent.map((r, i) => (
+                <ActivityRow key={r.id} item={r} when={relTime(r.updated_at, lang)} text={r.status === "attending" ? h.replyGoing(r.party_size ?? 1) : h.replyNotGoing} last={i === recent.length - 1} onPress={r.guest_id ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: r.guest_id as string } } as never) : undefined} />
+              ))}
+            </Card>
+          ) : (
+            <T v="meta13" color={colors.ivory55} style={styles.quiet}>
+              {h.activityEmpty}
+            </T>
+          )}
+
+          {/* 5. The Coordinator */}
+          <Pressable onPress={() => router.push("/couple/coordinator" as never)} accessibilityRole="button" accessibilityLabel={`${h.ask}. ${h.askBody}`} testID="home-coordinator" style={({ pressed }) => [{ marginTop: 24 }, pressed && { opacity: 0.85 }]}>
             <Card kind="solid" padding={16} radiusKey="tile" border={colors.goldBorder}>
               <Row gap={14}>
-                <View style={styles.askIcon}>
-                  <Icon name="sparkle" size={22} color={colors.goldLight} />
-                </View>
+                <CoordinatorMark />
                 <View style={{ flex: 1, gap: 2 }}>
-                  <T v="name24">{c.home.ask}</T>
+                  <T v="name24">{h.ask}</T>
                   <T v="meta13" color={colors.ivory70}>
-                    {c.home.askBody}
+                    {h.askBody}
                   </T>
                 </View>
                 <Icon name="chev" size={18} color={colors.ivory40} />
@@ -172,7 +194,7 @@ export default function CoupleHome() {
           </Pressable>
         </View>
       </Screen>
-      {/* Settings (build 13): over the photo, top right, under the clock. */}
+      {/* Settings: over the hero, top right, under the clock. */}
       <View pointerEvents="box-none" style={[styles.over, { top, right: 14 + side.paddingRight }]}>
         <IconButton name="gear" label={c.tools.settings} onPress={() => router.push("/settings")} testID="home-settings" />
       </View>
@@ -220,29 +242,97 @@ export default function CoupleHome() {
   }
 }
 
-function Stat({ status, n, label, onPress }: { status: string; n: number; label: string; onPress: () => void }) {
-  const color = status === "attending" ? colors.greenText : status === "declined" ? colors.ivory70 : colors.amber;
+/** A Today row with its own icon (requests, messages). */
+function TodayRow({ icon, text, onPress, testID }: { icon: IconName; text: string; onPress: () => void; testID?: string }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${label} ${n}`} style={({ pressed }) => [styles.stat, pressed && { opacity: 0.8 }]}>
-      <T v="title30" color={colors.ivory} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ fontVariant: ["lining-nums"] }}>
-        {String(n)}
+    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={text} style={({ pressed }) => [styles.todayRow, pressed && { opacity: 0.7 }]}>
+      <Icon name={icon} size={20} color={colors.amber} />
+      <T v="body16" color={colors.ivory90} numberOfLines={2} style={{ flex: 1 }}>
+        {text}
       </T>
-      <Row gap={4}>
-        <Icon name={statusIcon(status)} size={14} color={color} />
-        <T v="meta13" color={colors.ivory70} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1 }}>
-          {label}
-        </T>
-      </Row>
+      <Icon name="chev" size={18} color={colors.ivory40} />
     </Pressable>
   );
 }
 
-function Quick({ icon, label, onPress, testID }: { icon: IconName; label: string; onPress: () => void; testID?: string }) {
+/** One step of the funnel: label and count on a line, a bar of its share of
+ *  everyone invited, and a quiet line under it. */
+function FunnelRow({ label, n, of, sub, onPress, gold, last, testID }: { label: string; n: number; of: number; sub: string; onPress: () => void; gold?: boolean; last?: boolean; testID?: string }) {
+  const frac = share(n, of);
+  const pct = of > 0 ? Math.round(frac * 100) : null;
   return (
-    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.quick, pressed && { opacity: 0.8 }]}>
-      <Icon name={icon} size={22} color={colors.goldLight} />
-      <T v="meta13" color={colors.ivory90} center numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
+    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${label} ${n}${pct !== null ? `, ${pct}%` : ""}. ${sub}`} style={({ pressed }) => [styles.funnelRow, !last && styles.line, pressed && { opacity: 0.75 }]}>
+      <Row style={{ justifyContent: "space-between" }} align="baseline">
+        <T v="body16" color={colors.ivory90}>
+          {label}
+        </T>
+        <Row gap={8} align="baseline">
+          <T v="name24" style={{ fontVariant: ["lining-nums", "tabular-nums"] }}>
+            {String(n)}
+          </T>
+          {pct !== null ? (
+            <T v="caption14" color={colors.ivory55} style={{ fontVariant: ["tabular-nums"], minWidth: 40, textAlign: "right" }}>
+              {`${pct}%`}
+            </T>
+          ) : null}
+        </Row>
+      </Row>
+      <View style={styles.track}>
+        <View style={[styles.bar, { width: `${frac * 100}%`, backgroundColor: gold ? colors.gold : colors.ivory40 }]} />
+      </View>
+      <T v="caption14" color={colors.ivory55} numberOfLines={1} style={{ marginTop: 6 }}>
+        {sub}
+      </T>
+    </Pressable>
+  );
+}
+
+/** An action under the funnel: icon and words, no tile. */
+function TextAction({ icon, label, onPress, testID }: { icon: IconName; label: string; onPress: () => void; testID?: string }) {
+  return (
+    <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.textAction, pressed && { opacity: 0.7 }]}>
+      <Icon name={icon} size={18} color={colors.goldLight} />
+      <T v="meta13" color={colors.goldLight} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
         {label}
+      </T>
+    </Pressable>
+  );
+}
+
+function StepRow({ step, last }: { step: Step; last: boolean }) {
+  return (
+    <Pressable onPress={step.onPress} accessibilityRole="button" accessibilityState={{ checked: step.done }} accessibilityLabel={`${step.title}. ${step.sub}`} testID={`home-step-${step.key}`} style={({ pressed }) => [styles.stepRow, !last && styles.line, pressed && { opacity: 0.7 }]}>
+      <View style={[styles.stepMark, step.done && styles.stepMarkDone]}>{step.done ? <Icon name="check" size={14} color={colors.night} strokeWidth={2.2} /> : null}</View>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <T v="body16" color={step.done ? colors.ivory70 : colors.ivory}>
+          {step.title}
+        </T>
+        <T v="caption14" color={step.done ? colors.ivory55 : colors.amber} numberOfLines={2}>
+          {step.sub}
+        </T>
+      </View>
+      <Icon name="chev" size={18} color={colors.ivory40} />
+    </Pressable>
+  );
+}
+
+function ActivityRow({ item, when, text, last, onPress }: { item: RsvpListItem; when: string; text: string; last: boolean; onPress?: () => void }) {
+  return (
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={`${item.name}, ${text}, ${when}`} style={({ pressed }) => [styles.activityRow, !last && styles.line, pressed && onPress ? { opacity: 0.7 } : null]}>
+      <Avatar initials={item.initials} size={36} />
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <T v="body16" numberOfLines={1}>
+          {item.name}
+        </T>
+        <Row gap={6}>
+          <Icon name={statusIcon(item.status)} size={14} color={statusColor(item.status)} />
+          <T v="caption14" color={colors.ivory70} numberOfLines={1} style={{ flexShrink: 1 }}>
+            {text}
+          </T>
+        </Row>
+      </View>
+      <T v="caption14" color={colors.ivory55}>
+        {when}
       </T>
     </Pressable>
   );
@@ -250,8 +340,16 @@ function Quick({ icon, label, onPress, testID }: { icon: IconName; label: string
 
 const styles = StyleSheet.create({
   over: { position: "absolute", right: 14, alignItems: "flex-end" },
-  replyTop: { flexDirection: "row", alignItems: "center", gap: 14 },
-  stat: { flex: 1, minWidth: 0, minHeight: 64, borderRadius: 12, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.ivory09, paddingVertical: 8, paddingHorizontal: 10, gap: 2 },
-  quick: { flex: 1, minWidth: 0, minHeight: 76, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 6, paddingVertical: 10 },
-  askIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" },
+  label: { marginTop: 24, marginBottom: 8 },
+  quiet: { paddingVertical: 6 },
+  line: { borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
+  todayRow: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 52, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
+  funnelRow: { paddingVertical: 10 },
+  track: { height: 4, borderRadius: 2, backgroundColor: colors.ivory09, marginTop: 8, overflow: "hidden" },
+  bar: { height: 4, borderRadius: 2 },
+  textAction: { flex: 1, minWidth: 0, minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder, paddingHorizontal: 12 },
+  stepRow: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, paddingVertical: 10 },
+  stepMark: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.ivory40, alignItems: "center", justifyContent: "center" },
+  stepMarkDone: { backgroundColor: colors.greenText, borderColor: colors.greenText },
+  activityRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 60, paddingVertical: 10 },
 });
