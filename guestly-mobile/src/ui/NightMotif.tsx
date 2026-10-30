@@ -18,7 +18,7 @@ import { colors } from "./tokens";
 /** Where the gem sits, as fractions of the 400 x 400 drawing. */
 const PLACES = [
   { x: 0.74, y: 0.34, s: 1 },
-  { x: 0.26, y: 0.3, s: 0.85 },
+  { x: 0.26, y: 0.22, s: 0.85 },
   { x: 0.62, y: 0.22, s: 1.15 },
   { x: 0.5, y: 0.38, s: 0.9 },
 ] as const;

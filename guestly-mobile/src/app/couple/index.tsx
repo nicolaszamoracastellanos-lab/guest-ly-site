@@ -292,7 +292,7 @@ function TextAction({ icon, label, onPress, testID }: { icon: IconName; label: s
   return (
     <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.textAction, pressed && { opacity: 0.7 }]}>
       <Icon name={icon} size={18} color={colors.goldLight} />
-      <T v="meta13" color={colors.goldLight} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1 }}>
+      <T v="meta13" color={colors.goldLight} numberOfLines={2} style={{ flexShrink: 1, textAlign: "center" }}>
         {label}
       </T>
     </Pressable>
