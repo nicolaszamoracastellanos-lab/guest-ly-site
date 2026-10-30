@@ -124,7 +124,7 @@ export default function BrainHome() {
       </Card>
 
       <Stack gap={10} style={{ marginTop: 22 }}>
-        <ListRow leading={<Icon name="sparkle" size={22} color={colors.goldLight} />} title={c.preview} sub={c.previewSub} onPress={() => router.push("/couple/brain/preview")} last />
+        <ListRow leading={<Icon name="eye" size={22} color={colors.ivory70} />} title={c.preview} sub={c.previewSub} onPress={() => router.push("/couple/brain/preview")} last />
         <ListRow leading={<Icon name="undo" size={22} color={colors.goldLight} />} title={c.versions} sub={data ? c.items(data.versions.length) : ""} onPress={() => router.push("/couple/brain/versions")} last />
       </Stack>
     </Screen>

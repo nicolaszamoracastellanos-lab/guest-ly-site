@@ -144,7 +144,7 @@ export default function SeatingAuto() {
       <Button
         label={c.preview}
         kind="glass"
-        icon="sparkle"
+        icon="eye"
         onPress={() => run(false)}
         loading={busy === "preview"}
         style={{ marginTop: 20 }}

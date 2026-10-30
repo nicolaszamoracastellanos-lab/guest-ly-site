@@ -288,7 +288,8 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: "row", gap: 8 },
   tilesWrap: { flexWrap: "wrap", justifyContent: "space-between", columnGap: 0, rowGap: 8 },
   tileHalf: { flex: 0, width: "48.5%" },
-  tile: { flex: 1, minWidth: 0, minHeight: 84, borderRadius: 16, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", gap: 8, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
+  // Outlined, not glass: the filled surface is kept for lists (HH craft pass).
+  tile: { flex: 1, minWidth: 0, minHeight: 84, borderRadius: 16, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", gap: 8, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
   tilePressed: { transform: [{ scale: 0.97 }], backgroundColor: colors.ivory09 },
   countText: { gap: 2, paddingLeft: 16, borderLeftWidth: 1, borderLeftColor: colors.ivory14 },
 });

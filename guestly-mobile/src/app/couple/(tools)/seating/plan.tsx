@@ -204,7 +204,7 @@ export default function SeatingPlan() {
           </T>
           <Button
             label={busy === "read" ? c.reading : c.readPlan}
-            icon="sparkle"
+            icon="photo"
             onPress={read}
             loading={busy === "read"}
             disabled={!!busy}

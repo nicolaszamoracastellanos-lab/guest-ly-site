@@ -160,7 +160,7 @@ export function MenuRow({ icon, title, sub, onPress, last, trailing, testID }: {
   return (
     <Pressable testID={testID} onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={sub ? `${title}, ${sub}` : title} style={({ pressed }) => [styles.menuRow, !last && styles.menuRowLine, pressed && onPress ? { opacity: 0.7 } : null]}>
       <View style={styles.menuIcon}>
-        <Icon name={icon} size={22} color={colors.goldLight} />
+        <Icon name={icon} size={22} color={colors.ivory70} />
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <T v="body16" color={colors.ivory90}>

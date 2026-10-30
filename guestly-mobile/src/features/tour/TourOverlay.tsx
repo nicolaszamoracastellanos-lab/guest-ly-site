@@ -323,7 +323,7 @@ function Page({ i, n, step, active, pos, width, reduced, t, titleRef }: { i: num
           ) : null}
           {c.tip && !step.final ? (
             <View style={styles.tip}>
-              <Icon name="sparkle" size={18} color={colors.goldLight} />
+              <Icon name="info" size={18} color={colors.goldLight} />
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="label11" color={colors.goldLight} maxFontSizeMultiplier={1.2}>
                   {t.tip}

@@ -164,7 +164,7 @@ export default function Settings() {
           {fmt(copy.settings.plan, { tier: tierLabel(me?.tenant.tier, copy.settings.tiers) })}
         </T>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
-          <ListRow testID="settings-tour" leading={<Icon name="sparkle" size={22} color={colors.goldLight} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} />
+          <ListRow testID="settings-tour" leading={<Icon name="replay" size={22} color={colors.ivory70} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} />
           <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.privacy} onPress={() => Linking.openURL("https://guest-ly.com/privacy")} />
           <ListRow leading={<Icon name="book" size={22} color={colors.goldLight} />} title={copy.settings.terms} onPress={() => Linking.openURL("https://guest-ly.com/terms")} />
           <ListRow testID="settings-delete" leading={<Icon name="warning" size={22} color={colors.goldLight} />} title={copy.settings.deleteAccount} onPress={deleteAccount} chevron={false} />

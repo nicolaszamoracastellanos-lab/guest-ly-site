@@ -113,7 +113,7 @@ export function DirectionsSheet({ visible, onClose }: { visible: boolean; onClos
             </Row>
           </Card>
         ) : null}
-        {!venues.length && !fallbackUrl && !isLoading ? <Button label={g.sheet.askConcierge} kind="ghost" small icon="sparkle" onPress={ask} /> : null}
+        {!venues.length && !fallbackUrl && !isLoading ? <Button label={g.sheet.askConcierge} kind="ghost" small icon="concierge" onPress={ask} /> : null}
       </Stack>
     </Sheet>
   );
@@ -156,7 +156,7 @@ export function SiteSectionSheet({ kind, visible, onClose }: { kind: "hotels" | 
           <T v="body15" color={colors.ivory70}>
             {notPublished ? site.notPublishedBody : site.none[kind]}
           </T>
-          <Button label={g.sheet.askConcierge} kind="ghost" small icon="sparkle" onPress={ask} />
+          <Button label={g.sheet.askConcierge} kind="ghost" small icon="concierge" onPress={ask} />
         </Stack>
       )}
     </Sheet>

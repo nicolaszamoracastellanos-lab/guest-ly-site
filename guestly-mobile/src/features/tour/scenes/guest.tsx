@@ -239,7 +239,7 @@ export function ConciergeScene({ reduced }: SceneProps) {
     <View style={StyleSheet.absoluteFill}>
       <View style={[sceneStyles.row, { marginBottom: 12 }]}>
         <View style={styles.sparkle}>
-          <Icon name="sparkle" size={16} color={colors.night} strokeWidth={1.9} />
+          <Icon name="concierge" size={16} color={colors.night} strokeWidth={1.9} />
         </View>
         <ST v="body16" color={colors.ivory} lines={1}>
           {app.concierge.title}

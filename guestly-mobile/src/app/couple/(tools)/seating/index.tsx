@@ -238,7 +238,7 @@ export default function SeatingIndex() {
                 label={c.suggest}
                 small
                 kind="glass"
-                icon="sparkle"
+                icon="grid"
                 onPress={() => router.push("/couple/seating/auto")}
                 disabled={!view.tables.length}
               />

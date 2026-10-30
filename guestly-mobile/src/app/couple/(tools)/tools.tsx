@@ -1,12 +1,12 @@
 // Herramientas / Tools (build 13): the old Plan and More tabs in one.
-//   1. Five large tiles, each with one live number: Wedding site (wide, on
-//      top), then Coordinator, Budget, Tasks and Seating in a 2 x 2 grid.
+//   1. Wedding site, Budget, Tasks and Seating as one list, each row with its
+//      live line (HH craft pass, Oct 30 2026: the tile grid is gone).
 //   2. "More": the invitation code with Share, then every other section as
 //      one list, Settings last (Settings is also the gear on Home).
 // /couple/plan and /couple/more redirect here (old pushes and links).
 
 import React, { useCallback, useState } from "react";
-import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { plural, useCopy } from "@/i18n";
@@ -19,7 +19,7 @@ import { useBudgetSurface } from "@/features/budget/hooks";
 import { useCoupleSettings } from "@/features/settings/hooks";
 import { useWebsite } from "@/features/website/hooks";
 import { useCoupleCopy, useShareInvite, MenuRow, MenuCard } from "@/features/couple/ui";
-import { Screen, TopBar, Wordmark, BigTitle, T, Icon, Footer, Skeleton, SectionLabel, useLayout, type IconName } from "@/ui";
+import { Screen, TopBar, Wordmark, BigTitle, T, Icon, Footer, Skeleton, SectionLabel, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 
 type Tool = { key: string; icon: IconName; name: string; num: string | null; route: string };
@@ -37,9 +37,6 @@ export default function CoupleTools() {
   const more = useMore();
   const settings = useCoupleSettings();
   const shareInvite = useShareInvite();
-  const { width, fontScale } = useWindowDimensions();
-  const cols = useLayout().columns;
-  const oneColumn = width < 340 || (width < 380 && fontScale > 1.3);
 
   // "% paid" of the budget the Budget screen has open, as on Home (B3).
   const [budgetId, setBudgetId] = useState<string | null>(null);
@@ -85,7 +82,7 @@ export default function CoupleTools() {
   const siteAddress = typeof publicUrl === "string" && publicUrl ? publicUrl.replace(/^https?:\/\//, "") : slug ? `app.guest-ly.com/${slug}` : null;
   const siteNum = website.data ? (website.data.published ? c.tools.sitePublished : c.tools.siteDraft) : website.isError ? c.tools.siteSee : null;
 
-  const tiles: Tool[] = [
+  const tools: Tool[] = [
     { key: "budget", icon: "wallet", name: c.plan.budget, num: budgetNum, route: "/couple/budget" },
     { key: "tasks", icon: "tasks", name: c.plan.tasks, num: tasksNum, route: "/couple/tasks" },
     { key: "seating", icon: "grid", name: c.plan.seating, num: seatingNum, route: "/couple/seating" },
@@ -103,57 +100,14 @@ export default function CoupleTools() {
         <BigTitle title={c.tools.title} sub={days !== null ? c.plan.daysLeft(days) : user?.me.tenant.couple_names} />
       </View>
 
-      {/* 1. The five tools */}
-      <Pressable
-        testID="tools-website"
-        onPress={() => router.push("/couple/website")}
-        accessibilityRole="button"
-        accessibilityLabel={[c.tools.site, siteNum, siteAddress].filter(Boolean).join(", ")}
-        style={({ pressed }) => [styles.tile, styles.siteTile, pressed && styles.pressed]}
-      >
-        <View style={styles.icon}>
-          <Icon name="globe" size={24} color={colors.goldLight} />
-        </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          <T v="body16" color={colors.ivory} numberOfLines={2} size={18}>
-            {c.tools.site}
-          </T>
-          {siteNum || siteAddress ? (
-            <T v="meta13" color={colors.ivory70} numberOfLines={2}>
-              {[siteNum, siteAddress].filter(Boolean).join(" · ")}
-            </T>
-          ) : (
-            <Skeleton h={13} w={140} />
-          )}
-        </View>
-        <Icon name="chev" size={18} color={colors.ivory40} />
-      </Pressable>
-      <View style={[styles.grid, cols === 4 && styles.gridQuad]}>
-        {tiles.map((t, i) => (
-          <Pressable
-            key={t.key}
-            testID={`tools-${t.key}`}
-            onPress={() => router.push(t.route as never)}
-            accessibilityRole="button"
-            accessibilityLabel={t.num ? `${t.name}, ${t.num}` : t.name}
-            style={({ pressed }) => [styles.tile, cols === 4 && !oneColumn ? styles.tileQuad : oneColumn || (tiles.length % 2 === 1 && i === tiles.length - 1) ? styles.tileWide : styles.tileSquare, pressed && styles.pressed]}
-          >
-            <View style={styles.icon}>
-              <Icon name={t.icon} size={24} color={colors.goldLight} />
-            </View>
-            <View style={{ gap: 4 }}>
-              <T v="body16" color={colors.ivory} numberOfLines={2} size={18}>
-                {t.name}
-              </T>
-              {t.num ? (
-                <T v="meta13" color={colors.ivory70} numberOfLines={2}>
-                  {t.num}
-                </T>
-              ) : null}
-            </View>
-          </Pressable>
+      {/* 1. The four tools with a live line each, as one list (HH craft pass:
+          rows with icons, not a grid of identical glass tiles). */}
+      <MenuCard style={{ marginTop: 24 }}>
+        <MenuRow icon="globe" title={c.tools.site} sub={[siteNum, siteAddress].filter(Boolean).join(" · ") || null} onPress={() => router.push("/couple/website")} testID="tools-website" />
+        {tools.map((t, i) => (
+          <MenuRow key={t.key} icon={t.icon} title={t.name} sub={t.num} onPress={() => router.push(t.route as never)} testID={`tools-${t.key}`} last={i === tools.length - 1} />
         ))}
-      </View>
+      </MenuCard>
 
       {/* 2. More */}
       <SectionLabel style={{ marginTop: 28, marginBottom: 10 }}>{c.tools.more}</SectionLabel>
@@ -200,16 +154,7 @@ export default function CoupleTools() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, marginTop: 12 },
-  tile: { borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)", padding: 16, justifyContent: "space-between" },
-  siteTile: { marginTop: 24, flexDirection: "row", alignItems: "center", gap: 14, minHeight: 92 },
-  tileSquare: { width: "48.3%", aspectRatio: 1 },
-  // Even columns on the Duo's inner display (four at 900 pt and up).
-  gridQuad: { justifyContent: "flex-start", columnGap: 8 },
-  tileQuad: { width: "23.5%", aspectRatio: 1 },
-  tileWide: { width: "100%", minHeight: 120, gap: 16 },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" },
-  code: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.goldBorder },
+  // The invitation code: a bordered band, not another glass card.
+  code: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.goldBorder },
   share: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder },
 });

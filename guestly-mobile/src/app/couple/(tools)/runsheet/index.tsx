@@ -160,7 +160,7 @@ export default function CoupleRunsheet() {
               canEdit ? (
                 <Button
                   label={c.template}
-                  icon="sparkle"
+                  icon="list"
                   onPress={seed}
                   loading={seeding}
                   disabled={!online}

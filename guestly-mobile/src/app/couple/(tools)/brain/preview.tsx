@@ -59,7 +59,7 @@ export default function BrainPreview() {
         </T>
         <Stack gap={10} style={{ marginTop: 16 }}>
           <Input accessibilityLabel={c.askPlaceholder} value={question} onChangeText={setQuestion} placeholder={c.askPlaceholder} multiline style={{ minHeight: 72, alignItems: "flex-start", paddingVertical: 12 }} returnKeyType="send" onSubmitEditing={ask} />
-          <Button label={busy ? c.asking : c.ask} onPress={ask} loading={busy} disabled={!question.trim()} icon="sparkle" />
+          <Button label={busy ? c.asking : c.ask} onPress={ask} loading={busy} disabled={!question.trim()} icon="concierge" />
           {error ? (
             <T v="body15" color={colors.red}>
               {error}

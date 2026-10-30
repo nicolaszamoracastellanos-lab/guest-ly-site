@@ -105,7 +105,7 @@ export function Inbox() {
       <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
         {unanswered > 0 ? (
           <Pressable onPress={teach} accessibilityRole="button" accessibilityLabel={`${c.messages.unanswered(unanswered)}. ${c.messages.teach}`} testID="messages-teach" style={({ pressed }) => [styles.card, styles.cardGold, pressed && { opacity: 0.8 }]}>
-            <Icon name="sparkle" size={22} color={colors.goldLight} />
+            <Icon name="book" size={22} color={colors.goldLight} />
             <View style={{ flex: 1, gap: 2 }}>
               <T v="body16">{c.messages.unanswered(unanswered)}</T>
               {firstWaiting ? (
@@ -121,7 +121,7 @@ export function Inbox() {
           </Pressable>
         ) : needsYou.data || data ? (
           <Pressable onPress={() => router.push("/couple/insights")} accessibilityRole="button" accessibilityLabel={`${c.messages.answered}. ${c.messages.answeredSub}`} style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}>
-            <Icon name="sparkle" size={22} color={colors.goldLight} />
+            <Icon name="concierge" size={22} color={colors.ivory70} />
             <View style={{ flex: 1, gap: 2 }}>
               <T v="body16">{c.messages.answered}</T>
               <T v="meta13" color={colors.ivory70}>

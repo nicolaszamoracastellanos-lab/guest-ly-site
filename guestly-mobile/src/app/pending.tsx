@@ -243,7 +243,7 @@ export default function PendingHome() {
               <Card kind="solid" padding={16} style={{ opacity: pressed ? 0.85 : 1 }}>
                 <Row gap={14}>
                   <View style={styles.tourIcon}>
-                    <Icon name="sparkle" size={22} color={colors.goldLight} />
+                    <Icon name="eye" size={22} color={colors.ivory} />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <T v="body16" color={colors.ivory}>
@@ -315,5 +315,5 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(13,17,23,0.45)",
   },
   pillGem: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: "45deg" }] },
-  tourIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(201,169,110,0.12)" },
+  tourIcon: { width: 28, alignItems: "center", justifyContent: "center" },
 });

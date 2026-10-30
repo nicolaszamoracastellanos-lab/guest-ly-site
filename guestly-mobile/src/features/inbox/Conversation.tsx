@@ -268,7 +268,7 @@ export function Bubble({ m, name, onAddToBrain }: { m: TranscriptLine; name: str
       >
         {m.role === "bot" ? (
           <Row gap={4} style={{ marginBottom: 4 }}>
-            <Icon name="sparkle" size={12} color={colors.goldLight} />
+            <Icon name="concierge" size={14} color={colors.goldLight} />
             <T v="meta13" color={colors.goldLight}>
               {c.concierge}
             </T>

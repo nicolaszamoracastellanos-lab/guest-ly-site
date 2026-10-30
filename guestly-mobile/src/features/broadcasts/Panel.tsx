@@ -78,9 +78,7 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
         {data && !ready ? (
           <Card kind="solid" padding={18} radiusKey="tile" border={colors.goldBorder}>
             <Stack gap={10}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="megaphone" size={22} color={colors.goldLight} />
-              </View>
+              <Icon name="megaphone" size={26} color={colors.ivory90} />
               <T v="title26">{c.notReadyTitle}</T>
               <T v="body15" color={colors.ivory70}>
                 {req.canRequest ? c.notReadyBody : c.notReadyBodyNoRequest}

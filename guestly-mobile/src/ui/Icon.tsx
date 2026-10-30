@@ -10,7 +10,8 @@ export type IconName =
   | "back" | "down" | "search" | "sparkle" | "hanger" | "bus" | "qr" | "check" | "clock" | "wallet" | "tasks"
   | "plus" | "x" | "x-circle" | "filter" | "map" | "camera" | "share" | "phone" | "contacts" | "lock" | "warning" | "info"
   | "edit" | "coins" | "grid" | "store" | "list" | "megaphone" | "globe" | "book" | "gear" | "signout"
-  | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift" | "copy";
+  | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift" | "copy"
+  | "replay" | "eye" | "concierge";
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
@@ -40,7 +41,13 @@ export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 
       case "copy": return <><Rect {...p} x="9" y="9" width="11" height="11" rx="2" /><Path {...p} d="M15 9V6.5A1.5 1.5 0 0 0 13.5 5h-7A1.5 1.5 0 0 0 5 6.5v7A1.5 1.5 0 0 0 6.5 15H9" /></>;
       case "gift": return <><Rect {...p} x="4" y="9" width="16" height="4" rx="1" /><Path {...p} d="M5.5 13v7h13v-7M12 9v11M12 9c-1.5-3.5-5-4-5-1.5S10 9 12 9zM12 9c1.5-3.5 5-4 5-1.5S14 9 12 9z" /></>;
       case "search": return <><Circle {...p} cx="11" cy="11" r="6" /><Path {...p} d="m20 20-4.5-4.5" /></>;
+      // The Coordinator's mark, and only the Coordinator's (HH craft pass): the
+      // tour replay, previews and the guest concierge have their own icons.
       case "sparkle": return <><Path {...p} d="M12 4v4M12 16v4M4 12h4M16 12h4M7 7l1.5 1.5M15.5 15.5 17 17M17 7l-1.5 1.5M8.5 15.5 7 17" /><Circle {...p} cx="12" cy="12" r="2.5" /></>;
+      case "replay": return <><Path {...p} d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><Path {...p} d="M4.5 4.5v3h3" /><Path {...p} d="M10.5 9.5v5l4-2.5z" /></>;
+      case "eye": return <><Path {...p} d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><Circle {...p} cx="12" cy="12" r="2.8" /></>;
+      // The guest concierge (the wedding's own chat): a bubble with dots.
+      case "concierge": return <><Path {...p} d="M5 18.5V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H8.5z" />{dot(9, 10.5, 1)}{dot(12, 10.5, 1)}{dot(15, 10.5, 1)}</>;
       case "hanger": return <><Path {...p} d="M12 8.5a2 2 0 1 0-2-2" /><Path {...p} d="M12 8.5v2L4.5 16a1 1 0 0 0 .6 1.8h13.8a1 1 0 0 0 .6-1.8L12 10.5" /></>;
       case "bus": return <><Rect {...p} x="4.5" y="4.5" width="15" height="13" rx="2.5" /><Path {...p} d="M4.5 10.5h15M8 18v2M16 18v2" />{dot(8.5, 14.5, 1)}{dot(15.5, 14.5, 1)}</>;
       case "qr": return <><Rect {...p} x="4" y="4" width="6" height="6" rx="1" /><Rect {...p} x="14" y="4" width="6" height="6" rx="1" /><Rect {...p} x="4" y="14" width="6" height="6" rx="1" /><Path {...p} d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" /></>;

@@ -110,7 +110,7 @@ export default function GuestInfo() {
             trailing={<Toggle value={notif} label={g.info.notifications} onChange={(v) => void toggleNotifications(v)} />}
             chevron={false}
           />
-          <ListRow testID="guest-tour" leading={<Icon name="sparkle" size={22} color={colors.goldLight} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} last />
+          <ListRow testID="guest-tour" leading={<Icon name="replay" size={22} color={colors.ivory70} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} last />
         </Card>
 
         <Button testID="info-leave" label={g.info.leave} kind="ghost" icon="signout" onPress={() => setLeaveOpen(true)} style={{ borderColor: "rgba(240,162,162,0.5)" }} />

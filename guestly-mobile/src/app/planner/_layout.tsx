@@ -44,7 +44,7 @@ import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRo
 import { PlannerWidgetSync } from "@/features/widgets/WidgetSync";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "@/features/planner/copy";
-import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
+import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, CoordinatorMark, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
 import { errorText } from "@/features/tasks/ui";
@@ -296,11 +296,14 @@ export function WeddingSwitcher({ visible, onClose }: { visible: boolean; onClos
 
 // ------------------------------------------------------------------ bits
 
-/** A 40 pt disc with a gold icon: the leading mark of planner rows. */
+/** The leading mark of planner rows: a plain icon in a 40 pt slot. The gold
+ *  disc belongs to the Coordinator alone (CoordinatorMark, HH craft pass), so
+ *  `sparkle` is drawn as that mark and every other icon stays plain. */
 export function IconDisc({ name, muted }: { name: IconName; muted?: boolean }) {
+  if (name === "sparkle") return <CoordinatorMark size={40} />;
   return (
-    <View style={[styles.disc, muted && { backgroundColor: colors.ivory09 }]}>
-      <Icon name={name} size={20} color={muted ? colors.ivory70 : colors.goldLight} />
+    <View style={styles.disc}>
+      <Icon name={name} size={22} color={muted ? colors.ivory55 : colors.ivory90} />
     </View>
   );
 }
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
   pill: { flexShrink: 1, minWidth: 0, height: 40, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 12, paddingRight: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder, backgroundColor: colors.goldWash },
   pillGlass: { backgroundColor: "rgba(13,17,23,0.62)" },
   close: { width: HIT_TARGET, height: HIT_TARGET, alignItems: "center", justifyContent: "center", marginRight: -10 },
-  disc: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: colors.goldWash },
+  disc: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   lock: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: colors.ivory09 },
   taskRow: { flexDirection: "row", alignItems: "center", minHeight: 64, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
   checkHit: { width: HIT_TARGET, height: HIT_TARGET, alignItems: "center", justifyContent: "center", marginLeft: -10 },

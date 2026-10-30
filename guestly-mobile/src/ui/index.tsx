@@ -579,6 +579,17 @@ export function Gem({ size = 7, color = colors.gold, followHinge = false }: { si
   return <View style={{ width: size, height: size, backgroundColor: color, transform: [{ rotate: `${45 + turn}deg` }] }} />;
 }
 
+/** The Coordinator's mark: the sparkle on a gold-wash disc. The ONE place the
+ *  gold disc appears (HH craft pass, Oct 30 2026); every other row leads with
+ *  a plain icon, so the AI entry is the thing that stands out. */
+export function CoordinatorMark({ size = 44 }: { size?: number }) {
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" }}>
+      <Icon name="sparkle" size={Math.round(size * 0.5)} color={colors.goldLight} />
+    </View>
+  );
+}
+
 const wordmark = require("../../assets/brand/wordmark-ivory.png");
 
 /** The raster wordmark from the brand files. Never typed text. */

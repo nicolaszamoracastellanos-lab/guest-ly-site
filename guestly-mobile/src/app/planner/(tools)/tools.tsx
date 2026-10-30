@@ -17,13 +17,13 @@
 // photo at the same spot (F1).
 
 import React, { useState } from "react";
-import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, plural, longDate, useCopy, useLang } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { can, useTenantKey, useUserSession } from "@/lib/session";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, T, Sheet, Button, Stack, SectionLabel, Icon, PhotoHero, Row, useTopInset, motifVariant, useLayout, type IconName } from "@/ui";
+import { Screen, T, Sheet, Button, Stack, SectionLabel, Icon, PhotoHero, Row, useTopInset, motifVariant, CoordinatorMark, useLayout, type IconName } from "@/ui";
 import { colors, radius, space, COLUMN } from "@/ui/tokens";
 import { useBudgetSurface } from "@/features/budget/hooks";
 import { usePlannerSeating } from "@/features/seating/hooks";
@@ -105,9 +105,11 @@ function PlannerToolsBody() {
           <SectionLabel color={colors.goldLight} style={{ marginTop: 24, marginBottom: 10 }}>
             {c.tools}
           </SectionLabel>
-          <View style={[styles.tiles, cols === 4 && styles.tilesQuad]}>
-            {TOOLS.map((t) => (
-              <Tile key={t.id} icon={t.icon} title={name(t.id)} locked={!can(me, t.id)} onPress={() => openTool(t.id)} testID={`planner-tool-${t.id}`}>
+          {/* One list, a row per tool (HH craft pass: no grid of identical
+              tiles). Two columns of rows on the Duo's inner display. */}
+          <View style={[styles.list, cols === 4 && styles.listWide]}>
+            {TOOLS.map((t, i) => (
+              <Tile key={t.id} icon={t.icon} title={name(t.id)} locked={!can(me, t.id)} onPress={() => openTool(t.id)} testID={`planner-tool-${t.id}`} last={i === TOOLS.length - 1} wide={cols === 4}>
                 {can(me, t.id) ? t.id === "broadcasts" ? <Line text={home.data ? fmt(c.remindersSub, { n: pendingParties }) : null} /> : t.id === "coordinator" ? <Line text={c.askCoordinatorSub} /> : t.id === "checkin" ? <Line text={c.checkinSub} /> : t.id === "conversations" ? <Line text={c.messagesSub} /> : t.id === "analytics" ? <Line text={c.analyticsSub} /> : t.id === "vendors" ? <Line text={c.vendorsSub} /> : <ToolNumber tool={t.id} /> : null}
               </Tile>
             ))}
@@ -220,13 +222,11 @@ function RunsheetLine() {
   return <Line text={q.data.blocks_total ? plural(q.data.blocks_total, c.blocks) : c.notStarted} />;
 }
 
-function Tile({ icon, title, locked, onPress, children, testID }: { icon: IconName; title: string; locked: boolean; onPress: () => void; children?: React.ReactNode; testID?: string }) {
+/** One tool as a list row: icon, name and live line, chevron. The
+ *  Coordinator leads with its gold mark; a tool the couple did not share
+ *  shows a lock and "Not shared". */
+function Tile({ icon, title, locked, onPress, children, testID, last, wide }: { icon: IconName; title: string; locked: boolean; onPress: () => void; children?: React.ReactNode; testID?: string; last?: boolean; wide?: boolean }) {
   const c = useCopy().planner.b12;
-  // Large text on a narrow phone: full-width tiles instead of squares, so the
-  // title and its line never run past the tile (the couple Plan rule, D-031).
-  const { width, fontScale } = useWindowDimensions();
-  const cols = useLayout().columns;
-  const oneColumn = width < 340 || (width < 380 && fontScale > 1.15);
   return (
     <Pressable
       testID={testID}
@@ -235,17 +235,16 @@ function Tile({ icon, title, locked, onPress, children, testID }: { icon: IconNa
       // live number inside ("Presupuesto, 17% pagado").
       accessibilityLabel={locked ? `${title}, ${c.notSharedShort}` : undefined}
       onPress={onPress}
-      style={({ pressed }) => [styles.tile, oneColumn && styles.tileWide, cols === 4 && !oneColumn && styles.tileQuad, locked && styles.tileLocked, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+      style={({ pressed }) => [styles.row, wide && styles.rowHalf, !last && styles.rowLine, pressed && { opacity: 0.7 }]}
     >
-      <View style={[styles.tileIcon, locked && { backgroundColor: colors.ivory09 }]}>
-        <Icon name={locked ? "lock" : icon} size={24} color={locked ? colors.ivory70 : colors.goldLight} />
-      </View>
-      <View style={{ gap: 2 }}>
-        <T v="body16" color={colors.ivory} numberOfLines={2}>
+      <View style={styles.rowIcon}>{!locked && icon === "sparkle" ? <CoordinatorMark size={36} /> : <Icon name={locked ? "lock" : icon} size={22} color={locked ? colors.ivory40 : colors.ivory70} />}</View>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <T v="body16" color={locked ? colors.ivory55 : colors.ivory} numberOfLines={2}>
           {title}
         </T>
         {locked ? <Line text={c.notSharedShort} /> : children}
       </View>
+      <Icon name="chev" size={18} color={colors.ivory40} />
     </Pressable>
   );
 }
@@ -257,14 +256,14 @@ function cap(s: string): string {
 const styles = StyleSheet.create({
   body: { ...COLUMN, paddingHorizontal: space.screen, paddingTop: 16 },
   over: { position: "absolute", left: 0, right: 0 },
-  stat: { flex: 1, minWidth: 0, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.ivory14, backgroundColor: colors.navy, padding: 12, gap: 2 },
-  tiles: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 10 },
-  tile: { width: "48.5%", aspectRatio: 1, minHeight: 140, borderRadius: radius.tile, borderWidth: 1, borderColor: colors.ivory14, backgroundColor: colors.navy, padding: 16, justifyContent: "space-between" },
-  tileWide: { width: "100%", aspectRatio: undefined, minHeight: 120, gap: 16 },
-  // Even columns on the Duo's inner display (four at 900 pt and up).
-  tilesQuad: { justifyContent: "flex-start", columnGap: 8 },
-  tileQuad: { width: "23.5%" },
-  tileLocked: { backgroundColor: "transparent", borderStyle: "dashed", borderColor: colors.ivory25 },
-  tileIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: colors.goldWash },
+  // The three figures: plain columns divided by hairlines, no boxes.
+  stat: { flex: 1, minWidth: 0, paddingVertical: 4, gap: 2 },
+  list: { borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.ivory14, paddingHorizontal: 16 },
+  // The Duo's inner display (four columns of room): two columns of rows.
+  listWide: { flexDirection: "row", flexWrap: "wrap", columnGap: 24 },
+  row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 68, paddingVertical: 10 },
+  rowHalf: { width: "47%" },
+  rowLine: { borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
+  rowIcon: { width: 36, alignItems: "center" },
   lockDisc: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: colors.ivory09 },
 });
