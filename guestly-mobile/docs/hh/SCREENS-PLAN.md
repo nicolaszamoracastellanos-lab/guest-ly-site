@@ -134,6 +134,7 @@ The wedding-first Home (`src/app/couple/index.tsx`) uses only what `GET /couple/
 4. `hero_image_url` and focal point for the couple (the guest home has them), so the couple's own photo can stand where the night motif is.
 5. `funnel.opened`: parties that opened their personal link (B4 `link_opened`), to add the "Opened" step between Invited and Replied.
 6. `today.events`: the day's tasks due and vendor payments due with times, so Today is a day plan, not only alerts.
+7. A wedding date editor. Today no app screen and no mobile route can change `tenants.wedding_date` (`POST /couple/settings` takes reminders and the two email switches only), and `/web` refuses `/dashboard` on purpose (`SIGNED_IN_PATHS` in `src/features/webview/bridge.ts`, D-019). So the Home "Wedding date" step only reports (no chevron, not tappable; "Not set yet" / "Todavía sin fecha" when empty). When Settings > General ships (section 1: `GET`/`POST /couple/settings/general` with `wedding_date`), give the step `onPress: () => router.push("/couple/settings/general")`, and do the same for a step that B1's `setup[].path` maps to that screen. Never add `/dashboard` to the web allow-list for this.
 
 ## 13. Order of work for the second half
 

@@ -23,10 +23,11 @@ import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel,
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, fullDate, dayMonth, statusIcon, statusColor } from "@/features/couple/ui";
 
-import { recentReplies, funnelFrom, share } from "@/features/couple/home";
+import { recentReplies, funnelFrom, share, todayBriefing } from "@/features/couple/home";
 
 type BriefingLike = { text: string; href: string; tone: "risk" | "warn" | "info"; kind?: unknown; target_id?: unknown; filter?: unknown };
-type Step = { key: string; title: string; sub: string; done: boolean; onPress: () => void };
+// onPress absent: the step only reports (no screen in the app can change it yet).
+type Step = { key: string; title: string; sub: string; done: boolean; onPress?: () => void };
 
 
 export default function CoupleHome() {
@@ -57,15 +58,19 @@ export default function CoupleHome() {
   const t = data?.totals;
   const { invited: total, replied, going, notGoing, pending } = funnelFrom(t);
   const deadline = rsvps.data?.deadline ? dayMonth(rsvps.data.deadline, lang) : "";
-  const briefing = (data?.briefing ?? []) as BriefingLike[];
   const breakdown = data?.needs_you_breakdown;
+  // The briefing minus the rows the two breakdown rows above it already say.
+  const briefing = todayBriefing((data?.briefing ?? []) as BriefingLike[], breakdown);
   const recent = recentReplies(rsvps.data?.items);
 
   const openGuests = (filter: string) => router.push({ pathname: "/couple/guests", params: { filter } } as never);
 
+  // The date step only reports: the app has no date editor yet and /web
+  // refuses /dashboard on purpose (D-019, billing stays out of the app).
+  // Settings > General (docs/hh/SCREENS-PLAN.md section 1 and 12) gives it a screen.
   const steps: Step[] = data
     ? [
-        { key: "date", title: h.steps.date, sub: data.wedding_date ? date : h.steps.dateTodo, done: !!data.wedding_date, onPress: () => router.push({ pathname: "/web", params: { path: "/dashboard", title: h.steps.date } } as never) },
+        { key: "date", title: h.steps.date, sub: data.wedding_date ? date : h.steps.dateTodo, done: !!data.wedding_date },
         { key: "guests", title: h.steps.guests, sub: (t?.parties ?? 0) > 0 ? h.steps.guestsDone(t?.parties ?? 0) : h.steps.guestsTodo, done: (t?.parties ?? 0) > 0, onPress: () => router.push((t?.parties ? "/couple/guests" : "/couple/guests/new") as never) },
         { key: "invite", title: h.steps.invite, sub: replied > 0 ? h.steps.inviteDone(replied) : h.steps.inviteTodo, done: replied > 0, onPress: () => (replied > 0 ? openGuests("all") : void shareInvite()) },
         { key: "concierge", title: h.steps.concierge, sub: data.concierge_live ? h.steps.conciergeDone : h.steps.conciergeTodo, done: data.concierge_live, onPress: () => router.push("/couple/brain") },
@@ -300,8 +305,9 @@ function TextAction({ icon, label, onPress, testID }: { icon: IconName; label: s
 }
 
 function StepRow({ step, last }: { step: Step; last: boolean }) {
+  const tappable = !!step.onPress;
   return (
-    <Pressable onPress={step.onPress} accessibilityRole="button" accessibilityState={{ checked: step.done }} accessibilityLabel={`${step.title}. ${step.sub}`} testID={`home-step-${step.key}`} style={({ pressed }) => [styles.stepRow, !last && styles.line, pressed && { opacity: 0.7 }]}>
+    <Pressable onPress={step.onPress} disabled={!tappable} accessibilityRole={tappable ? "button" : "text"} accessibilityState={{ checked: step.done }} accessibilityLabel={`${step.title}. ${step.sub}`} testID={`home-step-${step.key}`} style={({ pressed }) => [styles.stepRow, !last && styles.line, pressed && tappable && { opacity: 0.7 }]}>
       <View style={[styles.stepMark, step.done && styles.stepMarkDone]}>{step.done ? <Icon name="check" size={14} color={colors.night} strokeWidth={2.2} /> : null}</View>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <T v="body16" color={step.done ? colors.ivory70 : colors.ivory}>
@@ -311,7 +317,7 @@ function StepRow({ step, last }: { step: Step; last: boolean }) {
           {step.sub}
         </T>
       </View>
-      <Icon name="chev" size={18} color={colors.ivory40} />
+      {tappable ? <Icon name="chev" size={18} color={colors.ivory40} /> : null}
     </Pressable>
   );
 }

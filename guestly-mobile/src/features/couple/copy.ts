@@ -47,7 +47,7 @@ export const COPY = {
       setupDone: "Everything here is set",
       steps: {
         date: "Wedding date",
-        dateTodo: "Set it in your portal",
+        dateTodo: "Not set yet",
         guests: "Guest list",
         guestsTodo: "Add your first guest",
         guestsDone: (n: number) => plural(n, "{n} party on the list", "{n} parties on the list"),
@@ -324,7 +324,7 @@ export const COPY = {
       setupDone: "Todo aquí está listo",
       steps: {
         date: "Fecha de la boda",
-        dateTodo: "Ponla en tu portal",
+        dateTodo: "Todavía sin fecha",
         guests: "Lista de invitados",
         guestsTodo: "Agrega a tu primer invitado",
         guestsDone: (n: number) => plural(n, "{n} grupo en la lista", "{n} grupos en la lista"),

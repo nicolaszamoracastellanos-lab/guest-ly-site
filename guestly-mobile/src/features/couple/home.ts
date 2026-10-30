@@ -28,3 +28,15 @@ export function funnelFrom(t: { people_expected?: number; attending_seats?: numb
 export function share(n: number, of: number): number {
   return of > 0 ? Math.max(0, Math.min(1, n / of)) : 0;
 }
+
+/** The briefing rows Today shows under its own request and message rows.
+ *  The couple briefing already carries a `requests_open` row (open planner
+ *  requests) and `escalation_open` rows (escalated guest questions); when the
+ *  breakdown row for the same thing is on screen, the briefing copy would say
+ *  it twice, so it is dropped. Rows without a kind (a portal before v1.2) are
+ *  kept: nothing proves they repeat a breakdown row. */
+export function todayBriefing<B extends { kind?: unknown }>(briefing: readonly B[] | null | undefined, breakdown: { requests?: number; conversations?: number } | null | undefined): B[] {
+  const hasRequests = (breakdown?.requests ?? 0) > 0;
+  const hasMessages = (breakdown?.conversations ?? 0) > 0;
+  return (briefing ?? []).filter((b) => !((hasRequests && b.kind === "requests_open") || (hasMessages && b.kind === "escalation_open")));
+}
