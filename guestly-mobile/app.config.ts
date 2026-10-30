@@ -16,6 +16,10 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com";
 const CAMERA_PURPOSE = "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.";
 const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding website, the floor plan and budget receipts.";
 const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking you to sign in again.";
+// Contacts (HH Oct 30 2026): only the people the couple picks in Add guest,
+// through the iOS 18 limited-access picker. The app never reads the whole
+// address book and never writes to it. iOS only; Android blocks the permission.
+const CONTACTS_PURPOSE = "Guest-ly fills in a guest's name, phone and email from the contacts you choose to share. It never reads the rest of your address book.";
 const MICROPHONE_PURPOSE = "Guest-ly does not record audio. iOS shows this text only if a video with sound is ever captured, which the app does not do.";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -147,7 +151,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // The app never records sound. expo-camera is told so below; expo-image-picker
     // (an automatic plugin) would still add RECORD_AUDIO, so it is blocked here,
     // which writes tools:node="remove" into the manifest whoever asks for it.
-    blockedPermissions: ["android.permission.RECORD_AUDIO"],
+    blockedPermissions: ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS", "android.permission.RECORD_AUDIO"],
     intentFilters: [
       {
         action: "VIEW",
@@ -191,6 +195,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-camera",
       // recordAudioAndroid false drops RECORD_AUDIO from the Android manifest: the app never records sound.
       { cameraPermission: CAMERA_PURPOSE, microphonePermission: MICROPHONE_PURPOSE, recordAudioAndroid: false },
+    ],
+    [
+      "expo-contacts",
+      { contactsPermission: CONTACTS_PURPOSE },
     ],
     [
       "expo-local-authentication",

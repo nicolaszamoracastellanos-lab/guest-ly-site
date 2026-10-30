@@ -3,15 +3,23 @@
 // email, language and notes. The keyboard gets Prev / Next / Done (a form
 // Screen). A short phone number is flagged next to the field when you leave
 // it. Save closes at once with "Guest added." (View opens the new card).
+//
+// HH Oct 30 2026: "Choose from contacts" fills name, phone and email from the
+// people the couple picks, with iOS limited access (features/guests/contacts):
+// the system picker shares only those people, never the address book. While
+// access is limited, an inline Contact Access button under the name shares one
+// more matching person with a tap. Hidden on builds without the module.
 
-import React, { useState } from "react";
-import { View, Alert, Pressable, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Alert, Pressable, StyleSheet, Linking } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
-import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field, T, Icon, toast } from "@/ui";
+import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field, T, Icon, Sheet, ListRow, Avatar, toast } from "@/ui";
+import { contactsSupported, contactsAccess, pickContacts, sharedMatching, onContactsChange, type PickedContact } from "@/features/guests/contacts";
+import { ContactAccessInline } from "@/features/guests/ContactAccessInline";
 import { colors, radius } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
@@ -35,6 +43,48 @@ export default function NewGuest() {
   const [phoneError, setPhoneError] = useState(false);
   const dirty = form.name.trim() !== startName.trim() || !!form.phone.trim() || !!form.email.trim() || !!form.notes.trim() || !!form.members.trim() || form.plus > 0;
   const leave = useUnsavedGuard(dirty && !busy);
+
+  // Contacts: shown only on builds that carry the module (iOS).
+  const canContacts = contactsSupported();
+  const [access, setAccess] = useState<Awaited<ReturnType<typeof contactsAccess>>>("unavailable");
+  const [choices, setChoices] = useState<PickedContact[]>([]);
+  const nameRef = useRef(form.name);
+  nameRef.current = form.name;
+  useEffect(() => {
+    if (!canContacts) return;
+    void contactsAccess().then(setAccess);
+    // The inline button shared someone: offer the match for the typed name.
+    return onContactsChange(() => {
+      void sharedMatching(nameRef.current).then((m) => {
+        if (m.length === 1) fill(m[0]);
+        else if (m.length > 1) setChoices(m);
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canContacts]);
+
+  function fill(p: PickedContact) {
+    setChoices([]);
+    setForm((f) => ({ ...f, name: p.name, phone: p.phone ?? f.phone, email: p.email ?? f.email }));
+    setNameError(false);
+    setPhoneError(false);
+    if (p.email) setMore(true);
+    toast(c.add.filled(p.name));
+  }
+
+  async function fromContacts() {
+    const r = await pickContacts();
+    void contactsAccess().then(setAccess);
+    if (r.status === "picked") {
+      if (r.contacts.length === 1) fill(r.contacts[0]);
+      else setChoices(r.contacts);
+    } else if (r.status === "denied") {
+      Alert.alert(c.add.contactsOff, c.add.contactsOffBody, [
+        { text: copy.common.cancel, style: "cancel" },
+        { text: c.add.openSettings, onPress: () => void Linking.openSettings().catch(() => {}) },
+      ]);
+    }
+  }
 
   const phoneDigits = form.phone.replace(/\D/g, "");
   const phoneShort = phoneDigits.length > 0 && phoneDigits.length < MIN_PHONE_DIGITS;
@@ -82,6 +132,14 @@ export default function NewGuest() {
     >
       <>
         <BigTitle title={c.add.title} size={34} />
+        {canContacts ? (
+          <Stack gap={6} style={{ marginTop: 14 }}>
+            <Button label={c.add.fromContacts} kind="glass" small icon="contacts" full={false} onPress={() => void fromContacts()} testID="guest-from-contacts" />
+            <T v="caption14" color={colors.ivory55}>
+              {c.add.fromContactsHint}
+            </T>
+          </Stack>
+        ) : null}
         <Stack gap={14} style={{ marginTop: 16 }}>
           <Field label={c.add.name}>
             <Input
@@ -100,6 +158,7 @@ export default function NewGuest() {
             />
           </Field>
           {nameError ? <ErrorLine text={c.add.nameError} /> : null}
+          {access === "limited" && form.name.trim().length >= 2 && !form.phone.trim() ? <ContactAccessInline query={form.name.trim()} style={styles.access} /> : null}
           <Field label={c.add.phone} hint={phoneError ? null : c.add.phoneHint}>
             <Input
               value={form.phone}
@@ -172,8 +231,25 @@ export default function NewGuest() {
           ) : null}
         </Stack>
       </>
+      <Sheet visible={choices.length > 0} onClose={() => setChoices([])}>
+        <T v="title30">{c.add.chooseOne}</T>
+        <View style={{ marginTop: 12 }}>
+          {choices.map((p, i) => (
+            <ListRow key={p.id} leading={<Avatar initials={initialsOf(p.name)} size={36} />} title={p.name} sub={[p.phone, p.email].filter(Boolean).join(" · ") || null} onPress={() => fill(p)} last={i === choices.length - 1} />
+          ))}
+        </View>
+      </Sheet>
     </Screen>
   );
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 function ErrorLine({ text }: { text: string }) {
@@ -188,6 +264,7 @@ function ErrorLine({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
+  access: { height: 52, alignSelf: "stretch", marginTop: -4 },
   more: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, alignSelf: "flex-start" },
   stepRow: { justifyContent: "space-between", minHeight: 56, borderRadius: radius.tile, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: colors.ivory14, paddingHorizontal: 14 },
   step: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.ivory25, alignItems: "center", justifyContent: "center" },
