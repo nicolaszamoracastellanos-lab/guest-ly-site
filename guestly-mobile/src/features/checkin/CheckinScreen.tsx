@@ -216,7 +216,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
               </>
             ) : (
               <>
-                <T v="display44" center>
+                <T v="display44" center style={{ fontVariant: ["lining-nums"] }}>
                   {dayof?.parties_in ?? "·"}
                   <T v="title30" color={colors.ivory70}>{`  ${fmt(copy.checkin.partiesIn, { n: "", total: dayof?.parties_total ?? "·" }).replace(/^\s*of\s*/i, "/ ").replace(/^\s*de\s*/i, "/ ")}`}</T>
                 </T>
@@ -362,7 +362,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
         {welcomeToggle ? <View style={{ alignItems: "flex-start" }}>{welcomeToggle}</View> : null}
         <Row style={{ justifyContent: "space-between" }}>
           <Row gap={6} align="baseline">
-            <T v="name24">
+            <T v="name24" style={{ fontVariant: ["lining-nums"] }}>
               {dayof?.parties_in ?? "·"}
             </T>
             <T v="meta13" color={colors.ivory70}>
