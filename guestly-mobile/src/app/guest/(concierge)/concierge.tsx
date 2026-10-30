@@ -260,17 +260,17 @@ export default function Ask() {
     <TopBar title={g.ask.title} />
   ) : (
     <View style={[styles.head, { paddingTop: top + 8 }]}>
-      <T v="title42" size={40} accessibilityRole="header">
+      <T v="screen" accessibilityRole="header">
         {g.ask.title}
       </T>
       <Pressable testID="ask-ai-info" onPress={() => setAiOpen(true)} accessibilityRole="button" hitSlop={8} style={styles.aiRow}>
         <Icon name="info" size={16} color={colors.goldLight} />
-        <T v="meta13" size={13} color={colors.ivory70} numberOfLines={1} style={{ flexShrink: 1 }}>
+        <T v="caption14" color={colors.ivory70} numberOfLines={1} style={{ flexShrink: 1 }}>
           {g.ask.aiNotice}
         </T>
       </Pressable>
       {mainQuery.dataUpdatedAt ? (
-        <T v="meta13" size={12} color={colors.ivory70} testID="ask-updated">
+        <T v="caption14" color={colors.ivory70} testID="ask-updated">
           {fmt(g.ask.updated, { when: relTime(new Date(mainQuery.dataUpdatedAt).toISOString(), lang) })}
         </T>
       ) : null}
@@ -333,7 +333,7 @@ export default function Ask() {
               {t.escalated ? (
                 <Row gap={6} style={{ alignSelf: "center", maxWidth: 320 }}>
                   <Icon name="check" size={16} color={colors.goldLight} />
-                  <T v="meta13" size={13} color={colors.ivory70} center style={{ flexShrink: 1 }}>
+                  <T v="caption14" color={colors.ivory70} center style={{ flexShrink: 1 }}>
                     {fmt(g.ask.passed, { couple })}
                   </T>
                 </Row>
@@ -401,7 +401,7 @@ function Who({ label, couple }: { label: string; couple?: boolean }) {
       ) : (
         <Avatar gem size={24} />
       )}
-      <T v="meta13" size={13} color={couple ? colors.goldLight : colors.ivory70} style={{ fontFamily: fonts.bodyMedium }}>
+      <T v="caption14" color={couple ? colors.goldLight : colors.ivory70} style={{ fontFamily: fonts.bodyMedium }}>
         {label}
       </T>
     </Row>
@@ -422,7 +422,7 @@ function Theirs({ who, text, meta, couple, error }: { who: string; text: string;
         </T>
       </View>
       {meta ? (
-        <T v="meta13" size={13} color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
+        <T v="caption14" color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
           {meta}
         </T>
       ) : null}
@@ -439,7 +439,7 @@ function Mine({ text, meta }: { text: string; meta?: string }) {
         </T>
       </View>
       {meta ? (
-        <T v="meta13" size={13} color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
+        <T v="caption14" color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
           {meta}
         </T>
       ) : null}

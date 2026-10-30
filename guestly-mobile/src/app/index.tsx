@@ -37,13 +37,13 @@ export default function Entrance() {
       <View style={[styles.bottom, COLUMN, { paddingBottom: Math.max(insets.bottom, 24) + 16 }]}>
         <Stack gap={14}>
           <View style={{ marginBottom: 10 }}>
-            <T v="display44" size={50} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ lineHeight: 49 }}>
+            <T v="display44" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
               {first}
             </T>
-            <T v="display44" size={50} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} style={{ lineHeight: 49 }}>
+            <T v="display44" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
               {second}
             </T>
-            <T v="display44" size={50} italic color={colors.goldLight} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6} style={{ lineHeight: 49 }}>
+            <T v="display44" italic color={colors.goldLight} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.6}>
               {third}
             </T>
           </View>

@@ -71,7 +71,7 @@ export default function GuestInfo() {
         <T v="label11" color={colors.ivory70} numberOfLines={1}>
           {[couple, mediumDate(when, lang)].filter(Boolean).join(" · ")}
         </T>
-        <T v="title42" size={40} accessibilityRole="header">
+        <T v="screen" accessibilityRole="header">
           {g.info.title}
         </T>
       </View>

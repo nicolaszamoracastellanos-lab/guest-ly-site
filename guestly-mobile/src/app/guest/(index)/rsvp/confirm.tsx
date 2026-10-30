@@ -223,7 +223,7 @@ export default function RsvpConfirm() {
             <Icon name="check" size={32} color={colors.ink} strokeWidth={2.2} />
           </View>
         </Animated.View>
-        <T v="title42" size={windowH < 720 ? 32 : 38} style={{ marginTop: 12 }} accessibilityRole="header">
+        <T v={windowH < 720 ? "title30" : "title34"} style={{ marginTop: 12 }} accessibilityRole="header">
           {fmt(declined ? g.confirm.thanks : g.confirm.onTheList, { name: first })}
         </T>
         <T v="body15" color={colors.ivory70} style={{ marginTop: 6 }}>

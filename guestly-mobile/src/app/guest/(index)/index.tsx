@@ -238,7 +238,7 @@ export default function GuestHome() {
 
           {!compact && days != null ? (
             <Row gap={16} style={{ paddingHorizontal: 4, paddingTop: 4 }}>
-              <T v="display60" size={60} accessibilityElementsHidden importantForAccessibility="no">
+              <T v="display60" accessibilityElementsHidden importantForAccessibility="no">
                 {days}
               </T>
               <View style={styles.countText} accessible accessibilityLabel={daysLine ?? undefined}>
@@ -274,7 +274,7 @@ function Tile({ icon, label, onPress, wide }: { icon: IconName; label: string; o
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.tile, wide && styles.tileHalf, pressed && styles.tilePressed]}>
       <Icon name={icon} size={24} color={colors.goldLight} />
-      <T v="meta13" size={14} color={colors.ivory70} center numberOfLines={2} style={{ minHeight: 36 }}>
+      <T v="caption14" color={colors.ivory70} center numberOfLines={2} style={{ minHeight: 36 }}>
         {label}
       </T>
     </Pressable>

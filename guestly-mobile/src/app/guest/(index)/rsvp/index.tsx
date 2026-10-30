@@ -227,7 +227,7 @@ export default function RsvpAnswers() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: restPad + 16 }}
       >
         <View onLayout={mark("top")} style={styles.top}>
-          <T v="title42" size={40} accessibilityRole="header">
+          <T v="screen" accessibilityRole="header">
             {g.rsvp.title}
           </T>
           {payload ? (
@@ -280,7 +280,7 @@ export default function RsvpAnswers() {
                   </T>
                   {p.you ? (
                     <View style={styles.youPill}>
-                      <T v="meta13" size={13} color={colors.muted}>
+                      <T v="caption14" color={colors.muted}>
                         {g.rsvp.you}
                       </T>
                     </View>
@@ -299,12 +299,12 @@ export default function RsvpAnswers() {
                         {need ? (
                           <Row gap={4}>
                             <Icon name="warning" size={14} color={colors.ink} />
-                            <T v="meta13" size={13} color={colors.ink} style={{ fontFamily: fonts.bodySemibold }}>
+                            <T v="caption14" color={colors.ink} style={{ fontFamily: fonts.bodySemibold }}>
                               {g.rsvp.missing}
                             </T>
                           </Row>
                         ) : e.time || e.cost ? (
-                          <T v="meta13" size={13} color={colors.muted}>
+                          <T v="caption14" color={colors.muted}>
                             {[e.time, e.cost].filter(Boolean).join(" · ")}
                           </T>
                         ) : null}
@@ -429,7 +429,7 @@ function PaperSegment({ value, options, onChange, label, need }: { value: Answer
             hitSlop={{ top: 4, bottom: 4 }}
             style={[styles.segOpt, on && styles.segOn]}
           >
-            <T v="meta13" size={14} color={colors.ink} center numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: on ? fonts.bodySemibold : fonts.bodyMedium }}>
+            <T v="caption14" color={colors.ink} center numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: on ? fonts.bodySemibold : fonts.bodyMedium }}>
               {o.label}
             </T>
           </Pressable>

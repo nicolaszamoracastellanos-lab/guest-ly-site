@@ -828,11 +828,13 @@ export function TopBar({ title, onBack, right, left }: { title?: string; onBack?
   );
 }
 
-export function BigTitle({ label, title, sub, size = 42 }: { label?: string; title: string; sub?: string; size?: number }) {
+/** A screen title. `size` picks a ramp step: 42 the screen title, 38 a
+ *  sub-screen, 34 a sheet or a dense form. */
+export function BigTitle({ label, title, sub, size = 42 }: { label?: string; title: string; sub?: string; size?: 34 | 38 | 42 }) {
   return (
     <Stack gap={6}>
       {label ? <SectionLabel color={colors.goldLight}>{label}</SectionLabel> : null}
-      <T v="title42" size={size}>
+      <T v={size === 34 ? "title30" : size === 38 ? "title34" : "screen"}>
         {title}
       </T>
       {sub ? (
@@ -1293,7 +1295,7 @@ export function BriefingRow({ text, tone, onPress }: { text: string; tone: "risk
 export function StatTile({ value, label, color = colors.ivory, kind = "glass", style }: { value: string; label: string; color?: string; kind?: CardKind; style?: StyleProp<ViewStyle> }) {
   return (
     <Card kind={kind} radiusKey="tile" padding={12} style={[{ flex: 1, minWidth: 0, gap: 4, alignSelf: "stretch" }, style]}>
-      <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1} style={{ fontVariant: ["lining-nums"] }}>
+      <T v="title30" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1} style={{ fontVariant: ["lining-nums"] }}>
         {value}
       </T>
       {/* A single word shrinks rather than break mid word. A phrase wraps at its

@@ -43,7 +43,7 @@ export default function BrainSection() {
   return (
     <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={60} keyboard>
       <>
-        <BigTitle title={title} size={36} />
+        <BigTitle title={title} size={38} />
         {!canEdit ? (
           <T v="meta13" color={colors.ivory55} style={{ marginTop: 8 }}>
             {c.readOnly}

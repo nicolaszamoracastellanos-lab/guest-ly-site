@@ -107,7 +107,7 @@ export function VendorFormScreen() {
   return (
     <Screen header={<TopBar onBack={() => leave(back)} title={copy.title} />} bottomInset={40} keyboard>
       <>
-        <BigTitle title={editing ? copy.edit : copy.add} size={36} />
+        <BigTitle title={editing ? copy.edit : copy.add} size={38} />
         <Stack gap={12} style={{ marginTop: 18 }}>
           <TextField label={copy.name} value={form.name} onChange={(v) => setForm({ ...form, name: v })} autoCapitalize="words" />
           <View style={{ gap: 6 }}>

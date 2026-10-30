@@ -87,7 +87,7 @@ export function GuestDayOfView() {
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           {(data?.events ?? []).map((e, i) => (
             <Row key={e.id} gap={14} style={[styles.runRow, i === (data?.events.length ?? 0) - 1 && { borderBottomWidth: 0 }]}>
-              <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: lang === "en" ? 78 : 62 }}>
+              <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: lang === "en" ? 78 : 62 }}>
                 {clockLabel(e.start_minutes, e.time, lang)}
               </T>
               <T

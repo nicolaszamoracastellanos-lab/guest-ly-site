@@ -303,7 +303,7 @@ function Page({ i, n, step, active, pos, width, reduced, t, titleRef }: { i: num
             {fmt(t.stepOf, { n: i + 1, total: n })}
           </T>
           <View ref={titleRef} accessible accessibilityRole="header" accessibilityLabel={c.title} style={{ marginTop: 6 }}>
-            <T v="title34" size={34}>
+            <T v="title30">
               {c.title}
             </T>
           </View>

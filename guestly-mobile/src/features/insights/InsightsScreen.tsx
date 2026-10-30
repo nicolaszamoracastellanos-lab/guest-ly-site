@@ -88,7 +88,7 @@ export function InsightsScreen({ role = "couple" }: { role?: "couple" | "planner
 
   return (
     <Screen query={mainQuery} refresh header={<TopBar onBack={back} />} bottomInset={40}>
-      <BigTitle title={c.title} sub={c.subtitle} size={36} />
+      <BigTitle title={c.title} sub={c.subtitle} size={38} />
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 20 }}>
           <Skeleton h={80} />

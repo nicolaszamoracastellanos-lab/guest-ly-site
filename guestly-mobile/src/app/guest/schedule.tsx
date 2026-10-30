@@ -60,7 +60,7 @@ export default function GuestSchedule() {
         <T v="label11" color="rgba(247,243,236,0.86)" numberOfLines={2}>
           {longDate(data?.wedding_date ?? session?.tenant.wedding_date, lang)}
         </T>
-        <T v="title42" size={40} accessibilityRole="header" style={{ marginTop: 4 }}>
+        <T v="screen" accessibilityRole="header" style={{ marginTop: 4 }}>
           {g.schedule.title}
         </T>
       </PhotoHero>
@@ -101,7 +101,7 @@ export default function GuestSchedule() {
                     style={({ pressed }) => [styles.row, i > 0 && !newDay && styles.rowLine, pressed && { backgroundColor: colors.ivory09 }]}
                   >
                     <View style={styles.time}>
-                      <T v="title26" size={24} color={skip ? colors.ivory55 : colors.ivory} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                      <T v="name24" color={skip ? colors.ivory55 : colors.ivory} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                         {hm}
                       </T>
                       {ampm ? (

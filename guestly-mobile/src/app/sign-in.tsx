@@ -264,7 +264,7 @@ export default function SignIn() {
               <Row gap={6} style={{ justifyContent: "center" }}>
                 {cells.map((d, i) => (
                   <View key={i} style={[styles.cell, d ? styles.cellFilled : null, i === activeCell && busy !== "code" ? styles.cellActive : null, error ? styles.cellError : null]}>
-                    <T v="title30" size={26} color={colors.ivory} center style={{ fontFamily: fonts.displaySemibold }}>
+                    <T v="name24" color={colors.ivory} center style={{ fontFamily: fonts.displaySemibold }}>
                       {d}
                     </T>
                   </View>

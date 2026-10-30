@@ -50,7 +50,7 @@ export default function BrainPreview() {
   return (
     <Screen header={<TopBar onBack={back} title={c.title} />} bottomInset={40} keyboard>
       <>
-        <BigTitle title={c.askTitle} size={36} />
+        <BigTitle title={c.askTitle} size={38} />
         <View style={{ marginTop: 16 }}>
           <Segmented<Mode> value={mode} options={options} onChange={setMode} />
         </View>

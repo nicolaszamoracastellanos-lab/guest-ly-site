@@ -113,7 +113,7 @@ export default function Settings() {
       <Row gap={14} style={{ marginTop: 8 }}>
         <Avatar initials={initials} size={56} />
         <View style={{ flex: 1, gap: 3 }}>
-          <T v="title30" size={26}>
+          <T v="name24">
             {me?.user.email.split("@")[0] ?? ""}
           </T>
           <T v="meta13" color={colors.ivory55}>

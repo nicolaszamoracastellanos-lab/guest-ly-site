@@ -117,7 +117,7 @@ export default function VerifyEmail() {
                 error ? styles.cellError : null,
               ]}
             >
-              <T v="title30" size={28} color={colors.ivory} center style={{ fontFamily: fonts.displaySemibold }}>
+              <T v="name24" color={colors.ivory} center style={{ fontFamily: fonts.displaySemibold }}>
                 {d}
               </T>
             </View>

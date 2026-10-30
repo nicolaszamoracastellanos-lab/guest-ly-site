@@ -89,7 +89,7 @@ function PlannerToolsBody() {
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Screen query={home} refresh topInset={false} padded={false} backdrop={false}>
         <PhotoHero motif={motifVariant(slug)} aspect={390 / 300} minHeight={260} maxHeightFraction={0.4} gradient={0.6}>
-          <T v="title42" size={40} numberOfLines={2}>
+          <T v="screen" numberOfLines={2}>
             {me?.tenant.couple_names ?? ""}
           </T>
           <T v="body15" color={colors.ivory90} style={{ marginTop: 4 }}>

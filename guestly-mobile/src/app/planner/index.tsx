@@ -291,7 +291,7 @@ function PlannerTodayBody() {
             </Pressable>
           ) : null}
         </Row>
-        <T v="title42" size={40} style={{ marginTop: 4 }}>
+        <T v="screen" style={{ marginTop: 4 }}>
           {name ? fmt(c.hello, { name: cap(name) }) : c.helloNoName}
         </T>
         {sub ? (

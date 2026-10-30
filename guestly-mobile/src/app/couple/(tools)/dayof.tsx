@@ -106,10 +106,10 @@ export default function CoupleDayOf() {
         <View>
           <SectionLabel color={colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>
           <Row gap={6} align="baseline">
-            <T v="display60" size={80} style={{ lineHeight: 78, letterSpacing: -1 }}>
+            <T v="numeral80" style={{ lineHeight: 78, letterSpacing: -1 }}>
               {data ? data.parties_in : "·"}
             </T>
-            <T v="title26" size={28} color={colors.ivory55}>
+            <T v="name24" color={colors.ivory55}>
               / {data?.parties_total ?? "·"}
             </T>
           </Row>
@@ -150,7 +150,7 @@ export default function CoupleDayOf() {
         ) : null}
         {blocks.map((b, i, arr) => (
           <Row key={b.id} gap={14} style={{ minHeight: 48, paddingVertical: 6, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
-            <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 62 }}>
+            <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 62 }}>
               {b.starts_at.slice(0, 5)}
             </T>
             <View style={{ flex: 1 }}>

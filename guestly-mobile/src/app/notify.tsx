@@ -124,7 +124,7 @@ export default function NotifyAsk() {
           <Icon name="bell" size={26} color={colors.night} />
         </View>
         <Stack gap={8} style={{ marginTop: compact ? 14 : 20 }}>
-          <T v="title42" size={compact ? 32 : 38}>
+          <T v={compact ? "title30" : "title34"}>
             {surface === "guest" && couple ? fmt(copy.notify.title, { couple }) : copy.notify.coupleTitle}
           </T>
           <T v="body15" color={colors.ivory55}>

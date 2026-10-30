@@ -119,7 +119,7 @@ export default function InviteCode() {
         ) : null}
         <Stack gap={8} style={{ marginTop: showCard ? 20 : 8 }}>
           {tight ? null : <SectionLabel color={colors.goldLight}>{copy.invite.label}</SectionLabel>}
-          <T v="title42" size={height < 700 ? 32 : 38}>
+          <T v={height < 700 ? "title30" : "title34"}>
             {copy.invite.title}
           </T>
           {tight ? null : (
@@ -138,7 +138,7 @@ export default function InviteCode() {
         >
           {cells.map((c, i) => (
             <View key={i} style={[styles.cell, i === code.length && styles.cellActive]}>
-              <T v="title30" size={32} color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
+              <T v="title30" color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
                 {c}
               </T>
             </View>

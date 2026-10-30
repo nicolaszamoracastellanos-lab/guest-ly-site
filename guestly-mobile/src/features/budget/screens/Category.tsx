@@ -81,7 +81,7 @@ export function BudgetCategoryScreen({ id, b, add }: { id: string; b?: string; a
         />
       }
     >
-      <BigTitle title={title} sub={group ? `${formatMoney(group.totalBase, currency, lang)} · ${copy.paid.toLowerCase()} ${formatMoney(group.paidBase, currency, lang)}` : undefined} size={36} />
+      <BigTitle title={title} sub={group ? `${formatMoney(group.totalBase, currency, lang)} · ${copy.paid.toLowerCase()} ${formatMoney(group.paidBase, currency, lang)}` : undefined} size={38} />
 
       {isLoading && !data ? (
         <Stack gap={10} style={{ marginTop: 20 }}>

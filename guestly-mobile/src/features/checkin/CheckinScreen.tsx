@@ -318,7 +318,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
         {card ? (
           <Card kind="paper" padding={18}>
             <Row style={{ justifyContent: "space-between" }}>
-              <T v="title30" size={26} color={colors.ink} style={{ flex: 1 }}>
+              <T v="name24" color={colors.ink} style={{ flex: 1 }}>
                 {guest?.name ?? card.pending?.name ?? ""}
               </T>
               <View style={styles.okPill}>
@@ -347,7 +347,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
         {welcomeToggle ? <View style={{ alignItems: "flex-start" }}>{welcomeToggle}</View> : null}
         <Row style={{ justifyContent: "space-between" }}>
           <Row gap={6} align="baseline">
-            <T v="title26" size={22}>
+            <T v="name24">
               {dayof?.parties_in ?? "·"}
             </T>
             <T v="meta13" color={colors.ivory70}>

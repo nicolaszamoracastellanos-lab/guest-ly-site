@@ -48,7 +48,7 @@ export default function BrainVersions() {
 
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} title={c.title} />} bottomInset={40}>
-      <BigTitle title={c.versionsTitle} size={36} />
+      <BigTitle title={c.versionsTitle} size={38} />
       {notice ? (
         <T v="body15" color={colors.greenText} style={{ marginTop: 10 }}>
           {notice}
