@@ -11,9 +11,10 @@ import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { get } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { checkIn, drainQueue, isForOpenWedding, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
+import { QueueChip } from "./QueueChip";
 import { useCoupleDayOf, usePlannerCheckin, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast } from "@/ui";
 import { reservedRegionsAvailable, useReservedRegions } from "@/lib/duo";
 import { WelcomeAccessory } from "../../../modules/guestly-duo/src/WelcomeAccessoryView";
 import { can, useUserSession } from "@/lib/session";
@@ -96,9 +97,23 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
     if (!permission?.granted) void requestPermission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Sends what waits and tells the door what it could not settle: parties
+  // already in at another door (a conflict, not an error) and scans the
+  // portal refused for good (guest removed, another wedding's pass).
+  const drainNow = useCallback(async () => {
+    try {
+      const r = await drainQueue();
+      if (r.refused.length) toast(fmt(copy.checkin.refusedToast, { names: r.refused.join(", ") }));
+      else if (r.already.length) toast(fmt(copy.checkin.conflictToast, { names: r.already.join(", ") }));
+    } catch {
+      // The queue keeps everything it could not send.
+    }
+    void refreshQueue();
+    void qc.invalidateQueries({ queryKey: [countsKey] });
+  }, [copy.checkin, qc, refreshQueue, countsKey]);
   useEffect(() => {
-    if (online) drainQueue().then(() => { void refreshQueue(); void qc.invalidateQueries({ queryKey: [countsKey] }); });
-  }, [online, qc, refreshQueue, countsKey]);
+    if (online) void drainNow();
+  }, [online, drainNow]);
   useEffect(() => {
     const term = q.trim();
     const t = setTimeout(async () => {
@@ -181,7 +196,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
       <View style={[styles.root, side]}>
         {welcome}
         <View style={{ height: topH, paddingTop: top }}>
-          <TopBar onBack={back} title={copy.checkin.reception} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
+          <TopBar onBack={back} title={copy.checkin.reception} right={<QueueChip onSend={() => void drainNow()} />} />
           {/* Tap the result to clear it: the outer-display welcome goes back to
               "show your pass" and the counter returns for the next guest. */}
           <Pressable style={styles.receptionResult} accessibilityLiveRegion="polite" accessibilityRole={card ? "button" : undefined} accessibilityLabel={card ? copy.common.done : undefined} disabled={!card} onPress={() => setCard(null)} testID="checkin-reception-result">
@@ -268,7 +283,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
       {/* The search and its results ride the keyboard frame by frame (build 12). */}
       <KeyboardLiftView behavior="padding" style={{ flex: 1 }}>
       <View style={{ paddingTop: top }}>
-        <TopBar onBack={back} title={copy.checkin.title} right={queued || !online ? <Badge label={fmt(copy.checkin.offlineQueued, { n: queued })} kind="amber" /> : undefined} />
+        <TopBar onBack={back} title={copy.checkin.title} right={<QueueChip onSend={() => void drainNow()} />} />
       </View>
       {denied && !typing ? (
         <View style={{ marginTop: 36, paddingHorizontal: 32, gap: 14, alignItems: "stretch" }}>

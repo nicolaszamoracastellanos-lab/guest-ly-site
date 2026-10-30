@@ -8,10 +8,47 @@
 // delivered. An entry is dropped only when the server answered with a final
 // refusal (4xx other than 401, 408 and 429); offline, timeouts, 5xx, rate
 // limits and an expired session all keep it for the next drain.
-
+//
+// Persistence (HH Oct 30 2026, checked): AsyncStorage 2.2 writes to the app's
+// Application Support directory on iOS and to SQLite on Android, so the queue
+// survives a crash, a force quit and a reboot; the root layout drains it at
+// launch, on foreground and when the network returns. No MMKV or SQLite
+// module is needed for a list this small.
+//
+// Conflicts: every entry carries a client_event_id, so a replay is a no-op on
+// the portal. A party already checked in at another door answers
+// `already: true`; the drain now reports those names and the names the
+// server refused for good, and listeners (the door chip) hear every change.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { post, ApiFailure, getCredential } from "@/lib/api";
+import { isConflict, settle, type Outcome } from "@/lib/queueMath";
+
+/** What a drain did. `already` and `refused` are guest names, for the door. */
+export type DrainResult = { sent: number; remaining: number; already: string[]; refused: string[] };
+
+// ---------------------------------------------------------------- listeners
+
+type Listener = (pendingForOpenWedding: number) => void;
+const listeners = new Set<Listener>();
+/** Called with the open wedding's pending count after every change. */
+export function subscribeQueue(fn: Listener): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+function announce(items: QueuedCheckin[]) {
+  if (!listeners.size) return;
+  const n = items.filter(isForOpenWedding).length;
+  listeners.forEach((fn) => {
+    try {
+      fn(n);
+    } catch {
+      // A listener's failure never breaks the queue.
+    }
+  });
+}
 
 export const QUEUE_KEY = "gl.checkin.queue";
 
@@ -90,6 +127,7 @@ async function read(): Promise<QueuedCheckin[]> {
 async function write(items: QueuedCheckin[]) {
   if (items.length) await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(items));
   else await AsyncStorage.removeItem(QUEUE_KEY);
+  announce(items);
 }
 
 export function readQueue(): Promise<QueuedCheckin[]> {
@@ -106,7 +144,10 @@ export function enqueue(item: QueuedCheckin): Promise<void> {
 
 /** Empties the queue (sign out: another account must never send these). */
 export function clearQueue(): Promise<void> {
-  return serial(() => AsyncStorage.removeItem(QUEUE_KEY));
+  return serial(async () => {
+    await AsyncStorage.removeItem(QUEUE_KEY);
+    announce([]);
+  });
 }
 
 /** True when the entry should stay queued after this failure. */
@@ -131,45 +172,56 @@ export async function checkIn(raw: QueuedCheckin): Promise<CheckinResult | null>
   }
 }
 
-let draining: Promise<{ sent: number; remaining: number }> | null = null;
+let draining: Promise<DrainResult> | null = null;
+
+/** True while a drain is sending (the chip says "Sending"). */
+export function isDraining(): boolean {
+  return draining !== null;
+}
 
 /** Replays the queue in order. Stops at the first failure that can be
  *  retried; drops only entries the server refused for good. One drain at a
  *  time: a second caller gets the running one. The storage lock is held only
  *  for the short read and the final write, never across the network, so a
  *  check-in queued at the door while a drain runs is saved at once. */
-export function drainQueue(): Promise<{ sent: number; remaining: number }> {
+export function drainQueue(): Promise<DrainResult> {
   if (draining) return draining;
   draining = (async () => {
     const snapshot = await readQueue();
-    const done = new Set<string>();
-    let sent = 0;
+    // Another wedding's entry waits for its wedding: sent now it would hit the
+    // wrong tenant, be refused as "guest not found" and be dropped for good.
     const open = openTenant();
-    for (const item of snapshot) {
-      // Another wedding's entry waits for its wedding: sent now it would hit the
-      // wrong tenant, be refused as "guest not found" and be dropped for good.
-      if (item.tenant && open && item.tenant !== open) continue;
+    const eligible = snapshot.filter((item) => !(item.tenant && open && item.tenant !== open));
+    const outcomes: Outcome[] = [];
+    for (const item of eligible) {
       try {
-        await send(item);
-        sent += 1;
-        done.add(item.client_event_id);
+        const result = await send(item);
+        outcomes.push({ kind: "sent", already: isConflict(result) });
       } catch (err) {
-        if (retryable(err)) break;
+        if (retryable(err)) {
+          outcomes.push({ kind: "retry" });
+          break;
+        }
         // Guest removed, forbidden, bad payload: a retry cannot fix it.
-        done.add(item.client_event_id);
+        outcomes.push({ kind: "refused" });
       }
     }
+    const { done, sent, already, refused } = settle(eligible, outcomes);
     // Re-read under the lock and remove only what this drain settled, so
     // anything enqueued meanwhile survives.
     const remaining = await serial(async () => {
       const now = await read();
       const left = now.filter((i) => !done.has(i.client_event_id));
       if (done.size) await write(left);
-      return left.length;
+      return left.filter(isForOpenWedding).length;
     });
-    return { sent, remaining };
+    return { sent, remaining, already, refused };
   })().finally(() => {
     draining = null;
+    // And that it ended, with the count left.
+    void readQueue().then(announce);
   });
+  // Listeners learn a drain started (the chip turns to "Sending").
+  void readQueue().then(announce);
   return draining;
 }
