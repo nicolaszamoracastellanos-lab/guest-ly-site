@@ -29,7 +29,6 @@ import { DirectionsSheet, SiteSectionSheet } from "@/features/guest/sheets";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useRsvpDraft } from "@/features/guest/state";
 
-const fallback = require("../../../../assets/photos/bluehour.jpg");
 
 type SheetName = "directions" | "dress" | "hotels" | "gifts" | null;
 
@@ -165,7 +164,7 @@ export default function GuestHome() {
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={colors.goldLight} colors={[colors.gold]} progressBackgroundColor={colors.night} />}
       >
         <PhotoHero
-          source={hero ? { uri: hero } : fallback}
+          source={hero ? { uri: hero } : null}
           // Signed URLs change on every request; the path does not (I17).
           cacheKey={hero ? `guest-hero-${hero.split("?")[0]}` : undefined}
           focal={focal}

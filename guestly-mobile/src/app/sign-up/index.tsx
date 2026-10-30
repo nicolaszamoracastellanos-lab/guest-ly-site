@@ -6,7 +6,7 @@
 // they create the account, and the session provider routes it to /setup.
 
 import React, { useRef, useState } from "react";
-import { View, StyleSheet, Image, Linking, useWindowDimensions, type TextInput, type TextInputInstance } from "react-native";
+import { View, StyleSheet, Linking, useWindowDimensions, type TextInput, type TextInputInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
@@ -14,13 +14,12 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { supabaseConfigured } from "@/lib/supabase";
 import { useSafeBack } from "@/lib/nav";
-import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel } from "@/ui";
+import { Screen, TopBar, LangToggle, Wordmark, T, Button, Input, Stack, Row, Hairline, SectionLabel, NightMotif } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { COPY } from "@/features/signup/copy";
 import { startSignup } from "@/features/signup/api";
 import { appleAvailable, authErrorKind, signInWithApple, signInWithGoogle } from "@/features/signup/social";
 
-const photo = require("../../../assets/photos/courtyard.jpg");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function SignUp() {
@@ -90,7 +89,7 @@ export default function SignUp() {
     <Screen header={<TopBar onBack={back} right={<LangToggle value={lang} onChange={setLang} />} />} bottomInset={24} padded={false} keyboard>
       <>
         <View style={[styles.hero, { height: heroH }]}>
-          <Image source={photo} style={FILL} resizeMode="cover" />
+          <NightMotif variant={2} style={FILL} />
           <LinearGradient colors={["rgba(13,17,23,0.1)", "rgba(13,17,23,0.6)", colors.night]} style={FILL} />
         </View>
         <View style={{ paddingHorizontal: 28, marginTop: -overlap }}>

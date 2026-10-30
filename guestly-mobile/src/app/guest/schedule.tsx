@@ -25,7 +25,6 @@ import { GUEST_COPY } from "@/features/guest/copy";
 // tolerantly so the screen works before and after that deploy.
 type ScheduleData = { events: ScheduleEvent[]; ics_all_url?: string | null };
 
-const photo = require("../../../assets/photos/ceremony.jpg");
 
 export default function GuestSchedule() {
   const copy = useCopy();
@@ -57,7 +56,7 @@ export default function GuestSchedule() {
   return (
     // backdrop={false}: plain night behind the photo, no seam (I8).
     <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh>
-      <PhotoHero source={photo} focal={{ x: 0.5, y: 0.46 }} flow minHeight={heroH} gradient={0.6} flowTopSpace={40} bottomPadding={16}>
+      <PhotoHero motif={2} flow minHeight={heroH} gradient={0.6} flowTopSpace={40} bottomPadding={16}>
         <T v="label11" color="rgba(247,243,236,0.86)" numberOfLines={2}>
           {longDate(data?.wedding_date ?? session?.tenant.wedding_date, lang)}
         </T>

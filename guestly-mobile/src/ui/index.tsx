@@ -34,6 +34,7 @@ export { colors, radius, space, COLUMN } from "./tokens";
 export { useBottomClearance, useTabBarTop } from "./chrome";
 export { LockCover } from "./LockCover";
 export { PhotoHero, focalPosition } from "./PhotoHero";
+export { NightMotif, motifVariant } from "./NightMotif";
 export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
 // v1.2 build 12: keyboard primitives (react-native-keyboard-controller) and toasts.
 export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, FormGroup, KeyboardScope, TOOLBAR_SPACE, useInFormScope, useKeepFocusedVisible, useMultilineRoom } from "./keyboard";

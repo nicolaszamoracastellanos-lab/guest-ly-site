@@ -23,7 +23,7 @@ import { fmt, plural, longDate, useCopy, useLang } from "@/i18n";
 import { usePlannerHome } from "@/lib/hooks";
 import { can, useTenantKey, useUserSession } from "@/lib/session";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, T, Sheet, Button, Stack, SectionLabel, Icon, PhotoHero, Row, useTopInset, useLayout, type IconName } from "@/ui";
+import { Screen, T, Sheet, Button, Stack, SectionLabel, Icon, PhotoHero, Row, useTopInset, motifVariant, useLayout, type IconName } from "@/ui";
 import { colors, radius, space, COLUMN } from "@/ui/tokens";
 import { useBudgetSurface } from "@/features/budget/hooks";
 import { usePlannerSeating } from "@/features/seating/hooks";
@@ -31,9 +31,6 @@ import { usePlannerRunsheet } from "@/features/runsheet/hooks";
 import { COPY as BCOPY } from "@/features/broadcasts/copy";
 import { PlannerTop, usePlannerBoardQ, daysToGo } from "@/app/planner/_layout";
 
-// Stock photos (no couple photo reaches the planner): one per wedding, the
-// same every time for the same wedding.
-const PHOTOS = [require("../../../../assets/photos/courtyard.jpg"), require("../../../../assets/photos/ceremony.jpg"), require("../../../../assets/photos/bluehour.jpg"), require("../../../../assets/photos/dance.jpg")];
 
 /** Each tile is gated by the planner capability of the same name. */
 type Tool = "budget" | "tasks" | "seating" | "runsheet" | "checkin" | "conversations" | "analytics" | "vendors" | "broadcasts" | "coordinator";
@@ -67,7 +64,6 @@ function PlannerToolsBody() {
   const home = usePlannerHome();
   const [locked, setLocked] = useState<Tool | null>(null);
   const slug = me?.tenant.slug ?? "";
-  const photo = PHOTOS[[...slug].reduce((n, ch) => n + ch.charCodeAt(0), 0) % PHOTOS.length];
   const days = daysToGo(me, home.data?.weddings);
   const parties = home.data?.totals.parties ?? 0;
   const pendingParties = home.data?.totals.pending_parties ?? 0;
@@ -92,7 +88,7 @@ function PlannerToolsBody() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Screen query={home} refresh topInset={false} padded={false} backdrop={false}>
-        <PhotoHero source={photo} focal={{ x: 0.5, y: 0.45 }} aspect={390 / 300} minHeight={260} maxHeightFraction={0.4} gradient={0.6}>
+        <PhotoHero motif={motifVariant(slug)} aspect={390 / 300} minHeight={260} maxHeightFraction={0.4} gradient={0.6}>
           <T v="title42" size={40} numberOfLines={2}>
             {me?.tenant.couple_names ?? ""}
           </T>

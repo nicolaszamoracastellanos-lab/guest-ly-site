@@ -23,7 +23,6 @@ import { DressCodeSheet } from "@/features/guest/DressCodeSheet";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useGuestSite, sectionsOf } from "@/features/site/hooks";
 
-const storyFallback = require("../../../../assets/photos/walk.jpg");
 
 export default function GuestInfo() {
   const copy = useCopy();
@@ -79,7 +78,7 @@ export default function GuestInfo() {
       <Stack gap={16} style={{ paddingHorizontal: 16, marginTop: 8 }}>
         {siteOff ? null : (
           <Pressable testID="info-story" onPress={() => go("/guest/site/story")} accessibilityRole="button" accessibilityLabel={g.info.story} style={({ pressed }) => [styles.story, pressed && { transform: [{ scale: 0.99 }] }]}>
-            <PhotoHero source={story?.image_url ? { uri: story.image_url } : storyFallback} height={196} gradient={0.6} topShade={false} focal={{ x: 0.5, y: 0.6 }} gutter={16} bottomPadding={16}>
+            <PhotoHero source={story?.image_url ? { uri: story.image_url } : null} motif={3} height={196} gradient={0.6} topShade={false} focal={{ x: 0.5, y: 0.6 }} gutter={16} bottomPadding={16}>
               <T v="label11" color="rgba(247,243,236,0.86)">
                 {couple}
               </T>

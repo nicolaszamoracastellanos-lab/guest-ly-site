@@ -9,18 +9,17 @@
 // Build 12: no bell (couple replies land in the Ask tab, which shows a dot).
 
 import React from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useIsFocused } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestDayOf } from "@/lib/hooks";
-import { Screen, ScreenBannerSlot, T, Row, Gem, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
+import { Screen, ScreenBannerSlot, T, Row, Gem, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset, NightMotif } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
 import { clockLabel } from "@/features/guest/format";
 import { openMaps, openUrlSafe } from "@/features/guest/links";
 import { useRefetchOnRefocus } from "@/features/guest/focus";
 
-const photo = require("../../../assets/photos/courtyard.jpg");
 
 export function GuestDayOfView() {
   const copy = useCopy();
@@ -45,7 +44,7 @@ export function GuestDayOfView() {
       <View style={[styles.hero, { paddingTop: top + 64 }]}>
         {/* COVER wrapper: the hero has padding (see tokens.ts). */}
         <View style={COVER}>
-          <Image source={photo} style={FILL} resizeMode="cover" />
+          <NightMotif variant={0} style={FILL} />
           <LinearGradient colors={["rgba(8,11,16,0.34)", "rgba(8,11,16,0.12)", "rgba(13,17,23,0.66)", colors.night]} locations={[0, 0.25, 0.58, 1]} style={COVER} />
         </View>
         <Row style={[styles.top, { top }]}>

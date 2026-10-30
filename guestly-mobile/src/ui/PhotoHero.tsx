@@ -26,12 +26,16 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, space, COVER, FILL, PHOTO_FOCAL } from "./tokens";
+import { NightMotif } from "./NightMotif";
 
 export type PhotoFocal = { x: number; y: number };
 
 export type PhotoHeroProps = {
-  /** A bundled photo (`require(...)`) or a remote one (`{ uri }`). */
-  source: ImageProps["source"];
+  /** A remote photo (`{ uri }`, the couple's own). Without one the hero is the
+   *  night surface with the diamond motif (no stock photography, HH Oct 30). */
+  source?: ImageProps["source"] | null;
+  /** Placement of the motif's gem when there is no photo. */
+  motif?: number;
   /** Point to keep in view, as fractions (0 to 1) of the photo's width and
    *  height. Default `{ x: 0.5, y: 0.3 }`. Values out of range are clamped;
    *  `null`/`undefined` from the server falls back to the default. */
@@ -89,6 +93,7 @@ function topInsetOf(insetTop: number): number {
 
 export function PhotoHero({
   source,
+  motif = 0,
   focal,
   height,
   aspect,
@@ -131,6 +136,7 @@ export function PhotoHero({
   return (
     <View testID={testID} style={[styles.hero, box, flow && { paddingTop: topInset + flowTopSpace }, style]}>
       <View style={COVER} pointerEvents="none">
+        {src ? (
         <Image
           source={src}
           placeholder={placeholder}
@@ -142,6 +148,9 @@ export function PhotoHero({
           accessibilityLabel={accessibilityLabel}
           accessibilityIgnoresInvertColors
         />
+        ) : (
+          <NightMotif variant={motif} style={FILL} />
+        )}
         {topShade ? <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0)"]} style={[styles.topShade, { height: insets.top + 56 }]} /> : null}
         <LinearGradient colors={["rgba(13,17,23,0)", "rgba(13,17,23,0.55)", colors.night]} locations={[start, mid, 1]} style={COVER} />
       </View>

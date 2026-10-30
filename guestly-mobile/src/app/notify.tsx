@@ -6,7 +6,7 @@
 // stays for Info's switch, couple and planner Settings, and deep links.
 
 import React, { useState } from "react";
-import { View, StyleSheet, Image, useWindowDimensions, Alert, Linking, Platform } from "react-native";
+import { View, StyleSheet, useWindowDimensions, Alert, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,10 +14,9 @@ import { fmt, useCopy } from "@/i18n";
 import { useSession } from "@/lib/session";
 import { ensureAndroidChannels, registerPush, requestPushToken, savePushPrefs } from "@/lib/push";
 import { useSafeBack } from "@/lib/nav";
-import { Screen, T, Button, Card, Toggle, Stack, Icon, Row } from "@/ui";
+import { Screen, T, Button, Card, Toggle, Stack, Icon, Row, NightMotif } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 
-const photo = require("../../assets/photos/bluehour.jpg");
 
 export default function NotifyAsk() {
   const copy = useCopy();
@@ -117,7 +116,7 @@ export default function NotifyAsk() {
     // Plain night behind the photo, so its gradient ends without a seam (I8).
     <Screen bottomInset={16} padded={false} topInset={false} backdrop={false}>
       <View style={[styles.hero, { height: heroH }]}>
-        <Image source={photo} style={FILL} resizeMode="cover" />
+        <NightMotif variant={3} style={FILL} />
         <LinearGradient colors={["rgba(13,17,23,0.2)", "rgba(13,17,23,0.7)", colors.night]} style={FILL} />
       </View>
       <View style={{ paddingHorizontal: 28, marginTop: -overlap }}>

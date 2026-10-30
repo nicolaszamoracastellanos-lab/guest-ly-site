@@ -29,7 +29,6 @@ import { GUEST_COPY } from "@/features/guest/copy";
 import { useNotifLater } from "@/features/guest/state";
 import { enableGuestNotifications } from "@/features/guest/notifications";
 
-const photo = require("../../../../../assets/photos/toast.jpg");
 const PAPER_GREEN = "#03694c";
 const PAPER_LINE = "rgba(20,17,12,0.1)";
 
@@ -213,8 +212,7 @@ export default function RsvpConfirm() {
     // Edge to edge: no header band, the photo starts at the top of the window.
     <Screen padded={false} topInset={false} backdrop={false} bottomInset={40}>
       <PhotoHero
-        source={photo}
-        focal={{ x: 0.5, y: 0.34 }}
+        motif={1}
         height={heroH}
         gradient={0.55}
         top={<IconButton name="x" onPress={leave} label={copy.common.close} style={{ marginLeft: -2 }} />}

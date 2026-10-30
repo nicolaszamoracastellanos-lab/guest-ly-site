@@ -19,11 +19,6 @@ import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel,
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, ProgressRing, fullDate, dayMonth, statusIcon } from "@/features/couple/ui";
 
-const photo = require("../../../assets/photos/hands.jpg");
-// Where the clasped hands and the ring sit in hands.jpg, as expo-image's
-// object position: 90% down keeps them in the upper half of the box, above
-// the names (I2).
-const HANDS_FOCAL = { x: 0.5, y: 0.9 };
 
 type BriefingLike = { text: string; href: string; tone: "risk" | "warn" | "info"; kind?: unknown; target_id?: unknown; filter?: unknown };
 
@@ -71,7 +66,7 @@ export default function CoupleHome() {
     // under it so the fade has no seam (I8). Pull down to refresh (S2).
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh={() => Promise.all([mainQuery.refetch(), rsvps.refetch()])}>
-        <PhotoHero source={photo} focal={HANDS_FOCAL} flow minHeight={heroMin} maxHeightFraction={0.44} gradient={0.6} accessibilityLabel={couple}>
+        <PhotoHero motif={0} flow minHeight={heroMin} maxHeightFraction={0.44} gradient={0.6} accessibilityLabel={couple}>
           <SectionLabel color={colors.goldLight}>{c.home.yourWedding}</SectionLabel>
           <T v="title42" style={{ marginTop: 6 }}>
             {couple}
