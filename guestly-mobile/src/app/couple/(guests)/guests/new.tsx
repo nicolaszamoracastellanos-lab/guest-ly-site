@@ -5,13 +5,15 @@
 // it. Save closes at once with "Guest added." (View opens the new card).
 //
 // HH Oct 30 2026: "Choose from contacts" fills name, phone and email from the
-// people the couple picks, with iOS limited access (features/guests/contacts):
-// the system picker shares only those people, never the address book. While
-// access is limited, an inline Contact Access button under the name shares one
-// more matching person with a tap. Hidden on builds without the module.
+// people the couple picks (features/guests/contacts), never with a contacts
+// permission prompt: the system picker hands over only the person tapped, and
+// when the couple already chose limited access the iOS access picker shares
+// only the people chosen. Only while access is limited, an inline Contact
+// Access button under the name shares one more matching person with a tap.
+// Hidden on builds without the module.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Alert, Pressable, StyleSheet, Linking } from "react-native";
+import { View, Alert, Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
@@ -51,9 +53,13 @@ export default function NewGuest() {
   const nameRef = useRef(form.name);
   nameRef.current = form.name;
   useEffect(() => {
-    if (!canContacts) return;
-    void contactsAccess().then(setAccess);
-    // The inline button shared someone: offer the match for the typed name.
+    if (canContacts) void contactsAccess().then(setAccess);
+  }, [canContacts]);
+  // Only under limited access: the inline button shared someone, so offer the
+  // match for the typed name. With any other access nothing listens, so an
+  // address book change can never trigger a search of the whole book.
+  useEffect(() => {
+    if (access !== "limited") return;
     return onContactsChange(() => {
       void sharedMatching(nameRef.current).then((m) => {
         if (m.length === 1) fill(m[0]);
@@ -61,7 +67,7 @@ export default function NewGuest() {
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canContacts]);
+  }, [access]);
 
   function fill(p: PickedContact) {
     setChoices([]);
@@ -78,11 +84,6 @@ export default function NewGuest() {
     if (r.status === "picked") {
       if (r.contacts.length === 1) fill(r.contacts[0]);
       else setChoices(r.contacts);
-    } else if (r.status === "denied") {
-      Alert.alert(c.add.contactsOff, c.add.contactsOffBody, [
-        { text: copy.common.cancel, style: "cancel" },
-        { text: c.add.openSettings, onPress: () => void Linking.openSettings().catch(() => {}) },
-      ]);
     }
   }
 

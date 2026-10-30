@@ -171,9 +171,6 @@ export const COPY = {
       fromContacts: "Choose from contacts",
       fromContactsHint: "Only the people you pick are shared with Guest-ly.",
       chooseOne: "Which contact?",
-      contactsOff: "Contacts are off for Guest-ly",
-      contactsOffBody: "Allow access in Settings to fill a guest from your contacts. You can share only the people you choose.",
-      openSettings: "Open Settings",
       filled: (name: string) => `Filled from ${name}.`,
     },
     messages: {
@@ -448,9 +445,6 @@ export const COPY = {
       fromContacts: "Elegir de mis contactos",
       fromContactsHint: "Solo se comparten con Guest-ly las personas que elijas.",
       chooseOne: "¿Cuál contacto?",
-      contactsOff: "Los contactos están desactivados para Guest-ly",
-      contactsOffBody: "Permite el acceso en Ajustes para completar un invitado con tus contactos. Puedes compartir solo a las personas que elijas.",
-      openSettings: "Abrir Ajustes",
       filled: (name: string) => `Completado con ${name}.`,
     },
     messages: {
