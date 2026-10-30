@@ -79,7 +79,7 @@ export default function CoupleHome() {
     // so the fade has no seam. Pull down to refresh.
     <View style={{ flex: 1, backgroundColor: colors.night }}>
       <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh={() => Promise.all([mainQuery.refetch(), rsvps.refetch()])}>
-        <PhotoHero motif={0} flow minHeight={heroMin} maxHeightFraction={0.36} gradient={0.6} accessibilityLabel={couple}>
+        <PhotoHero motif={1} flow minHeight={heroMin} maxHeightFraction={0.36} gradient={0.6} accessibilityLabel={couple}>
           <SectionLabel color={colors.goldLight}>{h.yourWedding}</SectionLabel>
           <T v="title42" style={{ marginTop: 6 }}>
             {couple}

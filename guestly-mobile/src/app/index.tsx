@@ -27,7 +27,7 @@ export default function Entrance() {
     <View style={styles.bg}>
       {/* The hero takes the room the text leaves, on a 667 pt phone too. */}
       <View style={styles.heroBox}>
-        <PhotoHero motif={0} gradient={0.5} topShade={false} style={styles.fill} />
+        <PhotoHero motif={3} gradient={0.5} topShade={false} style={styles.fill} />
         {/* The top scrim keeps the wordmark and its gold gem readable on a bright sky (D-036). */}
         <LinearGradient pointerEvents="none" colors={["rgba(8,11,16,0.62)", "rgba(8,11,16,0.18)", "rgba(8,11,16,0)"]} locations={[0, 0.6, 1]} style={styles.topScrim} />
         <View style={[styles.top, { top: top + 8 }]} pointerEvents="none">

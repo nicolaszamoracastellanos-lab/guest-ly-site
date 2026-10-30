@@ -20,6 +20,17 @@ function subscribe(f: () => void) {
   };
 }
 
+// The focused Screen's scroll, so DevProbe can scroll for screenshots (a
+// simulator cannot be swiped from the command line). Set only in probe builds.
+type ScrollFn = (y: number) => void;
+let devScroll: ScrollFn | null = null;
+export function setDevScroll(fn: ScrollFn | null) {
+  devScroll = fn;
+}
+export function devScrollTo(y: number) {
+  devScroll?.(y);
+}
+
 export function useDevPose(): Pose | null {
   return useSyncExternalStore(subscribe, () => override, () => null);
 }

@@ -25,6 +25,7 @@ import { ToastHost, useDockLift } from "./Toast";
 import { usePane } from "./MasterDetail";
 import { useLayout } from "./layout";
 import { useReduceMotion } from "@/lib/duo";
+import { setDevScroll } from "./devPose";
 
 export { T } from "./Text";
 export { renderInlineBold } from "./MarkdownText";
@@ -160,6 +161,16 @@ export function Screen({
   const online = useOnline();
   const edgeBack = useEdgeBack();
   const ownY = useSharedValue(0);
+  // Probe builds only (EXPO_PUBLIC_DUO_PROBE=1): the focused screen hands its
+  // scroll to DevProbe, so screenshots can show the lower sections.
+  const devScrollRef = useRef<{ scrollTo?: (o: { y: number; animated: boolean }) => void } | null>(null);
+  const devNav = useNavigation();
+  useEffect(() => {
+    if (process.env.EXPO_PUBLIC_DUO_PROBE !== "1") return;
+    const claim = () => setDevScroll((y) => devScrollRef.current?.scrollTo?.({ y, animated: false }));
+    claim();
+    return devNav.addListener("focus", claim);
+  }, [devNav]);
   const onScroll = useAnimatedScrollHandler((e) => {
     ownY.value = e.contentOffset.y;
   });
@@ -248,7 +259,7 @@ export function Screen({
           {content}
         </KeyboardAwareScrollView>
       ) : scroll ? (
-        <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} automaticallyAdjustKeyboardInsets {...scrollCommon}>
+        <Animated.ScrollView ref={devScrollRef as never} onScroll={onScroll} scrollEventThrottle={16} automaticallyAdjustKeyboardInsets {...scrollCommon}>
           {content}
         </Animated.ScrollView>
       ) : (

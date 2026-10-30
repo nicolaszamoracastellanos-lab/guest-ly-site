@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "./layout";
-import { setDevOpenness, setDevPose } from "./devPose";
+import { devScrollTo, setDevOpenness, setDevPose } from "./devPose";
 import { InviteEnvelope, resetEnvelope } from "@/features/guest/InviteEnvelope";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
@@ -27,7 +27,7 @@ import { clearTourRequest, markTourSeen } from "@/features/tour/state";
 
 const BASE = "http://127.0.0.1:8099";
 
-type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; widgetsDump?: boolean; envelope?: boolean; seedMessages?: boolean; open?: number | null; liveActivities?: boolean; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto" };
+type Cmd = { go?: string; signIn?: { email: string; password: string }; signOut?: boolean; hud?: boolean; skipTour?: boolean; orient?: "landscape" | "portrait" | "auto"; selFirst?: "guests" | "messages"; widgetsDump?: boolean; envelope?: boolean; seedMessages?: boolean; open?: number | null; liveActivities?: boolean; pose?: "closed" | "flat" | "book" | "table" | "tent" | "auto"; scrollTo?: number };
 
 export function DevProbe() {
   const router = useRouter();
@@ -94,6 +94,7 @@ export function DevProbe() {
         if (cmd.open !== undefined) setDevOpenness(cmd.open);
         if (cmd.pose) setDevPose(cmd.pose === "auto" ? null : cmd.pose);
         if (cmd.go) router.navigate(cmd.go as never);
+        if (typeof cmd.scrollTo === "number") devScrollTo(cmd.scrollTo);
       } catch {
         // server not running: stay quiet
       }
