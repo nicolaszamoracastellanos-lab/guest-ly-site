@@ -40,3 +40,55 @@ export function todayBriefing<B extends { kind?: unknown }>(briefing: readonly B
   const hasMessages = (breakdown?.conversations ?? 0) > 0;
   return (briefing ?? []).filter((b) => !((hasRequests && b.kind === "requests_open") || (hasMessages && b.kind === "escalation_open")));
 }
+
+// ---------------------------------------------------------------- HH wave F
+// /couple/home now carries the setup steps (lib/setup on the portal), the
+// activity feed and the deadline. The app maps each step to its own screen
+// (the server's `path` is the web page) and each activity kind to an icon.
+
+/** The app screen that finishes a setup step; null when no app screen can. */
+export const SETUP_ROUTES: Record<string, string> = {
+  date_city: "/couple/settings/general",
+  guests_10: "/couple/guests",
+  brain_core: "/couple/brain",
+  website_published: "/couple/website",
+  rsvp_opened: "/couple/guests",
+  whatsapp_live: "/couple/settings/connections",
+  reminders_on: "/couple/settings/reminders",
+  first_broadcast: "/couple/broadcasts/new",
+  passes_sent: "/couple/broadcasts",
+};
+
+export function setupRoute(key: string): string | null {
+  return Object.prototype.hasOwnProperty.call(SETUP_ROUTES, key) ? SETUP_ROUTES[key] : null;
+}
+
+/** Icon names from ui/Icon for each activity kind (an unknown kind: info). */
+export function activityIcon(kind: string): "eye" | "edit" | "check" | "undo" | "qr" | "bell" | "chat" | "mail" | "info" {
+  switch (kind) {
+    case "link_opened":
+    case "pass_opened":
+      return "eye";
+    case "wizard_started":
+      return "edit";
+    case "rsvp_submitted":
+      return "check";
+    case "rsvp_changed":
+      return "undo";
+    case "checked_in":
+      return "qr";
+    case "reminder_sent":
+      return "bell";
+    case "message_sent":
+      return "chat";
+    case "email_sent":
+      return "mail";
+    default:
+      return "info";
+  }
+}
+
+/** True for a plain YYYY-MM-DD deadline; free text ("end of March") is shown as written. */
+export function isIsoDay(s: string | null | undefined): boolean {
+  return !!s && /^\d{4}-\d{2}-\d{2}/.test(s);
+}

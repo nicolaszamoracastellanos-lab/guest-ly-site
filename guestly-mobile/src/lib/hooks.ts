@@ -60,7 +60,17 @@ export type CoupleHome = {
   needs_you_breakdown?: { requests: number; conversations: number };
   /** v1.2 portal, additive: the percent per active budget id. Absent on older portals. */
   budget_percent_paid_by_id?: Record<string, number | null>;
+  /** HH wave F portal, additive (absent on older portals, null when its read
+   *  failed): the setup hub, the activity feed, the deadline guests see, the
+   *  reply funnel in parties with the Opened step. Viewers get activity and
+   *  funnel as null. */
+  setup?: { steps: HomeSetupStep[]; done: number; total: number; percent: number; next: string | null } | null;
+  activity?: HomeActivity[] | null;
+  rsvp_deadline?: string | null;
+  funnel?: { invited: number; opened: number; answered: number; confirmed: number; reached: number; checked_in: number; total: number } | null;
 };
+export type HomeSetupStep = { key: string; done: boolean; label: string; path: string; progress?: { have: number; need: number } };
+export type HomeActivity = { kind: string; text: string; at: string; target: { kind: "guest"; id: string } | null; count: number };
 export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null };
 export type RsvpListItem = { id: string; guest_id: string | null; name: string; initials: string; status: "attending" | "declined" | "pending"; party_size: number | null; seats_answered: string; channel: string | null; source: string | null; updated_at: string | null };
 export type InboxItem = { id: string; channel: string; name: string; initials: string; preview: string; last_at: string; needs_you: boolean; upset: boolean; guest_id: string | null };
@@ -98,7 +108,7 @@ export const useCoupleHome = () => useQuery({ queryKey: ["couple-home"], queryFn
 export const useCoupleGuests = (q: string, filter: string) =>
   useQuery({ queryKey: ["couple-guests", q, filter], queryFn: () => get<{ items: GuestListItem[]; next_cursor: number | null; totals: Totals }>(`/couple/guests?q=${encodeURIComponent(q)}&filter=${filter}`), placeholderData: (prev) => prev });
 export const useGuestDetail = (id: string) => useQuery({ queryKey: ["couple-guest", id], queryFn: () => get<GuestDetail>(`/couple/guests/${id}`), enabled: !!id });
-export const useCoupleRsvps = (filter: string) => useQuery({ queryKey: ["couple-rsvps", filter], queryFn: () => get<{ items: RsvpListItem[]; totals: Totals; deadline: string | null }>(`/couple/rsvps?filter=${filter}`), placeholderData: (prev) => prev });
+export const useCoupleRsvps = (filter: string, opts: { enabled?: boolean } = {}) => useQuery({ enabled: opts.enabled ?? true, queryKey: ["couple-rsvps", filter], queryFn: () => get<{ items: RsvpListItem[]; totals: Totals; deadline: string | null }>(`/couple/rsvps?filter=${filter}`), placeholderData: (prev) => prev });
 export const useInbox = (filter: string) => useQuery({ queryKey: ["couple-inbox", filter], queryFn: () => get<{ items: InboxItem[]; needs_you: number }>(`/couple/messages?filter=${filter}`), refetchInterval: 30_000, placeholderData: (prev) => prev });
 /** Polls only while `poll` is true: screens pass useIsFocused(), so a day-of or
  *  door screen left behind in a tab stops asking the server every 30 s. */

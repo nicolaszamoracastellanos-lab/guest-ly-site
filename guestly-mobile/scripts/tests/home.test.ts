@@ -45,3 +45,17 @@ assert.equal(todayBriefing(brief, undefined).length, 4);
 assert.deepEqual(todayBriefing(undefined, { requests: 1 }), []);
 
 console.log("home.test.ts: ok");
+
+// HH wave F: step routes, activity icons, deadline shape.
+import { setupRoute, activityIcon, isIsoDay } from "../../src/features/couple/home.ts";
+assert.equal(setupRoute("date_city"), "/couple/settings/general");
+assert.equal(setupRoute("reminders_on"), "/couple/settings/reminders");
+assert.equal(setupRoute("toString"), null);
+assert.equal(setupRoute("unknown_step"), null);
+assert.equal(activityIcon("rsvp_submitted"), "check");
+assert.equal(activityIcon("link_opened"), "eye");
+assert.equal(activityIcon("something_new"), "info");
+assert.equal(isIsoDay("2027-03-20"), true);
+assert.equal(isIsoDay("end of March"), false);
+assert.equal(isIsoDay(null), false);
+console.log("home (HH wave F): ok");

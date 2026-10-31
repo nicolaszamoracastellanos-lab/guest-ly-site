@@ -65,6 +65,14 @@ export const COPY = {
       activityEmpty: "Replies show up here as guests answer.",
       replyGoing: (n: number) => (n > 1 ? `Going, party of ${n}` : "Going"),
       replyNotGoing: "Not going",
+      // HH wave F: fields /couple/home now carries.
+      openedRow: "Opened their link",
+      openedSub: (n: number, total: number) => `${n} of ${total} invitations opened`,
+      stepTodo: "To do",
+      stepDone: "Done",
+      stepProgress: (have: number, need: number) => `${have} of ${need}`,
+      activityLive: "Recent activity",
+      activityLiveEmpty: "Opens, replies and messages show up here as they happen.",
     },
     guests: {
       title: "Guests",
@@ -339,6 +347,14 @@ export const COPY = {
       activityEmpty: "Aquí aparecen las respuestas a medida que llegan.",
       replyGoing: (n: number) => (n > 1 ? `Va con ${n}` : "Va"),
       replyNotGoing: "No va",
+      // Ola HH F: campos que ahora trae /couple/home.
+      openedRow: "Abrieron su enlace",
+      openedSub: (n: number, total: number) => `${n} de ${total} invitaciones abiertas`,
+      stepTodo: "Pendiente",
+      stepDone: "Listo",
+      stepProgress: (have: number, need: number) => `${have} de ${need}`,
+      activityLive: "Actividad reciente",
+      activityLiveEmpty: "Aquí aparecen las aperturas, respuestas y mensajes a medida que pasan.",
     },
     guests: {
       title: "Invitados",

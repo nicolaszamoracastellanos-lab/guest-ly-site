@@ -9,21 +9,24 @@
 //   4. Recent replies: the last answers, newest first,
 //   5. the Coordinator (the one gold mark).
 // It replaces the progress ring, the three stat boxes and the three quick
-// tiles (audit 1.6.6). Every number comes from GET /couple/home except the
-// deadline and the recent replies, which come from GET /couple/rsvps (already
-// loaded by Guests). Fields Home still lacks are in docs/hh/SCREENS-PLAN.md.
+// tiles (audit 1.6.6). Every number comes from GET /couple/home. HH wave F:
+// the portal now sends the nine setup steps, the activity feed, the deadline
+// guests see and the Opened step of the funnel; against an older portal Home
+// falls back to the steps it derives and the recent replies from
+// GET /couple/rsvps. After the wedding a card offers the referral link.
 
 import React from "react";
 import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
-import { useCoupleHome, useCoupleRsvps, type RsvpListItem } from "@/lib/hooks";
+import { useCoupleHome, useCoupleRsvps, type HomeActivity, type RsvpListItem } from "@/lib/hooks";
 import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, fullDate, dayMonth, statusIcon, statusColor } from "@/features/couple/ui";
 
-import { recentReplies, funnelFrom, share, todayBriefing } from "@/features/couple/home";
+import { recentReplies, funnelFrom, share, todayBriefing, setupRoute, activityIcon, isIsoDay } from "@/features/couple/home";
+import { ReferralCard } from "@/features/referral/ReferralCard";
 
 type BriefingLike = { text: string; href: string; tone: "risk" | "warn" | "info"; kind?: unknown; target_id?: unknown; filter?: unknown };
 // onPress absent: the step only reports (no screen in the app can change it yet).
@@ -45,8 +48,10 @@ export default function CoupleHome() {
   const shareInvite = useShareInvite();
   const mainQuery = useCoupleHome();
   const { data, isLoading } = mainQuery;
-  // All replies: the deadline and the recent answers (Guests reads the same list).
-  const rsvps = useCoupleRsvps("all");
+  // An older portal without the HH fields: the deadline and the recent answers
+  // come from the RSVP list (Guests reads the same list).
+  const legacy = !!data && (data.activity === undefined || data.rsvp_deadline === undefined);
+  const rsvps = useCoupleRsvps("all", { enabled: legacy });
   const couple = data?.couple_names ?? user?.me.tenant.couple_names ?? "";
   const days = data?.countdown && !data.countdown.passed ? data.countdown.days : null;
   const date = fullDate(data?.wedding_date, lang);
@@ -57,7 +62,10 @@ export default function CoupleHome() {
   // (attending + declined + pending = everyone invited).
   const t = data?.totals;
   const { invited: total, replied, going, notGoing, pending } = funnelFrom(t);
-  const deadline = rsvps.data?.deadline ? dayMonth(rsvps.data.deadline, lang) : "";
+  const rawDeadline = data?.rsvp_deadline !== undefined ? data.rsvp_deadline : rsvps.data?.deadline;
+  const deadline = rawDeadline ? (isIsoDay(rawDeadline) ? dayMonth(rawDeadline, lang) : rawDeadline) : "";
+  const funnel = data?.funnel ?? null;
+  const activity = data?.activity;
   const breakdown = data?.needs_you_breakdown;
   // The briefing minus the rows the two breakdown rows above it already say.
   const briefing = todayBriefing((data?.briefing ?? []) as BriefingLike[], breakdown);
@@ -65,25 +73,37 @@ export default function CoupleHome() {
 
   const openGuests = (filter: string) => router.push({ pathname: "/couple/guests", params: { filter } } as never);
 
-  // The date step only reports: the app has no date editor yet and /web
-  // refuses /dashboard on purpose (D-019, billing stays out of the app).
-  // Settings > General (docs/hh/SCREENS-PLAN.md section 1 and 12) gives it a screen.
-  const steps: Step[] = data
+  // The portal's nine steps (lib/setup) when it sends them, each opening the
+  // app screen that finishes it (setupRoute); else the five Home can prove.
+  // The date step opens Settings > Wedding details (never /dashboard in /web).
+  const serverSteps: Step[] | null = data?.setup?.steps?.length
+    ? data.setup.steps.map((st) => {
+        const route = setupRoute(st.key);
+        return {
+          key: st.key,
+          title: st.label,
+          sub: st.key === "date_city" && data.wedding_date ? date : st.progress && !st.done ? h.stepProgress(st.progress.have, st.progress.need) : st.done ? h.stepDone : h.stepTodo,
+          done: st.done,
+          onPress: route ? () => router.push(route as never) : undefined,
+        };
+      })
+    : null;
+  const steps: Step[] = serverSteps ?? (data
     ? [
-        { key: "date", title: h.steps.date, sub: data.wedding_date ? date : h.steps.dateTodo, done: !!data.wedding_date },
+        { key: "date", title: h.steps.date, sub: data.wedding_date ? date : h.steps.dateTodo, done: !!data.wedding_date, onPress: canEdit ? () => router.push("/couple/settings/general" as never) : undefined },
         { key: "guests", title: h.steps.guests, sub: (t?.parties ?? 0) > 0 ? h.steps.guestsDone(t?.parties ?? 0) : h.steps.guestsTodo, done: (t?.parties ?? 0) > 0, onPress: () => router.push((t?.parties ? "/couple/guests" : "/couple/guests/new") as never) },
         { key: "invite", title: h.steps.invite, sub: replied > 0 ? h.steps.inviteDone(replied) : h.steps.inviteTodo, done: replied > 0, onPress: () => (replied > 0 ? openGuests("all") : void shareInvite()) },
         { key: "concierge", title: h.steps.concierge, sub: data.concierge_live ? h.steps.conciergeDone : h.steps.conciergeTodo, done: data.concierge_live, onPress: () => router.push("/couple/brain") },
         { key: "budget", title: h.steps.budget, sub: data.budget_percent_paid !== null ? h.steps.budgetDone(data.budget_percent_paid) : h.steps.budgetTodo, done: data.budget_percent_paid !== null, onPress: () => router.push("/couple/budget") },
       ]
-    : [];
+    : []);
   const stepsDone = steps.filter((s) => s.done).length;
 
   return (
     // The hero starts at the top edge, behind the clock; plain night under it
     // so the fade has no seam. Pull down to refresh.
     <View style={{ flex: 1, backgroundColor: colors.night }}>
-      <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh={() => Promise.all([mainQuery.refetch(), rsvps.refetch()])}>
+      <Screen query={mainQuery} padded={false} topInset={false} backdrop={false} refresh={() => Promise.all([mainQuery.refetch(), legacy ? rsvps.refetch() : null])}>
         <PhotoHero motif={1} flow minHeight={heroMin} maxHeightFraction={0.36} gradient={0.6} accessibilityLabel={couple}>
           <SectionLabel color={colors.goldLight}>{h.yourWedding}</SectionLabel>
           <T v="title42" style={{ marginTop: 6 }}>
@@ -140,6 +160,7 @@ export default function CoupleHome() {
           ) : (
             <Card kind="solid" padding={16} radiusKey="tile">
               <FunnelRow label={h.invited} n={total} of={total} sub={h.people(total)} onPress={() => openGuests("all")} testID="home-funnel-invited" />
+              {funnel && funnel.total > 0 ? <FunnelRow label={h.openedRow} n={funnel.opened} of={funnel.total} sub={h.openedSub(funnel.opened, funnel.total)} onPress={() => openGuests("all")} testID="home-funnel-opened" /> : null}
               <FunnelRow label={h.repliedRow} n={replied} of={total} sub={deadline ? c.home.deadline(deadline) : c.home.noDeadline} onPress={() => openGuests("all")} testID="home-replies" />
               <FunnelRow label={h.goingRow} n={going} of={total} sub={h.notGoingPending(notGoing, pending)} onPress={() => openGuests("attending")} gold testID="home-funnel-going" last />
               <Row gap={10} style={{ marginTop: 14 }} align="stretch">
@@ -166,21 +187,43 @@ export default function CoupleHome() {
             </>
           ) : null}
 
-          {/* 4. Recent replies */}
-          <SectionLabel style={styles.label}>{h.activity}</SectionLabel>
-          {!rsvps.data ? (
-            <Skeleton h={120} r={16} />
-          ) : recent.length ? (
-            <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
-              {recent.map((r, i) => (
-                <ActivityRow key={r.id} item={r} when={relTime(r.updated_at, lang)} text={r.status === "attending" ? h.replyGoing(r.party_size ?? 1) : h.replyNotGoing} last={i === recent.length - 1} onPress={r.guest_id ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: r.guest_id as string } } as never) : undefined} />
-              ))}
-            </Card>
+          {/* 4. Activity: the portal's feed, or the recent replies on an older portal */}
+          {activity === null ? null : activity !== undefined ? (
+            <>
+              <SectionLabel style={styles.label}>{h.activityLive}</SectionLabel>
+              {activity.length ? (
+                <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+                  {activity.map((a, i) => (
+                    <FeedRow key={`${a.at}-${i}`} item={a} when={relTime(a.at, lang)} last={i === activity.length - 1} onPress={a.target?.kind === "guest" ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: a.target!.id } } as never) : undefined} />
+                  ))}
+                </Card>
+              ) : (
+                <T v="meta13" color={colors.ivory55} style={styles.quiet}>
+                  {h.activityLiveEmpty}
+                </T>
+              )}
+            </>
           ) : (
-            <T v="meta13" color={colors.ivory55} style={styles.quiet}>
-              {h.activityEmpty}
-            </T>
+            <>
+              <SectionLabel style={styles.label}>{h.activity}</SectionLabel>
+              {!rsvps.data ? (
+                <Skeleton h={120} r={16} />
+              ) : recent.length ? (
+                <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+                  {recent.map((r, i) => (
+                    <ActivityRow key={r.id} item={r} when={relTime(r.updated_at, lang)} text={r.status === "attending" ? h.replyGoing(r.party_size ?? 1) : h.replyNotGoing} last={i === recent.length - 1} onPress={r.guest_id ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: r.guest_id as string } } as never) : undefined} />
+                  ))}
+                </Card>
+              ) : (
+                <T v="meta13" color={colors.ivory55} style={styles.quiet}>
+                  {h.activityEmpty}
+                </T>
+              )}
+            </>
           )}
+
+          {/* After the wedding: the referral link (hidden until the wedding has one). */}
+          {data?.countdown?.passed ? <ReferralCard /> : null}
 
           {/* 5. The Coordinator */}
           <Pressable onPress={() => router.push("/couple/coordinator" as never)} accessibilityRole="button" accessibilityLabel={`${h.ask}. ${h.askBody}`} testID="home-coordinator" style={({ pressed }) => [{ marginTop: 24 }, pressed && { opacity: 0.85 }]}>
@@ -322,6 +365,24 @@ function StepRow({ step, last }: { step: Step; last: boolean }) {
   );
 }
 
+/** One line of the portal's activity feed: an icon for its kind, the sentence
+ *  the server wrote in this language, and when. */
+function FeedRow({ item, when, last, onPress }: { item: HomeActivity; when: string; last: boolean; onPress?: () => void }) {
+  return (
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={`${item.text}, ${when}`} style={({ pressed }) => [styles.activityRow, !last && styles.line, pressed && onPress ? { opacity: 0.7 } : null]}>
+      <View style={styles.feedIcon}>
+        <Icon name={activityIcon(item.kind)} size={18} color={colors.ivory70} />
+      </View>
+      <T v="body15" color={colors.ivory90} numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
+        {item.text}
+      </T>
+      <T v="caption14" color={colors.ivory55}>
+        {when}
+      </T>
+    </Pressable>
+  );
+}
+
 function ActivityRow({ item, when, text, last, onPress }: { item: RsvpListItem; when: string; text: string; last: boolean; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={`${item.name}, ${text}, ${when}`} style={({ pressed }) => [styles.activityRow, !last && styles.line, pressed && onPress ? { opacity: 0.7 } : null]}>
@@ -357,5 +418,6 @@ const styles = StyleSheet.create({
   stepRow: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, paddingVertical: 10 },
   stepMark: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.ivory40, alignItems: "center", justifyContent: "center" },
   stepMarkDone: { backgroundColor: colors.greenText, borderColor: colors.greenText },
+  feedIcon: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", justifyContent: "center" },
   activityRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 60, paddingVertical: 10 },
 });
