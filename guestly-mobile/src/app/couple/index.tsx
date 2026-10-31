@@ -14,6 +14,12 @@
 // guests see and the Opened step of the funnel; against an older portal Home
 // falls back to the steps it derives and the recent replies from
 // GET /couple/rsvps. After the wedding a card offers the referral link.
+//
+// Customizable Home (Oct 31 2026): when the portal sends a saved `layout`,
+// the sections become the wedding's cards (features/couple/CustomHome), in
+// the couple's order and sizes; the pieces below are the bodies of their
+// cards. No layout (an older portal) = this Home exactly as before; a layout
+// not set up yet = this Home plus an invitation to the five questions.
 
 import React from "react";
 import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
@@ -21,12 +27,17 @@ import { useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome, useCoupleRsvps, type HomeActivity, type RsvpListItem } from "@/lib/hooks";
-import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
+import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, Button, toast, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, fullDate, dayMonth, statusIcon, statusColor } from "@/features/couple/ui";
 
 import { recentReplies, funnelFrom, share, todayBriefing, setupRoute, activityIcon, isIsoDay } from "@/features/couple/home";
 import { ReferralCard } from "@/features/referral/ReferralCard";
+import { CustomHome, type CardBody } from "@/features/couple/CustomHome";
+import { readLayout, useSaveHomeLayout, type CoupleHomeWithLayout } from "@/features/couple/homeCards";
+import { HOME_COPY } from "@/features/couple/homeCopy";
+import { STANDARD_ANSWERS, suggestedCards, type CardId } from "@/features/couple/homeLayout";
+import { useFeatureCopy } from "@/i18n/feature";
 
 type BriefingLike = { text: string; href: string; tone: "risk" | "warn" | "info"; kind?: unknown; target_id?: unknown; filter?: unknown };
 // onPress absent: the step only reports (no screen in the app can change it yet).
@@ -51,12 +62,27 @@ export default function CoupleHome() {
   // An older portal without the HH fields: the deadline and the recent answers
   // come from the RSVP list (Guests reads the same list).
   const legacy = !!data && (data.activity === undefined || data.rsvp_deadline === undefined);
-  const rsvps = useCoupleRsvps("all", { enabled: legacy });
+  const hc = useFeatureCopy(HOME_COPY);
+  const layout = readLayout((data as CoupleHomeWithLayout | undefined)?.layout);
+  const custom = layout?.configured ? layout : null;
+  const shown = (id: CardId) => !!custom?.cards.some((x) => x.id === id && !x.hidden);
+  const saveLayout = useSaveHomeLayout();
+  const rsvps = useCoupleRsvps("all", { enabled: legacy || shown("replies") });
   const couple = data?.couple_names ?? user?.me.tenant.couple_names ?? "";
   const days = data?.countdown && !data.countdown.passed ? data.countdown.days : null;
   const date = fullDate(data?.wedding_date, lang);
   const dayOf = (data?.day_of ?? false) || dayOfManual;
   const canEdit = user?.me.can_edit ?? false;
+  // The countdown card says the days; the hero then keeps only the date.
+  const heroDays = shown("countdown") ? null : days;
+  const openQuiz = () => router.push("/home-setup" as never);
+  const skipQuiz = async () => {
+    try {
+      await saveLayout.mutateAsync({ answers: STANDARD_ANSWERS, cards: suggestedCards(STANDARD_ANSWERS), dismissed: [], quiz_state: "skipped" });
+    } catch {
+      toast(hc.saveFailed);
+    }
+  };
 
   // PEOPLE, the way the portal's dashboard and Guests count since wave 13
   // (attending + declined + pending = everyone invited).
@@ -99,6 +125,110 @@ export default function CoupleHome() {
     : []);
   const stepsDone = steps.filter((s) => s.done).length;
 
+  // The pieces of Home, shared by the sections below (no layout) and the cards (a layout).
+  const hasToday = (breakdown?.requests ?? 0) + (breakdown?.conversations ?? 0) + briefing.length > 0;
+  const todayInner = !data ? (
+    <Stack gap={8}>
+      <Skeleton h={58} />
+      <Skeleton h={58} />
+    </Stack>
+  ) : hasToday ? (
+    <View>
+      {breakdown && breakdown.requests > 0 ? <TodayRow icon="tasks" text={h.requestsWaiting(breakdown.requests)} onPress={() => router.push("/couple/requests")} testID="home-today-requests" /> : null}
+      {breakdown && breakdown.conversations > 0 ? <TodayRow icon="chat" text={h.messagesWaiting(breakdown.conversations)} onPress={() => router.push({ pathname: "/couple/messages", params: { filter: "needs_you" } } as never)} testID="home-today-messages" /> : null}
+      {briefing.map((b, i) => (
+        <BriefingRow key={i} text={b.text} tone={b.tone} onPress={() => open(b)} />
+      ))}
+    </View>
+  ) : (
+    <Row gap={12} align="flex-start" style={styles.quiet}>
+      <Icon name="check" size={22} color={colors.greenText} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <T v="body16">{h.nothingToday}</T>
+        <T v="meta13" color={colors.ivory70}>
+          {h.nothingTodayBody}
+        </T>
+      </View>
+    </Row>
+  );
+  const funnelInner = (
+    <>
+      <FunnelRow label={h.invited} n={total} of={total} sub={h.people(total)} onPress={() => openGuests("all")} testID="home-funnel-invited" />
+      {funnel && funnel.total > 0 ? <FunnelRow label={h.openedRow} n={funnel.opened} of={funnel.total} sub={h.openedSub(funnel.opened, funnel.total)} onPress={() => openGuests("all")} testID="home-funnel-opened" /> : null}
+      <FunnelRow label={h.repliedRow} n={replied} of={total} sub={deadline ? c.home.deadline(deadline) : c.home.noDeadline} onPress={() => openGuests("all")} testID="home-replies" />
+      <FunnelRow label={h.goingRow} n={going} of={total} sub={h.notGoingPending(notGoing, pending)} onPress={() => openGuests("attending")} gold testID="home-funnel-going" last />
+      <Row gap={10} style={{ marginTop: 14 }} align="stretch">
+        <TextAction icon="share" label={h.share} onPress={() => void shareInvite()} testID="home-share" />
+        {canEdit ? <TextAction icon="megaphone" label={h.announce} onPress={() => router.push("/couple/broadcasts/new")} testID="home-announce" /> : null}
+      </Row>
+    </>
+  );
+  const stepRows = steps.map((s, i) => <StepRow key={s.key} step={s} last={i === steps.length - 1} />);
+  const feedRows = activity?.length
+    ? activity.map((a, i) => (
+        <FeedRow key={`${a.at}-${i}`} item={a} when={relTime(a.at, lang)} last={i === activity.length - 1} onPress={a.target?.kind === "guest" ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: a.target!.id } } as never) : undefined} />
+      ))
+    : null;
+  const recentRows = recent.length
+    ? recent.map((r, i) => (
+        <ActivityRow key={r.id} item={r} when={relTime(r.updated_at, lang)} text={r.status === "attending" ? h.replyGoing(r.party_size ?? 1) : h.replyNotGoing} last={i === recent.length - 1} onPress={r.guest_id ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: r.guest_id as string } } as never) : undefined} />
+      ))
+    : null;
+  const nextStep = steps.find((s) => !s.done);
+  // The cards that reuse these pieces (features/couple/CustomHome draws the rest).
+  const bodies: Partial<Record<CardId, CardBody>> = {
+    briefing: () => todayInner,
+    rsvp: ({ half }) =>
+      half ? (
+        <View style={{ gap: 4 }}>
+          <T v="title34" style={{ fontVariant: ["lining-nums", "tabular-nums"] }}>
+            {String(going)}
+          </T>
+          <T v="meta13" color={colors.ivory55}>
+            {hc.going(total)}
+          </T>
+          <View style={styles.track}>
+            <View style={[styles.bar, { width: `${share(going, total) * 100}%`, backgroundColor: colors.gold }]} />
+          </View>
+        </View>
+      ) : (
+        funnelInner
+      ),
+    setup: ({ half, size }) =>
+      half || size === "s" ? (
+        <View style={{ gap: 4 }}>
+          <T v="title34" style={{ fontVariant: ["lining-nums", "tabular-nums"] }}>
+            {`${stepsDone}/${steps.length}`}
+          </T>
+          {nextStep ? (
+            <T v="meta13" color={colors.goldLight} numberOfLines={2}>
+              {nextStep.title}
+            </T>
+          ) : null}
+        </View>
+      ) : (
+        <View>{stepRows}</View>
+      ),
+    activity: () =>
+      feedRows ? (
+        <View>{feedRows}</View>
+      ) : (
+        <T v="meta13" color={colors.ivory55}>
+          {activity === undefined ? h.activityEmpty : h.activityLiveEmpty}
+        </T>
+      ),
+    replies: ({ half }) =>
+      !rsvps.data ? (
+        <Skeleton h={half ? 60 : 120} r={12} />
+      ) : recentRows ? (
+        <View>{half ? recentRows.slice(0, 2) : recentRows}</View>
+      ) : (
+        <T v="meta13" color={colors.ivory55}>
+          {h.activityEmpty}
+        </T>
+      ),
+  };
+
   return (
     // The hero starts at the top edge, behind the clock; plain night under it
     // so the fade has no seam. Pull down to refresh.
@@ -109,10 +239,10 @@ export default function CoupleHome() {
           <T v="title42" style={{ marginTop: 6 }}>
             {couple}
           </T>
-          {days !== null || date ? (
+          {heroDays !== null || date ? (
             <T v="body16" color={colors.ivory90} style={{ marginTop: 6 }}>
-              {days !== null ? <T v="body16" color={colors.ivory} style={{ fontWeight: "600" }}>{h.days(days)}</T> : null}
-              {days !== null && date ? " · " : ""}
+              {heroDays !== null ? <T v="body16" color={colors.ivory} style={{ fontWeight: "600" }}>{h.days(heroDays)}</T> : null}
+              {heroDays !== null && date ? " · " : ""}
               {date}
             </T>
           ) : null}
@@ -126,98 +256,86 @@ export default function CoupleHome() {
             </Pressable>
           ) : null}
 
-          {/* 1. Today */}
-          <SectionLabel style={styles.label}>{h.today}</SectionLabel>
-          {!data ? (
-            <Stack gap={8}>
-              <Skeleton h={58} />
-              <Skeleton h={58} />
-            </Stack>
-          ) : (breakdown?.requests ?? 0) + (breakdown?.conversations ?? 0) + briefing.length > 0 ? (
-            <View>
-              {breakdown && breakdown.requests > 0 ? <TodayRow icon="tasks" text={h.requestsWaiting(breakdown.requests)} onPress={() => router.push("/couple/requests")} testID="home-today-requests" /> : null}
-              {breakdown && breakdown.conversations > 0 ? <TodayRow icon="chat" text={h.messagesWaiting(breakdown.conversations)} onPress={() => router.push({ pathname: "/couple/messages", params: { filter: "needs_you" } } as never)} testID="home-today-messages" /> : null}
-              {briefing.map((b, i) => (
-                <BriefingRow key={i} text={b.text} tone={b.tone} onPress={() => open(b)} />
-              ))}
-            </View>
+          {custom && data ? (
+            <CustomHome data={data} layout={custom} cards={(data as CoupleHomeWithLayout).cards} bodies={bodies} canEdit={canEdit} onOpenQuiz={openQuiz} />
           ) : (
-            <Row gap={12} align="flex-start" style={styles.quiet}>
-              <Icon name="check" size={22} color={colors.greenText} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="body16">{h.nothingToday}</T>
-                <T v="meta13" color={colors.ivory70}>
-                  {h.nothingTodayBody}
-                </T>
-              </View>
-            </Row>
-          )}
-
-          {/* 2. Replies: the funnel */}
-          <SectionLabel style={styles.label}>{h.replies}</SectionLabel>
-          {isLoading && !data ? (
-            <Skeleton h={170} r={16} />
-          ) : (
-            <Card kind="solid" padding={16} radiusKey="tile">
-              <FunnelRow label={h.invited} n={total} of={total} sub={h.people(total)} onPress={() => openGuests("all")} testID="home-funnel-invited" />
-              {funnel && funnel.total > 0 ? <FunnelRow label={h.openedRow} n={funnel.opened} of={funnel.total} sub={h.openedSub(funnel.opened, funnel.total)} onPress={() => openGuests("all")} testID="home-funnel-opened" /> : null}
-              <FunnelRow label={h.repliedRow} n={replied} of={total} sub={deadline ? c.home.deadline(deadline) : c.home.noDeadline} onPress={() => openGuests("all")} testID="home-replies" />
-              <FunnelRow label={h.goingRow} n={going} of={total} sub={h.notGoingPending(notGoing, pending)} onPress={() => openGuests("attending")} gold testID="home-funnel-going" last />
-              <Row gap={10} style={{ marginTop: 14 }} align="stretch">
-                <TextAction icon="share" label={h.share} onPress={() => void shareInvite()} testID="home-share" />
-                {canEdit ? <TextAction icon="megaphone" label={h.announce} onPress={() => router.push("/couple/broadcasts/new")} testID="home-announce" /> : null}
-              </Row>
-            </Card>
-          )}
-
-          {/* 3. Getting ready */}
-          {steps.length ? (
             <>
-              <Row style={[styles.label, { justifyContent: "space-between" }]}>
-                <SectionLabel>{h.setup}</SectionLabel>
-                <T v="caption14" color={colors.ivory55}>
-                  {h.setupCount(stepsDone, steps.length)}
-                </T>
-              </Row>
-              <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
-                {steps.map((s, i) => (
-                  <StepRow key={s.key} step={s} last={i === steps.length - 1} />
-                ))}
-              </Card>
-            </>
-          ) : null}
-
-          {/* 4. Activity: the portal's feed, or the recent replies on an older portal */}
-          {activity === null ? null : activity !== undefined ? (
-            <>
-              <SectionLabel style={styles.label}>{h.activityLive}</SectionLabel>
-              {activity.length ? (
-                <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
-                  {activity.map((a, i) => (
-                    <FeedRow key={`${a.at}-${i}`} item={a} when={relTime(a.at, lang)} last={i === activity.length - 1} onPress={a.target?.kind === "guest" ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: a.target!.id } } as never) : undefined} />
-                  ))}
+              {/* Not set up yet: the five questions, offered to editors. */}
+              {layout && !layout.configured && layout.canEdit && canEdit ? (
+                <Card kind="solid" padding={16} radiusKey="tile" border={colors.goldBorder} style={{ marginTop: 20 }}>
+                  <T v="name24">{hc.inviteTitle}</T>
+                  <T v="meta13" color={colors.ivory70} style={{ marginTop: 4 }}>
+                    {hc.inviteBody}
+                  </T>
+                  <Row gap={10} style={{ marginTop: 14 }}>
+                    <View style={{ flex: 1 }}>
+                      <Button label={hc.inviteStart} small onPress={openQuiz} testID="home-quiz-start" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Button label={hc.inviteSkip} small kind="glass" onPress={() => void skipQuiz()} loading={saveLayout.isPending} testID="home-quiz-skip" />
+                    </View>
+                  </Row>
                 </Card>
+              ) : null}
+
+              {/* 1. Today */}
+              <SectionLabel style={styles.label}>{h.today}</SectionLabel>
+              {todayInner}
+
+              {/* 2. Replies: the funnel */}
+              <SectionLabel style={styles.label}>{h.replies}</SectionLabel>
+              {isLoading && !data ? (
+                <Skeleton h={170} r={16} />
               ) : (
-                <T v="meta13" color={colors.ivory55} style={styles.quiet}>
-                  {h.activityLiveEmpty}
-                </T>
+                <Card kind="solid" padding={16} radiusKey="tile">
+                  {funnelInner}
+                </Card>
               )}
-            </>
-          ) : (
-            <>
-              <SectionLabel style={styles.label}>{h.activity}</SectionLabel>
-              {!rsvps.data ? (
-                <Skeleton h={120} r={16} />
-              ) : recent.length ? (
-                <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
-                  {recent.map((r, i) => (
-                    <ActivityRow key={r.id} item={r} when={relTime(r.updated_at, lang)} text={r.status === "attending" ? h.replyGoing(r.party_size ?? 1) : h.replyNotGoing} last={i === recent.length - 1} onPress={r.guest_id ? () => router.push({ pathname: "/couple/guests/[id]", params: { id: r.guest_id as string } } as never) : undefined} />
-                  ))}
-                </Card>
+
+              {/* 3. Getting ready */}
+              {steps.length ? (
+                <>
+                  <Row style={[styles.label, { justifyContent: "space-between" }]}>
+                    <SectionLabel>{h.setup}</SectionLabel>
+                    <T v="caption14" color={colors.ivory55}>
+                      {h.setupCount(stepsDone, steps.length)}
+                    </T>
+                  </Row>
+                  <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+                    {stepRows}
+                  </Card>
+                </>
+              ) : null}
+
+              {/* 4. Activity: the portal's feed, or the recent replies on an older portal */}
+              {activity === null ? null : activity !== undefined ? (
+                <>
+                  <SectionLabel style={styles.label}>{h.activityLive}</SectionLabel>
+                  {feedRows ? (
+                    <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+                      {feedRows}
+                    </Card>
+                  ) : (
+                    <T v="meta13" color={colors.ivory55} style={styles.quiet}>
+                      {h.activityLiveEmpty}
+                    </T>
+                  )}
+                </>
               ) : (
-                <T v="meta13" color={colors.ivory55} style={styles.quiet}>
-                  {h.activityEmpty}
-                </T>
+                <>
+                  <SectionLabel style={styles.label}>{h.activity}</SectionLabel>
+                  {!rsvps.data ? (
+                    <Skeleton h={120} r={16} />
+                  ) : recentRows ? (
+                    <Card kind="solid" padding={0} radiusKey="tile" style={{ paddingHorizontal: 16 }}>
+                      {recentRows}
+                    </Card>
+                  ) : (
+                    <T v="meta13" color={colors.ivory55} style={styles.quiet}>
+                      {h.activityEmpty}
+                    </T>
+                  )}
+                </>
               )}
             </>
           )}

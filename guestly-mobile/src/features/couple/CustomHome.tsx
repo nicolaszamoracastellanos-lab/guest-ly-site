@@ -1,0 +1,465 @@
+// The customizable Home (Oct 31 2026): the wedding's saved layout drawn as
+// cards, two columns (S cards two to a row, M and L full width, rows end
+// flush), each card opening its screen. Edit mode moves (arrows), resizes
+// (S, M, L), hides and adds cards, goes back to the suggested layout or
+// reopens the quiz. The layout is the wedding's: both partners and the portal
+// see the same one. Bodies that already existed on Home (Today, the funnel,
+// the setup steps, the activity feed, the recent replies) come in from the
+// Home screen as `bodies`; the cards new to Home draw from `cards` and show a
+// quiet line with a link when the portal sent no data for them.
+
+import React, { useMemo, useState, type ReactNode } from "react";
+import { View, Pressable, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { useLang } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toast } from "@/ui";
+import { colors, radius } from "@/ui/tokens";
+import type { CoupleHome } from "@/lib/hooks";
+import { formatMoneyShort } from "@/features/budget/money";
+import { fullDate } from "@/features/couple/ui";
+import { CARD_IDS, rowSpans, moveCard, setCard, showCard, hideCard, type CardId, type CardSize, type HomeCard } from "./homeLayout";
+import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
+import { HOME_COPY, type HomeCopy } from "./homeCopy";
+
+export type CardBody = (o: { size: CardSize; half: boolean }) => ReactNode;
+
+type Props = {
+  data: CoupleHome;
+  layout: HomeLayoutPayload;
+  cards: HomeCardsData | null | undefined;
+  /** Bodies drawn by the Home screen from its existing pieces. */
+  bodies: Partial<Record<CardId, CardBody>>;
+  canEdit: boolean;
+  onOpenQuiz: () => void;
+};
+
+export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }: Props) {
+  const c = useFeatureCopy(HOME_COPY);
+  const { lang } = useLang();
+  const router = useRouter();
+  const save = useSaveHomeLayout();
+  const reset = useResetHomeLayout();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<{ cards: HomeCard[]; dismissed: string[] } | null>(null);
+  const editable = canEdit && layout.canEdit;
+  const list = editing && draft ? draft.cards : layout.cards;
+  const visible = useMemo(() => list.filter((x) => !x.hidden), [list]);
+  const hidden = useMemo(() => list.filter((x) => x.hidden), [list]);
+  const rows = rowsOf(visible, rowSpans(visible, 2));
+
+  const startEdit = () => {
+    setDraft({ cards: layout.cards.map((x) => ({ ...x })), dismissed: [...layout.dismissed] });
+    setEditing(true);
+  };
+  const finish = async () => {
+    if (!draft) return setEditing(false);
+    try {
+      // The cards as shown (today's phase included) become the saved order.
+      await save.mutateAsync({ cards: draft.cards, dismissed: draft.dismissed });
+      setEditing(false);
+      setDraft(null);
+    } catch {
+      toast(c.saveFailed);
+    }
+  };
+  const backToSuggested = async () => {
+    try {
+      await reset.mutateAsync();
+      setEditing(false);
+      setDraft(null);
+    } catch {
+      toast(c.saveFailed);
+    }
+  };
+  const edit = (fn: (d: { cards: HomeCard[]; dismissed: string[] }) => { cards: HomeCard[]; dismissed: string[] }) => setDraft((d) => (d ? fn(d) : d));
+
+  return (
+    <View style={{ marginTop: 20 }}>
+      {editable ? (
+        editing ? (
+          <Stack gap={8} style={{ marginBottom: 12 }}>
+            <Row gap={8}>
+              <Button label={c.backToSuggested} kind="ghost" small full={false} onPress={() => void backToSuggested()} loading={reset.isPending} testID="home-edit-reset" />
+              <Button label={c.changeAnswers} kind="ghost" small full={false} onPress={onOpenQuiz} testID="home-edit-quiz" />
+            </Row>
+            <Button label={c.done} small onPress={() => void finish()} loading={save.isPending} testID="home-edit-done" />
+          </Stack>
+        ) : (
+          <Row style={{ justifyContent: "flex-end", marginBottom: 8 }}>
+            <Pressable onPress={startEdit} accessibilityRole="button" accessibilityLabel={c.edit} testID="home-edit" hitSlop={8} style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}>
+              <Icon name="edit" size={16} color={colors.goldLight} />
+              <T v="meta13" color={colors.goldLight}>
+                {c.edit}
+              </T>
+            </Pressable>
+          </Row>
+        )
+      ) : null}
+
+      {rows.map((row) => (
+        <Row key={row.map((r) => r.item.id).join("-")} gap={10} align="stretch" style={{ marginBottom: 10 }}>
+          {row.map(({ item, span }) => {
+            const vi = visible.findIndex((v) => v.id === item.id);
+            return (
+              <View key={item.id} style={{ flex: span, minWidth: 0 }}>
+                <CardShell
+                  card={item}
+                  title={c.cards[item.id]}
+                  editing={editing}
+                  first={vi === 0}
+                  last={vi === visible.length - 1}
+                  copy={c}
+                  onOpen={() => router.push(CARD_ROUTES[item.id] as never)}
+                  onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir) }))}
+                  onSize={(size) => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { size }) }))}
+                  onHide={() => edit((d) => hideCard(d.cards, d.dismissed, item.id, layout.phase, layout.answers.adapt))}
+                  testID={`home-card-${item.id}`}
+                >
+                  {(bodies[item.id] ?? defaultBody(item.id))({ size: item.size, half: span === 1 })}
+                </CardShell>
+              </View>
+            );
+          })}
+        </Row>
+      ))}
+
+      {editing ? (
+        <Card kind="solid" padding={14} radiusKey="tile" style={styles.addBox}>
+          <SectionLabel>{c.addCard}</SectionLabel>
+          {hidden.length ? (
+            <Row gap={8} style={{ flexWrap: "wrap", marginTop: 8 }}>
+              {CARD_IDS.filter((id) => hidden.some((h) => h.id === id)).map((id) => (
+                <Chip key={id} label={`+ ${c.cards[id]}`} onPress={() => edit((d) => ({ ...d, cards: showCard(d.cards, id) }))} testID={`home-add-${id}`} />
+              ))}
+            </Row>
+          ) : (
+            <T v="meta13" color={colors.ivory55} style={{ marginTop: 6 }}>
+              {c.allShown}
+            </T>
+          )}
+        </Card>
+      ) : null}
+    </View>
+  );
+
+  /** The cards Home did not have before: drawn from `cards`, a quiet line when there is no data. */
+  function defaultBody(id: CardId): CardBody {
+    const d = cards ?? {};
+    return function cardBody({ size, half }) {
+      switch (id) {
+        case "countdown": {
+          const cd = data.countdown;
+          const date = fullDate(data.wedding_date, lang);
+          if (!cd) return <Quiet text={c.noDate} />;
+          const days = cd.passed ? Math.max(1, Math.abs(cd.days)) : cd.days;
+          const label = cd.passed ? c.married(days) : days === 0 ? c.today : c.daysToGo(days);
+          return (
+            <View>
+              <Big n={days === 0 && !cd.passed ? "0" : String(days)} />
+              <T v="body15" color={colors.ivory90}>
+                {label}
+              </T>
+              {date && !half ? (
+                <T v="meta13" color={colors.ivory55} style={{ marginTop: 2 }}>
+                  {date}
+                </T>
+              ) : null}
+            </View>
+          );
+        }
+        case "questions": {
+          const q = d.questions;
+          const waiting = q?.waiting ?? data.needs_you_breakdown?.conversations ?? 0;
+          if (!waiting && !q?.answered_7d) return <Quiet text={c.noQuestions} />;
+          return (
+            <View style={{ gap: 6 }}>
+              <NumLine n={waiting} label={c.waitingYou} half={half} />
+              {!half && q?.answered_7d ? <Sub text={c.answered(q.answered_7d)} /> : null}
+              {!half && size !== "s" ? (q?.items ?? []).slice(0, 3).map((it, i) => <Line key={it.id ?? i} left={it.text} right={it.guest ?? ""} />) : null}
+            </View>
+          );
+        }
+        case "tasks": {
+          const t = d.tasks;
+          const items = t?.items ?? [];
+          if (!t || (!items.length && !t.open)) return <Quiet text={c.noTasks} />;
+          return (
+            <View style={{ gap: 6 }}>
+              {half || size === "s" ? <NumLine n={t.open ?? items.length} label={c.openWord} half={half} /> : null}
+              {!half && size !== "s" ? items.slice(0, size === "l" ? 5 : 3).map((it) => <Line key={it.id} left={it.title} right={[it.assignee, it.due ? fullDate(it.due, lang) : null].filter(Boolean).join(" · ")} />) : null}
+              {t.overdue ? <Badge label={c.overdue(t.overdue)} kind="amber" /> : null}
+            </View>
+          );
+        }
+        case "budget": {
+          const b = d.budget;
+          if (b && typeof b.spent === "number" && typeof b.planned === "number" && b.planned > 0) {
+            const cur = b.currency || "USD";
+            const pct = Math.round((b.spent / b.planned) * 100);
+            return (
+              <View style={{ gap: 6 }}>
+                <Big n={formatMoneyShort(b.spent, cur, lang)} />
+                <Sub text={c.spentOf(formatMoneyShort(b.planned, cur, lang), pct)} />
+                <Bar frac={b.spent / b.planned} color={colors.gold} />
+                {!half && b.next ? <Line left={c.next(b.next.label)} right={[typeof b.next.amount === "number" ? formatMoneyShort(b.next.amount, cur, lang) : null, b.next.due ? fullDate(b.next.due, lang) : null].filter(Boolean).join(" · ")} /> : null}
+              </View>
+            );
+          }
+          if (typeof data.budget_percent_paid === "number")
+            return (
+              <View style={{ gap: 6 }}>
+                <Big n={`${Math.round(data.budget_percent_paid)}%`} />
+                <Sub text={c.paid(Math.round(data.budget_percent_paid))} />
+                <Bar frac={data.budget_percent_paid / 100} color={colors.gold} />
+              </View>
+            );
+          return <Quiet text={c.noBudget} />;
+        }
+        case "vendors": {
+          const v = d.vendors;
+          if (!v || (!v.total && !v.next?.length)) return <Quiet text={c.noVendors} />;
+          return (
+            <View style={{ gap: 6 }}>
+              {!half ? (v.next ?? []).slice(0, 3).map((it, i) => <Line key={i} left={it.title} right={it.at ? fullDate(it.at, lang) : ""} />) : null}
+              {typeof v.booked === "number" && typeof v.total === "number" ? <Sub text={c.booked(v.booked, v.total)} /> : null}
+            </View>
+          );
+        }
+        case "seating": {
+          const s = d.seating;
+          if (!s || !s.attending) return <Quiet text={c.noSeating} />;
+          return (
+            <View style={{ gap: 6 }}>
+              <NumLine n={s.seated ?? 0} label={c.seated(s.seated ?? 0, s.attending)} half={half} />
+              <Bar frac={(s.seated ?? 0) / s.attending} color={colors.ivory40} />
+              {s.tables ? <Sub text={c.tables(s.tables)} /> : null}
+            </View>
+          );
+        }
+        case "website": {
+          const w = d.website;
+          if (!w) return <Quiet text={c.open} />;
+          return (
+            <View style={{ gap: 6, alignItems: "flex-start" }}>
+              {typeof w.visits_7d === "number" ? <NumLine n={w.visits_7d} label={c.visits} half={half} /> : null}
+              <Badge label={w.published ? c.published : c.notPublished} kind={w.published ? "green" : "amber"} />
+              {!half && w.next_step ? <Sub text={c.next(w.next_step)} /> : null}
+            </View>
+          );
+        }
+        case "runsheet": {
+          const items = d.runsheet?.items ?? [];
+          if (!items.length) return <Quiet text={c.noRunsheet} />;
+          return (
+            <View style={{ gap: 6 }}>
+              {items.slice(0, half ? 2 : size === "l" ? 8 : 4).map((it, i) => (
+                <Row key={i} gap={10} align="flex-start">
+                  <T v="meta13" color={colors.ivory55} style={{ minWidth: 64, fontVariant: ["tabular-nums"] }}>
+                    {it.time ?? ""}
+                  </T>
+                  <T v="body15" color={colors.ivory90} numberOfLines={2} style={{ flex: 1 }}>
+                    {it.place && !half ? `${it.title}, ${it.place}` : it.title}
+                  </T>
+                </Row>
+              ))}
+            </View>
+          );
+        }
+        case "checkin": {
+          const k = d.checkin;
+          return (
+            <View style={{ gap: 6 }}>
+              {k && k.expected ? <NumLine n={k.arrived ?? 0} label={c.arrived(k.expected)} half={half} /> : null}
+              <T v="meta13" color={colors.goldLight}>
+                {c.openScanner}
+              </T>
+            </View>
+          );
+        }
+        case "album": {
+          const a = d.album;
+          if (!a || a.enabled === false) return <Quiet text={c.albumOff} />;
+          return (
+            <View style={{ gap: 6, alignItems: "flex-start" }}>
+              <NumLine n={a.photos ?? 0} label={c.photos(a.contributors ?? 0)} half={half} />
+              {a.pending ? <Badge label={c.pendingPhotos(a.pending)} kind="gold" /> : null}
+            </View>
+          );
+        }
+        case "thankyou": {
+          const t = d.thankyou;
+          if (!t || !t.total) return <Quiet text={c.noThanks} />;
+          return (
+            <View style={{ gap: 6 }}>
+              <NumLine n={t.written ?? 0} label={c.written(t.total)} half={half} />
+              <Bar frac={(t.written ?? 0) / t.total} color={colors.gold} />
+            </View>
+          );
+        }
+        case "partner": {
+          const people = d.partner?.people ?? [];
+          if (people.length < 2) return <Quiet text={c.noPartner} />;
+          return (
+            <View style={{ gap: 6 }}>
+              {people.slice(0, 3).map((p) => (
+                <Line key={p.name} left={p.name} right={c.tasksOf(p.open_tasks)} />
+              ))}
+            </View>
+          );
+        }
+        case "planner": {
+          const p = d.planner;
+          const n = p?.open_requests ?? data.needs_you_breakdown?.requests ?? 0;
+          if (!p && !n) return <Quiet text={c.noPlanner} />;
+          return (
+            <View style={{ gap: 6 }}>
+              <NumLine n={n} label={c.requestsToApprove(n)} half={half} />
+              {p?.name || p?.agency ? <Sub text={[p.name, p.agency].filter(Boolean).join(", ")} /> : null}
+            </View>
+          );
+        }
+        default:
+          return <Quiet text={c.open} />;
+      }
+    };
+  }
+}
+
+function CardShell({
+  card,
+  title,
+  editing,
+  first,
+  last,
+  copy,
+  onOpen,
+  onMove,
+  onSize,
+  onHide,
+  children,
+  testID,
+}: {
+  card: HomeCard;
+  title: string;
+  editing: boolean;
+  first: boolean;
+  last: boolean;
+  copy: HomeCopy;
+  onOpen: () => void;
+  onMove: (dir: -1 | 1) => void;
+  onSize: (s: CardSize) => void;
+  onHide: () => void;
+  children: ReactNode;
+  testID?: string;
+}) {
+  return (
+    <Pressable onPress={editing ? undefined : onOpen} disabled={editing} accessibilityRole={editing ? undefined : "button"} accessibilityLabel={title} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && !editing && { opacity: 0.85 }]}>
+      <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
+        {editing ? (
+          <View style={styles.tools}>
+            <Tool label="↑" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
+            <Tool label="↓" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
+            {(["s", "m", "l"] as CardSize[]).map((s) => (
+              <Tool key={s} label={s.toUpperCase()} a11y={copy.size(s.toUpperCase())} on={card.size === s} onPress={() => onSize(s)} />
+            ))}
+            <View style={{ flex: 1 }} />
+            <Tool label={copy.hide} a11y={`${copy.hide} ${title}`} onPress={onHide} />
+          </View>
+        ) : null}
+        <Row style={{ justifyContent: "space-between", marginBottom: 8 }} align="center">
+          <T v="body16" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
+            {title}
+          </T>
+          {editing ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
+        </Row>
+        {children}
+      </Card>
+    </Pressable>
+  );
+}
+
+function Tool({ label, a11y, onPress, disabled, on }: { label: string; a11y: string; onPress: () => void; disabled?: boolean; on?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled: !!disabled, selected: !!on }} hitSlop={4} style={({ pressed }) => [styles.tool, on && styles.toolOn, disabled && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
+      <T v="meta13" color={on ? colors.night : colors.ivory}>
+        {label}
+      </T>
+    </Pressable>
+  );
+}
+
+function Big({ n }: { n: string }) {
+  return (
+    <T v="title34" style={{ fontVariant: ["lining-nums", "tabular-nums"] }} numberOfLines={1} adjustsFontSizeToFit>
+      {n}
+    </T>
+  );
+}
+
+function NumLine({ n, label, half }: { n: number; label: string; half: boolean }) {
+  return half ? (
+    <View>
+      <Big n={String(n)} />
+      <Sub text={label} />
+    </View>
+  ) : (
+    <Row gap={10} align="baseline">
+      <Big n={String(n)} />
+      <T v="meta13" color={colors.ivory55} style={{ flex: 1 }} numberOfLines={2}>
+        {label}
+      </T>
+    </Row>
+  );
+}
+
+function Sub({ text }: { text: string }) {
+  return (
+    <T v="meta13" color={colors.ivory55} numberOfLines={2}>
+      {text}
+    </T>
+  );
+}
+
+function Quiet({ text }: { text: string }) {
+  return (
+    <T v="meta13" color={colors.ivory55}>
+      {text}
+    </T>
+  );
+}
+
+function Line({ left, right }: { left: string; right: string }) {
+  return (
+    <Row gap={10} style={{ justifyContent: "space-between" }} align="flex-start">
+      <T v="body15" color={colors.ivory90} numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
+        {left}
+      </T>
+      {right ? (
+        <T v="meta13" color={colors.ivory55} numberOfLines={1} style={{ flexShrink: 0, maxWidth: "45%", fontVariant: ["tabular-nums"] }}>
+          {right}
+        </T>
+      ) : null}
+    </Row>
+  );
+}
+
+function Bar({ frac, color }: { frac: number; color: string }) {
+  const f = Number.isFinite(frac) ? Math.max(0, Math.min(1, frac)) : 0;
+  return (
+    <View style={styles.track}>
+      <View style={[styles.fill, { width: `${f * 100}%`, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  editBtn: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 36, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder },
+  editingCard: { borderStyle: "dashed", borderWidth: 1, borderColor: colors.ivory25 },
+  tools: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, paddingBottom: 10, marginBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
+  tool: { minWidth: 32, minHeight: 32, paddingHorizontal: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.ivory25, alignItems: "center", justifyContent: "center" },
+  toolOn: { backgroundColor: colors.ivory, borderColor: colors.ivory },
+  addBox: { borderStyle: "dashed", borderWidth: 1, borderColor: colors.ivory25, marginTop: 4 },
+  track: { height: 4, borderRadius: 2, backgroundColor: colors.ivory09, overflow: "hidden" },
+  fill: { height: 4, borderRadius: 2 },
+});
