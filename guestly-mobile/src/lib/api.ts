@@ -48,17 +48,37 @@ const LOCAL: Record<string, { en: string; es: string }> = {
 const FORBIDDEN_GENERIC = { en: "Your role does not allow this action.", es: "Tu rol no permite esta acción." };
 const USTED = /\b(Su rol|inténtelo|Inténtelo|Por favor inicie|actualice|Espere|Revíselo|Agregue)\b/;
 
+function parseFields(raw: unknown): Record<string, { en: string; es: string }> {
+  const out: Record<string, { en: string; es: string }> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const f = v as { message_en?: unknown; message_es?: unknown } | null;
+    if (f && typeof f.message_en === "string" && typeof f.message_es === "string") out[k] = { en: f.message_en, es: f.message_es };
+  }
+  return out;
+}
+
+/** True when the portal has no such route yet (a feature whose server side
+ *  has not shipped): the host's own 404 page, or the envelope's not_found on a
+ *  list read. Screens behind a feature check hide themselves on it. */
+export function isMissingEndpoint(err: unknown): boolean {
+  return err instanceof ApiFailure && err.status === 404 && (err.code === "http_404" || err.code === "not_found");
+}
+
 export class ApiFailure extends Error {
   code: string;
   status: number;
   /** A finer cause some routes send (RSVP: missing_answers, ...). */
   reason: string | null;
   messages: { en: string; es: string };
-  constructor(status: number, err: (ApiError & { reason?: string }) | null) {
+  /** Per-field form errors (Settings routes): app field key to its sentence. */
+  fields: Record<string, { en: string; es: string }>;
+  constructor(status: number, err: (ApiError & { reason?: string; fields?: unknown }) | null) {
     super(err?.code ?? `http_${status}`);
     this.status = status;
     this.code = err?.code ?? `http_${status}`;
     this.reason = typeof err?.reason === "string" ? err.reason : null;
+    this.fields = parseFields(err?.fields);
     const local = LOCAL[this.code];
     if (local) this.messages = { ...local };
     else if (this.code === "forbidden" && (!err?.message_es || USTED.test(err.message_es))) this.messages = { ...FORBIDDEN_GENERIC };
