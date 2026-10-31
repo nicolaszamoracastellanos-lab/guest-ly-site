@@ -22,24 +22,33 @@ export type HomeLayoutPayload = {
   phase: Phase;
   dismissed: string[];
   canEdit: boolean;
-  /** The caller's own recap choice (per person), when the portal sends it. */
-  recap?: RecapPref | null;
+  quizState?: "done" | "skipped" | null;
+  /** The caller's own recap choice (per person); `set` false = never chosen (the default). */
+  recap?: (RecapPref & { set?: boolean }) | null;
 };
 
-type Dated = { at?: string | null };
+// Mirrors the portal's src/lib/home-cards.ts (feat/custom-home b0319941).
+// Cards Home already had (briefing, rsvp, replies, setup, activity) and the
+// countdown, budget, questions and tasks cards read the older home fields.
+export type VendorsCard = { booked: number; total: number; toBook: { id: string; name: string; category: string; status: "shortlist" | "contacted" | "quoted" }[] };
+export type SeatingCard = { seated: number; confirmed: number; tables: number };
+export type WebsiteCard = { published: boolean; path: string; updatedAt: string | null };
+export type RunsheetCard = { day: string; blocks: { id: string; startsAt: string | null; title: string; location: string | null }[]; total: number };
+export type CheckinCard = { arrived: number; expected: number };
+export type AlbumCard = { enabled: boolean; approved: number; pending: number; guests: number };
+export type ThankYouCard = { done: number; total: number };
+export type PartnerCard = { people: { userId: string; name: string; isMe: boolean; openTasks: number }[] };
+export type PlannerCard = { open: number; plannerName: string | null };
 export type HomeCardsData = {
-  questions?: { waiting?: number; answered_7d?: number | null; items?: { id?: string; text: string; guest?: string | null }[] } | null;
-  tasks?: { open?: number; overdue?: number; items?: ({ id: string; title: string; due?: string | null; assignee?: string | null } & Dated)[] } | null;
-  budget?: { planned?: number | null; spent?: number | null; currency?: string | null; next?: { label: string; amount?: number | null; due?: string | null } | null } | null;
-  vendors?: { booked?: number; total?: number; next?: { title: string; at?: string | null; vendor?: string | null }[] } | null;
-  seating?: { seated?: number; attending?: number; tables?: number } | null;
-  website?: { published?: boolean; visits_7d?: number | null; next_step?: string | null } | null;
-  runsheet?: { items?: { time?: string | null; title: string; place?: string | null }[] } | null;
-  checkin?: { arrived?: number; expected?: number } | null;
-  album?: { enabled?: boolean; photos?: number; contributors?: number; pending?: number } | null;
-  thankyou?: { written?: number; total?: number } | null;
-  partner?: { people?: { name: string; open_tasks: number }[] } | null;
-  planner?: { name?: string | null; agency?: string | null; open_requests?: number } | null;
+  vendors?: VendorsCard | null;
+  seating?: SeatingCard | null;
+  website?: WebsiteCard | null;
+  runsheet?: RunsheetCard | null;
+  checkin?: CheckinCard | null;
+  album?: AlbumCard | null;
+  thankyou?: ThankYouCard | null;
+  partner?: PartnerCard | null;
+  planner?: PlannerCard | null;
 };
 
 export type CoupleHomeWithLayout = CoupleHome & { layout?: unknown; cards?: HomeCardsData | null };

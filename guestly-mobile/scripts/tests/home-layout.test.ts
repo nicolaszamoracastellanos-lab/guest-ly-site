@@ -1,92 +1,124 @@
 // Run: node --experimental-strip-types scripts/tests/home-layout.test.ts
-// The customizable Home core. The portal runs the same assertions on its copy
-// (src/lib/home-layout-core.ts); the two files must stay identical.
+// The customizable Home's pure core (src/features/couple/homeLayout.ts), a
+// verbatim copy of the portal's src/lib/home-layout-core.ts. These are the
+// portal's cases (scripts/test-home-layout-core.mjs) unchanged, so both copies
+// answer to the same assertions.
+
 import assert from "node:assert/strict";
-import { CARD_IDS, STANDARD_ANSWERS, phaseFor, suggestedCards, effectiveCards, rowSpans, sanitizeLayout, moveCard, showCard, hideCard, type HomeAnswers, type HomeCard } from "../../src/features/couple/homeLayout.ts";
+import * as core from "../../src/features/couple/homeLayout.ts";
 
-const ids = (cs: HomeCard[]) => cs.filter((c) => !c.hidden).map((c) => c.id);
-const everyOnce = (cs: HomeCard[]) => assert.deepEqual([...cs.map((c) => c.id)].sort(), [...CARD_IDS].sort());
+const { CARD_IDS, STANDARD_ANSWERS, phaseFor, suggestedCards, effectiveCards, markPhaseHandled, rowSpans, sanitizeLayout, sanitizeCards } = core;
 
-// Phases.
-assert.equal(phaseFor(null), "planning");
-assert.equal(phaseFor(90), "planning");
-assert.equal(phaseFor(31), "planning");
-assert.equal(phaseFor(30), "final");
-assert.equal(phaseFor(8), "final");
-assert.equal(phaseFor(7), "week");
-assert.equal(phaseFor(0), "week");
-assert.equal(phaseFor(-1), "after");
-assert.equal(phaseFor(Number.NaN), "planning");
+let n = 0;
+const t = (name, fn) => { fn(); n++; };
+const ids = (cards) => cards.filter((c) => !c.hidden).map((c) => c.id);
+const everyOnce = (cards) => {
+  assert.equal(cards.length, CARD_IDS.length);
+  assert.deepEqual([...cards.map((c) => c.id)].sort(), [...CARD_IDS].sort());
+};
 
-// The mockup's default answers: RSVPs, budget, questions; balanced; weekly; partner.
-const mock: HomeAnswers = { focus: ["rsvp", "budget", "questions"], detail: "balanced", when: "weekly", team: "partner", adapt: true };
-const s1 = suggestedCards(mock);
-everyOnce(s1);
-assert.deepEqual(ids(s1), ["countdown", "rsvp", "replies", "budget", "questions", "partner", "briefing", "activity"]);
+t("phaseFor", () => {
+  assert.equal(phaseFor(null), "planning");
+  assert.equal(phaseFor(90), "planning");
+  assert.equal(phaseFor(31), "planning");
+  assert.equal(phaseFor(30), "final");
+  assert.equal(phaseFor(8), "final");
+  assert.equal(phaseFor(7), "week");
+  assert.equal(phaseFor(0), "week");
+  assert.equal(phaseFor(-1), "after");
+  assert.equal(phaseFor(Number.NaN), "planning");
+});
 
-// Glance: everything small. Full: the first focus card is large.
-assert.ok(suggestedCards({ ...mock, detail: "glance" }).filter((c) => !c.hidden).every((c) => c.size === "s"));
-const full = suggestedCards({ ...mock, detail: "full" });
-assert.equal(full.find((c) => c.id === "rsvp")!.size, "l");
-assert.equal(full.find((c) => c.id === "partner")!.size, "s");
+t("suggested: the mockup's default answers", () => {
+  const a = { focus: ["rsvp", "budget", "questions"], detail: "balanced", when: "weekly", team: "partner", adapt: true };
+  const s = suggestedCards(a);
+  everyOnce(s);
+  assert.deepEqual(ids(s), ["countdown", "rsvp", "replies", "budget", "questions", "partner", "briefing", "activity"]);
+  assert.equal(s[0].size, "s");
+});
 
-// Daily: the briefing right after the countdown. Needed: a short Home of four, briefing large, nothing lost.
-assert.deepEqual(ids(suggestedCards({ ...mock, when: "daily" })).slice(0, 2), ["countdown", "briefing"]);
-const needed = suggestedCards({ ...mock, when: "needed" });
-everyOnce(needed);
-assert.equal(ids(needed).length, 4);
-assert.equal(needed.find((c) => c.id === "briefing")!.size, "l");
-assert.equal(needed.find((c) => c.id === "activity")!.hidden, true);
+t("suggested: every combination has every card once", () => {
+  for (const detail of ["glance", "balanced", "full"])
+    for (const when of ["daily", "weekly", "needed"])
+      for (const team of ["solo", "partner", "planner"])
+        for (const focus of [["rsvp"], ["seating", "website"], ["vendors", "tasks", "questions"]]) {
+          const s = suggestedCards({ focus, detail, when, team, adapt: true });
+          everyOnce(s);
+          if (when === "needed") assert.ok(ids(s).length <= 4);
+          if (detail === "glance") assert.ok(s.filter((c) => !c.hidden).every((c) => c.size === "s"));
+        }
+});
 
-// Standard (Skip): every card once.
-everyOnce(suggestedCards(STANDARD_ANSWERS));
+t("suggested: needed puts the briefing large and first after the countdown", () => {
+  const s = suggestedCards({ ...STANDARD_ANSWERS, when: "needed" });
+  assert.deepEqual(ids(s).slice(0, 2), ["countdown", "briefing"]);
+  assert.equal(s[1].size, "l");
+});
 
-// Effective: planning or adapt off changes nothing; final promotes after the countdown.
-assert.deepEqual(effectiveCards(s1, mock, "planning", []), s1);
-assert.deepEqual(effectiveCards(s1, { ...mock, adapt: false }, "week", []), s1);
-const fin = effectiveCards(s1, mock, "final", []);
-assert.deepEqual(ids(fin).slice(0, 5), ["countdown", "rsvp", "seating", "vendors", "budget"]);
-everyOnce(fin);
-const wk = effectiveCards(s1, mock, "week", ["week:checkin"]);
-assert.deepEqual(ids(wk).slice(0, 3), ["countdown", "runsheet", "questions"]);
-assert.equal(wk.find((c) => c.id === "checkin")!.hidden, true);
-// A hidden countdown: phase cards go first.
-const noCd = s1.map((c) => (c.id === "countdown" ? { ...c, hidden: true } : c));
-assert.equal(ids(effectiveCards(noCd, mock, "after", []))[0], "album");
+t("suggested: full detail widens the first focus card", () => {
+  const s = suggestedCards({ ...STANDARD_ANSWERS, detail: "full", focus: ["budget"] });
+  assert.equal(s.find((c) => c.id === "budget").size, "l");
+});
 
-// Rows end flush, order kept.
-const v = (sizes: string) => sizes.split("").map((s, i) => ({ id: CARD_IDS[i], size: s as "s" | "m" | "l", hidden: false }));
-assert.deepEqual(rowSpans(v("smmm"), 12), [4, 8, 6, 6]);
-assert.deepEqual(rowSpans(v("sss"), 12), [4, 4, 4]);
-assert.deepEqual(rowSpans(v("lsm"), 12), [12, 4, 8]);
-assert.deepEqual(rowSpans(v("s"), 12), [12]);
-assert.deepEqual(rowSpans(v("ssm"), 2), [1, 1, 2]);
-assert.deepEqual(rowSpans(v("sms"), 2), [2, 2, 2]);
-assert.deepEqual(rowSpans([], 2), []);
+t("effective: planning or no adapt keeps the stored order", () => {
+  const base = suggestedCards(STANDARD_ANSWERS);
+  assert.deepEqual(effectiveCards(base, STANDARD_ANSWERS, "planning", []), base);
+  assert.deepEqual(effectiveCards(base, { ...STANDARD_ANSWERS, adapt: false }, "week", []), base);
+});
 
-// Sanitize: junk dropped, missing appended hidden, sizes clamped, answers defaulted.
-const clean = sanitizeLayout({
-  answers: { focus: ["budget", "nope", "budget", "rsvp", "tasks", "seating"], detail: "huge", when: "daily", team: "planner", adapt: "yes" },
-  cards: [{ id: "budget", size: "xl" }, { id: "budget", size: "s" }, { id: "ghost" }, "x", { id: "rsvp", size: "l", hidden: true }],
-  dismissed: ["final:seating", "final:seating", "later:rsvp", "week:ghost", 3],
-})!;
-assert.deepEqual(clean.answers, { focus: ["budget", "rsvp", "tasks"], detail: "balanced", when: "daily", team: "planner", adapt: true });
-assert.deepEqual(clean.cards.slice(0, 2), [{ id: "budget", size: "m", hidden: false }, { id: "rsvp", size: "l", hidden: true }]);
-everyOnce(clean.cards);
-assert.deepEqual(clean.dismissed, ["final:seating"]);
-assert.equal(sanitizeLayout(null), null);
-assert.equal(sanitizeLayout({ cards: [] }), null);
-assert.deepEqual(sanitizeLayout({ answers: {} })!.cards, suggestedCards(STANDARD_ANSWERS));
+t("effective: wedding week lifts its cards after the countdown and shows them", () => {
+  const base = suggestedCards(STANDARD_ANSWERS);
+  const e = effectiveCards(base, STANDARD_ANSWERS, "week", []);
+  everyOnce(e);
+  assert.deepEqual(ids(e).slice(0, 4), ["countdown", "runsheet", "checkin", "questions"]);
+});
 
-// Edit helpers.
-const moved = moveCard(s1, "replies", -1);
-assert.deepEqual(ids(moved).slice(0, 3), ["countdown", "replies", "rsvp"]);
-assert.equal(moveCard(s1, "countdown", -1), s1);
-const shown = showCard(s1, "vendors");
-assert.equal(ids(shown).at(-1), "vendors");
-const h = hideCard(fin, [], "seating", "final", true);
-assert.deepEqual(h.dismissed, ["final:seating"]);
-assert.equal(ids(effectiveCards(h.cards, mock, "final", h.dismissed)).includes("seating"), false);
-assert.deepEqual(hideCard(s1, [], "activity", "planning", true).dismissed, []);
+t("effective: handled phase cards stay where the couple put them", () => {
+  const base = suggestedCards(STANDARD_ANSWERS);
+  const d = markPhaseHandled([], STANDARD_ANSWERS, "after");
+  assert.deepEqual(d.sort(), ["after:album", "after:budget", "after:thankyou"]);
+  assert.deepEqual(effectiveCards(base, STANDARD_ANSWERS, "after", d), base);
+  const one = effectiveCards(base, STANDARD_ANSWERS, "after", ["after:album"]);
+  assert.deepEqual(ids(one).slice(0, 3), ["countdown", "thankyou", "budget"]);
+  assert.equal(one.find((c) => c.id === "album").hidden, true);
+  assert.deepEqual(markPhaseHandled(["x"], STANDARD_ANSWERS, "planning"), ["x"]);
+});
 
-console.log("home-layout.test.ts: ok");
+t("rowSpans: rows end flush on 12 and 2 columns", () => {
+  const c = (size) => ({ id: "rsvp", size, hidden: false });
+  assert.deepEqual(rowSpans([c("s"), c("m"), c("m"), c("m")], 12), [4, 8, 6, 6]);
+  assert.deepEqual(rowSpans([c("s"), c("s"), c("s")], 12), [4, 4, 4]);
+  assert.deepEqual(rowSpans([c("m"), c("l"), c("s")], 12), [12, 12, 12]);
+  assert.deepEqual(rowSpans([c("s"), c("m"), c("s")], 2), [2, 2, 2]);
+  assert.deepEqual(rowSpans([c("s"), c("s"), c("l")], 2), [1, 1, 2]);
+  assert.deepEqual(rowSpans([], 12), []);
+  for (const cols of [12, 2]) {
+    const sizes = ["s", "m", "l", "s", "s", "m", "s"];
+    const spans = rowSpans(sizes.map(c), cols);
+    let cur = 0;
+    for (const s of spans) { cur += s; assert.ok(cur <= cols); if (cur === cols) cur = 0; }
+    assert.equal(cur, 0);
+  }
+});
+
+t("sanitize: garbage in", () => {
+  assert.equal(sanitizeLayout(null), null);
+  assert.equal(sanitizeLayout("x"), null);
+  assert.equal(sanitizeLayout([]), null);
+  assert.equal(sanitizeLayout({ cards: [] }), null);
+  const l = sanitizeLayout({
+    answers: { focus: ["budget", "nope", "budget", "tasks", "rsvp", "seating"], detail: "huge", when: "daily", team: 3, adapt: "yes" },
+    cards: [{ id: "budget", size: "xl", hidden: "no" }, { id: "budget", size: "l" }, { id: "hack" }, 7, null],
+    dismissed: ["week:runsheet", "week:budget", "nope", 5, "week:runsheet"],
+  });
+  assert.deepEqual(l.answers, { focus: ["budget", "tasks", "rsvp"], detail: "balanced", when: "daily", team: "solo", adapt: true });
+  everyOnce(l.cards);
+  assert.deepEqual(l.cards[0], { id: "budget", size: "m", hidden: false });
+  assert.ok(l.cards.slice(1).every((c) => c.hidden));
+  assert.deepEqual(l.dismissed, ["week:runsheet"]);
+  const noCards = sanitizeLayout({ answers: STANDARD_ANSWERS });
+  assert.deepEqual(noCards.cards, suggestedCards(STANDARD_ANSWERS));
+  everyOnce(sanitizeCards("nope"));
+});
+
+console.log(`test-home-layout-core: ${n} groups ok`);

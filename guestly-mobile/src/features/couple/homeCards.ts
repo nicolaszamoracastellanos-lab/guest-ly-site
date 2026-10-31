@@ -4,7 +4,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, del } from "@/lib/api";
 import { sanitizeLayout, type HomeAnswers, type HomeCard } from "./homeLayout";
-import type { CoupleHomeWithLayout, HomeLayoutPayload, RecapPref } from "./homeCardsCore";
+import type { CoupleHomeWithLayout, HomeCardsData, HomeLayoutPayload, RecapPref } from "./homeCardsCore";
 
 export * from "./homeCardsCore";
 
@@ -16,11 +16,12 @@ export function readLayout(raw: unknown): HomeLayoutPayload | null {
   if (!clean) return null;
   const phase = r.phase === "final" || r.phase === "week" || r.phase === "after" ? r.phase : "planning";
   const rc = r.recap as Record<string, unknown> | null | undefined;
-  const recap: RecapPref | null =
+  const recap: (RecapPref & { set: boolean }) | null =
     rc && typeof rc === "object" && (rc.cadence === "daily" || rc.cadence === "weekly" || rc.cadence === "needed")
-      ? { cadence: rc.cadence, weekday: clampInt(rc.weekday, 0, 6, 1), hour: clampInt(rc.hour, 0, 23, 8) }
+      ? { cadence: rc.cadence, weekday: clampInt(rc.weekday, 0, 6, 1), hour: clampInt(rc.hour, 0, 23, 8), set: rc.set !== false }
       : null;
-  return { configured: r.configured === true, answers: clean.answers, cards: clean.cards, phase, dismissed: clean.dismissed, canEdit: r.canEdit === true, recap };
+  const quizState = r.quizState === "done" || r.quizState === "skipped" ? r.quizState : null;
+  return { configured: r.configured === true, quizState, answers: clean.answers, cards: clean.cards, phase, dismissed: clean.dismissed, canEdit: r.canEdit === true, recap };
 }
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
@@ -40,21 +41,23 @@ export type LayoutPut = {
 export function useSaveHomeLayout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: LayoutPut) => api<unknown>("/couple/home-layout", { method: "PUT", body }),
-    onSuccess: (data) => {
-      const next = readLayout(data);
-      if (next) qc.setQueryData<CoupleHomeWithLayout>(["couple-home"], (prev) => (prev ? { ...prev, layout: data } : prev));
-      void qc.invalidateQueries({ queryKey: ["couple-home"] });
-    },
+    mutationFn: (body: LayoutPut) => api<{ layout?: unknown; cards?: HomeCardsData | null }>("/couple/home-layout", { method: "PUT", body }),
+    onSuccess: (data) => applySaved(qc, data),
   });
+}
+
+/** PUT and DELETE answer the same { layout, cards } as GET /couple/home adds: Home redraws at once, then refetches. */
+function applySaved(qc: ReturnType<typeof useQueryClient>, data: { layout?: unknown; cards?: HomeCardsData | null } | null | undefined) {
+  if (data && readLayout(data.layout)) qc.setQueryData<CoupleHomeWithLayout>(["couple-home"], (prev) => (prev ? { ...prev, layout: data.layout, cards: data.cards ?? prev.cards } : prev));
+  void qc.invalidateQueries({ queryKey: ["couple-home"] });
 }
 
 /** Back to suggested: the cards the answers suggest, nothing dismissed. */
 export function useResetHomeLayout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => del<unknown>("/couple/home-layout"),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["couple-home"] }),
+    mutationFn: () => del<{ layout?: unknown; cards?: HomeCardsData | null }>("/couple/home-layout"),
+    onSuccess: (data) => applySaved(qc, data),
   });
 }
 

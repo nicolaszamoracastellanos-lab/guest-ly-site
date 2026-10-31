@@ -16,9 +16,9 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toast } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
-import { formatMoneyShort } from "@/features/budget/money";
 import { fullDate, dayMonth } from "@/features/couple/ui";
-import { CARD_IDS, rowSpans, moveCard, setCard, showCard, hideCard, type CardId, type CardSize, type HomeCard } from "./homeLayout";
+import { CARD_IDS, rowSpans, markPhaseHandled, type CardId, type CardSize, type HomeCard } from "./homeLayout";
+import { moveCard, setCard, showCard } from "./homeEdit";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
 
@@ -55,8 +55,9 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
   const finish = async () => {
     if (!draft) return setEditing(false);
     try {
-      // The cards as shown (today's phase included) become the saved order.
-      await save.mutateAsync({ cards: draft.cards, dismissed: draft.dismissed });
+      // The cards as shown (today's phase included) become the saved order,
+      // and this phase stops reordering them (the portal's markPhaseHandled).
+      await save.mutateAsync({ cards: draft.cards, dismissed: markPhaseHandled(draft.dismissed, layout.answers, layout.phase) });
       setEditing(false);
       setDraft(null);
     } catch {
@@ -113,7 +114,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
                   onOpen={() => router.push(CARD_ROUTES[item.id] as never)}
                   onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir) }))}
                   onSize={(size) => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { size }) }))}
-                  onHide={() => edit((d) => hideCard(d.cards, d.dismissed, item.id, layout.phase, layout.answers.adapt))}
+                  onHide={() => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { hidden: true }) }))}
                   testID={`home-card-${item.id}`}
                 >
                   {(bodies[item.id] ?? defaultBody(item.id))({ size: item.size, half: span === 1 })}
@@ -169,48 +170,20 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           );
         }
         case "questions": {
-          const q = d.questions;
-          const waiting = q?.waiting ?? data.needs_you_breakdown?.conversations ?? 0;
-          if (!waiting && !q?.answered_7d) return <Quiet text={c.noQuestions} />;
-          return (
-            <View style={{ gap: 6 }}>
-              <NumLine n={waiting} label={c.waitingYou} half={half} />
-              {!half && q?.answered_7d ? <Sub text={c.answered(q.answered_7d)} /> : null}
-              {!half && size !== "s" ? (q?.items ?? []).slice(0, 3).map((it, i) => <Line key={it.id ?? i} left={it.text} right={it.guest ?? ""} />) : null}
-            </View>
-          );
+          // Guest threads waiting on the couple (the older home field).
+          const waiting = data.needs_you_breakdown?.conversations ?? 0;
+          if (!waiting) return <Quiet text={c.noQuestions} />;
+          return <NumLine n={waiting} label={c.waitingYou} half={half} />;
         }
-        case "tasks": {
-          const t = d.tasks;
-          const items = t?.items ?? [];
-          if (!t || (!items.length && !t.open)) return <Quiet text={c.noTasks} />;
-          return (
-            <View style={{ gap: 6 }}>
-              {half || size === "s" ? <NumLine n={t.open ?? items.length} label={c.openWord} half={half} /> : null}
-              {!half && size !== "s" ? items.slice(0, size === "l" ? 5 : 3).map((it) => <Line key={it.id} left={it.title} right={[it.assignee, it.due ? dayMonth(it.due, lang) : null].filter(Boolean).join(" · ")} />) : null}
-              {t.overdue ? <Badge label={c.overdue(t.overdue)} kind="amber" /> : null}
-            </View>
-          );
-        }
+        case "tasks":
+          // The task list lives on its screen; the card is its door.
+          return <Quiet text={c.seeTasks} />;
         case "budget": {
-          const b = d.budget;
-          if (b && typeof b.spent === "number" && typeof b.planned === "number" && b.planned > 0) {
-            const cur = b.currency || "USD";
-            const pct = Math.round((b.spent / b.planned) * 100);
-            return (
-              <View style={{ gap: 6 }}>
-                <Big n={formatMoneyShort(b.spent, cur, lang)} />
-                <Sub text={c.spentOf(formatMoneyShort(b.planned, cur, lang), pct)} />
-                <Bar frac={b.spent / b.planned} color={colors.gold} />
-                {!half && b.next ? <Line left={c.next(b.next.label)} right={[typeof b.next.amount === "number" ? formatMoneyShort(b.next.amount, cur, lang) : null, b.next.due ? dayMonth(b.next.due, lang) : null].filter(Boolean).join(" · ")} /> : null}
-              </View>
-            );
-          }
           if (typeof data.budget_percent_paid === "number")
             return (
               <View style={{ gap: 6 }}>
                 <Big n={`${Math.round(data.budget_percent_paid)}%`} />
-                <Sub text={c.paid(Math.round(data.budget_percent_paid))} />
+                <Sub text={c.paidWord} />
                 <Bar frac={data.budget_percent_paid / 100} color={colors.gold} />
               </View>
             );
@@ -218,21 +191,28 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
         }
         case "vendors": {
           const v = d.vendors;
-          if (!v || (!v.total && !v.next?.length)) return <Quiet text={c.noVendors} />;
+          if (!v || !v.total) return <Quiet text={c.noVendors} />;
           return (
             <View style={{ gap: 6 }}>
-              {!half ? (v.next ?? []).slice(0, 3).map((it, i) => <Line key={i} left={it.title} right={it.at ? dayMonth(it.at, lang) : ""} />) : null}
-              {typeof v.booked === "number" && typeof v.total === "number" ? <Sub text={c.booked(v.booked, v.total)} /> : null}
+              {half ? <NumLine n={v.booked} label={c.bookedOf(v.total)} half /> : <Sub text={c.booked(v.booked, v.total)} />}
+              {!half && v.toBook.length ? (
+                <>
+                  <SectionLabel>{c.toBook}</SectionLabel>
+                  {v.toBook.slice(0, size === "l" ? 3 : 2).map((it) => (
+                    <Line key={it.id} left={it.name} right={it.category} />
+                  ))}
+                </>
+              ) : null}
             </View>
           );
         }
         case "seating": {
           const s = d.seating;
-          if (!s || !s.attending) return <Quiet text={c.noSeating} />;
+          if (!s || !s.confirmed) return <Quiet text={c.noSeating} />;
           return (
             <View style={{ gap: 6 }}>
-              <NumLine n={s.seated ?? 0} label={c.seated(s.seated ?? 0, s.attending)} half={half} />
-              <Bar frac={(s.seated ?? 0) / s.attending} color={colors.ivory40} />
+              <NumLine n={s.seated} label={c.seated(s.seated, s.confirmed)} half={half} />
+              <Bar frac={s.seated / s.confirmed} color={colors.ivory40} />
               {s.tables ? <Sub text={c.tables(s.tables)} /> : null}
             </View>
           );
@@ -242,27 +222,27 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           if (!w) return <Quiet text={c.open} />;
           return (
             <View style={{ gap: 6, alignItems: "flex-start" }}>
-              {typeof w.visits_7d === "number" ? <NumLine n={w.visits_7d} label={c.visits} half={half} /> : null}
               <Badge label={w.published ? c.published : c.notPublished} kind={w.published ? "green" : "amber"} />
-              {!half && w.next_step ? <Sub text={c.next(w.next_step)} /> : null}
+              {!half && w.updatedAt ? <Sub text={c.updated(dayMonth(w.updatedAt, lang))} /> : null}
             </View>
           );
         }
         case "runsheet": {
-          const items = d.runsheet?.items ?? [];
-          if (!items.length) return <Quiet text={c.noRunsheet} />;
+          const r = d.runsheet;
+          if (!r || !r.blocks.length) return <Quiet text={c.noRunsheet} />;
           return (
             <View style={{ gap: 6 }}>
-              {items.slice(0, half ? 2 : size === "l" ? 8 : 4).map((it, i) => (
-                <Row key={i} gap={10} align="flex-start">
+              {r.blocks.slice(0, half ? 2 : size === "l" ? 8 : 4).map((it) => (
+                <Row key={it.id} gap={10} align="flex-start">
                   <T v="meta13" color={colors.ivory55} style={{ minWidth: 64, fontVariant: ["tabular-nums"] }}>
-                    {it.time ?? ""}
+                    {clock(it.startsAt, lang)}
                   </T>
                   <T v="body15" color={colors.ivory90} numberOfLines={2} style={{ flex: 1 }}>
-                    {it.place && !half ? `${it.title}, ${it.place}` : it.title}
+                    {it.location && !half ? `${it.title}, ${it.location}` : it.title}
                   </T>
                 </Row>
               ))}
+              {r.total > r.blocks.length && !half ? <Sub text={c.more(r.total - r.blocks.length)} /> : null}
             </View>
           );
         }
@@ -270,7 +250,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           const k = d.checkin;
           return (
             <View style={{ gap: 6 }}>
-              {k && k.expected ? <NumLine n={k.arrived ?? 0} label={c.arrived(k.expected)} half={half} /> : null}
+              {k && k.expected ? <NumLine n={k.arrived} label={c.arrived(k.expected)} half={half} /> : null}
               <T v="meta13" color={colors.goldLight}>
                 {c.openScanner}
               </T>
@@ -279,10 +259,10 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
         }
         case "album": {
           const a = d.album;
-          if (!a || a.enabled === false) return <Quiet text={c.albumOff} />;
+          if (!a || !a.enabled) return <Quiet text={c.albumOff} />;
           return (
             <View style={{ gap: 6, alignItems: "flex-start" }}>
-              <NumLine n={a.photos ?? 0} label={c.photos(a.contributors ?? 0)} half={half} />
+              <NumLine n={a.approved} label={c.photos(a.guests)} half={half} />
               {a.pending ? <Badge label={c.pendingPhotos(a.pending)} kind="gold" /> : null}
             </View>
           );
@@ -292,8 +272,8 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           if (!t || !t.total) return <Quiet text={c.noThanks} />;
           return (
             <View style={{ gap: 6 }}>
-              <NumLine n={t.written ?? 0} label={c.written(t.total)} half={half} />
-              <Bar frac={(t.written ?? 0) / t.total} color={colors.gold} />
+              <NumLine n={t.done} label={c.written(t.total)} half={half} />
+              <Bar frac={t.done / t.total} color={colors.gold} />
             </View>
           );
         }
@@ -303,19 +283,19 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           return (
             <View style={{ gap: 6 }}>
               {people.slice(0, 3).map((p) => (
-                <Line key={p.name} left={p.name} right={c.tasksOf(p.open_tasks)} />
+                <Line key={p.userId} left={p.name} right={c.tasksOf(p.openTasks)} />
               ))}
             </View>
           );
         }
         case "planner": {
           const p = d.planner;
-          const n = p?.open_requests ?? data.needs_you_breakdown?.requests ?? 0;
+          const n = p?.open ?? data.needs_you_breakdown?.requests ?? 0;
           if (!p && !n) return <Quiet text={c.noPlanner} />;
           return (
             <View style={{ gap: 6 }}>
               <NumLine n={n} label={c.requestsToApprove(n)} half={half} />
-              {p?.name || p?.agency ? <Sub text={[p.name, p.agency].filter(Boolean).join(", ")} /> : null}
+              {p?.plannerName ? <Sub text={p.plannerName} /> : null}
             </View>
           );
         }
@@ -395,6 +375,15 @@ function Tool({ label, a11y, onPress, disabled, on }: { label: string; a11y: str
       </T>
     </Pressable>
   );
+}
+
+/** A run-of-show time: "16:00" or an ISO time, in the reader's clock. */
+function clock(v: string | null, lang: "en" | "es"): string {
+  if (!v) return "";
+  const hm = /^(\d{1,2}):(\d{2})/.exec(v);
+  const d = hm ? new Date(2000, 0, 1, Number(hm[1]), Number(hm[2])) : new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString(lang === "es" ? "es-BO" : "en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 function Big({ n }: { n: string }) {
