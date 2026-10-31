@@ -12,7 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy } from "@/i18n";
 import { useSession } from "@/lib/session";
-import { ensureAndroidChannels, registerPush, requestPushToken, savePushPrefs } from "@/lib/push";
+import { PUSH_KEYS, ensureAndroidChannels, registerPush, requestPushToken, savePushPrefs } from "@/lib/push";
 import { useSafeBack } from "@/lib/nav";
 import { Screen, T, Button, Card, Toggle, Stack, Icon, Row, NightMotif } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
@@ -25,10 +25,8 @@ export default function NotifyAsk() {
   const { surface: raw, from } = useLocalSearchParams<{ surface?: string; from?: string }>();
   const back = useSafeBack();
   const surface = raw === "couple" || raw === "planner" ? raw : "guest";
-  const guestPrefs = ["dayof", "replies", "rsvp_reminder"] as const;
-  const couplePrefs = ["rsvps", "escalations", "tasks"] as const;
-  const plannerPrefs = ["approvals", "tasks"] as const;
-  const keys: readonly string[] = surface === "guest" ? guestPrefs : surface === "planner" ? plannerPrefs : couplePrefs;
+  // HH wave F: album and team (couple), album and pass (guest) are new.
+  const keys: readonly string[] = PUSH_KEYS[surface];
   const [prefs, setPrefs] = useState<Record<string, boolean>>(Object.fromEntries(keys.map((k) => [k, true])));
   const [busy, setBusy] = useState(false);
 
@@ -40,6 +38,9 @@ export default function NotifyAsk() {
     escalations: [copy.notify.escalations, ""],
     tasks: [copy.notify.tasks, ""],
     approvals: [copy.notify.approvals, ""],
+    album: surface === "guest" ? [copy.notify.albumGuest, copy.notify.albumGuestDetail] : [copy.notify.album, copy.notify.albumDetail],
+    team: [copy.notify.team, copy.notify.teamDetail],
+    pass: [copy.notify.pass, copy.notify.passDetail],
   };
   const couple = state.status === "guest" ? state.tenant.couple_names : state.status === "user" ? state.me.tenant.couple_names : "";
   const dest = surface === "guest" ? "/guest" : surface === "planner" ? "/planner" : "/couple";
@@ -121,7 +122,7 @@ export default function NotifyAsk() {
       </View>
       <View style={{ paddingHorizontal: 28, marginTop: -overlap }}>
         <View style={styles.bellWrap}>
-          <Icon name="bell" size={26} color={colors.night} />
+          <Icon name="bell" size={26} color={colors.goldLight} />
         </View>
         <Stack gap={8} style={{ marginTop: compact ? 14 : 20 }}>
           <T v={compact ? "title30" : "title34"}>
@@ -159,6 +160,7 @@ export default function NotifyAsk() {
 
 const styles = StyleSheet.create({
   hero: { overflow: "hidden", opacity: 0.85 },
-  bellWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
+  // Outlined: the filled gold disc belongs to the Coordinator alone (HH craft pass).
+  bellWrap: { width: 52, height: 52, borderRadius: 14, borderWidth: 1, borderColor: colors.goldBorder, alignItems: "center", justifyContent: "center" },
   prefRow: { minHeight: 60, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory09, gap: 12 },
 });
