@@ -499,12 +499,12 @@ function Item({
   return (
     <View style={{ paddingLeft: 38 }}>
       <Card kind="glass" padding={16} border={proposed && !expired ? colors.goldBorder : undefined}>
-        <Row style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <T v="name24" style={{ flex: 1 }}>
-            {card.title[lang]}
-          </T>
+        {/* Badge above the title: side by side, the long status label left the
+            title one letter wide (Oct 31 2026). */}
+        <Stack gap={8} style={{ alignItems: "flex-start" }}>
           <Badge label={statusLabel} kind={statusKind} />
-        </Row>
+          <T v="name24">{card.title[lang]}</T>
+        </Stack>
         <Stack gap={8} style={{ marginTop: 10 }}>
           {card.fields.map((f, i) => (
             <View key={i}>
