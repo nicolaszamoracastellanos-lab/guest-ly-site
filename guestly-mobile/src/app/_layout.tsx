@@ -308,6 +308,8 @@ function Gate() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night }, animation: "fade" }}>
         <Stack.Screen name="assistant" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
         <Stack.Screen name="web" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+        {/* The five questions that build the customizable Home (couples). */}
+        <Stack.Screen name="home-setup" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
         {/* /tour only asks for the welcome tour and steps back; it is never seen. */}
         <Stack.Screen name="tour" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
       </Stack>
