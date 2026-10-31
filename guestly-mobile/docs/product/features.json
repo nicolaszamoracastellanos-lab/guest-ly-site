@@ -1,0 +1,308 @@
+{
+  "schema": "guestly-product-facts/1",
+  "repo": "guest-ly (guestly-mobile)",
+  "commit": "ec4d440",
+  "branch": "hh/f-app",
+  "generated_at": "2026-10-30T23:30:00Z",
+  "derived": {
+    "app": {
+      "version": "1.2.0",
+      "build": 34,
+      "store_status": "in_review",
+      "live_version": "1.1.0"
+    }
+  },
+  "note": "App-only features (the portal's docs/product/features.json holds every feature with a web side, ios included in its surface). IDs F200 to F299 are reserved for this file so the two never collide in the marketing bot. Same schema and rules: docs/product/HOW-TO-UPDATE.md in the portal repo.",
+  "features": [
+    {
+      "surface": [
+        "ios"
+      ],
+      "plans": [
+        "all"
+      ],
+      "status": "building",
+      "released": "",
+      "changed": "",
+      "changes": [],
+      "rollout": {
+        "flag": "",
+        "mode": "",
+        "note": ""
+      },
+      "screenshots": [],
+      "marketing": "hold",
+      "say": [
+        "Check-in keeps working at a venue with no signal."
+      ],
+      "avoid": [
+        "That two phones can never conflict: a conflict is reported, not prevented."
+      ],
+      "blocked_terms": [],
+      "numbers": [],
+      "supersedes": [],
+      "id": "F201",
+      "slug": "app-offline-door-queue",
+      "name": {
+        "en": "Door check-in that works offline",
+        "es": "Recepción en la puerta sin conexión"
+      },
+      "oneliner": {
+        "en": "The door scanner keeps checking guests in with no signal and syncs when it is back, with an offline chip that counts what waits.",
+        "es": "El escáner de la puerta sigue registrando invitados sin señal y sincroniza al volver, con un aviso que cuenta lo pendiente."
+      },
+      "audience": [
+        "couple",
+        "planner"
+      ],
+      "screen": {
+        "web": "",
+        "app": "Couple and planner: Check-in, the scanner with the offline chip"
+      },
+      "verified": {
+        "commit": "9ae0f66",
+        "by": "build-model",
+        "date": "2026-10-30",
+        "how": "built on hh/f-app; queue and chip with tests (scripts/tests/queue.test.ts), not released"
+      },
+      "source": {
+        "routes": [],
+        "files": [
+          "guestly-mobile/src/lib/queue.ts",
+          "guestly-mobile/src/features/checkin/QueueChip.tsx",
+          "guestly-mobile/src/features/checkin/CheckinScreen.tsx"
+        ],
+        "pr": ""
+      }
+    },
+    {
+      "surface": [
+        "ios"
+      ],
+      "plans": [
+        "all"
+      ],
+      "status": "building",
+      "released": "",
+      "changed": "",
+      "changes": [],
+      "rollout": {
+        "flag": "",
+        "mode": "",
+        "note": ""
+      },
+      "screenshots": [],
+      "marketing": "hold",
+      "say": [
+        "You choose which contacts the app sees."
+      ],
+      "avoid": [
+        "That the app imports or syncs the whole address book."
+      ],
+      "blocked_terms": [],
+      "numbers": [],
+      "supersedes": [],
+      "id": "F202",
+      "slug": "app-contacts-limited-access",
+      "name": {
+        "en": "Add guests from your contacts, privately",
+        "es": "Agregar invitados desde tus contactos, en privado"
+      },
+      "oneliner": {
+        "en": "Pick guests from your iPhone contacts with iOS limited access: the app never asks to read your whole address book.",
+        "es": "Elige invitados de los contactos del iPhone con el acceso limitado de iOS: la app nunca pide leer toda tu agenda."
+      },
+      "audience": [
+        "couple",
+        "planner"
+      ],
+      "screen": {
+        "web": "",
+        "app": "Couple: Guests, Add from contacts"
+      },
+      "verified": {
+        "commit": "eba70f0",
+        "by": "build-model",
+        "date": "2026-10-30",
+        "how": "built on hh/f-app (fee5ec2, eba70f0); tests in scripts/tests/contacts.test.ts, not released"
+      },
+      "source": {
+        "routes": [],
+        "files": [
+          "guestly-mobile/src/features/guests/contacts.ts",
+          "guestly-mobile/src/features/guests/ContactAccessInline.tsx"
+        ],
+        "pr": ""
+      }
+    },
+    {
+      "surface": [
+        "ios"
+      ],
+      "plans": [
+        "all"
+      ],
+      "status": "building",
+      "released": "",
+      "changed": "",
+      "changes": [],
+      "rollout": {
+        "flag": "",
+        "mode": "",
+        "note": ""
+      },
+      "screenshots": [],
+      "marketing": "hold",
+      "say": [],
+      "avoid": [
+        "That widgets update in real time: iOS refreshes them on its own schedule."
+      ],
+      "blocked_terms": [],
+      "numbers": [],
+      "supersedes": [],
+      "id": "F203",
+      "slug": "app-home-widgets",
+      "name": {
+        "en": "Home Screen widgets",
+        "es": "Widgets de la pantalla de inicio"
+      },
+      "oneliner": {
+        "en": "Five widgets: the countdown, new replies, today, a planner's weddings and the wedding day, kept current by the app.",
+        "es": "Cinco widgets: la cuenta regresiva, respuestas nuevas, hoy, las bodas de una planner y el día de la boda, al día desde la app."
+      },
+      "audience": [
+        "couple",
+        "planner"
+      ],
+      "screen": {
+        "web": "",
+        "app": "iPhone Home Screen and Lock Screen widgets"
+      },
+      "verified": {
+        "commit": "2d37a8c",
+        "by": "build-model",
+        "date": "2026-10-30",
+        "how": "built on feat/duo-v2 (Duo v2 T2.8), timelines verified in the simulator (3c25f39); not released"
+      },
+      "source": {
+        "routes": [],
+        "files": [
+          "guestly-mobile/src/features/widgets/sync.ts",
+          "guestly-mobile/src/features/widgets/WidgetSync.tsx"
+        ],
+        "pr": ""
+      }
+    },
+    {
+      "surface": [
+        "ios"
+      ],
+      "plans": [
+        "all"
+      ],
+      "status": "building",
+      "released": "",
+      "changed": "",
+      "changes": [],
+      "rollout": {
+        "flag": "",
+        "mode": "",
+        "note": ""
+      },
+      "screenshots": [],
+      "marketing": "hold",
+      "say": [],
+      "avoid": [
+        "Push updates from the server: they need the APNs key, which is not set up yet."
+      ],
+      "blocked_terms": [],
+      "numbers": [],
+      "supersedes": [],
+      "id": "F204",
+      "slug": "app-live-activities",
+      "name": {
+        "en": "Live Activities for the wedding day",
+        "es": "Actividades en vivo para el día de la boda"
+      },
+      "oneliner": {
+        "en": "The wedding day and the door count show on the Lock Screen and in the Dynamic Island while the app runs them.",
+        "es": "El día de la boda y el conteo de la puerta aparecen en la pantalla bloqueada y en la Dynamic Island mientras la app los lleva."
+      },
+      "audience": [
+        "couple",
+        "planner"
+      ],
+      "screen": {
+        "web": "",
+        "app": "Lock Screen and Dynamic Island"
+      },
+      "verified": {
+        "commit": "2d37a8c",
+        "by": "build-model",
+        "date": "2026-10-30",
+        "how": "built on feat/duo-v2 (Duo v2 T2.9); not released"
+      },
+      "source": {
+        "routes": [],
+        "files": [
+          "guestly-mobile/src/features/widgets/liveActivities.ts"
+        ],
+        "pr": ""
+      }
+    },
+    {
+      "surface": [
+        "ios"
+      ],
+      "plans": [
+        "all"
+      ],
+      "status": "building",
+      "released": "",
+      "changed": "",
+      "changes": [],
+      "rollout": {
+        "flag": "",
+        "mode": "",
+        "note": ""
+      },
+      "screenshots": [],
+      "marketing": "hold",
+      "say": [],
+      "avoid": [],
+      "blocked_terms": [],
+      "numbers": [],
+      "supersedes": [],
+      "id": "F205",
+      "slug": "app-wedding-first-home",
+      "name": {
+        "en": "Wedding-first Home in the app",
+        "es": "Inicio centrado en la boda en la app"
+      },
+      "oneliner": {
+        "en": "The couple's Home shows the next setup step, recent activity and the RSVP deadline, the same as the portal's setup hub.",
+        "es": "El Inicio de la pareja muestra el siguiente paso, la actividad reciente y la fecha límite del RSVP, igual que el portal."
+      },
+      "audience": [
+        "couple"
+      ],
+      "screen": {
+        "web": "",
+        "app": "Couple: Home"
+      },
+      "verified": {
+        "commit": "3a9f2dd",
+        "by": "build-model",
+        "date": "2026-10-30",
+        "how": "built on hh/f-app; tests in scripts/tests/home.test.ts, not released"
+      },
+      "source": {
+        "routes": [],
+        "files": [
+          "guestly-mobile/src/features/couple/home.ts"
+        ],
+        "pr": ""
+      }
+    }
+  ]
+}
