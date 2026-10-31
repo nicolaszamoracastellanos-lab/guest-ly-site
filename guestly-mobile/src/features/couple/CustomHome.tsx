@@ -17,7 +17,7 @@ import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toast } f
 import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
 import { formatMoneyShort } from "@/features/budget/money";
-import { fullDate } from "@/features/couple/ui";
+import { fullDate, dayMonth } from "@/features/couple/ui";
 import { CARD_IDS, rowSpans, moveCard, setCard, showCard, hideCard, type CardId, type CardSize, type HomeCard } from "./homeLayout";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
@@ -187,7 +187,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           return (
             <View style={{ gap: 6 }}>
               {half || size === "s" ? <NumLine n={t.open ?? items.length} label={c.openWord} half={half} /> : null}
-              {!half && size !== "s" ? items.slice(0, size === "l" ? 5 : 3).map((it) => <Line key={it.id} left={it.title} right={[it.assignee, it.due ? fullDate(it.due, lang) : null].filter(Boolean).join(" · ")} />) : null}
+              {!half && size !== "s" ? items.slice(0, size === "l" ? 5 : 3).map((it) => <Line key={it.id} left={it.title} right={[it.assignee, it.due ? dayMonth(it.due, lang) : null].filter(Boolean).join(" · ")} />) : null}
               {t.overdue ? <Badge label={c.overdue(t.overdue)} kind="amber" /> : null}
             </View>
           );
@@ -202,7 +202,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
                 <Big n={formatMoneyShort(b.spent, cur, lang)} />
                 <Sub text={c.spentOf(formatMoneyShort(b.planned, cur, lang), pct)} />
                 <Bar frac={b.spent / b.planned} color={colors.gold} />
-                {!half && b.next ? <Line left={c.next(b.next.label)} right={[typeof b.next.amount === "number" ? formatMoneyShort(b.next.amount, cur, lang) : null, b.next.due ? fullDate(b.next.due, lang) : null].filter(Boolean).join(" · ")} /> : null}
+                {!half && b.next ? <Line left={c.next(b.next.label)} right={[typeof b.next.amount === "number" ? formatMoneyShort(b.next.amount, cur, lang) : null, b.next.due ? dayMonth(b.next.due, lang) : null].filter(Boolean).join(" · ")} /> : null}
               </View>
             );
           }
@@ -221,7 +221,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           if (!v || (!v.total && !v.next?.length)) return <Quiet text={c.noVendors} />;
           return (
             <View style={{ gap: 6 }}>
-              {!half ? (v.next ?? []).slice(0, 3).map((it, i) => <Line key={i} left={it.title} right={it.at ? fullDate(it.at, lang) : ""} />) : null}
+              {!half ? (v.next ?? []).slice(0, 3).map((it, i) => <Line key={i} left={it.title} right={it.at ? dayMonth(it.at, lang) : ""} />) : null}
               {typeof v.booked === "number" && typeof v.total === "number" ? <Sub text={c.booked(v.booked, v.total)} /> : null}
             </View>
           );
@@ -353,28 +353,36 @@ function CardShell({
   children: ReactNode;
   testID?: string;
 }) {
-  return (
-    <Pressable onPress={editing ? undefined : onOpen} disabled={editing} accessibilityRole={editing ? undefined : "button"} accessibilityLabel={title} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && !editing && { opacity: 0.85 }]}>
-      <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
-        {editing ? (
-          <View style={styles.tools}>
-            <Tool label="↑" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
-            <Tool label="↓" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
-            {(["s", "m", "l"] as CardSize[]).map((s) => (
-              <Tool key={s} label={s.toUpperCase()} a11y={copy.size(s.toUpperCase())} on={card.size === s} onPress={() => onSize(s)} />
-            ))}
-            <View style={{ flex: 1 }} />
-            <Tool label={copy.hide} a11y={`${copy.hide} ${title}`} onPress={onHide} />
-          </View>
-        ) : null}
-        <Row style={{ justifyContent: "space-between", marginBottom: 8 }} align="center">
-          <T v="body16" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
-            {title}
-          </T>
-          {editing ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
-        </Row>
-        {children}
-      </Card>
+  const body = (
+    <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
+      {editing ? (
+        <View style={styles.tools}>
+          <Tool label="↑" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
+          <Tool label="↓" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
+          {(["s", "m", "l"] as CardSize[]).map((s) => (
+            <Tool key={s} label={s.toUpperCase()} a11y={copy.size(s.toUpperCase())} on={card.size === s} onPress={() => onSize(s)} />
+          ))}
+          <View style={{ flex: 1 }} />
+          <Tool label={copy.hide} a11y={`${copy.hide} ${title}`} onPress={onHide} />
+        </View>
+      ) : null}
+      <Row style={{ justifyContent: "space-between", marginBottom: 8 }} align="center">
+        <T v="body16" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
+          {title}
+        </T>
+        {editing ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
+      </Row>
+      {children}
+    </Card>
+  );
+  // While editing the card is not a link: its own tools take the taps.
+  return editing ? (
+    <View style={{ flex: 1 }} testID={testID}>
+      {body}
+    </View>
+  ) : (
+    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={title} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}>
+      {body}
     </Pressable>
   );
 }
