@@ -6,10 +6,10 @@
   "generated_at": "2026-10-30T23:30:00Z",
   "derived": {
     "app": {
-      "version": "1.2.0",
-      "build": 34,
-      "store_status": "in_review",
-      "live_version": "1.1.0"
+      "version": "1.3.0",
+      "build": null,
+      "store_status": "testflight",
+      "live_version": "1.2.0"
     }
   },
   "note": "App-only features (the portal's docs/product/features.json holds every feature with a web side, ios included in its surface). IDs F200 to F299 are reserved for this file so the two never collide in the marketing bot. Same schema and rules: docs/product/HOW-TO-UPDATE.md in the portal repo.",

@@ -38,7 +38,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // 1.2.0 (build 12): native keyboard library (react-native-keyboard-controller)
   // and the per-role navigation. The fingerprint changes with the new native
   // module, so build 11 never receives this JS over the air.
-  version: "1.2.0",
+  // 1.3.0 (Oct 31 2026): heavy-hitter wave (Connections, album, referral link,
+  // team and settings). Apple closed the 1.2.0 train once 1.2.0 was approved
+  // (ITMS-90186 / ITMS-90062 on build 35), so every new upload needs a version
+  // above the last approved one.
+  version: "1.3.0",
   // The iPhone Duo's inner display ignores declared orientations and Apple asks
   // every app to support them all (tent pose, inner landscape, Split View).
   orientation: "default",
