@@ -18,6 +18,7 @@ import { errorText } from "@/features/shared/requests";
 import { useSafeBack } from "@/lib/nav";
 import { useSession } from "@/lib/session";
 import { loadPushPrefs, registerPush, savePushPrefs, PUSH_KEYS } from "@/lib/push";
+import { RecapSection } from "@/features/couple/RecapSection";
 import { Screen, TopBar, BigTitle, Stack, Card, ToggleRow, Toggle, Segmented, Skeleton, T, Row, Chip, EmptyState, SectionLabel, Button, toast } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { HH_COPY } from "../copy";
@@ -172,6 +173,9 @@ export function PreferencesScreen() {
               </Card>
             </>
           ) : null}
+
+          {/* Per person, couples only: the Home quiz's "when" (daily, weekly, only when needed). */}
+          {surface === "couple" ? <RecapSection /> : null}
 
           {Platform.OS !== "web" ? (
             <>

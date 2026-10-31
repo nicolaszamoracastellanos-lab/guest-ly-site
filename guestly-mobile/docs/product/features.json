@@ -303,6 +303,64 @@
         ],
         "pr": ""
       }
+    },
+    {
+      "surface": [
+        "ios"
+      ],
+      "plans": [
+        "all"
+      ],
+      "status": "building",
+      "released": "",
+      "changed": "",
+      "changes": [],
+      "rollout": {
+        "flag": "",
+        "mode": "",
+        "note": "Needs the portal's layout and cards in GET /couple/home and PUT/DELETE /couple/home-layout; against an older portal Home stays as it was."
+      },
+      "screenshots": [],
+      "marketing": "hold",
+      "say": [],
+      "avoid": [],
+      "blocked_terms": [],
+      "numbers": [],
+      "supersedes": [],
+      "id": "F206",
+      "slug": "app-customizable-home",
+      "name": {
+        "en": "Customizable Home in the app",
+        "es": "Inicio personalizable en la app"
+      },
+      "oneliner": {
+        "en": "Five quick questions build the couple's Home: what to see first, how much detail, when Guest-ly checks in, who plans with them and whether it changes as the date nears. Cards can be moved, resized, hidden and added, and the portal shows the same layout.",
+        "es": "Cinco preguntas rápidas arman el Inicio de la pareja: qué ver primero, cuánto detalle, cuándo les escribe Guest-ly, con quién planean y si cambia a medida que se acerca la fecha. Las tarjetas se mueven, cambian de tamaño, se ocultan y se agregan, y el portal muestra el mismo diseño."
+      },
+      "audience": [
+        "couple"
+      ],
+      "screen": {
+        "web": "",
+        "app": "Couple: Home, Home setup, Settings > Notifications"
+      },
+      "verified": {
+        "commit": "",
+        "by": "build-model",
+        "date": "2026-10-31",
+        "how": "built on feat/custom-home; tests in scripts/tests/home-layout.test.ts and home-cards.test.ts, not released"
+      },
+      "source": {
+        "routes": [
+          "/couple/home-layout"
+        ],
+        "files": [
+          "guestly-mobile/src/features/couple/homeLayout.ts",
+          "guestly-mobile/src/features/couple/CustomHome.tsx",
+          "guestly-mobile/src/features/couple/HomeQuiz.tsx"
+        ],
+        "pr": ""
+      }
     }
   ]
 }
