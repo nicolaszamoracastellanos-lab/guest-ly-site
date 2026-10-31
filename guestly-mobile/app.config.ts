@@ -14,7 +14,7 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com";
 // the camera library links the audio capture API, so a truthful microphone
 // string stays (an upload without it can be refused, ITMS-90683).
 const CAMERA_PURPOSE = "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.";
-const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding website, the floor plan and budget receipts.";
+const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding album, the wedding website, the floor plan and budget receipts.";
 const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking you to sign in again.";
 // Contacts (HH Oct 30 2026): only the people the couple picks in Add guest.
 // The app never requests the contacts permission itself: the system picker

@@ -16,6 +16,7 @@ import { ApiFailure } from "@/lib/api";
 import { unregisterPush } from "@/lib/push";
 import { useGuestSession, useSession } from "@/lib/session";
 import { useGuestHome, useGuestSchedule } from "@/lib/hooks";
+import { useAlbumAvailable } from "@/features/album/hooks";
 import { Screen, Card, ListRow, Icon, LangToggle, Toggle, Footer, Stack, T, Sheet, Button, SectionLabel, PhotoHero } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { TOUR_COPY, startTour } from "@/features/tour";
@@ -64,6 +65,7 @@ export default function GuestInfo() {
   const when = home?.wedding_date ?? session?.tenant.wedding_date ?? null;
   const slug = site.data?.site_slug ?? session?.tenant.slug ?? "";
   const go = (path: string) => router.push(path as never);
+  const album = useAlbumAvailable("guest");
 
   return (
     <Screen padded={false}>
@@ -87,6 +89,8 @@ export default function GuestInfo() {
           </Pressable>
         )}
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
+          {/* The guests' album: only once the portal has it and the couple opened it. */}
+          {album ? <ListRow testID="info-album" leading={<Icon name="camera" size={22} color={colors.goldLight} />} title={g.albumRow} sub={g.albumRowSub} onPress={() => go("/guest/album")} /> : null}
           {siteOff ? null : (
             <>
               <ListRow leading={<Icon name="photo" size={22} color={colors.goldLight} />} title={g.info.photos} sub={photos ? String(photos) : null} onPress={() => go("/guest/site/gallery")} />
