@@ -1,6 +1,6 @@
 // Run: node --experimental-strip-types scripts/tests/settings.test.ts
 import assert from "node:assert/strict";
-import { zoneGroups, zoneCity, validZone, generalPatch, applyPrefChange, hourLabel, openInvites, looksLikeEmail, capShare, groupConnections, needSetup, devicePushPrefs, connectionsWebPath, connectionsSummary, personLabel, avatarInitials } from "../../src/features/settings/logic.ts";
+import { zoneGroups, zoneCity, validZone, generalPatch, applyPrefChange, hourLabel, openInvites, looksLikeEmail, capShare, groupConnections, needSetup, devicePushPrefs, connectionsWebPath, connectionsSummary, personLabel, avatarInitials, splitManaged, teamAddress } from "../../src/features/settings/logic.ts";
 
 // Time zones: city names, accent-insensitive search, pinned zones first.
 assert.equal(zoneCity("America/Argentina/Buenos_Aires"), "Buenos Aires");
@@ -84,6 +84,20 @@ assert.equal(needSetup([...items, { provider: "sms", category: "messaging", stat
 assert.equal(connectionsSummary({ summary_line: "4 connected, 3 not set up" }), "4 connected, 3 not set up");
 assert.equal(connectionsSummary({ summary_line: "  " }), null);
 assert.equal(connectionsSummary({}), null);
+// Managed connections get their own section, like the web page (round 3).
+{
+  const all = [
+    { provider: "whatsapp", category: "messaging", status: "connected" as const },
+    { provider: "sms", category: "messaging", status: "not_set_up" as const, managed: true },
+    { provider: "apple_wallet", category: "calendar_wallet", status: "not_set_up" as const, managed: true },
+  ];
+  const { listed, managed } = splitManaged(all);
+  assert.deepEqual(listed.map((i) => i.provider), ["whatsapp"]);
+  assert.deepEqual(managed.map((i) => i.provider), ["sms", "apple_wallet"]);
+}
+// Teammates' addresses in full, like web; the masked one only from an older server.
+assert.equal(teamAddress({ email: "planner@hh.local", email_masked: "p***@hh.local" }), "planner@hh.local");
+assert.equal(teamAddress({ email_masked: "p***@hh.local" }), "p***@hh.local");
 
 // A person without a name shows the full address and one neutral letter, never the local part as a name.
 assert.deepEqual(personLabel("Valentina", "Ríos", "couple@hh.local"), { label: "Valentina Ríos", named: true });

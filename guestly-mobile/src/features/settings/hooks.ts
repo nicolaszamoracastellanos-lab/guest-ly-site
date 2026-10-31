@@ -91,15 +91,17 @@ export type TeamMember = {
   name: string;
   /** False when `name` is only the address. Absent on older servers. */
   has_name?: boolean;
+  /** The full address, as the web Team page shows it. Absent on older servers. */
+  email?: string;
   email_masked: string;
   role: TeamRole;
   is_me: boolean;
   last_seen_at: string | null;
   removable: boolean;
 };
-export type TeamInvite = { id: string; email_masked: string; first_name: string | null; role: "admin" | "viewer"; lang: Lang; status: "pending" | "accepted" | "revoked" | "expired"; created_at: string; expires_at: string };
+export type TeamInvite = { id: string; email?: string; email_masked: string; first_name: string | null; role: "admin" | "viewer"; lang: Lang; status: "pending" | "accepted" | "revoked" | "expired"; created_at: string; expires_at: string };
 export type Team = { members: TeamMember[]; invites: TeamInvite[]; invites_pending: boolean; can_invite: boolean };
-export type PlannerTeam = { agency: { name: string }; members: { user_id: string; email_masked: string; level: string; is_me: boolean; created_at: string | null }[] };
+export type PlannerTeam = { agency: { name: string }; members: { user_id: string; email?: string; email_masked: string; level: string; is_me: boolean; created_at: string | null }[] };
 
 export type MaintenanceState = "none" | "included" | "final_month" | "ended" | "subscribed";
 export type Billing = {
@@ -131,8 +133,10 @@ export type ConnectionItem = {
   last_ok_at: string | null;
   address?: string;
   domain?: string;
-  /** Guest-ly switches it on for every wedding: not counted, shown as Off. */
+  /** Guest-ly switches it on for every wedding: not counted, listed under the managed group. */
   managed?: boolean;
+  /** The web row's chip word ("Off" / "Desactivada" on managed rows). Absent on older servers. */
+  chip?: string;
 };
 export type Connections = {
   items: ConnectionItem[];
@@ -140,6 +144,8 @@ export type Connections = {
   summary: Record<ConnectionStatus, number>;
   /** The web page's summary sentence ("4 connected, 3 not set up"), shown as is. */
   summary_line?: string;
+  /** The web page's "Managed by Guest-ly" heading and line. Absent on older servers. */
+  managed_group?: { title: string; hint: string };
 };
 
 export type Referral = { available: boolean; code: string | null; url: string | null; joined: number | null; paid: number | null; reward_line: string | null };

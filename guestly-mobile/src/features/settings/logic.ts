@@ -187,6 +187,20 @@ export function groupConnections<I extends ConnLike>(items: I[], categories: { k
     .filter((g) => g.items.length > 0);
 }
 
+/**
+ * The web Connections page's split: the connections the couple acts on, grouped
+ * by category, and the ones Guest-ly switches on for every wedding, in their own
+ * "Managed by Guest-ly" section (never inside the couple's categories).
+ */
+export function splitManaged<I extends ConnLike>(items: I[]): { listed: I[]; managed: I[] } {
+  return { listed: items.filter((i) => !i.managed), managed: items.filter((i) => !!i.managed) };
+}
+
+/** A teammate's address as the web Team page shows it: in full, the masked one only from older servers. */
+export function teamAddress(p: { email?: string | null; email_masked: string }): string {
+  return (p.email ?? "").trim() || p.email_masked;
+}
+
 /** How many cards are not connected (the Settings row's live line). */
 /** Connections the couple still has to act on. Managed ones (Guest-ly switches them on) never count. */
 export function needSetup(items: ConnLike[] | null | undefined): number {

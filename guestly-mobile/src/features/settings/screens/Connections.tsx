@@ -1,7 +1,9 @@
-// Settings > Connections (read-only status). Cards grouped by the server's
-// categories, each with a status badge (green Connected, amber Needs
-// attention, mute Not set up), the reason in plain words and the last
-// activity. A card the couple sets up opens the web setup page in the
+// Settings > Connections (read-only status), laid out like the web page:
+// the couple's connections grouped by the server's categories, each with a
+// status badge (green Connected, amber Needs attention, mute Not set up), the
+// reason in plain words and the last activity; then the connections Guest-ly
+// switches on for every wedding in their own "Managed by Guest-ly" section,
+// each saying what it does (the server's line), with an Off badge. A card the couple sets up opens the web setup page in the
 // browser (connectionsWebPath: /settings/integrations, which becomes a
 // redirect to /settings/connections once that page ships); no secret, provider error or link ever reaches the app.
 
@@ -16,7 +18,7 @@ import { Screen, TopBar, BigTitle, Stack, Card, ListRow, Badge, Skeleton, T, Sec
 import { colors } from "@/ui/tokens";
 import { HH_COPY } from "../copy";
 import { useConnections, type ConnectionItem, type SettingsSurface } from "../hooks";
-import { connectionsSummary, connectionsWebPath, groupConnections } from "../logic";
+import { connectionsSummary, connectionsWebPath, groupConnections, splitManaged } from "../logic";
 
 const KIND = { connected: "green", needs_attention: "amber", not_set_up: "mute" } as const;
 
@@ -27,7 +29,9 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
   const back = useSafeBack();
   const query = useConnections(surface);
   const { data } = query;
-  const groups = data ? groupConnections(data.items, data.categories) : [];
+  const split = splitManaged(data?.items ?? []);
+  const groups = data ? groupConnections(split.listed, data.categories) : [];
+  const managed = split.managed;
   const openWeb = () => void WebBrowser.openBrowserAsync(`${API_BASE}${connectionsWebPath(surface)}`).catch(() => {});
 
   const sub = (i: ConnectionItem) => {
@@ -43,7 +47,7 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
           <Skeleton h={120} r={18} />
           <Skeleton h={120} r={18} />
         </Stack>
-      ) : groups.length === 0 ? (
+      ) : groups.length === 0 && managed.length === 0 ? (
         <View style={{ marginTop: 20 }}>
           <EmptyState title={c.empty} />
         </View>
@@ -58,7 +62,7 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
                     key={i.provider}
                     title={i.name}
                     sub={sub(i)}
-                    below={<Badge label={i.managed ? c.off : c.status[i.status]} kind={KIND[i.status]} dot={i.status === "connected"} />}
+                    below={<Badge label={i.chip ?? c.status[i.status]} kind={KIND[i.status]} dot={i.status === "connected"} />}
                     onPress={i.action_by === "couple" && i.status !== "connected" ? openWeb : undefined}
                     chevron={i.action_by === "couple" && i.status !== "connected"}
                     last={n === g.items.length - 1}
@@ -66,16 +70,33 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
                   />
                 ))}
               </Card>
-              {g.items.some((i) => i.action_by === "guestly" && i.status !== "connected") ? (
-                <T v="meta13" color={colors.ivory55}>
-                  {c.by.guestly}
-                </T>
-              ) : null}
             </View>
           ))}
-          <T v="meta13" color={colors.ivory55} style={{ marginTop: 6 }}>
-            {c.by.couple}
-          </T>
+          {groups.length > 0 ? (
+            <T v="meta13" color={colors.ivory55} style={{ marginTop: 6 }}>
+              {c.by.couple}
+            </T>
+          ) : null}
+          {managed.length > 0 ? (
+            <View style={{ gap: 8, marginTop: 14 }} testID="connections-managed">
+              <SectionLabel>{data.managed_group?.title ?? c.managedTitle}</SectionLabel>
+              <T v="meta13" color={colors.ivory55}>
+                {data.managed_group?.hint ?? c.managedHint}
+              </T>
+              <Card kind="solid" padding={0} style={{ paddingHorizontal: 16 }}>
+                {managed.map((i, n) => (
+                  <ListRow
+                    key={i.provider}
+                    title={i.name}
+                    sub={i.reason}
+                    below={<Badge label={i.chip ?? c.off} kind="mute" />}
+                    last={n === managed.length - 1}
+                    testID={`connection-${i.provider}`}
+                  />
+                ))}
+              </Card>
+            </View>
+          ) : null}
         </Stack>
       )}
     </Screen>

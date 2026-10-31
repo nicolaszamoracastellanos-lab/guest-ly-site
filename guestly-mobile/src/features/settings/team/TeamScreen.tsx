@@ -18,7 +18,7 @@ import { colors } from "@/ui/tokens";
 import { HH_COPY } from "../copy";
 import { TEAM_KEY, usePlannerTeam, useTeam, type Team, type TeamInvite, type TeamMember } from "../hooks";
 import { InviteSheet, type InviteResult } from "./InviteSheet";
-import { avatarInitials } from "../logic";
+import { avatarInitials, teamAddress } from "../logic";
 import { router } from "expo-router";
 
 /** Two initials from a name; one neutral letter from an address (never its local part as a name). */
@@ -66,7 +66,7 @@ function CoupleTeam() {
   }
 
   function inviteMenu(inv: TeamInvite) {
-    Alert.alert(inv.first_name || inv.email_masked, undefined, [
+    Alert.alert(inv.first_name || teamAddress(inv), undefined, [
       { text: t.resend, onPress: () => void resend(inv) },
       { text: t.cancel, style: "destructive", onPress: () => void cancelInvite(inv) },
       { text: app.common.cancel, style: "cancel" },
@@ -74,7 +74,7 @@ function CoupleTeam() {
   }
 
   function removeMember(m: TeamMember) {
-    const name = m.name || m.email_masked;
+    const name = m.name || teamAddress(m);
     Alert.alert(t.remove, fmt(t.removeConfirm, { name }), [
       { text: app.common.cancel, style: "cancel" },
       {
@@ -129,8 +129,8 @@ function CoupleTeam() {
             {data.members.map((m, i) => (
               <ListRow
                 key={m.user_id}
-                leading={<Avatar initials={initialsOf(m.name, m.email_masked, m.has_name ?? !!m.name)} size={40} />}
-                title={m.is_me ? `${m.name || m.email_masked} (${t.you})` : m.name || m.email_masked}
+                leading={<Avatar initials={initialsOf(m.name, teamAddress(m), m.has_name ?? !!m.name)} size={40} />}
+                title={m.is_me ? `${m.name || teamAddress(m)} (${t.you})` : m.name || teamAddress(m)}
                 sub={
                   m.has_name === false
                     ? m.is_me
@@ -139,7 +139,7 @@ function CoupleTeam() {
                         ? fmt(t.lastSeen, { when: relTime(m.last_seen_at, lang) })
                         : t.neverSeen
                     : m.name
-                      ? m.email_masked
+                      ? teamAddress(m)
                       : m.last_seen_at
                         ? fmt(t.lastSeen, { when: relTime(m.last_seen_at, lang) })
                         : t.neverSeen
@@ -162,8 +162,8 @@ function CoupleTeam() {
                 {invites.map((inv, i) => (
                   <ListRow
                     key={inv.id}
-                    leading={<Avatar initials={initialsOf(inv.first_name ?? "", inv.email_masked)} size={40} />}
-                    title={inv.first_name || inv.email_masked}
+                    leading={<Avatar initials={initialsOf(inv.first_name ?? "", teamAddress(inv))} size={40} />}
+                    title={inv.first_name || teamAddress(inv)}
                     sub={inv.status === "expired" ? t.expired : fmt(t.expires, { date: shortDate(inv.expires_at, lang) })}
                     below={<Badge label={t.roles[inv.role]} kind={inv.status === "expired" ? "amber" : "mute"} />}
                     onPress={data.can_invite ? () => inviteMenu(inv) : undefined}
@@ -209,8 +209,8 @@ function PlannerTeam() {
             {data.members.map((m, i) => (
               <ListRow
                 key={m.user_id}
-                leading={<Avatar initials={initialsOf("", m.email_masked)} size={40} />}
-                title={m.is_me ? `${m.email_masked} (${t.you})` : m.email_masked}
+                leading={<Avatar initials={initialsOf("", teamAddress(m))} size={40} />}
+                title={m.is_me ? `${teamAddress(m)} (${t.you})` : teamAddress(m)}
                 below={<Badge label={t.levels[m.level] ?? m.level} kind={m.level === "owner" ? "gold" : "mute"} />}
                 chevron={false}
                 last={i === data.members.length - 1}
