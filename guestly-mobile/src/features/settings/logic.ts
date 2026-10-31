@@ -222,3 +222,14 @@ export function devicePushPrefs(
   for (const [k, v] of driven) out[k] = v;
   return out;
 }
+
+// ---------------------------------------------------------------- web setup
+
+/** The web page a Connections card opens for setup. /settings/integrations is
+ *  live on every portal build: before the Connections page ships it is the
+ *  page itself, after it (portal wave E UI) it redirects to
+ *  /settings/connections. So the link never lands on a 404, whatever the
+ *  portal merge order. */
+export function connectionsWebPath(surface: "couple" | "planner"): string {
+  return surface === "planner" ? "/planner/settings/integrations" : "/settings/integrations";
+}

@@ -1,8 +1,9 @@
 // Settings > Connections (read-only status). Cards grouped by the server's
 // categories, each with a status badge (green Connected, amber Needs
 // attention, mute Not set up), the reason in plain words and the last
-// activity. A card the couple sets up opens the web Connections page in the
-// browser; no secret, provider error or link ever reaches the app.
+// activity. A card the couple sets up opens the web setup page in the
+// browser (connectionsWebPath: /settings/integrations, which becomes a
+// redirect to /settings/connections once that page ships); no secret, provider error or link ever reaches the app.
 
 import React from "react";
 import { View } from "react-native";
@@ -15,7 +16,7 @@ import { Screen, TopBar, BigTitle, Stack, Card, ListRow, Badge, Skeleton, T, Sec
 import { colors } from "@/ui/tokens";
 import { HH_COPY } from "../copy";
 import { useConnections, type ConnectionItem, type SettingsSurface } from "../hooks";
-import { groupConnections } from "../logic";
+import { connectionsWebPath, groupConnections } from "../logic";
 
 const KIND = { connected: "green", needs_attention: "amber", not_set_up: "mute" } as const;
 
@@ -27,8 +28,7 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
   const query = useConnections(surface);
   const { data } = query;
   const groups = data ? groupConnections(data.items, data.categories) : [];
-  const webPath = surface === "planner" ? "/planner/settings/connections" : "/settings/connections";
-  const openWeb = () => void WebBrowser.openBrowserAsync(`${API_BASE}${webPath}`).catch(() => {});
+  const openWeb = () => void WebBrowser.openBrowserAsync(`${API_BASE}${connectionsWebPath(surface)}`).catch(() => {});
 
   const sub = (i: ConnectionItem) => {
     const parts = [i.reason, i.address ?? i.domain ?? null, i.last_ok_at ? fmt(c.lastOk, { when: relTime(i.last_ok_at, lang) }) : null].filter(Boolean);

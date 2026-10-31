@@ -1,6 +1,6 @@
 // Run: node --experimental-strip-types scripts/tests/settings.test.ts
 import assert from "node:assert/strict";
-import { zoneGroups, zoneCity, validZone, generalPatch, applyPrefChange, hourLabel, openInvites, looksLikeEmail, capShare, groupConnections, needSetup, devicePushPrefs } from "../../src/features/settings/logic.ts";
+import { zoneGroups, zoneCity, validZone, generalPatch, applyPrefChange, hourLabel, openInvites, looksLikeEmail, capShare, groupConnections, needSetup, devicePushPrefs, connectionsWebPath } from "../../src/features/settings/logic.ts";
 
 // Time zones: city names, accent-insensitive search, pinned zones first.
 assert.equal(zoneCity("America/Argentina/Buenos_Aires"), "Buenos Aires");
@@ -77,5 +77,9 @@ const groups = groupConnections(items, [
 assert.deepEqual(groups.map((g) => g.key), ["messaging", "payments", "future"]);
 assert.equal(groups[2].name, "future");
 assert.equal(needSetup(items), 2);
+
+// The setup link exists on every portal build (integrations, or its redirect to connections).
+assert.equal(connectionsWebPath("couple"), "/settings/integrations");
+assert.equal(connectionsWebPath("planner"), "/planner/settings/integrations");
 
 console.log("settings: ok");
