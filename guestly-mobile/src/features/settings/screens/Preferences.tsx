@@ -124,14 +124,15 @@ export function PreferencesScreen() {
                       {e.hint}
                     </T>
                   ) : null}
-                  <Row gap={8} style={{ marginTop: 12, flexWrap: "wrap" }}>
+                  {/* One column per channel, so the three always sit on one line. */}
+                  <Row gap={8} style={{ marginTop: 12 }} align="flex-start">
                     {CHANNELS.filter((ch) => e.channels[ch] !== undefined).map((ch) => (
-                      <Row key={ch} gap={8} style={{ minHeight: 44, paddingRight: 10 }}>
-                        <Toggle value={!!e.channels[ch]} onChange={(v) => void change({ event: e.key, channel: ch, enabled: v })} label={`${e.label}, ${label(ch)}`} />
-                        <T v="meta13" color={colors.ivory70}>
+                      <View key={ch} style={{ flex: 1, maxWidth: 120, alignItems: "flex-start", gap: 6 }}>
+                        <T v="meta13" color={colors.ivory70} numberOfLines={1}>
                           {label(ch)}
                         </T>
-                      </Row>
+                        <Toggle value={!!e.channels[ch]} onChange={(v) => void change({ event: e.key, channel: ch, enabled: v })} label={`${e.label}, ${label(ch)}`} />
+                      </View>
                     ))}
                   </Row>
                   {e.key === "rsvp_new" ? (
