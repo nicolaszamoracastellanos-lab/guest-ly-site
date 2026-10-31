@@ -1,20 +1,30 @@
-// Settings: wedding switcher, language, notifications, day-of mode,
-// biometric unlock, plan line (no link), legal, delete account, sign out.
+// Settings index (HH wave F): the avatar row opens Profile, then three groups.
+//   Your wedding: wedding switcher, Wedding details, Team, Plan, Connections,
+//     (couple) reminders, invitation code and the referral link;
+//   You: Profile, Notifications (the preference center), push on this phone,
+//     language, day-of mode, biometric unlock;
+//   App: tour, privacy, terms, delete account, sign out.
+// Rows carry a live line (team count, plan name, "2 need setup"). Planners see
+// Team and Plan only when they own the agency (the routes answer 403 else).
 
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Alert, Linking, Platform, ActivityIndicator } from "react-native";
+import { View, Alert, Linking, Platform, ActivityIndicator, Pressable } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { unregisterPush } from "@/lib/push";
-import { fmt, useCopy, useLang, shortDate } from "@/i18n";
+import { fmt, plural, useCopy, useLang, shortDate } from "@/i18n";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricAvailable, biometricPrompt } from "@/lib/biometric";
-import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet, toast } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet, SectionLabel, toast, type IconName } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useFeatureCopy } from "@/i18n/feature";
 import { DeleteCancelled, deleteMyAccount } from "@/features/signup/account";
 import { TOUR_COPY, startTour } from "@/features/tour";
+import { HH_COPY } from "@/features/settings/copy";
+import { useBilling, useConnections, usePlannerBilling, usePlannerTeam, useProfile, useTeam } from "@/features/settings/hooks";
+import { needSetup, openInvites } from "@/features/settings/logic";
+import { referralLine, useShareReferral } from "@/features/referral/ReferralCard";
 
 /** The plan arrives as the raw tier id ("standard"). Known ids read from the copy;
  *  an unknown one is shown with a capital, never as a bare lowercase id. */
@@ -40,6 +50,17 @@ export default function Settings() {
   const roleLabel = me?.role === "owner" ? copy.settings.owner : me?.role === "admin" ? copy.settings.admin : me?.role === "planner" ? copy.settings.planner : copy.settings.viewer;
   const initials = (me?.user.email ?? "?").slice(0, 2).toUpperCase();
   const surface = me?.surface ?? "couple";
+  const hh = useFeatureCopy(HH_COPY);
+  const couple = surface === "couple";
+  // Live lines. Planner-only reads are owner-only on the server: a 403 hides the row.
+  const profile = useProfile();
+  const team = useTeam({ enabled: couple });
+  const billing = useBilling({ enabled: couple });
+  const connections = useConnections(couple ? "couple" : "planner");
+  const plannerTeam = usePlannerTeam({ enabled: !couple });
+  const plannerBilling = usePlannerBilling({ enabled: !couple });
+  const referral = useShareReferral({ enabled: couple });
+  const shareReferral = referral.share;
 
   async function toggleBio(v: boolean) {
     if (v) {
@@ -108,67 +129,90 @@ export default function Settings() {
     ]);
   }
 
+  const isCouple = surface === "couple";
+  const base = surface === "planner" ? "/planner/settings" : "/couple/settings";
+  const go = (path: string) => router.push(`${base}/${path}` as never);
+  const name = [profile.data?.first_name, profile.data?.last_name].filter(Boolean).join(" ") || (me?.user.email.split("@")[0] ?? "");
+  const teamLine = team.data ? [plural(team.data.members.length, hh.index.teamSub), openInvites(team.data.invites) ? plural(openInvites(team.data.invites), hh.index.teamInvites) : null].filter(Boolean).join(" · ") : hh.index.teamInvite;
+  const need = needSetup(connections.data?.items);
+  const connLine = connections.data ? (need ? plural(need, hh.index.connectionsNeed) : hh.index.connectionsOk) : hh.index.connectionsSub;
+  const planLine = isCouple ? (billing.data?.tier_label ?? (me?.tenant.tier ? tierLabel(me.tenant.tier, copy.settings.tiers) : hh.index.billingSub)) : hh.index.plannerBillingSub;
+  const refLine = referralLine(referral.data, hh.referral.joined);
+  const ico = (n: IconName) => <Icon name={n} size={22} color={colors.ivory70} />;
+
   return (
     <Screen header={<TopBar onBack={back} title={copy.settings.title} />} bottomInset={40}>
-      <Row gap={14} style={{ marginTop: 8 }}>
-        <Avatar initials={initials} size={56} />
-        <View style={{ flex: 1, gap: 3 }}>
-          <T v="name24">
-            {me?.user.email.split("@")[0] ?? ""}
-          </T>
-          <T v="meta13" color={colors.ivory55}>
-            {me?.user.email} · {roleLabel}
-          </T>
-        </View>
-      </Row>
+      <Pressable onPress={() => go("profile")} accessibilityRole="button" accessibilityLabel={`${hh.index.profile}, ${name}`} testID="settings-profile-head" style={({ pressed }) => [{ marginTop: 8 }, pressed && { opacity: 0.8 }]}>
+        <Row gap={14}>
+          <Avatar initials={initials} size={56} />
+          <View style={{ flex: 1, gap: 3 }}>
+            <T v="name24">{name}</T>
+            <T v="meta13" color={colors.ivory55}>
+              {me?.user.email} · {roleLabel}
+            </T>
+          </View>
+          <Icon name="chev" size={18} color={colors.ivory40} />
+        </Row>
+      </Pressable>
       <Stack gap={12} style={{ marginTop: 22 }}>
+        <SectionLabel>{hh.index.yourWedding}</SectionLabel>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           <ListRow
-            leading={<Icon name="star" size={22} color={colors.goldLight} />}
+            leading={ico("rings")}
             title={copy.settings.wedding}
             sub={me?.tenant.couple_names}
             trailing={(me?.tenants.length ?? 0) > 1 ? <T v="meta13" color={colors.goldLight}>{copy.settings.switchWedding}</T> : undefined}
             chevron={false}
             onPress={(me?.tenants.length ?? 0) > 1 ? () => setSwitching(true) : undefined}
           />
-          <ListRow leading={<Icon name="globe" size={22} color={colors.goldLight} />} title={copy.settings.language} sub={lang === "es" ? "Español" : "English"} trailing={<LangToggle value={lang} onChange={setLang} />} chevron={false} />
+          <ListRow leading={ico("calendar")} title={hh.index.general} sub={hh.index.generalSub} onPress={() => go("general")} testID="settings-general" />
+          {isCouple || plannerTeam.data ? <ListRow leading={ico("guests")} title={hh.index.team} sub={isCouple ? teamLine : plannerTeam.data?.agency.name} onPress={() => go("team")} testID="settings-team" /> : null}
+          {isCouple || plannerBilling.data ? <ListRow leading={ico("wallet")} title={isCouple ? hh.index.billing : hh.index.planner} sub={planLine} onPress={() => go("billing")} testID="settings-billing" /> : null}
+          <ListRow leading={ico("globe")} title={hh.index.connections} sub={connLine} onPress={() => go("connections")} testID="settings-connections" last={!isCouple} />
+          {isCouple ? (
+            <>
+              <ListRow leading={ico("clock")} title={copy.settings.reminders} sub={copy.settings.remindersDetail} onPress={() => go("reminders")} />
+              <ListRow leading={ico("qr")} title={copy.settings.invite} sub={copy.settings.inviteDetail} onPress={() => go("invite")} last={!refLine} />
+              {refLine ? <ListRow leading={ico("share")} title={hh.index.referral} sub={refLine} onPress={() => void shareReferral()} chevron={false} testID="settings-referral" last /> : null}
+            </>
+          ) : null}
+        </Card>
+
+        <SectionLabel style={{ marginTop: 10 }}>{hh.index.you}</SectionLabel>
+        <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
+          <ListRow leading={ico("edit")} title={hh.index.profile} sub={hh.index.profileSub} onPress={() => go("profile")} testID="settings-profile" />
+          <ListRow leading={ico("mail")} title={hh.index.notifications} sub={hh.index.notificationsSub} onPress={() => go("notifications")} testID="settings-notifications" />
           <ListRow
-            leading={<Icon name="bell" size={22} color={colors.goldLight} />}
-            title={copy.settings.notifications}
-            sub={copy.settings.notificationsDetail}
-            trailing={<Toggle value={!!pushToken && osPush} onChange={(v) => void togglePush(v)} label={copy.settings.notifications} />}
+            leading={ico("bell")}
+            title={hh.index.push}
+            sub={hh.index.pushSub}
+            trailing={<Toggle value={!!pushToken && osPush} onChange={(v) => void togglePush(v)} label={hh.index.push} />}
             chevron={false}
           />
-          {surface === "couple" ? (
+          <ListRow leading={ico("globe")} title={copy.settings.language} sub={lang === "es" ? "Español" : "English"} trailing={<LangToggle value={lang} onChange={setLang} />} chevron={false} />
+          {isCouple ? (
             <ListRow
-              leading={<Icon name="clock" size={22} color={colors.goldLight} />}
+              leading={ico("clock")}
               title={copy.settings.dayOfMode}
               sub={dayOfManual ? copy.settings.dayOfOn : fmt(copy.settings.dayOfAuto, { date: shortDate(me?.tenant.wedding_date, lang) })}
               trailing={dayOfManual ? <Toggle value onChange={(v) => void setDayOfManual(v)} /> : <Badge label={copy.settings.auto} kind="gold" />}
               chevron={false}
               onPress={() => void setDayOfManual(!dayOfManual)}
+              last={!bioAvailable}
             />
           ) : null}
           {bioAvailable ? (
-            <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.biometric} sub={copy.settings.biometricDetail} trailing={<Toggle value={biometricEnabled} onChange={toggleBio} />} chevron={false} last />
+            <ListRow leading={ico("lock")} title={copy.settings.biometric} sub={copy.settings.biometricDetail} trailing={<Toggle value={biometricEnabled} onChange={toggleBio} />} chevron={false} last />
           ) : null}
         </Card>
-        {surface === "couple" ? (
-          <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
-            <ListRow leading={<Icon name="mail" size={22} color={colors.goldLight} />} title={copy.settings.emailNotifications} sub={copy.settings.emailNotificationsDetail} onPress={() => router.push("/couple/settings/notifications" as never)} />
-            <ListRow leading={<Icon name="clock" size={22} color={colors.goldLight} />} title={copy.settings.reminders} sub={copy.settings.remindersDetail} onPress={() => router.push("/couple/settings/reminders" as never)} />
-            <ListRow leading={<Icon name="qr" size={22} color={colors.goldLight} />} title={copy.settings.invite} sub={copy.settings.inviteDetail} onPress={() => router.push("/couple/settings/invite" as never)} last />
-          </Card>
-        ) : null}
-        <T v="meta13" color={colors.ivory55} style={{ paddingHorizontal: 4 }}>
-          {fmt(copy.settings.plan, { tier: tierLabel(me?.tenant.tier, copy.settings.tiers) })}
-        </T>
+
+        <SectionLabel style={{ marginTop: 10 }}>{hh.index.app}</SectionLabel>
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
-          <ListRow testID="settings-tour" leading={<Icon name="replay" size={22} color={colors.ivory70} />} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} />
-          <ListRow leading={<Icon name="lock" size={22} color={colors.goldLight} />} title={copy.settings.privacy} onPress={() => Linking.openURL("https://guest-ly.com/privacy")} />
-          <ListRow leading={<Icon name="book" size={22} color={colors.goldLight} />} title={copy.settings.terms} onPress={() => Linking.openURL("https://guest-ly.com/terms")} />
-          <ListRow testID="settings-delete" leading={<Icon name="warning" size={22} color={colors.goldLight} />} title={copy.settings.deleteAccount} onPress={deleteAccount} chevron={false} />
-          <ListRow testID="settings-signout" leading={<Icon name="signout" size={22} color={colors.goldLight} />} title={copy.settings.signOut} onPress={() => void signOut()} chevron={false} last />
+          <ListRow testID="settings-tour" leading={ico("replay")} title={tour.replay} sub={tour.replayDetail} onPress={() => startTour()} />
+          <ListRow leading={ico("lock")} title={copy.settings.privacy} onPress={() => Linking.openURL("https://guest-ly.com/privacy")} />
+          <ListRow leading={ico("book")} title={copy.settings.terms} onPress={() => Linking.openURL("https://guest-ly.com/terms")} />
+          <ListRow testID="settings-delete" leading={ico("warning")} title={copy.settings.deleteAccount} onPress={deleteAccount} chevron={false} />
+          <ListRow testID="settings-signout" leading={ico("signout")} title={copy.settings.signOut} onPress={() => void signOut()} chevron={false} last />
         </Card>
       </Stack>
       <Footer version={copy.common.footerVersion} trademark={copy.common.footerTrademark} />
@@ -190,3 +234,4 @@ export default function Settings() {
     </Screen>
   );
 }
+
