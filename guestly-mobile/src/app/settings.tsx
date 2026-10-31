@@ -23,7 +23,7 @@ import { DeleteCancelled, deleteMyAccount } from "@/features/signup/account";
 import { TOUR_COPY, startTour } from "@/features/tour";
 import { HH_COPY } from "@/features/settings/copy";
 import { useBilling, useConnections, usePlannerBilling, usePlannerTeam, useProfile, useTeam } from "@/features/settings/hooks";
-import { needSetup, openInvites } from "@/features/settings/logic";
+import { avatarInitials, connectionsSummary, needSetup, openInvites, personLabel } from "@/features/settings/logic";
 import { referralLine, useShareReferral } from "@/features/referral/ReferralCard";
 
 /** The plan arrives as the raw tier id ("standard"). Known ids read from the copy;
@@ -48,7 +48,6 @@ export default function Settings() {
   }, []);
   const me = user?.me;
   const roleLabel = me?.role === "owner" ? copy.settings.owner : me?.role === "admin" ? copy.settings.admin : me?.role === "planner" ? copy.settings.planner : copy.settings.viewer;
-  const initials = (me?.user.email ?? "?").slice(0, 2).toUpperCase();
   const surface = me?.surface ?? "couple";
   const hh = useFeatureCopy(HH_COPY);
   const couple = surface === "couple";
@@ -132,10 +131,14 @@ export default function Settings() {
   const isCouple = surface === "couple";
   const base = surface === "planner" ? "/planner/settings" : "/couple/settings";
   const go = (path: string) => router.push(`${base}/${path}` as never);
-  const name = [profile.data?.first_name, profile.data?.last_name].filter(Boolean).join(" ") || (me?.user.email.split("@")[0] ?? "");
+  // The name, or the full address with one neutral letter: never the address's local part as a name.
+  const person = personLabel(profile.data?.first_name, profile.data?.last_name, me?.user.email);
+  const name = person.label;
+  const initials = avatarInitials(person.label, person.named);
   const teamLine = team.data ? [plural(team.data.members.length, hh.index.teamSub), openInvites(team.data.invites) ? plural(openInvites(team.data.invites), hh.index.teamInvites) : null].filter(Boolean).join(" · ") : hh.index.teamInvite;
   const need = needSetup(connections.data?.items);
-  const connLine = connections.data ? (need ? plural(need, hh.index.connectionsNeed) : hh.index.connectionsOk) : hh.index.connectionsSub;
+  // The server's sentence, the same one the web page shows; an older server gets the local count.
+  const connLine = connections.data ? (connectionsSummary(connections.data) ?? (need ? plural(need, hh.index.connectionsNeed) : hh.index.connectionsOk)) : hh.index.connectionsSub;
   const planLine = isCouple ? (billing.data?.tier_label ?? (me?.tenant.tier ? tierLabel(me.tenant.tier, copy.settings.tiers) : hh.index.billingSub)) : hh.index.plannerBillingSub;
   const refLine = referralLine(referral.data, hh.referral.joined);
   const ico = (n: IconName) => <Icon name={n} size={22} color={colors.ivory70} />;
@@ -146,10 +149,16 @@ export default function Settings() {
         <Row gap={14}>
           <Avatar initials={initials} size={56} />
           <View style={{ flex: 1, gap: 3 }}>
-            <T v="name24">{name}</T>
-            <T v="meta13" color={colors.ivory55}>
-              {me?.user.email} · {roleLabel}
-            </T>
+            <T v={person.named ? "name24" : "body16"}>{name}</T>
+            {person.named ? (
+              <T v="meta13" color={colors.ivory55}>
+                {me?.user.email} · {roleLabel}
+              </T>
+            ) : (
+              <T v="meta13" color={colors.ivory55}>
+                {roleLabel} · <T v="meta13" color={colors.goldLight}>{hh.team.addName}</T>
+              </T>
+            )}
           </View>
           <Icon name="chev" size={18} color={colors.ivory40} />
         </Row>

@@ -1,6 +1,6 @@
 // Run: node --experimental-strip-types scripts/tests/settings.test.ts
 import assert from "node:assert/strict";
-import { zoneGroups, zoneCity, validZone, generalPatch, applyPrefChange, hourLabel, openInvites, looksLikeEmail, capShare, groupConnections, needSetup, devicePushPrefs, connectionsWebPath } from "../../src/features/settings/logic.ts";
+import { zoneGroups, zoneCity, validZone, generalPatch, applyPrefChange, hourLabel, openInvites, looksLikeEmail, capShare, groupConnections, needSetup, devicePushPrefs, connectionsWebPath, connectionsSummary, personLabel, avatarInitials } from "../../src/features/settings/logic.ts";
 
 // Time zones: city names, accent-insensitive search, pinned zones first.
 assert.equal(zoneCity("America/Argentina/Buenos_Aires"), "Buenos Aires");
@@ -77,6 +77,19 @@ const groups = groupConnections(items, [
 assert.deepEqual(groups.map((g) => g.key), ["messaging", "payments", "future"]);
 assert.equal(groups[2].name, "future");
 assert.equal(needSetup(items), 2);
+// Managed connections (Guest-ly switches them on) are never the couple's to set up.
+assert.equal(needSetup([...items, { provider: "sms", category: "messaging", status: "not_set_up" as const, managed: true }]), 2);
+
+// The summary is the server's sentence, the same one the web shows; null when an older server sends none.
+assert.equal(connectionsSummary({ summary_line: "4 connected, 3 not set up" }), "4 connected, 3 not set up");
+assert.equal(connectionsSummary({ summary_line: "  " }), null);
+assert.equal(connectionsSummary({}), null);
+
+// A person without a name shows the full address and one neutral letter, never the local part as a name.
+assert.deepEqual(personLabel("Valentina", "Ríos", "couple@hh.local"), { label: "Valentina Ríos", named: true });
+assert.deepEqual(personLabel(null, " ", "couple@hh.local"), { label: "couple@hh.local", named: false });
+assert.equal(avatarInitials("Valentina Ríos", true), "VR");
+assert.equal(avatarInitials("couple@hh.local", false), "C");
 
 // The setup link exists on every portal build (integrations, or its redirect to connections).
 assert.equal(connectionsWebPath("couple"), "/settings/integrations");

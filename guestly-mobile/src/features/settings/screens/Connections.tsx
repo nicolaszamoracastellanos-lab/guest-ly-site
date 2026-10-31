@@ -16,7 +16,7 @@ import { Screen, TopBar, BigTitle, Stack, Card, ListRow, Badge, Skeleton, T, Sec
 import { colors } from "@/ui/tokens";
 import { HH_COPY } from "../copy";
 import { useConnections, type ConnectionItem, type SettingsSurface } from "../hooks";
-import { connectionsWebPath, groupConnections } from "../logic";
+import { connectionsSummary, connectionsWebPath, groupConnections } from "../logic";
 
 const KIND = { connected: "green", needs_attention: "amber", not_set_up: "mute" } as const;
 
@@ -37,7 +37,7 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
 
   return (
     <Screen query={query} header={<TopBar onBack={back} title={app.settings.title} />} bottomInset={40} refresh={() => query.refetch()}>
-      <BigTitle title={c.title} sub={data ? fmt(c.summary, { ok: data.summary.connected ?? 0, need: data.summary.needs_attention ?? 0 }) : c.sub} size={38} />
+      <BigTitle title={c.title} sub={data ? (connectionsSummary(data) ?? fmt(c.summary, { ok: data.summary.connected ?? 0, need: data.summary.needs_attention ?? 0 })) : c.sub} size={38} />
       {!data ? (
         <Stack gap={12} style={{ marginTop: 20 }}>
           <Skeleton h={120} r={18} />
@@ -58,7 +58,7 @@ export function ConnectionsScreen({ surface = "couple" }: { surface?: SettingsSu
                     key={i.provider}
                     title={i.name}
                     sub={sub(i)}
-                    below={<Badge label={c.status[i.status]} kind={KIND[i.status]} dot={i.status === "connected"} />}
+                    below={<Badge label={i.managed ? c.off : c.status[i.status]} kind={KIND[i.status]} dot={i.status === "connected"} />}
                     onPress={i.action_by === "couple" && i.status !== "connected" ? openWeb : undefined}
                     chevron={i.action_by === "couple" && i.status !== "connected"}
                     last={n === g.items.length - 1}

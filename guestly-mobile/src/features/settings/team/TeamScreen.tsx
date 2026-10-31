@@ -18,11 +18,12 @@ import { colors } from "@/ui/tokens";
 import { HH_COPY } from "../copy";
 import { TEAM_KEY, usePlannerTeam, useTeam, type Team, type TeamInvite, type TeamMember } from "../hooks";
 import { InviteSheet, type InviteResult } from "./InviteSheet";
+import { avatarInitials } from "../logic";
+import { router } from "expo-router";
 
-function initialsOf(name: string, email: string): string {
-  const src = name.trim() || email.split("@")[0];
-  const parts = src.split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+/** Two initials from a name; one neutral letter from an address (never its local part as a name). */
+function initialsOf(name: string, email: string, named = !!name.trim()): string {
+  return named ? avatarInitials(name, true) : avatarInitials(name.trim() || email, false);
 }
 
 export function TeamScreen({ surface = "couple" }: { surface?: "couple" | "planner" }) {
@@ -128,14 +129,26 @@ function CoupleTeam() {
             {data.members.map((m, i) => (
               <ListRow
                 key={m.user_id}
-                leading={<Avatar initials={initialsOf(m.name, m.email_masked)} size={40} />}
+                leading={<Avatar initials={initialsOf(m.name, m.email_masked, m.has_name ?? !!m.name)} size={40} />}
                 title={m.is_me ? `${m.name || m.email_masked} (${t.you})` : m.name || m.email_masked}
-                sub={m.name ? m.email_masked : m.last_seen_at ? fmt(t.lastSeen, { when: relTime(m.last_seen_at, lang) }) : t.neverSeen}
+                sub={
+                  m.has_name === false
+                    ? m.is_me
+                      ? t.addName
+                      : m.last_seen_at
+                        ? fmt(t.lastSeen, { when: relTime(m.last_seen_at, lang) })
+                        : t.neverSeen
+                    : m.name
+                      ? m.email_masked
+                      : m.last_seen_at
+                        ? fmt(t.lastSeen, { when: relTime(m.last_seen_at, lang) })
+                        : t.neverSeen
+                }
                 below={<Badge label={t.roles[m.role] ?? m.role} kind={m.role === "owner" ? "gold" : "mute"} />}
                 onLongPress={m.removable ? () => removeMember(m) : undefined}
                 longPressLabel={m.removable ? t.remove : undefined}
-                onPress={m.removable ? () => removeMember(m) : undefined}
-                chevron={false}
+                onPress={m.removable ? () => removeMember(m) : m.is_me && m.has_name === false ? () => router.push("/couple/settings/profile" as never) : undefined}
+                chevron={!m.removable && m.is_me && m.has_name === false}
                 last={i === data.members.length - 1}
               />
             ))}

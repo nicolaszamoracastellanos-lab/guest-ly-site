@@ -175,7 +175,7 @@ export function capShare(used: number, cap: number | null | undefined): number |
 
 // ---------------------------------------------------------------- connections
 
-export type ConnLike = { category: string; status: "connected" | "needs_attention" | "not_set_up" };
+export type ConnLike = { category: string; status: "connected" | "needs_attention" | "not_set_up"; managed?: boolean };
 
 /** Items grouped in the server's category order; a category the server did
  *  not name (an older portal) goes last under its key. */
@@ -188,8 +188,36 @@ export function groupConnections<I extends ConnLike>(items: I[], categories: { k
 }
 
 /** How many cards are not connected (the Settings row's live line). */
+/** Connections the couple still has to act on. Managed ones (Guest-ly switches them on) never count. */
 export function needSetup(items: ConnLike[] | null | undefined): number {
-  return (items ?? []).filter((i) => i.status !== "connected").length;
+  return (items ?? []).filter((i) => i.status !== "connected" && !i.managed).length;
+}
+
+/**
+ * The Connections summary the web shows ("4 connected, 3 not set up"), as the
+ * server wrote it (api/mobile/v1 connections summary_line), so the app and the
+ * web never disagree. Null when an older server sends none: the caller falls
+ * back to its own count.
+ */
+export function connectionsSummary(data: { summary_line?: string | null } | null | undefined): string | null {
+  const line = data?.summary_line?.trim();
+  return line ? line : null;
+}
+
+/**
+ * What a person is called on screen: their name, or the full address when they
+ * never gave one. Never the address's local part dressed up as a name.
+ */
+export function personLabel(first: string | null | undefined, last: string | null | undefined, email: string | null | undefined): { label: string; named: boolean } {
+  const name = [first, last].map((x) => (x ?? "").trim()).filter(Boolean).join(" ");
+  return name ? { label: name, named: true } : { label: (email ?? "").trim(), named: false };
+}
+
+/** Avatar letters: two initials from a name, one neutral letter from an address. */
+export function avatarInitials(label: string, named: boolean): string {
+  if (!named) return (label.trim()[0] ?? "?").toUpperCase();
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
 // ---------------------------------------------------------------- push on this phone
