@@ -69,8 +69,8 @@ function RsvpFace({ who, children, gemColor, on }: { who: string; children: Reac
           {who}
         </ST>
       </View>
-      <View style={[styles.avatar, on && { backgroundColor: colors.gold, borderColor: colors.gold }]}>
-        {on ? <Icon name="check" size={26} color={colors.night} strokeWidth={2.4} /> : <Gemlet size={12} color={colors.goldDim} />}
+      <View style={[styles.avatar, on && { backgroundColor: "#03694c", borderColor: "#03694c" }]}>
+        {on ? <Icon name="check" size={26} color={colors.cream} strokeWidth={2.4} /> : <Gemlet size={12} color={colors.goldDim} />}
       </View>
       {children}
     </View>
@@ -239,7 +239,7 @@ export function ConciergeScene({ reduced }: SceneProps) {
     <View style={StyleSheet.absoluteFill}>
       <View style={[sceneStyles.row, { marginBottom: 12 }]}>
         <View style={styles.sparkle}>
-          <Icon name="concierge" size={16} color={colors.night} strokeWidth={1.9} />
+          <Icon name="concierge" size={16} color={colors.goldLight} strokeWidth={1.9} />
         </View>
         <ST v="body16" color={colors.ivory} lines={1}>
           {app.concierge.title}
@@ -372,7 +372,8 @@ const styles = StyleSheet.create({
   tileCheck: { position: "absolute", right: -8, top: -8, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.green, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.night },
   eventCard: { position: "absolute", left: 0, right: 0, bottom: 0 },
   flyChip: { position: "absolute", left: 160 - 38, top: 246 - 13, width: 76, height: 26, borderRadius: 13, backgroundColor: colors.goldLight, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
-  sparkle: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
+  // The concierge is outlined; only the Coordinator gets the gold disc.
+  sparkle: { width: 30, height: 30, borderRadius: 9, borderWidth: 1, borderColor: colors.goldBorder, alignItems: "center", justifyContent: "center" },
   chips: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { borderRadius: radius.pill, paddingHorizontal: 12, height: 34, justifyContent: "center", borderWidth: 1, borderColor: colors.ivory14, backgroundColor: "rgba(247,243,236,0.04)" },
   chipOn: { borderColor: "rgba(201,169,110,0.55)", backgroundColor: "rgba(201,169,110,0.14)" },

@@ -219,8 +219,8 @@ export default function RsvpConfirm() {
       />
       <View style={styles.headline}>
         <Animated.View entering={reduced ? undefined : ZoomIn.springify().damping(13).stiffness(180)} style={styles.checkRing} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={styles.check}>
-            <Icon name="check" size={32} color={colors.ink} strokeWidth={2.2} />
+          <View style={[styles.check, declined && styles.checkDeclined]}>
+            <Icon name="check" size={32} color={colors.cream} strokeWidth={2.2} />
           </View>
         </Animated.View>
         <T v={windowH < 720 ? "title30" : "title34"} style={{ marginTop: 12 }} accessibilityRole="header">
@@ -244,7 +244,10 @@ const styles = StyleSheet.create({
   // The check overlaps the bottom of the photo, ringed in night.
   headline: { paddingHorizontal: 20, marginTop: -34 },
   checkRing: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.night, alignItems: "center", justifyContent: "center", marginLeft: -6 },
-  check: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.gold, alignItems: "center", justifyContent: "center" },
+  // The reply card's own green (guest Home doneIcon), not a gold disc: the
+  // filled gold disc belongs to the Coordinator alone (HH craft pass).
+  check: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#03694c", alignItems: "center", justifyContent: "center" },
+  checkDeclined: { backgroundColor: colors.muted },
   sumRow: { paddingVertical: 12 },
   sumLine: { borderTopWidth: 1, borderTopColor: PAPER_LINE },
   sumIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: PAPER_GREEN, alignItems: "center", justifyContent: "center", marginTop: -1 },

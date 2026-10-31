@@ -192,10 +192,12 @@ export function Pill({ label, kind = "mute", icon, dot, start }: { label: string
   );
 }
 
+/** Initials in a navy circle; `gold` (the picked row) is a gold ring, never a
+ *  filled gold disc (that belongs to the Coordinator, HH craft pass). */
 export function Initials({ text, size = 34, gold }: { text: string; size?: number; gold?: boolean }) {
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: gold ? colors.gold : colors.navy, borderWidth: 1, borderColor: colors.goldBorder, alignItems: "center", justifyContent: "center" }}>
-      <T v="body15" size={Math.max(16, Math.round(size * 0.44))} color={gold ? colors.night : colors.goldLight} maxFontSizeMultiplier={1} style={{ fontFamily: fonts.displaySemibold }}>
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: gold ? colors.goldWash : colors.navy, borderWidth: gold ? 1.5 : 1, borderColor: gold ? colors.goldLight : colors.goldBorder, alignItems: "center", justifyContent: "center" }}>
+      <T v="body15" size={Math.max(16, Math.round(size * 0.44))} color={colors.goldLight} maxFontSizeMultiplier={1} style={{ fontFamily: fonts.displaySemibold }}>
         {text}
       </T>
     </View>

@@ -63,11 +63,11 @@ const en = {
     couple: {
       home: {
         title: "Start each day on Home.",
-        body: "See who has answered at a glance. Reminders lists only what needs you, like a guest question or a planner request.",
-        where: "Home tab, Reminders",
+        body: "Today lists only what needs you, like a guest question or a planner request. Under it, the replies: invited, replied, going.",
+        where: "Home tab, Today",
         tip: "Tap a line to jump straight to it. Handle it and the list gets shorter.",
         tryIt: "Tap a line to handle it",
-        scene: "A list of three reminders. Tapping a line marks it handled.",
+        scene: "Today, with three lines, over the reply count. Tapping a line marks it handled.",
       },
       guests: {
         title: "Guests and answers, together.",
@@ -228,11 +228,11 @@ const es: TourCopy = {
     couple: {
       home: {
         title: "Empieza cada día en Inicio.",
-        body: "Ve de un vistazo quién ya respondió. Recordatorios muestra solo lo que te necesita, como la pregunta de un invitado o una solicitud de tu planner.",
-        where: "Pestaña Inicio, Recordatorios",
+        body: "Hoy muestra solo lo que te necesita, como la pregunta de un invitado o una solicitud de tu planner. Debajo, las respuestas: invitados, respondieron, van.",
+        where: "Pestaña Inicio, Hoy",
         tip: "Toca una línea para ir directo. Resuélvela y la lista se acorta.",
         tryIt: "Toca una línea para resolverla",
-        scene: "Una lista de tres recordatorios. Al tocar una línea, queda resuelta.",
+        scene: "Hoy, con tres líneas, sobre el conteo de respuestas. Al tocar una línea, queda resuelta.",
       },
       guests: {
         title: "Invitados y respuestas, juntos.",

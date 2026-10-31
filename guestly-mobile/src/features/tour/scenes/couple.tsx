@@ -1,4 +1,4 @@
-// Couple tour scenes: the briefing you clear, RSVPs that count themselves,
+// Couple tour scenes: Home (Today rows you clear over the reply funnel), RSVPs that count themselves,
 // a guest question you answer, the Coordinator's Confirm card, and the door.
 
 import React, { useEffect, useRef, useState } from "react";
@@ -14,7 +14,7 @@ import { COPY as COUPLE_COPY } from "@/features/couple/copy";
 import { Icon } from "@/ui/Icon";
 import { colors, fonts, radius } from "@/ui/tokens";
 import { TOUR_COPY } from "../copy";
-import { Bubble, FakeButton, Gemlet, Initials, Pill, ST, Tap, TypingDots, sceneStyles, useBeat, useTimer, useTried, useTryAction, type SceneProps } from "./kit";
+import { Bubble, FakeButton, Initials, Pill, ST, Tap, TypingDots, sceneStyles, useBeat, useTimer, useTried, useTryAction, type SceneProps } from "./kit";
 
 function useEnter(reduced: boolean) {
   return reduced ? FadeIn.duration(1) : FadeInDown.springify().damping(16).stiffness(170);
@@ -36,14 +36,13 @@ function useResetWhenInactive(active: boolean, reset: () => void) {
 // ---------------------------------------------------------------- briefing
 
 export function BriefingScene({ active, reduced }: SceneProps) {
-  const app = useCopy();
   const cc = useFeatureCopy(COUPLE_COPY);
   const demo = useFeatureCopy(TOUR_COPY).demo;
   const tried = useTried();
   const all = [
-    { id: "a", text: demo.brief1, tone: colors.amber },
-    { id: "b", text: demo.brief2, tone: colors.gold },
-    { id: "c", text: demo.brief3, tone: colors.amber },
+    { id: "a", text: demo.brief1, tone: colors.amber, icon: "tasks" as const },
+    { id: "b", text: demo.brief2, tone: colors.goldLight, icon: "chat" as const },
+    { id: "c", text: demo.brief3, tone: colors.amber, icon: "clock" as const },
   ];
   const [left, setLeft] = useState(all.map((r) => r.id));
   const [handling, setHandling] = useState<string | null>(null);
@@ -69,53 +68,74 @@ export function BriefingScene({ active, reduced }: SceneProps) {
   });
   const layout = reduced ? undefined : LinearTransition.springify().damping(18).stiffness(170);
 
+  // Drawn like the wedding-first Home (HH craft pass): Today's rows to clear,
+  // then the reply funnel; no stat tiles.
   return (
     <View style={StyleSheet.absoluteFill}>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <Tile value="86" label={app.coupleHome.attending} />
-        <Tile value={String(left.length)} label={app.coupleHome.needYou} color={colors.goldLight} reduced={reduced} />
-      </View>
-      <ST v="label11" color={colors.ivory55} lines={1} style={{ marginTop: 16, marginBottom: 4 }}>
-        {cc.home.reminders}
+      <ST v="label11" color={colors.ivory55} lines={1} style={{ marginBottom: 2 }}>
+        {cc.home.today}
       </ST>
-      {left.length === 0 ? (
-        <Animated.View entering={FadeIn.duration(reduced ? 1 : 300)}>
-          <Tap onPress={reset}>
-            <View style={[sceneStyles.row, { paddingVertical: 18 }]}>
-              <View style={styles.okCircle}>
-                <Icon name="check" size={16} color={colors.night} strokeWidth={2.6} />
+      <View style={{ height: 150 }}>
+        {left.length === 0 ? (
+          <Animated.View entering={FadeIn.duration(reduced ? 1 : 300)}>
+            <Tap onPress={reset}>
+              <View style={[sceneStyles.row, { paddingVertical: 14 }]}>
+                <Icon name="check" size={20} color={colors.greenText} />
+                <ST v="body16" color={colors.ivory70} style={{ flex: 1 }}>
+                  {cc.home.nothingToday}
+                </ST>
               </View>
-              <ST v="body16" color={colors.ivory70} style={{ flex: 1 }}>
-                {app.coupleHome.briefingEmpty}
-              </ST>
-            </View>
-          </Tap>
-        </Animated.View>
-      ) : (
-        all
-          .filter((r) => left.includes(r.id))
-          .map((r) => (
-            <Animated.View key={r.id} layout={layout} exiting={reduced ? FadeOut.duration(120) : SlideOutRight.duration(320)}>
-              <Tap onPress={() => handle(r.id)}>
-                <View style={styles.briefRow}>
-                  {handling === r.id ? (
-                    <Animated.View entering={ZoomIn.duration(reduced ? 1 : 220)} style={styles.okCircle}>
-                      <Icon name="check" size={14} color={colors.night} strokeWidth={2.6} />
-                    </Animated.View>
-                  ) : (
-                    <View style={{ width: 22, alignItems: "center" }}>
-                      <Gemlet size={7} color={r.tone} />
-                    </View>
-                  )}
-                  <ST v="body15" size={16} color={colors.ivory90} lines={2} style={{ flex: 1 }}>
-                    {r.text}
-                  </ST>
-                  {handling === r.id ? <Pill label={demo.handled} kind="green" /> : <Icon name="chev" size={16} color={colors.ivory40} />}
-                </View>
-              </Tap>
-            </Animated.View>
-          ))
-      )}
+            </Tap>
+          </Animated.View>
+        ) : (
+          all
+            .filter((r) => left.includes(r.id))
+            .map((r) => (
+              <Animated.View key={r.id} layout={layout} exiting={reduced ? FadeOut.duration(120) : SlideOutRight.duration(320)}>
+                <Tap onPress={() => handle(r.id)}>
+                  <View style={styles.briefRow}>
+                    {handling === r.id ? (
+                      <Animated.View entering={ZoomIn.duration(reduced ? 1 : 220)} style={styles.okCircle}>
+                        <Icon name="check" size={14} color={colors.night} strokeWidth={2.6} />
+                      </Animated.View>
+                    ) : (
+                      <Icon name={r.icon} size={18} color={r.tone} />
+                    )}
+                    <ST v="body15" size={16} color={colors.ivory90} lines={2} style={{ flex: 1 }}>
+                      {r.text}
+                    </ST>
+                    {handling === r.id ? <Pill label={demo.handled} kind="green" /> : <Icon name="chev" size={16} color={colors.ivory40} />}
+                  </View>
+                </Tap>
+              </Animated.View>
+            ))
+        )}
+      </View>
+      <ST v="label11" color={colors.ivory55} lines={1} style={{ marginTop: 10, marginBottom: 6 }}>
+        {cc.home.replies}
+      </ST>
+      <View style={[sceneStyles.card, { paddingVertical: 10, gap: 8 }]}>
+        <FunnelLine label={cc.home.repliedRow} n={98} of={120} />
+        <FunnelLine label={cc.home.goingRow} n={86} of={120} gold />
+      </View>
+    </View>
+  );
+}
+
+function FunnelLine({ label, n, of, gold }: { label: string; n: number; of: number; gold?: boolean }) {
+  return (
+    <View>
+      <View style={[sceneStyles.row, { justifyContent: "space-between" }]}>
+        <ST v="body15" size={15} color={colors.ivory90} lines={1}>
+          {label}
+        </ST>
+        <ST v="body15" size={15} color={colors.ivory} lines={1} style={{ fontVariant: ["lining-nums", "tabular-nums"] }}>
+          {`${n}  ${Math.round((n / of) * 100)}%`}
+        </ST>
+      </View>
+      <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.ivory09, marginTop: 5, overflow: "hidden" }}>
+        <View style={{ height: 4, width: `${(n / of) * 100}%`, backgroundColor: gold ? colors.gold : colors.ivory40 }} />
+      </View>
     </View>
   );
 }
@@ -425,7 +445,7 @@ export function CheckinScene({ active, reduced }: SceneProps) {
 
 const styles = StyleSheet.create({
   tile: { flex: 1, borderRadius: radius.tile, padding: 10, paddingBottom: 8, backgroundColor: "rgba(13,17,23,0.72)", borderWidth: 1, borderColor: colors.ivory14, overflow: "hidden" },
-  briefRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 54, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 6 },
+  briefRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingVertical: 6 },
   okCircle: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.green, alignItems: "center", justifyContent: "center" },
   okCircleBig: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.green, alignItems: "center", justifyContent: "center" },
   rsvpRow: { flexDirection: "row", alignItems: "center", gap: 10, height: 50, borderBottomWidth: 1, borderBottomColor: colors.ivory09, paddingHorizontal: 4 },
