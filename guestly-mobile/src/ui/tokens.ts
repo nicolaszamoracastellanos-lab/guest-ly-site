@@ -84,22 +84,34 @@ export const fonts = {
   bodySemibold: IOS ? "Jost-SemiBold" : "Jost_600SemiBold",
 } as const;
 
-/** Type scale. Body copy never renders below 16, captions never below 14.
+/** Type scale. Screens pick a step by name and never pass a size (HH craft
+ *  pass, Oct 30 2026); only the kit's responsive pieces (Button, Avatar,
+ *  Countdown, the tour's scaled mockups, the guest home names) compute one.
+ *  Body copy never renders below 16, captions never below 14.
  *  Sep 7 2026 device pass: Cormorant and Jost both have a small x-height,
  *  so the whole scale sits two points above the artboards and the muted
  *  ivories run brighter than the web values. Names keep their old numbers. */
 export const type = {
+  /** The big countdown on the couple's day-of screen. */
+  numeral80: { fontFamily: fonts.display, fontSize: 80, lineHeight: 78 },
   display60: { fontFamily: fonts.display, fontSize: 64, lineHeight: 62 },
   display44: { fontFamily: fonts.display, fontSize: 48, lineHeight: 50 },
   title42: { fontFamily: fonts.display, fontSize: 46, lineHeight: 48 },
+  /** Screen titles (BigTitle's default and the tab headers). HH Oct 30: the
+   *  ramp step for what used to be `title42` with an inline 40 or 42. */
+  screen: { fontFamily: fonts.display, fontSize: 42, lineHeight: 44 },
   title34: { fontFamily: fonts.display, fontSize: 38, lineHeight: 40 },
   title30: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36 },
   title26: { fontFamily: fonts.display, fontSize: 30, lineHeight: 32 },
   name24: { fontFamily: fonts.display, fontSize: 27, lineHeight: 30 },
+  /** Times in a timeline column (day-of, schedule). */
+  time20: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24 },
   button17: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 24 },
   body16: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25 },
   body15: { fontFamily: fonts.body, fontSize: 17, lineHeight: 24 },
   meta13: { fontFamily: fonts.body, fontSize: 15, lineHeight: 20 },
+  /** The caption floor (MIN_CAPTION): small print in dense rows. */
+  caption14: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19 },
   label11: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 1.6, textTransform: "uppercase" as const },
 } as const;
 

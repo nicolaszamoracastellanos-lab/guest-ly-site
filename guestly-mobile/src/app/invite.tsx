@@ -17,7 +17,7 @@
 // through the same cleaning as typing, so "abc-123" or a whole message works.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, TextInput, Pressable, StyleSheet, Image, useWindowDimensions } from "react-native";
+import { View, TextInput, Pressable, StyleSheet, useWindowDimensions, type TextInputInstance } from "react-native";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -26,13 +26,12 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { post } from "@/lib/api";
 import type { TenantSummary } from "@/lib/session";
-import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel, Row, Icon, useKeyboardOpen } from "@/ui";
+import { Screen, TopBar, LangToggle, T, Button, Stack, SectionLabel, Row, Icon, useKeyboardOpen, NightMotif } from "@/ui";
 import { colors, fonts, radius, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { extractInviteCode } from "@/features/guest/format";
 import { guestErrorText } from "@/features/guest/errors";
 
-const suite = require("../../assets/photos/suite.jpg");
 const LEN = 6;
 
 export default function InviteCode() {
@@ -45,7 +44,7 @@ export default function InviteCode() {
   const [code, setCode] = useState(() => extractInviteCode(params.code ?? "", LEN));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   // A ref, not the busy state: the auto-open effect and a tap on Open can
   // land in the same frame, before a re-render.
   const inFlight = useRef(false);
@@ -115,12 +114,12 @@ export default function InviteCode() {
       <>
         {showCard ? (
           <View style={styles.card}>
-            <Image source={suite} style={FILL} resizeMode="cover" />
+            <NightMotif variant={1} style={FILL} />
           </View>
         ) : null}
         <Stack gap={8} style={{ marginTop: showCard ? 20 : 8 }}>
           {tight ? null : <SectionLabel color={colors.goldLight}>{copy.invite.label}</SectionLabel>}
-          <T v="title42" size={height < 700 ? 32 : 38}>
+          <T v={height < 700 ? "title30" : "title34"}>
             {copy.invite.title}
           </T>
           {tight ? null : (
@@ -139,7 +138,7 @@ export default function InviteCode() {
         >
           {cells.map((c, i) => (
             <View key={i} style={[styles.cell, i === code.length && styles.cellActive]}>
-              <T v="title30" size={32} color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
+              <T v="title30" color={colors.goldLight} style={{ fontFamily: fonts.displaySemibold }}>
                 {c}
               </T>
             </View>

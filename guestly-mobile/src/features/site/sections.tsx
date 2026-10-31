@@ -535,7 +535,7 @@ function Chat({ s }: { s: Extract<SiteSection, { type: "chat" }> }) {
           </T>
         ) : null}
         <Stack gap={8}>
-          <Button label={copy.chatConcierge} icon="sparkle" onPress={() => router.push("/guest/concierge")} />
+          <Button label={copy.chatConcierge} icon="concierge" onPress={() => router.push("/guest/concierge")} />
           {s.whatsapp_url ? <Button label={copy.chatWhatsapp} icon="chat" kind="glass" onPress={() => openExternal(s.whatsapp_url!)} /> : null}
           {s.planner_url ? <Button label={s.planner_name ? `${copy.chatPlanner} · ${s.planner_name}` : copy.chatPlanner} icon="contacts" kind="glass" onPress={() => openExternal(s.planner_url!)} /> : null}
         </Stack>

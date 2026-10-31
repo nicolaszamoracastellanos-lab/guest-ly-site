@@ -13,6 +13,7 @@
 import React, { type ReactNode } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { usePane } from "@/ui/MasterDetail";
 import { fmt, relTime, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
@@ -32,6 +33,7 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const router = useRouter();
+  const pane = usePane();
   const user = useUserSession();
   const mainQuery = useBroadcasts();
   const { data, isLoading } = mainQuery;
@@ -70,15 +72,13 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
         {data && ready ? (
           <>
             {canSend && !anyPhone ? <Banner icon="phone" title={c.noPhones} /> : null}
-            {canSend ? <Button label={c.newBroadcast} icon="megaphone" onPress={() => router.push("/couple/broadcasts/new")} disabled={!anyPhone} testID="broadcasts-new" /> : null}
+            {canSend ? <Button label={c.newBroadcast} icon="megaphone" onPress={() => pane.open("new", () => router.push("/couple/broadcasts/new"))} disabled={!anyPhone} testID="broadcasts-new" /> : null}
           </>
         ) : null}
         {data && !ready ? (
           <Card kind="solid" padding={18} radiusKey="tile" border={colors.goldBorder}>
             <Stack gap={10}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="megaphone" size={22} color={colors.goldLight} />
-              </View>
+              <Icon name="megaphone" size={26} color={colors.ivory90} />
               <T v="title26">{c.notReadyTitle}</T>
               <T v="body15" color={colors.ivory70}>
                 {req.canRequest ? c.notReadyBody : c.notReadyBodyNoRequest}
@@ -137,7 +137,7 @@ export function BroadcastsPanel({ lead, headerRight }: { lead: ReactNode; header
                 title={groupTitle(g, c.unknownBatch)}
                 sub={`${deliveryLine(g, c)} · ${relTime(g.ts, lang)}`}
                 trailing={g.groupKind === "campaign" ? <Badge label={g.failed ? fmt(c.failed, { n: g.failed }) : fmt(c.recipients, { n: g.audience })} kind={g.failed ? "amber" : "green"} /> : undefined}
-                onPress={g.groupKind === "campaign" ? () => router.push({ pathname: "/couple/broadcasts/[id]", params: { id: g.id } }) : undefined}
+                onPress={g.groupKind === "campaign" ? () => pane.open(`b:${g.id}`, () => router.push({ pathname: "/couple/broadcasts/[id]", params: { id: g.id } })) : undefined}
                 chevron={g.groupKind === "campaign"}
                 last={i === history.length - 1}
               />

@@ -29,9 +29,9 @@
 // src/app would become a route): PlannerTop, NotShared, the gated queries,
 // the task check row and its toggle.
 
-import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import React, { useMemo, useState, type ReactNode } from "react";
 import { View, Pressable, ActivityIndicator, StyleSheet } from "react-native";
-import { Tabs, useNavigation } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, plural, shortDate, useCopy, useLang } from "@/i18n";
@@ -39,8 +39,12 @@ import { get, post } from "@/lib/api";
 import { usePlannerHome, type RequestRow, type TaskRow } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { can, useSession, useUserSession, type Me } from "@/lib/session";
-import { GlassTabBar, resetTabs, type TabSpec } from "@/ui/TabBar";
-import { T, Icon, Row, Sheet, ListRow, Badge, Card, Stack, toast, type IconName } from "@/ui";
+import { resetTabs } from "@/ui/tabNav";
+import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRoleTabs";
+import { PlannerWidgetSync } from "@/features/widgets/WidgetSync";
+import { useFeatureCopy } from "@/i18n/feature";
+import { COPY } from "@/features/planner/copy";
+import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, CoordinatorMark, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
 import { errorText } from "@/features/tasks/ui";
@@ -49,9 +53,9 @@ import { errorText } from "@/features/tasks/ui";
  *  app instead of closing it, and is reported. */
 export { ErrorBoundary } from "@/ui/ErrorScreen";
 
-/** Routes that are not tabs. Each pops to its first screen when left.
- *  "wedding" is the build 12 name of Tools, kept as a redirect. */
-const HIDDEN = ["tasks", "budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"];
+// Sections live inside the tab that opens them (route groups, URLs unchanged):
+// Expo Router 58 redirects away from hidden tab routes. "wedding" is the build
+// 12 name of Tools, kept as a redirect inside (tools).
 
 export default function PlannerTabs() {
   const c = useCopy().planner.b12.tabs;
@@ -62,59 +66,25 @@ export default function PlannerTabs() {
   // Pendientes counts what waits on the planner: their own open tasks and the
   // requests the couple answered with a question (plan b; prototype badge).
   const badge = canTasks ? (home.data?.open_tasks ?? 0) + (reqs.data?.requests ?? []).filter(asksPlanner).length : 0;
-  const specs: TabSpec[] = [
-    { name: "index", icon: "home", label: c.today },
-    { name: "requests", icon: "tasks", label: c.todo, badge, owns: ["tasks"] },
-    { name: "guests", icon: "guests", label: c.guests },
+  const lw = useFeatureCopy(COPY);
+  const tabs: RoleTab[] = [
+    { name: "index", sf: { default: "sun.horizon", selected: "sun.horizon.fill" }, label: c.today },
+    { name: "(weddings)", sf: { default: "heart.text.square", selected: "heart.text.square.fill" }, label: lw.tabs.weddings, owns: ["weddings"] },
+    { name: "guests", sf: { default: "person.2", selected: "person.2.fill" }, label: c.guests },
+    { name: "(requests)", sf: { default: "checklist", selected: "checklist.checked" }, label: c.todo, badge, owns: ["tasks"] },
     // Vendors stays a route (budget lines and pushes open it) but is no tool
-    // of its own any more (F5).
-    { name: "tools", icon: "grid", label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding"] },
-    { name: "more", icon: "more", label: c.more },
+    // of its own any more (F5). "more" (settings, guide, language, sign out) is
+    // a screen of this stack now, opened from the header menu.
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more", "checkin", "messages", "insights"] },
   ];
+  const tenantReset = useTenantStackReset(PLANNER_STACKS, true);
   return (
-    <Tabs
-      // Back means the screen the person came from, not the first tab.
-      backBehavior="history"
-      tabBar={(props) => <PlannerTabBar {...props} specs={specs} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.night }, lazy: true }}
-    >
-      {specs.map((s) => (
-        // A tab left with a detail open reopens on its list (Pendientes with a
-        // request open, then Hoy, then "See all in To do").
-        <Tabs.Screen key={s.name} name={s.name} options={{ popToTopOnBlur: s.name === "requests" }} />
-      ))}
-      {HIDDEN.map((name) => (
-        <Tabs.Screen key={name} name={name} options={{ href: null, popToTopOnBlur: true }} />
-      ))}
-    </Tabs>
+    <>
+      <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
+      <PlannerWidgetSync />
+    </>
   );
 }
-
-type BarProps = React.ComponentProps<typeof GlassTabBar>;
-
-/** The kit's bar, plus F1 for switches that did not start at the pill: when
- *  the wedding changes, every tab stack except the focused one pops to its
- *  root. (The kit's own `resetKey` pops the focused one too, which would close
- *  the screen a push for another wedding has just opened.) */
-function PlannerTabBar(props: BarProps) {
-  const { tenantKey } = useSession();
-  const { state, navigation } = props;
-  const latest = useRef(state);
-  useEffect(() => {
-    latest.current = state;
-  });
-  const last = useRef(tenantKey);
-  useEffect(() => {
-    const prev = last.current;
-    last.current = tenantKey;
-    if (!prev || !tenantKey || prev === tenantKey) return;
-    const st = latest.current;
-    resetTabs(navigation as unknown as Parameters<typeof resetTabs>[0], { skip: st.routes[st.index]?.key, tabs: PLANNER_STACKS });
-  }, [tenantKey, navigation]);
-  return <GlassTabBar {...props} />;
-}
-
-// ------------------------------------------------------------------ data
 
 export type PlannerRequests = { pending: boolean; requests: RequestRow[]; tasks: TaskRow[]; tasks_pending: boolean };
 
@@ -192,7 +162,7 @@ type NavLike = { getState: () => { type?: string }; getParent: () => NavLike | u
 
 /** The planner tabs whose stacks go back to their lists on a wedding switch,
  *  plus the hidden tasks stack Hoy pushes a task into. */
-const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "requests", "guests", "tools", "more", "tasks"]);
+const PLANNER_STACKS: ReadonlySet<string> = new Set(["index", "(weddings)", "(requests)", "guests", "(tools)"]);
 
 /** Pops every tab stack to its root (F1). From any screen inside the tabs. */
 export function popAllStacks(navigation: unknown) {
@@ -229,9 +199,28 @@ export function PlannerTop({ right, glass }: { right?: ReactNode; glass?: boolea
         </T>
         <Icon name="down" size={16} color={colors.ivory70} />
       </Pressable>
-      <View>{right}</View>
+      <Row gap={4}>
+        {right}
+        <PlannerActions />
+      </Row>
       <WeddingSwitcher visible={open} onClose={() => setOpen(false)} />
     </View>
+  );
+}
+
+/** The two buttons every planner header carries: the Coordinator (when this
+ *  wedding shares it) and the menu (settings, guide, language, sign out). Real
+ *  toolbar items: icon and title, so the system can place them in the Duo's
+ *  vertical rail or the overflow menu. */
+function PlannerActions() {
+  const router = useRouter();
+  const lm = useFeatureCopy(COPY).menu;
+  const me = useUserSession()?.me;
+  return (
+    <Row gap={4}>
+      {can(me, "coordinator") ? <IconButton name="sparkle" label={lm.coordinator} onPress={() => router.push("/assistant" as never)} testID="planner-top-coordinator" /> : null}
+      <IconButton name="more" label={lm.title} onPress={() => router.push("/planner/more" as never)} testID="planner-top-menu" />
+    </Row>
   );
 }
 
@@ -307,11 +296,14 @@ export function WeddingSwitcher({ visible, onClose }: { visible: boolean; onClos
 
 // ------------------------------------------------------------------ bits
 
-/** A 40 pt disc with a gold icon: the leading mark of planner rows. */
+/** The leading mark of planner rows: a plain icon in a 40 pt slot. The gold
+ *  disc belongs to the Coordinator alone (CoordinatorMark, HH craft pass), so
+ *  `sparkle` is drawn as that mark and every other icon stays plain. */
 export function IconDisc({ name, muted }: { name: IconName; muted?: boolean }) {
+  if (name === "sparkle") return <CoordinatorMark size={40} />;
   return (
-    <View style={[styles.disc, muted && { backgroundColor: colors.ivory09 }]}>
-      <Icon name={name} size={20} color={muted ? colors.ivory70 : colors.goldLight} />
+    <View style={styles.disc}>
+      <Icon name={name} size={22} color={muted ? colors.ivory55 : colors.ivory90} />
     </View>
   );
 }
@@ -449,7 +441,7 @@ const styles = StyleSheet.create({
   pill: { flexShrink: 1, minWidth: 0, height: 40, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 12, paddingRight: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder, backgroundColor: colors.goldWash },
   pillGlass: { backgroundColor: "rgba(13,17,23,0.62)" },
   close: { width: HIT_TARGET, height: HIT_TARGET, alignItems: "center", justifyContent: "center", marginRight: -10 },
-  disc: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: colors.goldWash },
+  disc: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   lock: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: colors.ivory09 },
   taskRow: { flexDirection: "row", alignItems: "center", minHeight: 64, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
   checkHit: { width: HIT_TARGET, height: HIT_TARGET, alignItems: "center", justifyContent: "center", marginLeft: -10 },

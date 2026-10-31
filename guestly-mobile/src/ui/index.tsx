@@ -2,30 +2,7 @@
 // accents, glass surfaces, one paper (ivory) card per screen at most.
 
 import React, { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import {
-  View,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  TextInput,
-  Image,
-  ScrollView,
-  RefreshControl,
-  InputAccessoryView,
-  type ViewStyle,
-  type ImageStyle,
-  type StyleProp,
-  type TextInputProps,
-  Modal,
-  Platform,
-  Keyboard,
-  KeyboardAvoidingView,
-  useWindowDimensions,
-  type TextStyle,
-  type NativeScrollEvent,
-  type LayoutChangeEvent,
-  type NativeSyntheticEvent,
-} from "react-native";
+import { View, Pressable, StyleSheet, ActivityIndicator, TextInput, Image, ScrollView, RefreshControl, InputAccessoryView, type ViewStyle, type ImageStyle, type StyleProp, type TextInputProps, Modal, Platform, Keyboard, KeyboardAvoidingView, useWindowDimensions, type TextStyle, type NativeScrollEvent, type LayoutChangeEvent, type NativeSyntheticEvent, type TextInputInstance, type HostInstance, type ScrollViewInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -45,6 +22,10 @@ import { useOnline } from "@/lib/query";
 import { useNavigation, useRoute } from "expo-router";
 import { ChatArea, DockedAction, FormGroup, FormToolbar, FORM_SCOPE, KeyboardScope, MultilineRoomSetter, MultilineRoomValue, TOOLBAR_SPACE, focusedTextInput, multilineRoomFor, useInFormScope, useKeepFocusedVisible } from "./keyboard";
 import { ToastHost, useDockLift } from "./Toast";
+import { usePane } from "./MasterDetail";
+import { useLayout } from "./layout";
+import { useReduceMotion } from "@/lib/duo";
+import { setDevScroll } from "./devPose";
 
 export { T } from "./Text";
 export { renderInlineBold } from "./MarkdownText";
@@ -54,6 +35,7 @@ export { colors, radius, space, COLUMN } from "./tokens";
 export { useBottomClearance, useTabBarTop } from "./chrome";
 export { LockCover } from "./LockCover";
 export { PhotoHero, focalPosition } from "./PhotoHero";
+export { NightMotif, motifVariant } from "./NightMotif";
 export type { PhotoHeroProps, PhotoFocal } from "./PhotoHero";
 // v1.2 build 12: keyboard primitives (react-native-keyboard-controller) and toasts.
 export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, FormGroup, KeyboardScope, TOOLBAR_SPACE, useInFormScope, useKeepFocusedVisible, useMultilineRoom } from "./keyboard";
@@ -65,8 +47,12 @@ export { KeyboardAvoidingView as KeyboardLiftView } from "react-native-keyboard-
 export type { ChatListHandle, ComposerProps } from "./keyboard";
 export { toast, dismissToast, ToastHost, useDockLift } from "./Toast";
 export type { ToastOptions, DockLift } from "./Toast";
-export { RoleTabs, GlassTabBar } from "./TabBar";
-export type { TabSpec, HiddenRoute } from "./TabBar";
+export { RoleNativeTabs } from "./NativeRoleTabs";
+export type { RoleTab } from "./NativeRoleTabs";
+export { useLayout, useSideInsetsStyle } from "./layout";
+export type { Layout, Bucket, Pose } from "./layout";
+export { TwoPane, TwoPanePlaceholder } from "./TwoPane";
+export { MasterDetail, usePane } from "./MasterDetail";
 
 // ---------------------------------------------------------------- layout
 
@@ -153,6 +139,7 @@ export function Screen({
   scrollY?: SharedValue<number>;
 }) {
   const insets = useSafeAreaInsets();
+  const pane = usePane();
   const pull = usePullRefresh(typeof refresh === "function" ? refresh : refresh && query ? () => query.refetch() : null);
   const top = useTopInset();
   const { lang } = useLang();
@@ -174,6 +161,16 @@ export function Screen({
   const online = useOnline();
   const edgeBack = useEdgeBack();
   const ownY = useSharedValue(0);
+  // Probe builds only (EXPO_PUBLIC_DUO_PROBE=1): the focused screen hands its
+  // scroll to DevProbe, so screenshots can show the lower sections.
+  const devScrollRef = useRef<{ scrollTo?: (o: { y: number; animated: boolean }) => void } | null>(null);
+  const devNav = useNavigation();
+  useEffect(() => {
+    if (process.env.EXPO_PUBLIC_DUO_PROBE !== "1") return;
+    const claim = () => setDevScroll((y) => devScrollRef.current?.scrollTo?.({ y, animated: false }));
+    claim();
+    return devNav.addListener("focus", claim);
+  }, [devNav]);
   const onScroll = useAnimatedScrollHandler((e) => {
     ownY.value = e.contentOffset.y;
   });
@@ -233,14 +230,19 @@ export function Screen({
     <KeyboardScope.Provider value={form ? FORM_SCOPE : null}>
     <MultilineRoomSetter.Provider value={form ? setMlRoom : null}>
     <MultilineRoomValue.Provider value={mlRoom}>
-    <View style={[styles.screen, style]}>
+    <View style={[styles.screen, pane.embedded ? null : { paddingLeft: insets.left, paddingRight: insets.right }, style]}>
       {/* The night backdrop (navy to night to deep night, with the gold wash
           from the top right) as one small baked image, stretched. It used to
           be two full-screen gradient layers per screen: every screen kept in
           the tabs held about 50 MB of drawing (QA Sep 29: 130 MB at launch,
           860 MB after visiting each section once). One decoded bitmap is
           now shared by every screen. Photo screens skip it (plain night). */}
-      {backdrop ? <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" /> : null}
+      {backdrop ? (
+        // COVER wrapper (relative to the padding box, so the backdrop also runs under the side insets) with the image at FILL inside it: a local image keeps its intrinsic size under COVER alone.
+        <View style={COVER} pointerEvents="none">
+          <Image source={SCREEN_BACKDROP} style={FILL} resizeMode="stretch" accessible={false} importantForAccessibility="no" />
+        </View>
+      ) : null}
       {header ? <View style={[styles.column, { paddingTop: top }]}>{header}</View> : null}
       {scroll && form ? (
         // Forms: the focused field scrolls into the band above the keyboard,
@@ -257,7 +259,7 @@ export function Screen({
           {content}
         </KeyboardAwareScrollView>
       ) : scroll ? (
-        <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} automaticallyAdjustKeyboardInsets {...scrollCommon}>
+        <Animated.ScrollView ref={devScrollRef as never} onScroll={onScroll} scrollEventThrottle={16} automaticallyAdjustKeyboardInsets {...scrollCommon}>
           {content}
         </Animated.ScrollView>
       ) : (
@@ -527,7 +529,7 @@ export function useKeyboardOpen(): boolean {
  *  667 pt phone the composer ended up under the keyboard (Part 9 audit, D-032).
  *  This wrapper measures its real place in the window and passes it on. */
 export function KeyboardFill({ children, modal = false }: { children: ReactNode; modal?: boolean }) {
-  const ref = useRef<View>(null);
+  const ref = useRef<HostInstance>(null);
   const insets = useSafeAreaInsets();
   const [offset, setOffset] = useState(0);
   // Inside an iOS modal sheet the measure is relative to the sheet, not to the
@@ -578,8 +580,25 @@ export function Hairline({ gold = false, style }: { gold?: boolean; style?: Styl
 
 // ---------------------------------------------------------------- brand
 
-export function Gem({ size = 7, color = colors.gold }: { size?: number; color?: string }) {
-  return <View style={{ width: size, height: size, backgroundColor: color, transform: [{ rotate: "45deg" }] }} />;
+/** The brand gem. `followHinge` turns it a quarter turn as the iPhone Duo
+ *  opens (a hinge effect, allowed and encouraged by Apple; never layout).
+ *  Still without a hinge and with Reduce Motion. */
+export function Gem({ size = 7, color = colors.gold, followHinge = false }: { size?: number; color?: string; followHinge?: boolean }) {
+  const { hinge, openness } = useLayout();
+  const reduce = useReduceMotion();
+  const turn = followHinge && hinge && !reduce ? (1 - openness) * 90 : 0;
+  return <View style={{ width: size, height: size, backgroundColor: color, transform: [{ rotate: `${45 + turn}deg` }] }} />;
+}
+
+/** The Coordinator's mark: the sparkle on a gold-wash disc. The ONE place the
+ *  gold disc appears (HH craft pass, Oct 30 2026); every other row leads with
+ *  a plain icon, so the AI entry is the thing that stands out. */
+export function CoordinatorMark({ size = 44 }: { size?: number }) {
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.goldWash, alignItems: "center", justifyContent: "center" }}>
+      <Icon name="sparkle" size={Math.round(size * 0.5)} color={colors.goldLight} />
+    </View>
+  );
 }
 
 const wordmark = require("../../assets/brand/wordmark-ivory.png");
@@ -820,11 +839,13 @@ export function TopBar({ title, onBack, right, left }: { title?: string; onBack?
   );
 }
 
-export function BigTitle({ label, title, sub, size = 42 }: { label?: string; title: string; sub?: string; size?: number }) {
+/** A screen title. `size` picks a ramp step: 42 the screen title, 38 a
+ *  sub-screen, 34 a sheet or a dense form. */
+export function BigTitle({ label, title, sub, size = 42 }: { label?: string; title: string; sub?: string; size?: 34 | 38 | 42 }) {
   return (
     <Stack gap={6}>
       {label ? <SectionLabel color={colors.goldLight}>{label}</SectionLabel> : null}
-      <T v="title42" size={size}>
+      <T v={size === 34 ? "title30" : size === 38 ? "title34" : "screen"}>
         {title}
       </T>
       {sub ? (
@@ -1026,7 +1047,7 @@ export function Input({
   icon?: IconName;
   right?: ReactNode;
   style?: StyleProp<ViewStyle>;
-  ref?: React.Ref<TextInput>;
+  ref?: React.Ref<TextInputInstance>;
   /** Show the clear button while there is text. Default: on for search fields. */
   clearable?: boolean;
   /** The iOS Done bar on numeric keyboards. Default on. */
@@ -1036,12 +1057,12 @@ export function Input({
   // and TalkBack; alone, its placeholder does. A call site's own label wins.
   const field = useContext(FieldContext);
   const c = useCopy().common;
-  const inner = useRef<TextInput | null>(null);
+  const inner = useRef<TextInputInstance | null>(null);
   const setRef = useCallback(
-    (node: TextInput | null) => {
+    (node: TextInputInstance | null) => {
       inner.current = node;
       if (typeof ref === "function") ref(node);
-      else if (ref && typeof ref === "object") (ref as React.RefObject<TextInput | null>).current = node;
+      else if (ref && typeof ref === "object") (ref as React.RefObject<TextInputInstance | null>).current = node;
     },
     [ref]
   );
@@ -1204,12 +1225,12 @@ export function Avatar({ initials, size = 40, gem }: { initials?: string; size?:
  *  when it has no `onLongPress` of its own. */
 export const ListRowLongPress = createContext<{ onLongPress: () => void; label: string } | null>(null);
 
-export function ListRow({ leading, title, sub, trailing, below, onPress, onLongPress, longPressLabel, chevron = true, last, testID }: { leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; /** Held press; also offered to VoiceOver and TalkBack as a named action. */ onLongPress?: () => void; longPressLabel?: string; chevron?: boolean; last?: boolean; testID?: string }) {
+export function ListRow({ leading, title, sub, trailing, below, onPress, onLongPress, longPressLabel, chevron = true, last, selected, testID }: { /** The record open beside this list (two panes): a gold wash and edge. */ selected?: boolean; leading?: ReactNode; title: string; sub?: string | null; trailing?: ReactNode; below?: ReactNode; onPress?: () => void; /** Held press; also offered to VoiceOver and TalkBack as a named action. */ onLongPress?: () => void; longPressLabel?: string; chevron?: boolean; last?: boolean; testID?: string }) {
   const ctx = useContext(ListRowLongPress);
   const held = onLongPress ?? ctx?.onLongPress;
   const heldLabel = longPressLabel ?? ctx?.label;
   const inner = (
-    <View style={[styles.row, last && { borderBottomWidth: 0 }]}>
+    <View style={[styles.row, last && { borderBottomWidth: 0 }, selected && styles.rowSelected]}>
       {leading}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <T v="body16" color={colors.ivory90} numberOfLines={2}>
@@ -1285,7 +1306,7 @@ export function BriefingRow({ text, tone, onPress }: { text: string; tone: "risk
 export function StatTile({ value, label, color = colors.ivory, kind = "glass", style }: { value: string; label: string; color?: string; kind?: CardKind; style?: StyleProp<ViewStyle> }) {
   return (
     <Card kind={kind} radiusKey="tile" padding={12} style={[{ flex: 1, minWidth: 0, gap: 4, alignSelf: "stretch" }, style]}>
-      <T v="title34" size={34} color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1} style={{ fontVariant: ["lining-nums"] }}>
+      <T v="title30" color={color} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} maxFontSizeMultiplier={1.1} style={{ fontVariant: ["lining-nums"] }}>
         {value}
       </T>
       {/* A single word shrinks rather than break mid word. A phrase wraps at its
@@ -1733,6 +1754,7 @@ const styles = StyleSheet.create({
   dock: { position: "absolute", left: 0, right: 0, bottom: 0 },
   sheetHost: { flex: 1, justifyContent: "flex-end" },
   input: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, borderRadius: radius.pill, paddingHorizontal: 18, backgroundColor: colors.glassSolidFill, borderWidth: 1, borderColor: "rgba(247,243,236,0.12)" },
+  rowSelected: { backgroundColor: colors.goldWash, borderLeftWidth: 2, borderLeftColor: colors.gold, paddingLeft: 10, borderRadius: radius.chip },
   row: { flexDirection: "row", alignItems: "center", gap: 14, minHeight: 60, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.ivory09 },
   actionTile: { flex: 1, minHeight: 72, paddingHorizontal: 6, paddingVertical: 10, borderRadius: radius.chip, backgroundColor: colors.glassFill, borderWidth: 1, borderColor: colors.ivory14, alignItems: "center", justifyContent: "center", gap: 5 },
   scrim: { ...{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, backgroundColor: colors.scrim },

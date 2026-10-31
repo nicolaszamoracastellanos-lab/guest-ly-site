@@ -137,7 +137,7 @@ export default function FindName() {
       <Card kind="solid" padding={16}>
         <Row gap={6}>
           <Icon name="check" size={16} color={colors.greenText} strokeWidth={2} />
-          <T v="meta13" size={13} color={colors.greenText}>
+          <T v="caption14" color={colors.greenText}>
             {g.find.codeOk}
           </T>
         </Row>

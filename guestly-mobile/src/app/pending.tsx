@@ -17,7 +17,7 @@
 // the Gate moves the couple to their full home.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Image, Alert, AppState, Linking, Pressable } from "react-native";
+import { View, StyleSheet, Alert, AppState, Linking, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,13 +27,12 @@ import { ApiFailure } from "@/lib/api";
 import { useSession, useUserSession } from "@/lib/session";
 import { getStorefront, type StorefrontAnswer } from "@/lib/storefront";
 import { openProductPreview, productPreviewAvailable } from "@/lib/preview";
-import { Screen, T, Row, Stack, Wordmark, Card, Button, Icon, ListRow, SectionLabel, Skeleton, LangToggle } from "@/ui";
+import { Screen, T, Row, Stack, Wordmark, Card, Button, Icon, ListRow, SectionLabel, Skeleton, LangToggle, NightMotif } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { COPY } from "@/features/signup/copy";
 import { resendActivationEmail, useSignupStatus } from "@/features/signup/api";
 import { DeleteCancelled, deleteMyAccount } from "@/features/signup/account";
 
-const photo = require("../../assets/photos/ceremony.jpg");
 const POLL_MS = 30_000;
 
 function daysUntil(dateOnly: string | null | undefined): number | null {
@@ -163,7 +162,7 @@ export default function PendingHome() {
   return (
     <Screen padded={false} topInset={false} bottomInset={32}>
       <View style={styles.hero}>
-        <Image source={photo} style={FILL} resizeMode="cover" />
+        <NightMotif variant={2} style={FILL} />
         <LinearGradient colors={["rgba(8,11,16,0.55)", "rgba(8,11,16,0.1)", "rgba(13,17,23,0.78)", colors.night]} locations={[0, 0.3, 0.72, 1]} style={FILL} />
         <Row style={[styles.top, { top: Math.max(insets.top, 54) }]}>
           <Wordmark height={20} />
@@ -244,7 +243,7 @@ export default function PendingHome() {
               <Card kind="solid" padding={16} style={{ opacity: pressed ? 0.85 : 1 }}>
                 <Row gap={14}>
                   <View style={styles.tourIcon}>
-                    <Icon name="sparkle" size={22} color={colors.goldLight} />
+                    <Icon name="eye" size={22} color={colors.ivory} />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <T v="body16" color={colors.ivory}>
@@ -316,5 +315,5 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(13,17,23,0.45)",
   },
   pillGem: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: "45deg" }] },
-  tourIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(201,169,110,0.12)" },
+  tourIcon: { width: 28, alignItems: "center", justifyContent: "center" },
 });

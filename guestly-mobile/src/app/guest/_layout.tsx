@@ -17,7 +17,8 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { useGuestHome, useGuestMessagesPeek } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { useGuestPermissionCheck } from "@/features/guest/permission";
-import { RoleTabs, type TabSpec } from "@/ui/TabBar";
+import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
+import { GuestWidgetSync } from "@/features/widgets/WidgetSync";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useAskSeen } from "@/features/guest/state";
 
@@ -43,11 +44,16 @@ export default function GuestTabs() {
   // Unread only once the seen mark has loaded (undefined = still reading it).
   const unread = !!newestCouple && seen !== undefined && (!seen || Date.parse(newestCouple) > Date.parse(seen));
 
-  const specs: TabSpec[] = [
-    { name: "index", icon: "mail", label: c.invitation, owns: ["rsvp", "dayof"], badge: pending ? "dot" : null },
-    { name: "schedule", icon: "calendar", label: c.schedule },
-    { name: "concierge", icon: "chat", label: c.ask, owns: ["messages"], badge: unread ? "dot" : null },
-    { name: "more", icon: "info", label: c.info, owns: ["site"] },
+  const tabs: RoleTab[] = [
+    { name: "(index)", sf: { default: "envelope", selected: "envelope.fill" }, label: c.invitation, owns: ["rsvp", "dayof"], badge: pending ? "dot" : null },
+    { name: "schedule", sf: { default: "calendar", selected: "calendar" }, label: c.schedule },
+    { name: "(concierge)", sf: { default: "bubble.left", selected: "bubble.left.fill" }, label: c.ask, owns: ["messages"], badge: unread ? "dot" : null },
+    { name: "(more)", sf: { default: "info.circle", selected: "info.circle.fill" }, label: c.info, owns: ["site"] },
   ];
-  return <RoleTabs specs={specs} hidden={["rsvp", "dayof", "messages", "site"]} />;
+  return (
+    <>
+      <RoleNativeTabs surface="guest" tabs={tabs} fallback="(more)" />
+      <GuestWidgetSync />
+    </>
+  );
 }

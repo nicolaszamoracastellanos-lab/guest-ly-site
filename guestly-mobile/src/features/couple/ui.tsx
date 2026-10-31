@@ -3,7 +3,7 @@
 // invitation action, and the status words of a guest row.
 
 import React, { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { View, ScrollView, Pressable, Share, StyleSheet, type LayoutChangeEvent } from "react-native";
+import { View, ScrollView, Pressable, Share, StyleSheet, type LayoutChangeEvent, type ScrollViewInstance } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
@@ -23,7 +23,7 @@ export function useCoupleCopy() {
  *  "more this way") and that scrolls the selected chip into view. Children are
  *  `Chip`s; pass the index of the lit one. */
 export function FadedChipRow({ children, selected, padLeft = 24 }: { children: ReactNode; selected?: number; padLeft?: number }) {
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const xs = useRef<{ x: number; w: number }[]>([]);
   const [width, setWidth] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
@@ -160,7 +160,7 @@ export function MenuRow({ icon, title, sub, onPress, last, trailing, testID }: {
   return (
     <Pressable testID={testID} onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={sub ? `${title}, ${sub}` : title} style={({ pressed }) => [styles.menuRow, !last && styles.menuRowLine, pressed && onPress ? { opacity: 0.7 } : null]}>
       <View style={styles.menuIcon}>
-        <Icon name={icon} size={22} color={colors.goldLight} />
+        <Icon name={icon} size={22} color={colors.ivory70} />
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <T v="body16" color={colors.ivory90}>

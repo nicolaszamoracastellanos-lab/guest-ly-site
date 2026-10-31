@@ -1,5 +1,5 @@
 // Guest-ly App Store set v2: panel copy and layout. Coordinates are px inside a
-// 1320 x 2868 panel. Every screen is a real capture of app 1.1 (see README);
+// 1320 x 2868 panel. Every screen is a real capture of the app (1.1 for the guest panels, 1.2 for 06-09; see README);
 // every callout is cut from one of those captures by tools/prepare.py.
 //
 // device: { screen, x, y, w (screen width px), rot }
@@ -87,9 +87,9 @@ window.PANELS = [
       en: "See who's coming, who can't make it and who still has to answer.",
       es: "Ve quién viene, quién no puede y quién falta por responder.",
     },
-    devices: [D("rsvps", { soft: [[1040, 1225]] })],
+    devices: [D("rsvps", { soft: [[1030, 1880]] })],
     callouts: [
-      { img: "rsvp-stats", from: 0, k: 1.2, dx: 0, dy: 40, rot: -1.5 },
+      { img: "rsvp-stats", x: 100, y: 1560, w: 1120, rot: -1.5 },
     ],
   },
   {
@@ -128,7 +128,7 @@ window.PANELS = [
       es: "Todas tus bodas en un solo lugar: invitados, solicitudes y tareas.",
     },
     devices: [D("couple-request", { x: 260 })],
-    callouts: [{ img: "planner-card", x: 40, y: 2350, w: 1000, rot: -3 }],
+    callouts: [{ img: "planner-card", x: 40, y: 2450, w: 1000, rot: -3 }],
   },
   {
     id: "10-start",

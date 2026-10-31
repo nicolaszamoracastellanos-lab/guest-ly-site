@@ -11,9 +11,9 @@
 //   <TopBar onBack={() => leave(back)} />
 //   after a successful save: leave.release(); then navigate.
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
-import { useNavigation } from "expo-router";
+import { useNavigation, usePreventRemove } from "expo-router";
 import { useCopy } from "@/i18n";
 
 type Leave = ((go: () => void) => void) & { release: () => void };
@@ -41,18 +41,31 @@ export function useUnsavedGuard(dirty: boolean): Leave {
     [c]
   );
 
+  // Expo Router 58 (React Navigation 8) dropped the "beforeRemove" listener for
+  // usePreventRemove: it blocks EVERY removal, hands the blocked action to the
+  // callback, and replays it with repeat() once prevention is off. The old rule
+  // (only back and pop ask; signing out or switching weddings never does) is kept
+  // by replaying every other action at once.
+  const [released, setReleased] = useState(false);
+  // State adjusted during render: leaving the dirty state arms the guard again.
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) setReleased(false);
+  }
+  usePreventRemove(active && !released, ({ data, repeat }) => {
+    const type = data.action.type;
+    const proceed = () => {
+      setReleased(true);
+      repeat();
+    };
+    if (bypass.current || (type !== "GO_BACK" && type !== "POP")) proceed();
+    else ask(proceed);
+  });
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !active });
-    if (!active) return undefined;
-    bypass.current = false;
-    return navigation.addListener("beforeRemove", (e) => {
-      if (bypass.current) return;
-      const type = e.data.action.type;
-      if (type !== "GO_BACK" && type !== "POP") return;
-      e.preventDefault();
-      ask(() => navigation.dispatch(e.data.action));
-    });
-  }, [active, navigation, ask]);
+    if (active) bypass.current = false;
+  }, [active, navigation]);
 
   // Screens opened by a cold deep link go "back" by replacing the route,
   // which the listener above does not see: the back button asks here.

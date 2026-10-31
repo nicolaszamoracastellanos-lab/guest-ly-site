@@ -11,12 +11,15 @@
 import React from "react";
 import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { fmt, plural, useCopy, useLang, relTime } from "@/i18n";
-import { usePlannerHome } from "@/lib/hooks";
+import { fmt, plural, useCopy, useLang, relTime, shortDate } from "@/i18n";
+import { useFeatureCopy } from "@/i18n/feature";
+import { usePlannerHome, usePlannerAgenda, usePlannerPortfolio, type PlannerNeedItem } from "@/lib/hooks";
 import { can, useTenantKey, useUserSession } from "@/lib/session";
-import { Screen, T, Row, SectionLabel, Skeleton, Card, ListRow, BriefingRow, Button, Icon, Stack } from "@/ui";
+import { Screen, T, Row, SectionLabel, Skeleton, Card, ListRow, BriefingRow, Button, Icon, Stack, useLayout, type IconName } from "@/ui";
 import { colors, fonts, radius } from "@/ui/tokens";
-import { requestTitle } from "@/app/couple/requests/index";
+import { requestTitle } from "@/app/couple/(tools)/requests/index";
+import { COPY } from "@/features/planner/copy";
+import { HealthDot, WeddingCard, useWorkOnWedding } from "@/features/planner/Cockpit";
 import { PlannerTop, IconDisc, TaskCheckRow, usePlannerBoardQ, usePlannerRequestsQ, useTaskToggle, asksPlanner, dueOf, todayIso, daysToGo, kindIcon } from "@/app/planner/_layout";
 
 export default function PlannerToday() {
@@ -38,6 +41,14 @@ function PlannerTodayBody() {
   const board = usePlannerBoardQ(canTasks);
   const toggle = useTaskToggle();
   const data = home.data;
+  // Duo v2: the cockpit across every wedding. A portal without these routes
+  // (not deployed yet) leaves both queries in error and the new sections out;
+  // the wedding-level cards below keep working as before.
+  const l = useFeatureCopy(COPY);
+  const layout = useLayout();
+  const agenda = usePlannerAgenda();
+  const portfolio = usePlannerPortfolio();
+  const work = useWorkOnWedding();
 
   // Never derived from the email: without a profile name there is no name.
   const name = (data?.greeting_name ?? "").trim().split(/\s+/)[0] ?? "";
@@ -62,35 +73,124 @@ function PlannerTodayBody() {
   const today = todayIso();
   const tasks = (dated ? mineOpen.filter((t) => (dueOf(t) ?? "9999") <= today).sort((a, b) => (dueOf(a) ?? "").localeCompare(dueOf(b) ?? "")) : mineOpen).slice(0, 5);
 
-  return (
-    <Screen query={home} refresh={() => Promise.all([home.refetch(), canTasks ? reqs.refetch() : null, canTasks ? board.refetch() : null])} header={<PlannerTop />}>
-      <View style={{ marginTop: 10 }}>
-        <Row style={{ justifyContent: "space-between", minHeight: 44 }}>
-          <SectionLabel color={colors.goldLight} style={{ flexShrink: 1 }}>
-            {new Date().toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { weekday: "long", day: "numeric", month: "long" })}
-          </SectionLabel>
-          {canCoordinator ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={c.coordinator} onPress={() => router.push("/assistant" as never)} hitSlop={4} style={({ pressed }) => [{ height: 36, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder, flexDirection: "row", alignItems: "center", gap: 6 }, pressed && { opacity: 0.8 }]}>
-              <Icon name="sparkle" size={18} color={colors.goldLight} />
-              <T v="body15" color={colors.goldLight} style={{ fontFamily: fonts.bodyMedium }}>
-                {c.coordinator}
-              </T>
-            </Pressable>
-          ) : null}
+  // With one wedding the cockpit adds nothing the wedding cards below do not say.
+  const multi = (me?.tenants.length ?? 1) > 1;
+  const needsAll = agenda.data?.needs_you ?? [];
+  const todayItems = agenda.data?.agenda ?? [];
+  const weekItems = agenda.data?.week ?? [];
+  const weddings = portfolio.data?.weddings ?? [];
+
+  async function openNeed(n: PlannerNeedItem) {
+    if (!(await work(n.wedding_slug, n.couple_names))) return;
+    if (n.ref.type === "request" && n.ref.id) router.push({ pathname: "/planner/requests/[id]", params: { id: n.ref.id } });
+    else if (n.ref.type === "task" && n.ref.id) router.push({ pathname: "/planner/tasks/[id]", params: { id: n.ref.id } });
+    else router.navigate({ pathname: "/planner/weddings/[slug]", params: { slug: n.wedding_slug } } as never);
+  }
+
+  const needsAllCard = agenda.isError || !multi ? null : (
+    <Card kind="solid" padding={16}>
+      <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
+        {fmt(l.needsYou, { n: needsAll.length })}
+      </SectionLabel>
+      {agenda.isLoading && !agenda.data ? <Skeleton h={58} /> : null}
+      {agenda.data && !needsAll.length ? (
+        <Row gap={12} style={{ paddingVertical: 10 }}>
+          <IconDisc name="check" />
+          <View style={{ flex: 1, gap: 2 }}>
+            <T v="body16">{l.needsEmpty}</T>
+            <T v="meta13" color={colors.ivory55}>
+              {l.needsEmptyBody}
+            </T>
+          </View>
         </Row>
-        <T v="title42" size={40} style={{ marginTop: 4 }}>
-          {name ? fmt(c.hello, { name: cap(name) }) : c.helloNoName}
+      ) : null}
+      {needsAll.map((n, i) => (
+        <ListRow
+          key={n.id}
+          leading={<IconDisc name={NEED_ICON[n.kind]} />}
+          title={n.title}
+          sub={`${n.couple_names} · ${n.why}`}
+          trailing={n.urgent ? <HealthDot health="urgent" /> : undefined}
+          onPress={() => void openNeed(n)}
+          last={i === needsAll.length - 1}
+        />
+      ))}
+    </Card>
+  );
+
+  const agendaCard = agenda.isError || (!multi && !todayItems.length) ? null : (
+    <Card kind="solid" padding={16}>
+      <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
+        {l.agenda}
+      </SectionLabel>
+      {agenda.isLoading && !agenda.data ? <Skeleton h={58} /> : null}
+      {agenda.data && !todayItems.length ? (
+        <T v="body15" color={colors.ivory55} style={{ paddingVertical: 8 }}>
+          {l.agendaEmpty}
         </T>
-        {sub ? (
-          <T v="body15" color={colors.ivory70} style={{ marginTop: 4 }}>
-            {sub}
-          </T>
-        ) : null}
-      </View>
+      ) : null}
+      {todayItems.map((a, i) => (
+        <ListRow
+          key={a.id}
+          leading={
+            <View style={{ width: 52 }}>
+              <T v="body15" color={colors.goldLight} style={{ fontVariant: ["tabular-nums"] }}>
+                {a.time ?? l.weddingToday}
+              </T>
+            </View>
+          }
+          title={a.title}
+          sub={[a.couple_names, a.location].filter(Boolean).join(" · ")}
+          chevron={false}
+          last={i === todayItems.length - 1}
+        />
+      ))}
+    </Card>
+  );
 
-      {canTasks ? <Button label={copy.planner.newRequest} icon="plus" onPress={() => router.push("/planner/requests/new")} style={{ marginTop: 20 }} testID="planner-new-request" /> : null}
+  const weekCard = agenda.isError || (!multi && !weekItems.length) ? null : (
+    <Card kind="solid" padding={16}>
+      <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
+        {l.week}
+      </SectionLabel>
+      {agenda.data && !weekItems.length ? (
+        <T v="body15" color={colors.ivory55} style={{ paddingVertical: 8 }}>
+          {l.weekEmpty}
+        </T>
+      ) : null}
+      {weekItems.map((w, i) => (
+        <ListRow
+          key={w.id}
+          leading={
+            <View style={{ width: 52 }}>
+              <T v="body15" color={colors.goldLight}>
+                {shortDate(w.date, lang)}
+              </T>
+            </View>
+          }
+          title={w.title}
+          sub={w.couple_names}
+          chevron={false}
+          last={i === weekItems.length - 1}
+        />
+      ))}
+    </Card>
+  );
 
-      <Stack gap={14} style={{ marginTop: 20 }}>
+  const weddingsCard = portfolio.isError || (portfolio.data && weddings.length < 2) ? null : (
+    <View style={{ gap: 10 }}>
+      <SectionLabel color={colors.goldLight}>{l.weddings}</SectionLabel>
+      {portfolio.isLoading && !portfolio.data ? <Skeleton h={110} r={18} /> : null}
+      {weddings.map((w) => (
+        <WeddingCard key={w.slug} w={w} onPress={() => router.navigate({ pathname: "/planner/weddings/[slug]", params: { slug: w.slug } } as never)} />
+      ))}
+    </View>
+  );
+
+  // The wedding the planner is working on: the cards this screen always had.
+  const thisWedding = (
+    <>
+      {multi ? <SectionLabel color={colors.goldLight}>{fmt(l.inWedding, { names: me?.tenant.couple_names ?? "" })}</SectionLabel> : null}
         {/* Needs you: the count in the label is the number of rows (B3). */}
         <Card kind="solid" padding={16}>
           <SectionLabel color={colors.goldLight} style={{ marginBottom: 4 }}>
@@ -172,7 +272,58 @@ function PlannerTodayBody() {
             <ListRow leading={<IconDisc name="sparkle" />} title={c.askCoordinator} sub={c.askCoordinatorSub} onPress={() => router.push("/assistant" as never)} last />
           </Card>
         ) : null}
-      </Stack>
+    </>
+  );
+
+  return (
+    <Screen query={home} refresh={() => Promise.all([home.refetch(), agenda.refetch(), portfolio.refetch(), canTasks ? reqs.refetch() : null, canTasks ? board.refetch() : null])} header={<PlannerTop />}>
+      <View style={{ marginTop: 10 }}>
+        <Row style={{ justifyContent: "space-between", minHeight: 44 }}>
+          <SectionLabel color={colors.goldLight} style={{ flexShrink: 1 }}>
+            {new Date().toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { weekday: "long", day: "numeric", month: "long" })}
+          </SectionLabel>
+          {canCoordinator ? (
+            <Pressable accessibilityRole="button" accessibilityLabel={c.coordinator} onPress={() => router.push("/assistant" as never)} hitSlop={4} style={({ pressed }) => [{ height: 36, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.goldBorder, flexDirection: "row", alignItems: "center", gap: 6 }, pressed && { opacity: 0.8 }]}>
+              <Icon name="sparkle" size={18} color={colors.goldLight} />
+              <T v="body15" color={colors.goldLight} style={{ fontFamily: fonts.bodyMedium }}>
+                {c.coordinator}
+              </T>
+            </Pressable>
+          ) : null}
+        </Row>
+        <T v="screen" style={{ marginTop: 4 }}>
+          {name ? fmt(c.hello, { name: cap(name) }) : c.helloNoName}
+        </T>
+        {sub ? (
+          <T v="body15" color={colors.ivory70} style={{ marginTop: 4 }}>
+            {sub}
+          </T>
+        ) : null}
+      </View>
+
+      {canTasks ? <Button label={copy.planner.newRequest} icon="plus" onPress={() => router.push("/planner/requests/new")} style={{ marginTop: 20 }} testID="planner-new-request" /> : null}
+
+      {layout.twoPane ? (
+        <Row gap={16} style={{ marginTop: 20, alignItems: "flex-start" }}>
+          <Stack gap={14} style={{ flex: 1, minWidth: 0 }}>
+            {needsAllCard}
+            {agendaCard}
+            {thisWedding}
+          </Stack>
+          <Stack gap={14} style={{ flex: 1, minWidth: 0 }}>
+            {weekCard}
+            {weddingsCard}
+          </Stack>
+        </Row>
+      ) : (
+        <Stack gap={14} style={{ marginTop: 20 }}>
+          {needsAllCard}
+          {agendaCard}
+          {weddingsCard}
+          {thisWedding}
+          {weekCard}
+        </Stack>
+      )}
     </Screen>
   );
 
@@ -228,3 +379,10 @@ function coupleOnlyRow(b: { kind?: unknown; href?: unknown }): boolean {
   if (typeof b.kind === "string" && COUPLE_ONLY_KINDS.has(b.kind)) return true;
   return typeof b.href === "string" && (/^\/planner\/?$/.test(b.href) || /^\/brain(\/|$|\?)/.test(b.href));
 }
+
+const NEED_ICON: Record<PlannerNeedItem["kind"], IconName> = {
+  request_answered: "chat",
+  task_overdue: "warning",
+  task_due_today: "tasks",
+  wedding_soon: "rings",
+};

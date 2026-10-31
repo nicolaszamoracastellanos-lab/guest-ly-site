@@ -41,15 +41,25 @@ export function useBottomClearance(): { tabBar: boolean; clearance: number } {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const tabBar = pathHasTabBar(pathname);
-  // v1.2: the bar sits in the home indicator strip (tabBarOffset), so the
-  // clearance is measured from the bar itself, not from the safe area.
-  const clearance = tabBar ? tabBarOffset(insets.bottom) + TAB_BAR_HEIGHT + TAB_CLEARANCE : insets.bottom + 24;
+  // The system tab bar floats at the bottom of the window, except on the
+  // iPhone Duo's outer display and inner landscape, where it moves to a
+  // vertical rail at the side (a side inset of 48 or more): nothing then sits
+  // at the bottom, so only the home indicator strip needs room.
+  const clearance = tabBar && !sideRail(insets) ? tabBarOffset(insets.bottom) + TAB_BAR_HEIGHT + TAB_CLEARANCE : insets.bottom + 24;
   return { tabBar, clearance };
+}
+
+/** True when the system bars live in a vertical rail at the side (iPhone Duo
+ *  outer display and inner landscape). The Duo's status column measured 84 pt
+ *  on the closed display. */
+export function sideRail(insets: { left: number; right: number }): boolean {
+  return Math.max(insets.left, insets.right) >= 48;
 }
 
 /** Distance from the bottom of the window to the top edge of the floating tab
  *  bar. Floating controls sit a gap above this. */
 export function useTabBarTop(): number {
   const insets = useSafeAreaInsets();
-  return tabBarOffset(insets.bottom) + TAB_BAR_HEIGHT;
+  // No bar at the bottom when the rail is at the side.
+  return sideRail(insets) ? Math.max(insets.bottom, 8) : tabBarOffset(insets.bottom) + TAB_BAR_HEIGHT;
 }

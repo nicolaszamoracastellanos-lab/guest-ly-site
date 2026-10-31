@@ -4,7 +4,7 @@
 // "almost ready" home (/pending).
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, type TextInput } from "react-native";
+import { View, type TextInput, type TextInputInstance } from "react-native";
 import * as Haptics from "expo-haptics";
 import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -32,9 +32,9 @@ export default function Setup() {
   const [guestLang, setGuestLang] = useState<"en" | "es">(lang);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const partnerRef = useRef<TextInput>(null);
-  const cityRef = useRef<TextInput>(null);
-  const countryRef = useRef<TextInput>(null);
+  const partnerRef = useRef<TextInputInstance>(null);
+  const cityRef = useRef<TextInputInstance>(null);
+  const countryRef = useRef<TextInputInstance>(null);
 
   // The password typed at signup is no longer needed.
   useEffect(() => clearSignupDraft(), []);

@@ -59,7 +59,7 @@ export function DressCodeSheet({ visible, onClose }: { visible: boolean; onClose
           ))}
         </Stack>
       ) : null}
-      <Button label={copy.guestHome.dressAsk} kind="ghost" small icon="sparkle" style={{ marginTop: 20 }} onPress={ask} />
+      <Button label={copy.guestHome.dressAsk} kind="ghost" small icon="concierge" style={{ marginTop: 20 }} onPress={ask} />
     </Sheet>
   );
 }

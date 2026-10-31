@@ -14,8 +14,16 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com";
 // the camera library links the audio capture API, so a truthful microphone
 // string stays (an upload without it can be refused, ITMS-90683).
 const CAMERA_PURPOSE = "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.";
-const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding website, the floor plan and budget receipts.";
+const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding album, the wedding website, the floor plan and budget receipts.";
 const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking you to sign in again.";
+// Contacts (HH Oct 30 2026): only the people the couple picks in Add guest.
+// The app never requests the contacts permission itself: the system picker
+// needs none, and the iOS 18 access picker is used only when the couple
+// already chose limited access. This text shows if iOS asks anyway (for
+// example a store read while access is still undetermined). The app never
+// reads the whole address book and never writes to it. iOS only; Android
+// blocks the permission.
+const CONTACTS_PURPOSE = "Guest-ly fills in a guest's name, phone and email from the contacts you choose to share. It never reads the rest of your address book.";
 const MICROPHONE_PURPOSE = "Guest-ly does not record audio. iOS shows this text only if a video with sound is ever captured, which the app does not do.";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -31,7 +39,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // and the per-role navigation. The fingerprint changes with the new native
   // module, so build 11 never receives this JS over the air.
   version: "1.2.0",
-  orientation: "portrait",
+  // The iPhone Duo's inner display ignores declared orientations and Apple asks
+  // every app to support them all (tent pose, inner landscape, Split View).
+  orientation: "default",
   scheme: "guestly",
   userInterfaceStyle: "dark",
   icon: "./assets/brand/icon.png",
@@ -145,7 +155,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // The app never records sound. expo-camera is told so below; expo-image-picker
     // (an automatic plugin) would still add RECORD_AUDIO, so it is blocked here,
     // which writes tools:node="remove" into the manifest whoever asks for it.
-    blockedPermissions: ["android.permission.RECORD_AUDIO"],
+    blockedPermissions: ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS", "android.permission.RECORD_AUDIO"],
     intentFilters: [
       {
         action: "VIEW",
@@ -191,6 +201,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       { cameraPermission: CAMERA_PURPOSE, microphonePermission: MICROPHONE_PURPOSE, recordAudioAndroid: false },
     ],
     [
+      "expo-contacts",
+      { contactsPermission: CONTACTS_PURPOSE },
+    ],
+    [
       "expo-local-authentication",
       { faceIDPermission: BIOMETRIC_PURPOSE },
     ],
@@ -204,6 +218,50 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-build-properties",
       { ios: { deploymentTarget: "16.4" }, android: { minSdkVersion: 26, compileSdkVersion: 36, targetSdkVersion: 36 } },
+    ],
+    // Home screen, Lock Screen and StandBy widgets, plus Live Activities for the
+    // wedding day (iPhone Duo v2; plan 03-WIDGETS). The widget code lives in
+    // src/widgets and runs in its own extension; the app feeds it timelines
+    // (features/widgets/sync). Live Activity push (APNs) stays off until the APNs
+    // key exists: the app starts and updates them locally.
+    [
+      "expo-widgets",
+      {
+        groupIdentifier: "group.com.zcventures.guestly",
+        enablePushNotifications: false,
+        widgets: [
+          {
+            name: "GuestlyCountdown",
+            displayName: "Countdown · Cuenta regresiva",
+            description: "Days to the wedding · Días para la boda",
+            ios: { supportedFamilies: ["systemSmall", "systemMedium", "accessoryCircular", "accessoryRectangular", "accessoryInline"], initialLayout: "src/widgets/GuestlyCountdown.tsx" },
+          },
+          {
+            name: "GuestlyReplies",
+            displayName: "Replies · Respuestas",
+            description: "Who has answered · Quién ya respondió",
+            ios: { supportedFamilies: ["systemSmall", "systemMedium", "accessoryRectangular"], initialLayout: "src/widgets/GuestlyReplies.tsx" },
+          },
+          {
+            name: "GuestlyToday",
+            displayName: "Today · Hoy",
+            description: "What needs you today · Lo que necesita de ti hoy",
+            ios: { supportedFamilies: ["systemMedium", "systemLarge", "accessoryRectangular"], initialLayout: "src/widgets/GuestlyToday.tsx" },
+          },
+          {
+            name: "GuestlyWeddings",
+            displayName: "Weddings · Bodas",
+            description: "All your weddings at a glance · Todas tus bodas",
+            ios: { supportedFamilies: ["systemMedium", "systemLarge"], initialLayout: "src/widgets/GuestlyWeddings.tsx" },
+          },
+          {
+            name: "GuestlyDayOf",
+            displayName: "Wedding day · Día B",
+            description: "Now and next · Ahora y siguiente",
+            ios: { supportedFamilies: ["systemMedium", "accessoryRectangular"], initialLayout: "src/widgets/GuestlyDayOf.tsx" },
+          },
+        ],
+      },
     ],
   ],
   // Info.plist purpose strings in both languages (es.lproj and en.lproj InfoPlist.strings).

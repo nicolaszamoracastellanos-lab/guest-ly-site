@@ -55,9 +55,22 @@ export type CoupleHome = {
   couple_names: string; wedding_date: string | null; countdown: { days: number; hours: number; minutes: number; passed: boolean } | null;
   day_of: boolean; concierge_live: boolean; briefing: { text: string; href: string; tone: "risk" | "warn" | "info" }[];
   needs_you: number; totals: Totals; budget_percent_paid: number | null;
+  /** v1.2 portal, additive: what `needs_you` is made of (open planner requests
+   *  and guest threads waiting on the couple). The two sum to `needs_you`. */
+  needs_you_breakdown?: { requests: number; conversations: number };
   /** v1.2 portal, additive: the percent per active budget id. Absent on older portals. */
   budget_percent_paid_by_id?: Record<string, number | null>;
+  /** HH wave F portal, additive (absent on older portals, null when its read
+   *  failed): the setup hub, the activity feed, the deadline guests see, the
+   *  reply funnel in parties with the Opened step. Viewers get activity and
+   *  funnel as null. */
+  setup?: { steps: HomeSetupStep[]; done: number; total: number; percent: number; next: string | null } | null;
+  activity?: HomeActivity[] | null;
+  rsvp_deadline?: string | null;
+  funnel?: { invited: number; opened: number; answered: number; confirmed: number; reached: number; checked_in: number; total: number } | null;
 };
+export type HomeSetupStep = { key: string; done: boolean; label: string; path: string; progress?: { have: number; need: number } };
+export type HomeActivity = { kind: string; text: string; at: string; target: { kind: "guest"; id: string } | null; count: number };
 export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null };
 export type RsvpListItem = { id: string; guest_id: string | null; name: string; initials: string; status: "attending" | "declined" | "pending"; party_size: number | null; seats_answered: string; channel: string | null; source: string | null; updated_at: string | null };
 export type InboxItem = { id: string; channel: string; name: string; initials: string; preview: string; last_at: string; needs_you: boolean; upset: boolean; guest_id: string | null };
@@ -95,11 +108,15 @@ export const useCoupleHome = () => useQuery({ queryKey: ["couple-home"], queryFn
 export const useCoupleGuests = (q: string, filter: string) =>
   useQuery({ queryKey: ["couple-guests", q, filter], queryFn: () => get<{ items: GuestListItem[]; next_cursor: number | null; totals: Totals }>(`/couple/guests?q=${encodeURIComponent(q)}&filter=${filter}`), placeholderData: (prev) => prev });
 export const useGuestDetail = (id: string) => useQuery({ queryKey: ["couple-guest", id], queryFn: () => get<GuestDetail>(`/couple/guests/${id}`), enabled: !!id });
-export const useCoupleRsvps = (filter: string) => useQuery({ queryKey: ["couple-rsvps", filter], queryFn: () => get<{ items: RsvpListItem[]; totals: Totals; deadline: string | null }>(`/couple/rsvps?filter=${filter}`), placeholderData: (prev) => prev });
+export const useCoupleRsvps = (filter: string, opts: { enabled?: boolean } = {}) => useQuery({ enabled: opts.enabled ?? true, queryKey: ["couple-rsvps", filter], queryFn: () => get<{ items: RsvpListItem[]; totals: Totals; deadline: string | null }>(`/couple/rsvps?filter=${filter}`), placeholderData: (prev) => prev });
 export const useInbox = (filter: string) => useQuery({ queryKey: ["couple-inbox", filter], queryFn: () => get<{ items: InboxItem[]; needs_you: number }>(`/couple/messages?filter=${filter}`), refetchInterval: 30_000, placeholderData: (prev) => prev });
 /** Polls only while `poll` is true: screens pass useIsFocused(), so a day-of or
  *  door screen left behind in a tab stops asking the server every 30 s. */
-export const useCoupleDayOf = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["couple-dayof"], queryFn: () => get<CoupleDayOf>("/couple/dayof"), refetchInterval: opts?.poll === false ? false : 30_000 });
+export type PlannerCheckinCounts = { day_of: boolean; parties_in: number; parties_total: number; seats_in: number; seats_total: number };
+/** Door counts for the wedding a planner is working on (planner "checkin" tool). */
+export const usePlannerCheckin = (opts?: { poll?: boolean; enabled?: boolean }) =>
+  useQuery({ queryKey: ["planner-checkin"], queryFn: () => get<PlannerCheckinCounts>("/planner/checkin"), refetchInterval: opts?.poll === false ? false : 30_000, enabled: opts?.enabled ?? true });
+export const useCoupleDayOf = (opts?: { poll?: boolean; enabled?: boolean }) => useQuery({ queryKey: ["couple-dayof"], queryFn: () => get<CoupleDayOf>("/couple/dayof"), refetchInterval: opts?.poll === false ? false : 30_000, enabled: opts?.enabled ?? true });
 export const useMore = () => useQuery({ queryKey: ["couple-more"], queryFn: () => get<{ entries: Record<string, MoreEntry>; site_slug: string; tier: string }>("/couple/more") });
 export const useCoupleRequests = () => useQuery({ queryKey: ["couple-requests"], queryFn: () => get<{ pending: boolean; requests: RequestRow[] }>("/couple/requests") });
 
@@ -113,6 +130,32 @@ export type PlannerHome = {
   open_tasks: number;
 };
 export type PlannerGuest = { id: string; name: string; initials: string; party_size: number; members: string[]; tags: string[]; status: "attending" | "declined" | "pending"; hasPhone: boolean; hasEmail: boolean; language: string | null; notes: string | null; checked_in_at: string | null };
+
+// ---- Planner cockpit (Duo v2): every wedding at once. Permission-aware on the
+// portal: a tool the couple did not share is null/false here, never zero.
+export type PlannerSeats = { invited: number; attending: number; declined: number; pending: number; parties: number; pending_parties: number };
+export type PlannerPortfolioWedding = {
+  slug: string;
+  couple_names: string;
+  wedding_date: string | null;
+  days_to_go: number | null;
+  /** True once the wedding has happened (newer portals). */
+  passed?: boolean;
+  status: string;
+  current: boolean;
+  health: "ok" | "watch" | "urgent";
+  access: { guests: boolean; tasks: boolean; runsheet: boolean; budget: boolean };
+  seats: PlannerSeats | null;
+  open_requests: number | null;
+  asks_planner: number | null;
+  tasks: { open: number; overdue: number; due_soon: number } | null;
+};
+export type PlannerNeedItem = { id: string; kind: "request_answered" | "task_overdue" | "task_due_today" | "wedding_soon"; wedding_slug: string; couple_names: string; title: string; why: string; ref: { type: "request" | "task" | "wedding"; id: string | null }; urgent: boolean };
+export type PlannerAgendaItem = { id: string; wedding_slug: string; couple_names: string; time: string | null; title: string; location: string | null; kind: "runsheet" | "wedding_day" };
+export type PlannerWeekItem = { id: string; wedding_slug: string; couple_names: string; date: string; title: string; kind: "task_due" | "wedding" };
+export const usePlannerPortfolio = () => useQuery({ queryKey: ["planner-portfolio"], queryFn: () => get<{ weddings: PlannerPortfolioWedding[]; generated_at: string }>("/planner/portfolio") });
+export type PlannerAgenda = { today: string; needs_you: PlannerNeedItem[]; agenda: PlannerAgendaItem[]; week: PlannerWeekItem[] };
+export const usePlannerAgenda = () => useQuery({ queryKey: ["planner-agenda"], queryFn: () => get<PlannerAgenda>("/planner/agenda") });
 
 export const usePlannerHome = () => useQuery({ queryKey: ["planner-home"], queryFn: () => get<PlannerHome>("/planner/home") });
 export const usePlannerGuests = (slug: string) => useQuery({ queryKey: ["planner-guests", slug], queryFn: () => get<{ guests: PlannerGuest[]; count: number }>(`/planner/weddings/${slug}/guests`), enabled: !!slug });

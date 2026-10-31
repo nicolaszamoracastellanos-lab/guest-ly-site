@@ -21,23 +21,7 @@
 // bindings fall back to plain views there.
 
 import React, { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Keyboard,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type GestureResponderEvent,
-  type LayoutChangeEvent,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  type ScrollView,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, type GestureResponderEvent, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollView, type StyleProp, type ViewStyle, type TextInputInstance, type ScrollViewInstance, type HostInstance } from "react-native";
 import { makeMutable, runOnJS, type SharedValue } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,6 +37,7 @@ import { useCopy } from "@/i18n";
 import { Icon, type IconName } from "./Icon";
 import { colors, fonts, COLUMN, HIT_TARGET, space } from "./tokens";
 import { useBottomClearance, useTabBarTop } from "./chrome";
+import { usePane } from "./MasterDetail";
 import { useDockLift } from "./Toast";
 
 // ------------------------------------------------------------------ sizes
@@ -201,6 +186,11 @@ function useDockRest(): number {
  */
 export function DockedAction({ children, toolbar = false, onHeight, style }: { children: ReactNode; toolbar?: boolean; onHeight?: (h: number) => void; style?: StyleProp<ViewStyle> }) {
   const rest = useDockRest();
+  const pane = usePane();
+  const insets = useSafeAreaInsets();
+  // The window's side insets (Duo status column / bar rail) apply to a dock that
+  // spans the window, not to one inside a pane (the pane's container did it).
+  const side = pane.embedded ? null : { paddingLeft: insets.left, paddingRight: insets.right };
   const [height, setHeight] = useState(0);
   const lifted = toolbar ? TOOLBAR_SPACE : 0;
   useDockLift(height ? { rest: height + DOCK_GAP_OVER_TAB_BAR, open: height + lifted } : null);
@@ -211,7 +201,7 @@ export function DockedAction({ children, toolbar = false, onHeight, style }: { c
     onHeight?.(h);
   };
   return (
-    <KeyboardStickyView pointerEvents="box-none" style={styles.dock} offset={{ closed: -rest, opened: -lifted }}>
+    <KeyboardStickyView pointerEvents="box-none" style={[styles.dock, side]} offset={{ closed: -rest, opened: -lifted }}>
       <View style={styles.dockSurface} onLayout={onLayout}>
         <LinearGradient pointerEvents="none" colors={["rgba(13,17,23,0)", colors.night]} style={styles.dockFade} />
         <View style={[styles.column, styles.dockInner, style]}>{children}</View>
@@ -381,7 +371,7 @@ export type ComposerProps = {
   submitOnReturn?: boolean;
   /** Send button icon. Default the arrow up. */
   sendIcon?: IconName;
-  inputRef?: React.Ref<TextInput>;
+  inputRef?: React.Ref<TextInputInstance>;
   autoFocus?: boolean;
   testID?: string;
   sendTestID?: string;
@@ -494,8 +484,8 @@ export function ChatComposer({ accessory, below, children, ...composer }: ChatCo
  * View that wraps all of its content.
  */
 export function useKeepFocusedVisible({ gap = 16, enabled = true }: { gap?: number; enabled?: boolean } = {}) {
-  const scrollRef = useRef<ScrollView>(null);
-  const contentRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const contentRef = useRef<HostInstance>(null);
   const offset = useRef(0);
   const viewport = useRef(0);
   const contentHeight = useRef(0);

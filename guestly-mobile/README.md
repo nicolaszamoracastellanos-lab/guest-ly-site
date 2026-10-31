@@ -21,7 +21,7 @@ src/ui/                tokens, Text, Icon set, component kit, floating tab bar
 src/i18n/              en.ts, es.ts (typed against en), ladder and formatters
 src/lib/               api client, session store, supabase (auth only), push, offline queue, biometric, query cache
 assets/brand           icon, splash, wordmark (raster), notification icon
-assets/photos          Higgsfield placeholders until real venue photography
+assets/photos          removed Oct 30 2026 (generated placeholders); see docs/PHOTOS-NEEDED.md
 docs/                  credentials checklist, Play Console setup
 store/                 listing metadata and App Review notes
 scripts/screenshots.sh simulator and emulator screenshot runs (demo tenant only)

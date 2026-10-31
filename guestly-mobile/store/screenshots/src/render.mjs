@@ -23,7 +23,7 @@ const only = args.includes("--only") ? args[args.indexOf("--only") + 1] : null;
 const langs = which === "all" ? ["en", "es"] : [which];
 const OUT = { en: "en-US", es: "es-MX" };
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 for (const lang of langs) {
   const url = `file://${path.join(HERE, "index.html")}?lang=${lang}`;
   const page = await browser.newPage({ viewport: { width: 1320, height: 2868 }, deviceScaleFactor: 1 });

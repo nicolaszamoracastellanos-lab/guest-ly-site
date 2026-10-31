@@ -48,8 +48,15 @@ const registered: Record<string, Registered> = {};
 export function registerTabs(surface: string, specs: { name: string; owns?: string[] }[], fallback = "more") {
   if (!SURFACES.includes(surface)) return;
   const owners: Record<string, string> = {};
-  for (const spec of specs) for (const o of spec.owns ?? []) owners[o] = spec.name;
-  registered[surface] = { roots: specs.map((s) => s.name).filter((n) => n !== "index"), owners, fallback };
+  for (const spec of specs) for (const o of spec.owns ?? []) owners[o] = tabSlug(spec.name);
+  registered[surface] = { roots: specs.map((s) => tabSlug(s.name)).filter((n) => n !== "index"), owners, fallback: tabSlug(fallback) };
+}
+
+/** A tab that holds a stack of sections is a route group, "(tools)" (Expo Router
+ *  58 redirects away from hidden tab routes, so sections live inside a tab).
+ *  Groups are not in the URL: the path segment is "tools". */
+export function tabSlug(name: string): string {
+  return name.replace(/^\((.*)\)$/, "$1");
 }
 
 /** The route of a tab: the surface home for "index". */

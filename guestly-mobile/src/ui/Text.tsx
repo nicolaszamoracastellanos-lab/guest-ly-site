@@ -23,7 +23,7 @@ type Props = TextProps & {
   italic?: boolean;
 };
 
-const CAPTION_VARIANTS: Variant[] = ["meta13", "label11"];
+const CAPTION_VARIANTS: Variant[] = ["meta13", "caption14", "label11"];
 
 export function T({ v = "body15", color = colors.ivory, center, size, italic, style, children, ...rest }: Props) {
   const base = type[v] as TextStyle;

@@ -10,7 +10,7 @@ import { ensureAndroidChannels, registerPush, requestPushToken, savePushPrefs } 
 import type { Copy } from "@/i18n/en";
 
 /** Every guest notification kind on: the confirmation asks for all of them. */
-export const GUEST_PUSH_PREFS = { dayof: true, replies: true, rsvp_reminder: true };
+export const GUEST_PUSH_PREFS = { dayof: true, replies: true, rsvp_reminder: true, album: true, pass: true };
 
 export type EnableResult = "on" | "blocked" | "declined" | "failed";
 

@@ -12,7 +12,7 @@
 // the person read their mail; /auth/callback opens it with ?step=code.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Pressable, StyleSheet, TextInput, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet, TextInput, useWindowDimensions, type TextInputInstance } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -37,25 +37,11 @@ import {
 } from "@/features/signup/social";
 
 WebBrowser.maybeCompleteAuthSession();
-const suite = require("../../assets/photos/suite.jpg");
-// suite.jpg is 780 x 1386; the wax seal sits at 57% across, 71% down.
-const SEAL = { w: 780, h: 1386, x: 0.57, y: 0.71 };
 // Height of the back + language row under the status bar.
 const BAR = 50;
 // Seconds before "Resend the email" can be used again.
 const RESEND_AFTER_S = 30;
 
-/** Object position that puts the seal in the middle of the photo band left
- *  between the back row and the text (I4): the old centered crop showed the
- *  blank card and cut the envelope in half. */
-function sealFocal(width: number, boxH: number, bandTop: number, bandBottom: number): { x: number; y: number } {
-  const scale = Math.max(width / SEAL.w, boxH / SEAL.h);
-  const imgH = SEAL.h * scale;
-  const slack = imgH - boxH;
-  if (!width || slack < 1) return { x: SEAL.x, y: 0.5 };
-  const y = (SEAL.y * imgH - (bandTop + bandBottom) / 2) / slack;
-  return { x: SEAL.x, y: Math.min(1, Math.max(0, y)) };
-}
 
 // The typed address outlives this screen: if it is remounted (a session
 // event, a back and forth), or the person switches between link and password,
@@ -81,13 +67,13 @@ export default function SignIn() {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
   // The code step: the address the email went to, the typed digits, and the
   // seconds left before a resend.
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [wait, setWait] = useState(0);
-  const codeRef = useRef<TextInput>(null);
+  const codeRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     let alive = true;
@@ -211,7 +197,7 @@ export default function SignIn() {
 
   // A build without its sign-in settings says so calmly; it never names a setting.
   const configured = supabaseConfigured();
-  const { width, height } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const top = useTopInset();
   // While typing, the photo shrinks to a band with the seal and only the
   // fields and the gold button stay, so the button is in view above the
@@ -240,9 +226,8 @@ export default function SignIn() {
     <Screen topInset={false} backdrop={false} bottomInset={24} padded={false} keyboard>
       <>
         <PhotoHero
-          source={suite}
+          motif={1}
           height={heroH}
-          focal={sealFocal(width, heroH, bandTop, textStart)}
           gradient={0.5}
           gutter={0}
           top={
@@ -279,7 +264,7 @@ export default function SignIn() {
               <Row gap={6} style={{ justifyContent: "center" }}>
                 {cells.map((d, i) => (
                   <View key={i} style={[styles.cell, d ? styles.cellFilled : null, i === activeCell && busy !== "code" ? styles.cellActive : null, error ? styles.cellError : null]}>
-                    <T v="title30" size={26} color={colors.ivory} center style={{ fontFamily: fonts.displaySemibold }}>
+                    <T v="name24" color={colors.ivory} center style={{ fontFamily: fonts.displaySemibold }}>
                       {d}
                     </T>
                   </View>

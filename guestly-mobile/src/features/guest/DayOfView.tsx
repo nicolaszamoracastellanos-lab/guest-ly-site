@@ -9,18 +9,18 @@
 // Build 12: no bell (couple replies land in the Ask tab, which shows a dot).
 
 import React from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useIsFocused } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useGuestDayOf } from "@/lib/hooks";
-import { Screen, ScreenBannerSlot, T, Row, Gem, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset } from "@/ui";
+import { Screen, ScreenBannerSlot, T, Row, Gem, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset, NightMotif } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
 import { clockLabel } from "@/features/guest/format";
+import { WalletButton } from "./WalletButton";
 import { openMaps, openUrlSafe } from "@/features/guest/links";
 import { useRefetchOnRefocus } from "@/features/guest/focus";
 
-const photo = require("../../../assets/photos/courtyard.jpg");
 
 export function GuestDayOfView() {
   const copy = useCopy();
@@ -45,12 +45,12 @@ export function GuestDayOfView() {
       <View style={[styles.hero, { paddingTop: top + 64 }]}>
         {/* COVER wrapper: the hero has padding (see tokens.ts). */}
         <View style={COVER}>
-          <Image source={photo} style={FILL} resizeMode="cover" />
+          <NightMotif variant={0} style={FILL} />
           <LinearGradient colors={["rgba(8,11,16,0.34)", "rgba(8,11,16,0.12)", "rgba(13,17,23,0.66)", colors.night]} locations={[0, 0.25, 0.58, 1]} style={COVER} />
         </View>
         <Row style={[styles.top, { top }]}>
           <Row gap={8} style={{ flex: 1, minWidth: 0 }}>
-            <Gem />
+            <Gem followHinge />
             <T v="label11" color="rgba(247,243,236,0.85)" numberOfLines={1} style={{ letterSpacing: 2, flexShrink: 1 }}>
               {copy.common.today}
               {now ? ` · ${clockLabel(now.hour * 60 + now.minute, null, lang)}` : ""}
@@ -88,7 +88,7 @@ export function GuestDayOfView() {
         <Card kind="solid" padding={2} style={{ paddingHorizontal: 18 }}>
           {(data?.events ?? []).map((e, i) => (
             <Row key={e.id} gap={14} style={[styles.runRow, i === (data?.events.length ?? 0) - 1 && { borderBottomWidth: 0 }]}>
-              <T v="title26" size={19} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: lang === "en" ? 78 : 62 }}>
+              <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} color={e.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: lang === "en" ? 78 : 62 }}>
                 {clockLabel(e.start_minutes, e.time, lang)}
               </T>
               <T
@@ -134,6 +134,8 @@ export function GuestDayOfView() {
             <Button label={copy.dayof.planner} kind="ghost" small icon="phone" onPress={() => openUrlSafe(`https://wa.me/${data.planner_whatsapp!.replace(/\D/g, "")}`, failLink)} />
           </Stack>
         ) : null}
+        {/* The door pass, once more on the day (hidden until the portal has one). */}
+        <WalletButton style={{ marginTop: 20 }} />
       </View>
     </Screen>
   );
