@@ -152,6 +152,15 @@ const en = {
   invite: {
     continue: "Continue",
   },
+  // HH wave F: the wallet pass and the guest album.
+  wallet: {
+    apple: "Add to Apple Wallet",
+    google: "Save to Google Wallet",
+    caption: "Your pass for the door, also offline.",
+    failed: "The pass did not open. Try again in a moment.",
+  },
+  albumRow: "Wedding album",
+  albumRowSub: "Add your photos, see everyone's",
 };
 
 const es: typeof en = {
@@ -303,6 +312,14 @@ const es: typeof en = {
   invite: {
     continue: "Continuar",
   },
+  wallet: {
+    apple: "Agregar a Apple Wallet",
+    google: "Guardar en Google Wallet",
+    caption: "Tu pase para la puerta, también sin conexión.",
+    failed: "El pase no se abrió. Inténtalo de nuevo en un momento.",
+  },
+  albumRow: "Álbum de la boda",
+  albumRowSub: "Sube tus fotos y mira las de todos",
 };
 
 export const GUEST_COPY = { en, es };

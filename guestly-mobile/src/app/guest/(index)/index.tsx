@@ -26,6 +26,7 @@ import { splitNames, dayMonth } from "@/features/guest/format";
 import { GuestDayOfView } from "@/features/guest/DayOfView";
 import { DressCodeSheet } from "@/features/guest/DressCodeSheet";
 import { DirectionsSheet, SiteSectionSheet } from "@/features/guest/sheets";
+import { WalletButton } from "@/features/guest/WalletButton";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useRsvpDraft } from "@/features/guest/state";
 
@@ -228,6 +229,9 @@ export default function GuestHome() {
           ) : married && status === "pending" ? null : (
             rsvpCard
           )}
+
+          {/* Going: the door pass in the phone's wallet (hidden until the portal has one). */}
+          {status === "attending" && !failed && !blocked ? <WalletButton /> : null}
 
           <View accessibilityRole="menu" accessibilityLabel={g.home.shortcuts} style={[styles.tiles, twoByTwo && styles.tilesWrap]}>
             <Tile icon="map" label={g.home.directions} onPress={() => setSheet("directions")} wide={twoByTwo} />

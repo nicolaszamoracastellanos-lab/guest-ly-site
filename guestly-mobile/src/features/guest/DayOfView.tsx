@@ -17,6 +17,7 @@ import { useGuestDayOf } from "@/lib/hooks";
 import { Screen, ScreenBannerSlot, T, Row, Gem, Card, Button, Badge, Icon, Stack, Skeleton, SectionLabel, useTopInset, NightMotif } from "@/ui";
 import { colors, FILL, COVER } from "@/ui/tokens";
 import { clockLabel } from "@/features/guest/format";
+import { WalletButton } from "./WalletButton";
 import { openMaps, openUrlSafe } from "@/features/guest/links";
 import { useRefetchOnRefocus } from "@/features/guest/focus";
 
@@ -133,6 +134,8 @@ export function GuestDayOfView() {
             <Button label={copy.dayof.planner} kind="ghost" small icon="phone" onPress={() => openUrlSafe(`https://wa.me/${data.planner_whatsapp!.replace(/\D/g, "")}`, failLink)} />
           </Stack>
         ) : null}
+        {/* The door pass, once more on the day (hidden until the portal has one). */}
+        <WalletButton style={{ marginTop: 20 }} />
       </View>
     </Screen>
   );
