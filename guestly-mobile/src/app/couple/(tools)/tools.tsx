@@ -19,6 +19,11 @@ import { useBudgetSurface } from "@/features/budget/hooks";
 import { useCoupleSettings } from "@/features/settings/hooks";
 import { useWebsite } from "@/features/website/hooks";
 import { useCoupleCopy, useShareInvite, MenuRow, MenuCard } from "@/features/couple/ui";
+import { useFeatureCopy } from "@/i18n/feature";
+import { ALBUM_COPY } from "@/features/album/copy";
+import { useAlbumAvailable } from "@/features/album/hooks";
+import { THANKYOU_COPY } from "@/features/thankyou/copy";
+import { useThankyouAvailable } from "@/features/thankyou/hooks";
 import { Screen, TopBar, Wordmark, BigTitle, T, Icon, Footer, Skeleton, SectionLabel, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 
@@ -37,6 +42,13 @@ export default function CoupleTools() {
   const more = useMore();
   const settings = useCoupleSettings();
   const shareInvite = useShareInvite();
+  // Album and thank-you list: only once the portal has them (a 404 hides the row);
+  // the thank-you list from the wedding day on.
+  const a = useFeatureCopy(ALBUM_COPY);
+  const ty = useFeatureCopy(THANKYOU_COPY);
+  const album = useAlbumAvailable("couple");
+  const afterWedding = !!home.data?.countdown?.passed || !!home.data?.day_of;
+  const thankyou = useThankyouAvailable(afterWedding);
 
   // "% paid" of the budget the Budget screen has open, as on Home (B3).
   const [budgetId, setBudgetId] = useState<string | null>(null);
@@ -142,6 +154,8 @@ export default function CoupleTools() {
         <MenuRow icon="store" title={c.tools.vendors} sub={c.tools.vendorsSub} onPress={() => router.push("/couple/vendors")} testID="tools-vendors" />
         <MenuRow icon="qr" title={c.more.checkin} sub={c.more.checkinSub} onPress={() => router.push("/couple/checkin")} testID="tools-checkin" />
         <MenuRow icon="calendar" title={c.more.dayof} sub={c.more.dayofSub} onPress={() => router.push("/couple/dayof")} testID="tools-dayof" />
+        {album ? <MenuRow icon="camera" title={a.title} sub={a.coupleSub} onPress={() => router.push("/couple/album" as never)} testID="tools-album" /> : null}
+        {thankyou ? <MenuRow icon="mail" title={ty.title} sub={ty.rowSub} onPress={() => router.push("/couple/thankyou" as never)} testID="tools-thankyou" /> : null}
         <MenuRow icon="book" title={c.more.brain} sub={c.more.brainSub} onPress={() => router.push("/couple/brain")} testID="tools-brain" />
         <MenuRow icon="tasks" title={c.more.requests} sub={typeof requests === "number" && requests > 0 ? plural(requests, copy.more.subs.requests) : c.more.requestsSub} onPress={() => router.push("/couple/requests")} testID="tools-requests" />
         <MenuRow icon="star" title={c.more.insights} sub={c.more.insightsSub} onPress={() => router.push("/couple/insights")} testID="tools-insights" />
