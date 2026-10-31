@@ -5,7 +5,7 @@
 // picked with no signal is sent when the connection is back.
 
 import React, { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { Alert, FlatList, Linking, StyleSheet, View, ActivityIndicator } from "react-native";
+import { Alert, FlatList, Linking, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy } from "@/i18n";
@@ -17,7 +17,7 @@ import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Button, EmptyState, Skeleton, Stack, T, Row, Card, Icon, QueryError, useBottomClearance } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { ALBUM_COPY } from "../copy";
-import { GUEST_ALBUM_KEY, useGuestAlbum } from "../hooks";
+import { GUEST_ALBUM_KEY, isAlbumClosed, useGuestAlbum } from "../hooks";
 import { queueSummary, type AlbumPhoto, type UploadEntry } from "../grid";
 import { clearDone, drainAlbumQueue, getAlbumQueue, openAlbumQueue, pickPhotos, removeUpload, retryUpload, subscribeAlbumQueue } from "../upload";
 import { GRID_GAP, PhotoTile, useTile } from "../PhotoGrid";
@@ -34,9 +34,8 @@ export function GuestAlbumScreen() {
   const { state } = useSession();
   const scope = state.status === "guest" ? `${state.tenant.slug}.${state.guest.id}` : "none";
   const query = useGuestAlbum();
-  const pages = useMemo(() => query.data?.pages ?? [], [query.data]);
-  const first = pages[0];
-  const photos = useMemo(() => pages.flatMap((p) => p.items), [pages]);
+  const album = query.data?.album;
+  const photos = useMemo(() => query.data?.photos ?? [], [query.data]);
   const queue = useSyncExternalStore(subscribeAlbumQueue, getAlbumQueue);
   const sum = queueSummary(queue);
   const { size, columns } = useTile(PAD);
@@ -72,13 +71,12 @@ export function GuestAlbumScreen() {
     } else if (r === "added") void drainAlbumQueue(refreshAlbum);
   }
 
-  const missing = isMissingEndpoint(query.error);
-  const closed = missing || (first && !first.enabled);
-  const canUpload = !!first?.can_upload && !closed;
+  const closed = isMissingEndpoint(query.error) || isAlbumClosed(query.error) || (!!album && !album.enabled);
+  const canUpload = !!album?.upload && !closed;
 
   const header = (
     <View style={{ paddingHorizontal: PAD, paddingBottom: 12 }}>
-      <BigTitle title={c.title} sub={first && !first.share_with_guests ? c.onlyMine : c.guestSub} size={38} />
+      <BigTitle title={c.title} sub={album && !album.see_all ? c.onlyMine : c.guestSub} size={38} />
       {queue.length ? <UploadList queue={queue} done={sum.done} total={sum.total} onRetry={(id) => void retryUpload(id, refreshAlbum)} onRemove={(id) => void removeUpload(id)} /> : null}
     </View>
   );
@@ -101,11 +99,8 @@ export function GuestAlbumScreen() {
         columnWrapperStyle={columns > 1 ? { gap: GRID_GAP, paddingHorizontal: PAD } : undefined}
         contentContainerStyle={{ gap: GRID_GAP, paddingBottom: clearance + 90 }}
         ListHeaderComponent={header}
-        onEndReached={() => (query.hasNextPage && !query.isFetchingNextPage ? void query.fetchNextPage() : undefined)}
-        onEndReachedThreshold={0.6}
-        refreshing={query.isRefetching && !query.isFetchingNextPage}
+        refreshing={query.isRefetching}
         onRefresh={() => void query.refetch()}
-        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.goldLight} style={{ marginVertical: 18 }} /> : undefined}
         renderItem={({ item, index }) => <PhotoTile photo={item} size={size} label={label(item, index)} badge={item.status === "pending" ? c.waiting : item.status === "hidden" ? c.hidden : null} onPress={() => setOpen(index)} />}
         ListEmptyComponent={
           query.isLoading ? (

@@ -2,8 +2,8 @@
 // not lose photos, so every picked photo is resized (2400 px long side, never
 // enlarged), copied into the app's documents and written to a persisted queue
 // before anything goes over the network. The queue then sends one photo at a
-// time through the signed URL flow (POST upload-url, PUT the file with
-// progress, POST done), keeps an entry on an offline failure (retried on the
+// time through the signed URL flow (POST /guest/album { action: "upload_url" },
+// PUT the file with progress, POST { action: "complete" }), keeps an entry on an offline failure (retried on the
 // next drain) and marks a refusal the server will repeat (too large, not a
 // photo) as final. Modeled on lib/queue (one promise chain for every
 // read-modify-write, one drain at a time).
@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Directory, File, Paths } from "expo-file-system";
 import { post, ApiFailure } from "@/lib/api";
-import { nextToSend, patchEntry, resizeFor, UPLOAD_MAX_BYTES, type UploadEntry } from "./grid";
+import { albumBody, nextToSend, patchEntry, readUploadStart, resizeFor, UPLOAD_MAX_BYTES, type UploadEntry } from "./grid";
 
 let scope = "none";
 let queue: UploadEntry[] = [];
@@ -129,11 +129,13 @@ async function sendOne(e: UploadEntry): Promise<void> {
     if (!file.exists) throw new ApiFailure(400, { code: "not_image", message_en: "", message_es: "" });
     const bytes = file.size ?? e.bytes;
     if (bytes > UPLOAD_MAX_BYTES) throw new ApiFailure(413, { code: "too_large", message_en: "", message_es: "" });
-    const start = await post<{ id: string; upload_url: string; headers?: Record<string, string> }>("/guest/album/upload-url", { content_type: "image/jpeg", bytes, client_id: e.client_id });
+    const start = readUploadStart(await post<unknown>("/guest/album", albumBody.uploadUrl(bytes)));
+    if (!start) throw new ApiFailure(500, null);
     let last = 0;
     const put = await file.upload(start.upload_url, {
       httpMethod: "PUT",
-      headers: { "Content-Type": "image/jpeg", ...(start.headers ?? {}) },
+      // The same headers as the web album's PUT to the signed Storage URL.
+      headers: { "Content-Type": "image/jpeg", "x-upsert": "true" },
       mimeType: "image/jpeg",
       sessionType: "foreground",
       onProgress: ({ bytesSent, totalBytes }) => {
@@ -147,7 +149,7 @@ async function sendOne(e: UploadEntry): Promise<void> {
       },
     });
     if (put.status < 200 || put.status >= 300) throw new ApiFailure(put.status, null);
-    await post(`/guest/album/${encodeURIComponent(start.id)}/done`, {});
+    await post("/guest/album", albumBody.complete(start.id));
     try {
       file.delete();
     } catch {

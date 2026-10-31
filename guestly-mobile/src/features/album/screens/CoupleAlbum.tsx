@@ -5,7 +5,7 @@
 // guests see everyone's photos). Viewers read only.
 
 import React, { useMemo, useState } from "react";
-import { Alert, FlatList, View, ActivityIndicator } from "react-native";
+import { Alert, FlatList, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, plural, useCopy, useLang } from "@/i18n";
@@ -18,7 +18,7 @@ import { Screen, TopBar, BigTitle, Button, ButtonRow, EmptyState, Skeleton, Segm
 import { colors } from "@/ui/tokens";
 import { ALBUM_COPY } from "../copy";
 import { COUPLE_ALBUM_KEY, useCoupleAlbum, type AlbumSettings } from "../hooks";
-import type { AlbumPhoto, AlbumStatus } from "../grid";
+import { albumBody, photosIn, type AlbumAnswer, type AlbumPhoto, type AlbumStatus } from "../grid";
 import { GRID_GAP, PhotoTile, useTile } from "../PhotoGrid";
 import { Lightbox } from "../Lightbox";
 
@@ -48,11 +48,10 @@ export function CoupleAlbumScreen() {
   const user = useUserSession();
   const canEdit = user?.me.can_edit ?? false;
   const [status, setStatus] = useState<AlbumStatus>("pending");
-  const query = useCoupleAlbum(status);
-  const pages = useMemo(() => query.data?.pages ?? [], [query.data]);
-  const photos = useMemo(() => pages.flatMap((p) => p.items), [pages]);
-  const settings = pages[0]?.settings ?? null;
-  const shareUrl = pages[0]?.share_url ?? (user?.me.tenant.slug ? `${API_BASE}/album/${user.me.tenant.slug}` : null);
+  const query = useCoupleAlbum();
+  const photos = useMemo(() => photosIn(query.data?.photos ?? [], status), [query.data, status]);
+  const settings: AlbumSettings | null = query.data?.album ?? null;
+  const shareUrl = query.data?.album.link ?? (user?.me.tenant.slug ? `${API_BASE}/album/${user.me.tenant.slug}` : null);
   const headers = usePhotoHeaders();
   const { size, columns } = useTile(PAD);
   const { clearance } = useBottomClearance();
@@ -65,17 +64,16 @@ export function CoupleAlbumScreen() {
   async function moderate(ids: string[], to: "approved" | "hidden") {
     if (!ids.length || busy) return;
     setBusy(true);
-    // Optimistic: the photos leave this tab at once.
-    const key = [...COUPLE_ALBUM_KEY, status];
-    const prev = qc.getQueryData(key);
-    qc.setQueryData(key, (d: typeof query.data) => (d ? { ...d, pages: d.pages.map((p) => ({ ...p, items: p.items.filter((i) => !ids.includes(i.id)) })) } : d));
+    // Optimistic: the photos move to their new tab at once.
+    const prev = qc.getQueryData<AlbumAnswer>(COUPLE_ALBUM_KEY);
+    qc.setQueryData<AlbumAnswer>(COUPLE_ALBUM_KEY, (d) => (d ? { ...d, photos: d.photos.map((p) => (ids.includes(p.id) ? { ...p, status: to } : p)) } : d));
     try {
-      for (const id of ids) await post(`/couple/album/${encodeURIComponent(id)}`, { status: to });
+      await post("/couple/album", albumBody.moderate(ids, to));
       toast(plural(ids.length, to === "approved" ? c.approved : c.hiddenDone));
       setPicked(new Set());
       setSelecting(false);
     } catch (err) {
-      qc.setQueryData(key, prev);
+      qc.setQueryData(COUPLE_ALBUM_KEY, prev);
       toast(errorText(err, lang, app.common.errorBody), { icon: "warning" });
     } finally {
       setBusy(false);
@@ -93,14 +91,13 @@ export function CoupleAlbumScreen() {
   }
 
   async function saveSettings(patch: Partial<AlbumSettings>) {
-    const key = [...COUPLE_ALBUM_KEY, status];
-    const prev = qc.getQueryData(key);
-    qc.setQueryData(key, (d: typeof query.data) => (d ? { ...d, pages: d.pages.map((p, i) => (i === 0 && p.settings ? { ...p, settings: { ...p.settings, ...patch } } : p)) } : d));
+    const prev = qc.getQueryData<AlbumAnswer>(COUPLE_ALBUM_KEY);
+    qc.setQueryData<AlbumAnswer>(COUPLE_ALBUM_KEY, (d) => (d ? { ...d, album: { ...d.album, ...patch } } : d));
     try {
-      await post("/couple/album/settings", patch);
+      await post("/couple/album", albumBody.settings(patch));
       void qc.invalidateQueries({ queryKey: COUPLE_ALBUM_KEY });
     } catch (err) {
-      qc.setQueryData(key, prev);
+      qc.setQueryData(COUPLE_ALBUM_KEY, prev);
       toast(errorText(err, lang, app.common.errorBody), { icon: "warning" });
     }
   }
@@ -186,11 +183,8 @@ export function CoupleAlbumScreen() {
         columnWrapperStyle={columns > 1 ? { gap: GRID_GAP, paddingHorizontal: PAD } : undefined}
         contentContainerStyle={{ gap: GRID_GAP, paddingBottom: clearance + (selecting ? 120 : 24) }}
         ListHeaderComponent={header}
-        onEndReached={() => (query.hasNextPage && !query.isFetchingNextPage ? void query.fetchNextPage() : undefined)}
-        onEndReachedThreshold={0.6}
-        refreshing={query.isRefetching && !query.isFetchingNextPage}
+        refreshing={query.isRefetching}
         onRefresh={() => void query.refetch()}
-        ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator color={colors.goldLight} style={{ marginVertical: 18 }} /> : undefined}
         renderItem={({ item, index }) => (
           <PhotoTile
             photo={item}

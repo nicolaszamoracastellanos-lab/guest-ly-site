@@ -1,6 +1,14 @@
-// Pure helpers of the album: the grid's columns and tile size, the photo
-// shape the app reads (tolerant of the D2 web field names), and the upload
-// queue's state changes. No React Native imports: scripts/tests/album.test.ts.
+// Pure helpers of the album: the grid's columns and tile size, the album
+// answer the app reads, the request bodies it sends, and the upload queue's
+// state changes. No React Native imports: scripts/tests/album.test.ts runs
+// them on real portal answers (scripts/tests/fixtures/album-*.json).
+//
+// The contract is the portal's (hh/d-album-thankyou, src/lib/mobile/album.ts),
+// checked end to end by the portal's scripts/test-mobile-album.mjs:
+//   GET  /couple/album | /guest/album -> { album: { enabled, moderation,
+//        share_with_guests, upload, see_all, link }, photos: [{ id, status,
+//        width, height, caption, mine, from?, created_at, small, large }] }
+//   POST the same path with { action: "upload_url" | "complete" | "moderate" | "settings", ... }
 
 export type AlbumStatus = "pending" | "approved" | "hidden";
 
@@ -38,7 +46,8 @@ function abs(base: string, url: string): string {
 const STATUSES = new Set<AlbumStatus>(["pending", "approved", "hidden"]);
 
 /** One server item to the app's shape; null when it has no id or no picture.
- *  Reads url_480/url_1200 (mobile contract) or small/large (the web album). */
+ *  Reads small/large (the portal's album answer); url_480/url_1200 kept as a
+ *  fallback. The uploader's name is `from` (couple answers only). */
 export function normalizePhoto(raw: unknown, base: string): AlbumPhoto | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -56,13 +65,68 @@ export function normalizePhoto(raw: unknown, base: string): AlbumPhoto | null {
     mine: r.mine === true,
     status: STATUSES.has(r.status as AlbumStatus) ? (r.status as AlbumStatus) : "approved",
     caption: typeof r.caption === "string" && r.caption ? r.caption : null,
-    guest_name: typeof r.guest_name === "string" && r.guest_name ? r.guest_name : null,
+    guest_name: typeof r.from === "string" && r.from ? r.from : typeof r.guest_name === "string" && r.guest_name ? r.guest_name : null,
     created_at: typeof r.created_at === "string" ? r.created_at : null,
   };
 }
 
 export function normalizePhotos(items: unknown, base: string): AlbumPhoto[] {
   return Array.isArray(items) ? items.map((i) => normalizePhoto(i, base)).filter((p): p is AlbumPhoto => !!p) : [];
+}
+
+// ---------------------------------------------------------------- album answer
+
+export type AlbumModeration = "auto" | "review";
+/** The album's switches as the couple sets them. */
+export type AlbumSettings = { enabled: boolean; moderation: AlbumModeration; share_with_guests: boolean };
+/** The switches plus what this caller may do: upload, see everyone's photos, the guests' link. */
+export type AlbumInfo = AlbumSettings & { upload: boolean; see_all: boolean; link: string | null };
+export type AlbumAnswer = { album: AlbumInfo; photos: AlbumPhoto[] };
+
+/** The album object of a GET answer; missing fields read as closed and private. */
+export function normalizeAlbumInfo(raw: unknown): AlbumInfo {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const enabled = r.enabled === true;
+  return {
+    enabled,
+    moderation: r.moderation === "review" ? "review" : "auto",
+    share_with_guests: r.share_with_guests !== false,
+    upload: r.upload === true,
+    see_all: r.see_all === true,
+    link: typeof r.link === "string" && /^https?:\/\//i.test(r.link) ? r.link : null,
+  };
+}
+
+/** One GET /couple/album or /guest/album answer to the app's shape. */
+export function normalizeAlbumAnswer(raw: unknown, base: string): AlbumAnswer {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return { album: normalizeAlbumInfo(r.album), photos: normalizePhotos(r.photos, base) };
+}
+
+/** The couple's tabs read one list: the photos in one status, newest first as served. */
+export function photosIn(photos: AlbumPhoto[], status: AlbumStatus): AlbumPhoto[] {
+  return photos.filter((p) => p.status === status);
+}
+
+export function statusCounts(photos: AlbumPhoto[]): Record<AlbumStatus, number> {
+  const out: Record<AlbumStatus, number> = { pending: 0, approved: 0, hidden: 0 };
+  for (const p of photos) out[p.status] += 1;
+  return out;
+}
+
+/** The POST bodies, one route per surface (/couple/album, /guest/album). */
+export const albumBody = {
+  uploadUrl: (bytes: number, lang?: "en" | "es") => ({ action: "upload_url" as const, content_type: "image/jpeg", bytes, ...(lang ? { lang } : {}) }),
+  complete: (id: string) => ({ action: "complete" as const, id }),
+  moderate: (ids: string[], status: AlbumStatus) => ({ action: "moderate" as const, ids, status }),
+  settings: (album: Partial<AlbumSettings>) => ({ action: "settings" as const, album }),
+};
+
+/** The upload_url answer; null when it is not one. */
+export function readUploadStart(raw: unknown): { id: string; upload_url: string; method: "PUT" } | null {
+  const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  if (typeof r.id !== "string" || typeof r.upload_url !== "string" || !/^https?:\/\//i.test(r.upload_url)) return null;
+  return { id: r.id, upload_url: r.upload_url, method: "PUT" };
 }
 
 // ---------------------------------------------------------------- upload queue
