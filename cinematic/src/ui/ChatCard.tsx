@@ -204,7 +204,7 @@ export function ChatCard() {
               onChange={(e) => setInput(e.target.value)}
             />
             <button type="submit" className="chat-card__send" aria-label={chat.send}>
-              →
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           </form>
           <p className="chat-card__live-tag">{chat.liveTag}</p>

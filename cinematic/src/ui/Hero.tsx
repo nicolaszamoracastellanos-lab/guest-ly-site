@@ -16,7 +16,6 @@ export function Hero() {
               <span className="badge__dot" aria-hidden="true" />
               {h.badge}
             </span>
-            <p className="hero__kicker reveal">{h.kicker}</p>
             <h1 className="hero__title reveal">
               {h.titleLines.map((line, i) => (
                 <span key={i} className={i === h.accentIndex ? 'hero__line accent' : 'hero__line'}>

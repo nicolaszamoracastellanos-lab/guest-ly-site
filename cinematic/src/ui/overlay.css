@@ -1,3 +1,6 @@
+/* Hallmark · checked: 2026-11-02 · genre: editorial (inferred)
+ * floor: fixed 34, 39a, 49a, 63, 67 (labels to sentence case), 75, 2b (gradient text flattened), 26b (:active) · structural: printed (44a, 58, 59, 71, 72)
+ * built: the project · redesign: polish · v2.0.0 */
 /* Guest-ly: DOM overlay for the cinematic experience.
    Mobile-first: base rules target phones; min-width queries scale up.
    All color/font/spacing/radius/shadow values come from src/styles/tokens.css;
@@ -13,7 +16,8 @@
 
 html.menu-locked,
 html.wizard-locked {
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: hidden;
 }
 
 /* ------------------------------------------------------------ primitives */
@@ -64,6 +68,7 @@ html.wizard-locked {
   font-weight: 600;
   letter-spacing: 0.02em;
   text-align: center;
+  white-space: nowrap;
   transition:
     transform var(--dur-fast) var(--ease-lux),
     filter var(--dur-fast) var(--ease-lux),
@@ -109,6 +114,10 @@ html.wizard-locked {
   color: var(--accent-text-strong);
 }
 
+.btn:active {
+  transform: translateY(1px);
+}
+
 .btn:focus-visible,
 button:focus-visible,
 a:focus-visible {
@@ -141,8 +150,8 @@ a:focus-visible {
   padding: 0.45rem 1rem;
   font-size: var(--text-label);
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .badge__dot {
@@ -157,13 +166,6 @@ a:focus-visible {
   font-family: var(--font-display);
   font-style: italic;
   color: var(--accent-text);
-  background: var(--accent-display);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  /* Italic overhangs get clipped by background-clip without this. */
-  padding-inline: 0.06em;
-  margin-inline: -0.06em;
 }
 
 .card-title {
@@ -237,8 +239,8 @@ body.js-ready .reveal.is-visible {
 .hero__kicker {
   font-size: var(--text-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--accent-text);
 }
 
@@ -395,7 +397,7 @@ body.js-ready .reveal.is-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .nav__burger span {
@@ -461,8 +463,8 @@ body.js-ready .reveal.is-visible {
 .nav__menu-links .nav__menu-login {
   font-family: var(--font-ui);
   font-size: 0.85rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-muted);
   margin-top: 0.8rem;
 }
@@ -675,8 +677,8 @@ body.js-ready .reveal.is-visible {
   display: block;
   margin-top: 0.25rem;
   font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -691,8 +693,8 @@ body.js-ready .reveal.is-visible {
   gap: 0.6rem;
   font-size: 0.66rem;
   font-weight: 600;
-  letter-spacing: 0.34em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-faint);
 }
 
@@ -1094,8 +1096,8 @@ body.js-ready .reveal.is-visible {
   color: var(--accent-ink);
   font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   padding: 0.32rem 0.95rem;
   border-radius: var(--radius-pill);
   white-space: nowrap;
@@ -1110,7 +1112,7 @@ body.js-ready .reveal.is-visible {
 .plan__channels {
   margin-top: 0.3rem;
   font-size: 0.8rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -1143,8 +1145,8 @@ body.js-ready .reveal.is-visible {
 .plan__fee {
   margin-top: 0.5rem;
   font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -1224,8 +1226,8 @@ body.js-ready .reveal.is-visible {
 
 .founding__ends {
   font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -1447,8 +1449,8 @@ body.js-ready .reveal.is-visible {
 .footer__head {
   font-size: var(--text-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--accent-text);
   margin-bottom: 1.1rem;
 }
@@ -1592,8 +1594,8 @@ body.js-ready .reveal.is-visible {
   gap: 0.45rem;
   font-size: 0.68rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -1689,8 +1691,8 @@ body.js-ready .reveal.is-visible {
 
 .wiz-plan__fee {
   font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -1763,8 +1765,8 @@ body.js-ready .reveal.is-visible {
 .wiz-next__head {
   font-size: var(--text-label);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--accent-text);
 }
 
@@ -1938,8 +1940,8 @@ body.js-ready .reveal.is-visible {
 .pillar__hint {
   font-size: var(--text-label);
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
   white-space: nowrap;
 }
@@ -2261,6 +2263,8 @@ body.js-ready .reveal.is-visible {
 
 .chat-card__input--live:focus-within {
   border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .chat-card__input--live .chat-card__send {
@@ -2269,7 +2273,7 @@ body.js-ready .reveal.is-visible {
 }
 
 .chat-card__live-tag {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-align: center;
   color: var(--text-faint);
 }
@@ -2312,8 +2316,8 @@ body.js-ready .reveal.is-visible {
 .legal-page__updated {
   margin-top: 0.6rem;
   font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -2419,8 +2423,8 @@ body.js-ready .reveal.is-visible {
 .scn-card__time {
   font-size: var(--text-label);
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
 }
 
@@ -2532,8 +2536,8 @@ body.js-ready .reveal.is-visible {
   display: block;
   font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
   margin-bottom: 0.15rem;
 }
@@ -2552,8 +2556,8 @@ body.js-ready .reveal.is-visible {
 .scn-frame__title {
   font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
 }
 
@@ -2574,8 +2578,8 @@ body.js-ready .reveal.is-visible {
 .confirm-card__title {
   font-size: var(--text-label);
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
 }
 
@@ -2676,18 +2680,18 @@ body.js-ready .reveal.is-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
 }
 
 .chan-chip__soon {
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-faint);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-pill);
@@ -2904,7 +2908,7 @@ body.js-ready .reveal.is-visible {
 
 .mock__dots {
   display: inline-flex;
-  gap: 5px;
+  gap: 4px;
 }
 
 .mock__dots i {
@@ -3054,8 +3058,8 @@ body.js-ready .reveal.is-visible {
   display: flex;
   flex-direction: column;
   font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-faint);
 }
 
@@ -3114,8 +3118,8 @@ body.js-ready .reveal.is-visible {
   flex: none;
   font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   border: 1px solid var(--accent-35);
   border-radius: var(--radius-pill);
   color: var(--accent-text);
@@ -3446,8 +3450,8 @@ body.js-ready .reveal.is-visible {
 .stepper__day {
   font-size: var(--text-label);
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--accent-text);
   display: flex;
   align-items: center;
@@ -3457,7 +3461,7 @@ body.js-ready .reveal.is-visible {
 
 .stepper__chip {
   font-style: normal;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   text-transform: none;
   font-weight: 500;
   color: var(--text-faint);
@@ -3615,8 +3619,8 @@ body.js-ready .reveal.is-visible {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.62rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-faint);
 }
 
@@ -3631,8 +3635,8 @@ body.js-ready .reveal.is-visible {
 .compare__rowlabel {
   grid-column: 1 / -1;
   font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-faint);
   padding: 0.5rem 0.8rem 0;
 }
