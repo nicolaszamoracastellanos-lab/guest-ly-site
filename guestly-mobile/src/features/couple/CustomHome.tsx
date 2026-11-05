@@ -13,7 +13,7 @@ import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toast } from "@/ui";
+import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toastError } from "@/ui";
 import type { IconName } from "@/ui/Icon";
 import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
@@ -62,7 +62,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
       setEditing(false);
       setDraft(null);
     } catch {
-      toast(c.saveFailed);
+      toastError(c.saveFailed);
     }
   };
   const backToSuggested = async () => {
@@ -71,7 +71,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
       setEditing(false);
       setDraft(null);
     } catch {
-      toast(c.saveFailed);
+      toastError(c.saveFailed);
     }
   };
   const edit = (fn: (d: { cards: HomeCard[]; dismissed: string[] }) => { cards: HomeCard[]; dismissed: string[] }) => setDraft((d) => (d ? fn(d) : d));

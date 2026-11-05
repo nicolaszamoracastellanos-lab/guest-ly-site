@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, T, Badge, Stack, Skeleton, Icon, Banner, toastError } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
@@ -31,7 +31,7 @@ export default function WebsiteThemeScreen() {
       await post("/couple/website/theme", { theme });
       qc.setQueryData<WebsiteSurface>(WEBSITE_KEY, (old) => (old ? { ...old, theme } : old));
     } catch (err) {
-      toastError(errorText(err, lang, c.errors.saveFailed));
+      toastError(failedText(c.errors.themeFailed, err, lang));
     } finally {
       setBusy(null);
     }

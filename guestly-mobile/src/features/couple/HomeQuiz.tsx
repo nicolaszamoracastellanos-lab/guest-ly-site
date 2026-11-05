@@ -12,7 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useSafeBack } from "@/lib/nav";
-import { Screen, TopBar, T, Row, Stack, Button, Chip, Gem, toast } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Button, Chip, Gem, toast, toastError } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { FOCUS_IDS, STANDARD_ANSWERS, suggestedCards, type Focus, type HomeAnswers } from "./homeLayout";
 import { readLayout, useSaveHomeLayout, type CoupleHomeWithLayout, type RecapPref } from "./homeCards";
@@ -54,7 +54,8 @@ export function HomeQuiz() {
       toast(c.saved);
       close();
     } catch {
-      toast(c.saveFailed);
+      // The quiz stays open: the toast shows on its own host, over the modal.
+      toastError(c.saveFailed);
     }
   };
 
@@ -68,7 +69,7 @@ export function HomeQuiz() {
   const canNext = step !== 0 || a.focus.length > 0;
 
   return (
-    <Screen header={<TopBar title="" left={null} right={<Pressable onPress={close} accessibilityRole="button" accessibilityLabel={c.close} hitSlop={10}><T v="meta13" color={colors.ivory70}>{c.close}</T></Pressable>} />} bottomInset={40}>
+    <Screen modal header={<TopBar title="" left={null} right={<Pressable onPress={close} accessibilityRole="button" accessibilityLabel={c.close} hitSlop={10}><T v="meta13" color={colors.ivory70}>{c.close}</T></Pressable>} />} bottomInset={40}>
       <Stack gap={18} style={{ marginTop: 8 }}>
         <View style={styles.steps} accessibilityRole="progressbar" accessibilityLabel={c.question(step + 1, STEPS)}>
           {Array.from({ length: STEPS }, (_, i) => (

@@ -5,9 +5,9 @@ import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeatureCopy } from "@/i18n/feature";
-import { relTime, useLang, useCopy } from "@/i18n";
+import { relTime, useLang } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Gem, Icon, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -19,7 +19,6 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function BrainHome() {
   const c = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -55,7 +54,7 @@ export default function BrainHome() {
       setNotice(c.published(r.version));
       await refetch();
     } catch (err) {
-      toastError(errorText(err, lang, app.common.errorBody));
+      toastError(failedText(c.publishFailed, err, lang));
     } finally {
       setPublishing(false);
     }

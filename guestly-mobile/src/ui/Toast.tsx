@@ -13,7 +13,8 @@
 //
 // The root layout mounts one ToastHost. A Sheet is a native modal that covers
 // the root, so every open Sheet mounts its own host; so does a Screen presented
-// as a native modal (`<Screen modal>`, the guest card, add guest, Record RSVP).
+// as a native modal (`<Screen modal>`: the guest card, add guest, Record RSVP,
+// a request, Home setup; scripts/tests/modal-toasts.test.ts keeps the list).
 // The newest such host shows the toast and the others stay quiet.
 
 import React, { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";

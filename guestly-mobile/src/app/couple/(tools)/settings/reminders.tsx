@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy, zoneLabel } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Input, Row, SectionLabel, EmptyState, Chip, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -47,7 +47,7 @@ export default function ReminderSettings() {
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
     } catch (err) {
-      toastError(errorText(err, lang, app.common.errorBody));
+      toastError(failedText(c.saveFailed, err, lang));
     } finally {
       setBusy(false);
     }

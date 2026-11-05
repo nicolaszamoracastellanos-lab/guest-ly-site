@@ -15,6 +15,7 @@
 
 import * as Crypto from "expo-crypto";
 import { api, ApiFailure, get } from "@/lib/api";
+import { failText } from "./failText";
 
 /** Model and vision calls: the portal routes allow up to 60 s. */
 export const AI_TIMEOUT_MS = 90_000;
@@ -60,6 +61,13 @@ export function errorText(err: unknown, lang: "en" | "es", fallback: string): st
     return err.messages[lang] || fallback;
   }
   return fallback;
+}
+
+/** An error toast that says what failed (`what`, the screen's own sentence),
+ *  then what to do: the server's reason, or "Check your connection and try
+ *  again." when the request never arrived. See failText.ts. */
+export function failedText(what: string, err: unknown, lang: "en" | "es"): string {
+  return failText(what, err instanceof ApiFailure ? err : null, lang);
 }
 
 /** For raw fetch/XHR calls outside lib/api (file export, the Coordinator

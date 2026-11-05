@@ -27,7 +27,7 @@ import { useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome, useCoupleRsvps, type HomeActivity, type RsvpListItem } from "@/lib/hooks";
-import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, Button, toast, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
+import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, Button, toastError, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, fullDate, dayMonth, statusIcon, statusColor } from "@/features/couple/ui";
 
@@ -80,7 +80,7 @@ export default function CoupleHome() {
     try {
       await saveLayout.mutateAsync({ answers: STANDARD_ANSWERS, cards: suggestedCards(STANDARD_ANSWERS), dismissed: [], quiz_state: "skipped" });
     } catch {
-      toast(hc.saveFailed);
+      toastError(hc.saveFailed);
     }
   };
 
