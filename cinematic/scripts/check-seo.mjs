@@ -11,15 +11,21 @@
    - an AI facts file (#48: llms.txt, llms-full.txt, es/llms.txt, written by
      scripts/llms.mjs) is missing, does not open with "# Guest-ly" or close
      with the slogan, lists a plan unlike the prerendered card (name, price,
-     guests line), or links a guest-ly.com address the build does not serve.
+     guests line), or links a guest-ly.com address the build does not serve;
+   - a switch in src/switches.ts is off and the build still shows, discloses,
+     calls or chunks its feature (#22 booking, #50 guides), or JSON-LD or an
+     AI facts file describes it (scripts/lib/feature-claims.mjs); or a switch
+     is on and the home page does not show its feature.
    Usage: node scripts/check-seo.mjs [distDir]   (default: cinematic/dist) */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { CINEMATIC } from './lib/paths.mjs';
 import { SLOGAN } from '../src/site-facts.ts';
+import { resolveSwitches } from '../src/switches.ts';
+import { featureClaimProblems } from './lib/feature-claims.mjs';
 
 const dist = resolve(process.argv[2] || join(CINEMATIC, 'dist'));
 const SITE = 'https://guest-ly.com';
@@ -181,8 +187,35 @@ for (const route of PAGES) {
   if (!html.includes(`<p class="footer__slogan">${SLOGAN.en}</p>`)) fail(`${route} has no footer slogan "${SLOGAN.en}"`);
 }
 
+/* 6. #22 and #50: nothing of a feature whose switch is off, and no claim of
+   it where engines read. */
+const switches = resolveSwitches(process.env);
+const ldStrings = [];
+const walk = (v) => {
+  if (typeof v === 'string') ldStrings.push(v);
+  else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+};
+blocks.forEach(walk);
+const assetsDir = join(dist, 'assets');
+const assets = existsSync(assetsDir)
+  ? readdirSync(assetsDir)
+      .filter((f) => f.endsWith('.js'))
+      .map((name) => ({ name, text: readFileSync(join(assetsDir, name), 'utf8') }))
+  : [];
+const privacyFile = join(dist, 'privacy', 'index.html');
+for (const p of featureClaimProblems({
+  switches,
+  home: homeHtml,
+  privacy: existsSync(privacyFile) ? readFileSync(privacyFile, 'utf8') : '',
+  assets,
+  ld: ldStrings,
+  llms: LLMS.filter(([name]) => existsSync(join(dist, name))).map(([name]) => ({ name, text: readFileSync(join(dist, name), 'utf8') })),
+}))
+  fail(p);
+const switchNote = `booking ${switches.booking ? 'on' : 'off'}, guides ${switches.guides ? 'on' : 'off'}`;
+
 if (errors.length) {
   for (const e of errors) console.error(`check-seo: ${e}`);
   process.exit(1);
 }
-console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok; footer slogan on ${sloganPages} page(s) with the site footer`);
+console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok; footer slogan on ${sloganPages} page(s) with the site footer; ${switchNote}, nothing of an off feature in the build or claimed`);

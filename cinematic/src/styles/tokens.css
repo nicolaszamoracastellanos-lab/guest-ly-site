@@ -101,6 +101,8 @@
   --field-bg: color-mix(in srgb, var(--ink-soft) 60%, transparent);
 
   --status-online: var(--online);
+  /* Field errors (#22 booking, #50 guides): 4.5:1 or more on the night glass. */
+  --status-error: #f4a9a1;
 
   --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.55);
 
@@ -165,6 +167,7 @@
   --field-bg: #ffffff;
 
   --status-online: #15803d;
+  --status-error: #a3302a;
 
   /* Warm, deeper lift: the cards float on the ivory instead of merging. */
   --shadow-card: 0 30px 80px rgba(122, 95, 51, 0.18), 0 2px 6px rgba(122, 95, 51, 0.08);

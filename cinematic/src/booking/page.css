@@ -1,0 +1,28 @@
+/* #22 booking buttons on the page. Imported by BookingContext.tsx, so it is
+   in the build only while BOOKING_ENABLED is on. */
+.book-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text-strong);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.book-line {
+  margin-top: 1.2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.faq-human__book,
+.nav__menu-book {
+  margin-top: 1.2rem;
+}
+

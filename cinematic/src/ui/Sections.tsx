@@ -1,5 +1,6 @@
 import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
+import { BookCta } from '../booking/BookingContext';
 
 /* Shared editorial section header: "№ 0x + KICKER" + display title + intro. */
 export function SectionHeader({
@@ -54,6 +55,7 @@ export function FinalCta() {
           <a className="btn btn--ghost btn--lg" href="#pricing">
             {c.secondary}
           </a>
+          {import.meta.env.VITE_BOOKING_ENABLED && <BookCta id="final" large />}
         </div>
       </div>
     </section>

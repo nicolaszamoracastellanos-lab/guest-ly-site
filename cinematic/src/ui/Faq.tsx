@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
+import { BookCta } from '../booking/BookingContext';
 
 export function Faq() {
   const { t } = useLang();
@@ -10,7 +11,8 @@ export function Faq() {
   return (
     <section id="faq" className="section">
       <div className="container">
-        <SectionHeader no={f.no} kicker={f.kicker} title={f.title} />
+        {/* The guides section (#50) takes № 10 while it is on. */}
+        <SectionHeader no={import.meta.env.VITE_GUIDES_ENABLED ? f.noAfterGuides : f.no} kicker={f.kicker} title={f.title} />
         <div className="faq-layout">
           <div className="glass faq-human reveal">
             <h3 className="card-title card-title--sm">{f.human.title}</h3>
@@ -18,6 +20,11 @@ export function Faq() {
             <a className="faq-human__mail" href={`mailto:${f.human.email}`}>
               {f.human.email}
             </a>
+            {import.meta.env.VITE_BOOKING_ENABLED && (
+              <div className="faq-human__book">
+                <BookCta id="faq" />
+              </div>
+            )}
           </div>
 
           <div className="faq-list reveal">

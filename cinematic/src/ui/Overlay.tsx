@@ -18,6 +18,8 @@ import { Founding } from './Founding';
 import { Faq } from './Faq';
 import { Footer } from './Footer';
 import { Wizard } from './Wizard';
+import { BookingProvider } from '../booking/BookingContext';
+import { GuidesSection } from '../guides/GuidesSection';
 import './overlay.css';
 
 interface WizardRequest {
@@ -72,13 +74,14 @@ export function Overlay() {
   return (
     <LanguageProvider>
       <WizardContext.Provider value={wizardApi}>
+        <BookingProvider>
         <ThemeEffects />
         <SkipLink />
         <div className="overlay-page">
           <Nav />
           {/* Wave 5.1 order: hero + marquee, scenarios, pillars, channels,
               platform tour, coordinator spotlight, how stepper, compare,
-              pricing, founding, faq, final CTA. */}
+              pricing, founding, guides (#50, while GUIDES_ENABLED), faq, final CTA. */}
           <main id="main">
             <Hero />
             <Scenarios />
@@ -90,12 +93,14 @@ export function Overlay() {
             <Compare />
             <Pricing />
             <Founding />
+            {import.meta.env.VITE_GUIDES_ENABLED && <GuidesSection />}
             <Faq />
             <FinalCta />
           </main>
           <Footer />
           {wizard && <Wizard key={wizard.id} initialPlan={wizard.plan} onClose={closeWizard} />}
         </div>
+        </BookingProvider>
       </WizardContext.Provider>
     </LanguageProvider>
   );

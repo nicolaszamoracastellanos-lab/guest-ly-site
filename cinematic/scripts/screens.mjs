@@ -42,6 +42,8 @@ const SHOTS = [
   { name: 'how', sel: '#how' },
   { name: 'pricing', sel: '#pricing' },
   { name: 'founding', sel: '#founding', optional: true },
+  /* #50, only while GUIDES_ENABLED: the form is a lazy chunk mounted near the section. */
+  { name: 'guides', sel: '#guides', optional: true, action: 'wait-guides' },
   { name: 'faq', sel: '#faq' },
   { name: 'faq-open', sel: '#faq', action: 'open-faq' },
   { name: 'cta-footer', sel: 'footer' },
@@ -82,6 +84,11 @@ for (const vp of VIEWPORTS) {
         await page.waitForTimeout(600);
         if (shot.action === 'wait-chat') {
           await page.waitForTimeout(4500); /* mid-conversation state */
+        }
+        if (shot.action === 'wait-guides') {
+          await page.locator('#guides .guides').waitFor({ timeout: 8000 }).catch(() => {});
+          await el.scrollIntoViewIfNeeded();
+          await page.waitForTimeout(300);
         }
         if (shot.action === 'open-faq') {
           const q = page.locator('.faq-q').first();

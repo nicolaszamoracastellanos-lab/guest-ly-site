@@ -3,6 +3,7 @@ import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
 import { useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
+import { BookCta } from '../booking/BookingContext';
 
 function SunIcon() {
   return (
@@ -153,6 +154,12 @@ export function Nav() {
             {t.nav.login.label}
           </a>
         </nav>
+        {/* #22: in the menu only; the desktop row has no room left in ES (check-nav-fit). */}
+        {import.meta.env.VITE_BOOKING_ENABLED && menuOpen ? (
+          <div className="nav__menu-book">
+            <BookCta id="menu" large onBefore={closeMenu} />
+          </div>
+        ) : null}
         <div className="nav__menu-foot">
           <div className="nav__menu-toggles">
             <ThemeToggle className="lang-toggle--menu" />

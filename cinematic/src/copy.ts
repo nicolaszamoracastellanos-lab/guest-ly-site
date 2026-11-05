@@ -258,6 +258,8 @@ export interface SiteCopy {
   };
   faq: {
     no: string;
+    /* The number while the guides section (#50) sits before the FAQ. */
+    noAfterGuides: string;
     kicker: string;
     title: string;
     human: { title: string; body: string; email: string };
@@ -1120,6 +1122,7 @@ const en: SiteCopy = {
 
   faq: {
     no: '№ 10',
+    noAfterGuides: '№ 11',
     kicker: 'Questions',
     title: 'You probably have\na few questions.',
     human: {
@@ -2129,6 +2132,7 @@ const es: SiteCopy = {
 
   faq: {
     no: '№ 10',
+    noAfterGuides: '№ 11',
     kicker: 'Preguntas',
     title: 'Probablemente tienes\nalgunas preguntas.',
     human: {

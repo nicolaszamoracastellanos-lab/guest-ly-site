@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { useWizard } from './WizardContext';
 import { SectionHeader } from './Sections';
+import { BookLine } from '../booking/BookingContext';
 
 /* № 08 Pricing: three one-time tiers from the canonical pricing block. Each
    card keeps its 4 headline features and gains a "See everything included"
@@ -105,6 +106,8 @@ export function Pricing() {
             <a href="#coordinator">{p.coordLink}</a>
           </p>
         </div>
+
+        {import.meta.env.VITE_BOOKING_ENABLED && <BookLine id="pricing" line="pricingLine" />}
 
         <p className="guarantee reveal">
           <span className="guarantee__mark" aria-hidden="true">

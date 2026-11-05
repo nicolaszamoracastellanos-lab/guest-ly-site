@@ -23,7 +23,11 @@ import { claimProblems, copyProblems } from './lib/copy-rules.mjs';
 import { CINEMATIC } from './lib/paths.mjs';
 
 /* Keys whose string is a label on a button or a call-to-action link. */
-const BUTTON_KEYS = new Set(['cta', 'primary', 'secondary', 'next', 'back', 'confirm', 'payCta', 'whatsapp', 'backHome', 'startOrder', 'microCta']);
+const BUTTON_KEYS = new Set([
+  'cta', 'primary', 'secondary', 'next', 'back', 'confirm', 'payCta', 'whatsapp', 'backHome', 'startOrder', 'microCta',
+  /* #22 booking dialog and #50 guides form */
+  'submit', 'retry', 'another', 'addToCalendar', 'manage', 'backToSite', 'changeTime', 'changeZone', 'nextOpen',
+]);
 const GENERIC = /^(get started|start|continue|continuar|empezar|submit|enviar|ok|click here|learn more|next|siguiente)$/i;
 const ARROW = /[→←↗↘➔➜➝➞]/u;
 /* Link labels: an arrow is checked here too (a link is a call to action). */
@@ -59,6 +63,38 @@ export function copyClaimProblems({ copy, ld = [], blockedTerms = [] }) {
     }
   });
   return out;
+}
+
+/* The #22 and #50 dictionaries (src/booking, src/guides, src/privacy-extra.ts)
+   are our own chrome with no demo chat in them, so every house rule applies
+   (dashes, emoji, exclamation, buzzwords, brand spelling), plus the claim and
+   button checks. dicts: { name: { en, es } }. */
+export function featureCopyProblems(dicts, { blockedTerms = [] } = {}) {
+  const out = [];
+  const excerpt = (s) => JSON.stringify(s.length > 90 ? `${s.slice(0, 90)}...` : s);
+  for (const [name, byLang] of Object.entries(dicts)) {
+    for (const loc of ['en', 'es']) {
+      if (!byLang[loc]) {
+        out.push(`${name}: no ${loc} copy`);
+        continue;
+      }
+      for (const [path, key, s] of strings(byLang[loc], `${name}.${loc}`, '')) {
+        for (const p of copyProblems(s, { blockedTerms })) out.push(`${path}: ${p.replace(/: line 1:.*$/, '')}: ${excerpt(s)}`);
+        if (BUTTON_KEYS.has(key) && GENERIC.test(s.trim())) out.push(`${path}: generic button label (use Verb + Noun): ${excerpt(s)}`);
+        if ((BUTTON_KEYS.has(key) || isLinkKey(key)) && ARROW.test(s)) out.push(`${path}: glyph arrow in a button or link label: ${excerpt(s)}`);
+      }
+    }
+  }
+  return out;
+}
+
+export async function featureDicts() {
+  const { bookingCopy } = await import('../src/booking/copy.ts');
+  const { bookCtaCopy } = await import('../src/booking/cta-copy.ts');
+  const { guidesCopy } = await import('../src/guides/copy.ts');
+  const { guidesHeadCopy } = await import('../src/guides/head-copy.ts');
+  const { bookingPrivacyCopy, guidesPrivacyCopy } = await import('../src/privacy-extra.ts');
+  return { bookingCopy, bookCtaCopy, guidesCopy, guidesHeadCopy, bookingPrivacyCopy, guidesPrivacyCopy };
 }
 
 /* Glyph arrows the TSX writes itself, e.g. {`${label} →`}. files: [relPath, text]. */
@@ -116,6 +152,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   }
   const ld = ldBlocks(readFileSync(index, 'utf8'));
   const problems = copyClaimProblems({ copy, ld, blockedTerms });
+  const dicts = await featureDicts();
+  problems.push(...featureCopyProblems(dicts, { blockedTerms }));
   if (ld.length !== 2) problems.push(`expected 2 JSON-LD blocks in dist/index.html, found ${ld.length}`);
   const pages = ['index.html', 'privacy/index.html', 'terms/index.html', 'refunds/index.html'].filter((f) => existsSync(join(dist, f)));
   for (const f of pages) problems.push(...htmlControlArrowProblems(readFileSync(join(dist, f), 'utf8'), `dist/${f}`));
@@ -126,6 +164,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exit(1);
   }
   console.log(
-    `check-copy-claims clean: EN and ES copy and ${ld.length} JSON-LD blocks, ${blockedTerms.length} blocked terms, no roadmap promise, no Zola sync claim, no generic button, no glyph arrow on a button or link (copy, TSX, ${pages.length} built pages)`,
+    `check-copy-claims clean: EN and ES copy and ${ld.length} JSON-LD blocks, ${blockedTerms.length} blocked terms, no roadmap promise, no Zola sync claim, no generic button, no glyph arrow on a button or link (copy, TSX, ${pages.length} built pages); ${Object.keys(dicts).length} booking and guides dictionaries under every house rule`,
   );
 }

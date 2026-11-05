@@ -4,6 +4,7 @@ import { visitCountsCopy } from '../copy';
 import { ThemeEffects, useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
 import { SITE_BEACON_URL } from '../config';
+import { bookingPrivacyCopy, guidesPrivacyCopy } from '../privacy-extra';
 import './overlay.css';
 
 export type LegalKind = 'privacy' | 'terms' | 'refunds';
@@ -16,11 +17,15 @@ function LegalBody({ kind }: { kind: LegalKind }) {
   const { t, lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
   const page = t.legal.pages[kind];
-  /* The visit-counts disclosure goes live with the beacon, never before. */
-  const sections =
-    kind === 'privacy' && SITE_BEACON_URL
-      ? [page.sections[0], visitCountsCopy[lang], ...page.sections.slice(1)]
-      : page.sections;
+  /* Each disclosure goes live with its feature, never before: visit counts
+     with the beacon (#23), demo calls with BOOKING_ENABLED (#22), guides
+     with GUIDES_ENABLED (#50). */
+  const extra = [
+    ...(SITE_BEACON_URL ? [visitCountsCopy[lang]] : []),
+    ...(import.meta.env.VITE_BOOKING_ENABLED ? [bookingPrivacyCopy[lang]] : []),
+    ...(import.meta.env.VITE_GUIDES_ENABLED ? [guidesPrivacyCopy[lang]] : []),
+  ];
+  const sections = kind === 'privacy' && extra.length ? [page.sections[0], ...extra, ...page.sections.slice(1)] : page.sections;
 
   return (
     <div className="overlay-page legal-page" data-area="legal">
