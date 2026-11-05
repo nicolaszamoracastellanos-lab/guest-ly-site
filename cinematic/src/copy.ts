@@ -68,7 +68,6 @@ export interface Scenario {
 export interface ChannelCard {
   id: string;
   name: string;
-  status: 'live' | 'soon';
   caption: string;
   fact?: string;
   script: { from: 'guest' | 'ai'; text: string }[];
@@ -171,7 +170,6 @@ export interface SiteCopy {
     title: string;
     intro: string;
     liveLabel: string;
-    soonLabel: string;
     cards: ChannelCard[];
     languages: {
       headline: string;
@@ -243,7 +241,6 @@ export interface SiteCopy {
     zolaLine: string;
     fullListLabel: string;
     fullLists: { essentials: string[]; signature: string[]; grande: string[] };
-    channelsFootnote: string;
     /* Months included, then the monthly fee (pricing.ts): rendered under the plan cards. */
     maintenanceLine: string;
     coordLink: string;
@@ -383,7 +380,7 @@ const en: SiteCopy = {
       { label: 'FAQ', href: '#faq' },
     ],
     login: { label: 'Client Login', href: 'https://app.guest-ly.com' },
-    cta: 'Get started',
+    cta: 'Start my order',
     theme: { label: 'Theme', day: 'Day', night: 'Night' },
     skip: 'Skip to content',
   },
@@ -455,7 +452,7 @@ const en: SiteCopy = {
           },
           {
             h: 'Their language',
-            b: 'Understands 30+ languages, perfected in English and Spanish. SMS and Telegram are coming soon.',
+            b: 'Understands 30+ languages, perfected in English and Spanish.',
             link: { label: 'See the channels', href: '#channels' },
           },
         ],
@@ -551,7 +548,7 @@ const en: SiteCopy = {
         body: 'The intake wizard walks you through it.',
         details: [
           'Your story, events, venues and travel facts',
-          'Import your guest list from CSV or Excel, or sync from Zola',
+          'Import your guest list from CSV, Excel or a Zola export',
           'Pick your languages and your site address',
         ],
       },
@@ -709,12 +706,10 @@ const en: SiteCopy = {
     title: 'One brain.\nEvery channel.',
     intro: 'Your guests do not download anything. They ask where they already talk and get the same answer everywhere.',
     liveLabel: 'Live',
-    soonLabel: 'Coming soon',
     cards: [
       {
         id: 'web',
         name: 'Web chat',
-        status: 'live',
         caption: 'An elegant chat on the couple\u2019s wedding page. Any browser, nothing to install.',
         fact: 'Live for a real November 2026 wedding: 100+ real guest messages answered.',
         script: [
@@ -725,7 +720,6 @@ const en: SiteCopy = {
       {
         id: 'whatsapp',
         name: 'WhatsApp',
-        status: 'live',
         caption: 'A dedicated number for your wedding. Guests can finish their entire RSVP in chat, per named person.',
         script: [
           { from: 'guest', text: 'rsvp' },
@@ -733,20 +727,6 @@ const en: SiteCopy = {
           { from: 'guest', text: 'Yes, both of us, both events' },
           { from: 'ai', text: 'Lovely. Ana and Luis are confirmed for ceremony and reception. Anything we should know about food?' },
         ],
-      },
-      {
-        id: 'sms',
-        name: 'SMS',
-        status: 'soon',
-        caption: 'On the roadmap. Not live yet. Web and WhatsApp carry every wedding today.',
-        script: [],
-      },
-      {
-        id: 'telegram',
-        name: 'Telegram',
-        status: 'soon',
-        caption: 'On the roadmap. Not live yet. Web and WhatsApp carry every wedding today.',
-        script: [],
       },
     ],
     languages: {
@@ -806,7 +786,7 @@ const en: SiteCopy = {
         facts: [
           'Per-person, per-event RSVP: headcounts count people, not replies',
           'Import from CSV, Excel or Zola',
-          'Zola sync: 46 real RSVPs brought over with zero conflicts',
+          'A real Zola export: 46 RSVPs imported with zero conflicts',
           'Branded .xlsx exports with nine presets',
         ],
         wow: 'Real 401-person Zola export: 359 guests auto-matched.',
@@ -1025,7 +1005,7 @@ const en: SiteCopy = {
     includedSr: 'Included',
     notIncludedSr: 'Not included',
     footnote: 'Public pricing as listed by each vendor, mid-2026.',
-    zolaLine: 'Keep Zola. We sync with it: 46 real RSVPs brought over with zero conflicts.',
+    zolaLine: 'Keep Zola. Import its guest list: 46 real RSVPs came over with zero conflicts.',
     columns: [
       { id: 'guestly', name: 'Guest-ly', sub: 'Signature plan', price: `$${PLANS.signature.price} once, ${MONTHS_INCLUDED} months live`, marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
       { id: 'vino', name: 'Vino', sub: 'No web chat', price: '$2,499', marks: ['yes', 'yes', 'no', 'no', 'yes', 'no'] },
@@ -1040,7 +1020,7 @@ const en: SiteCopy = {
     kicker: 'Pricing',
     title: 'One price.\nEvery question answered.',
     intro: `From $${PLANS.essentials.price}, once. ${MONTHS_INCLUDED} months live included, then $${MAINTENANCE_MONTHLY}/mo only if you want to keep it going.`,
-    popularTag: '✦ Most popular',
+    popularTag: 'Most popular',
     plans: [
       {
         id: 'essentials',
@@ -1054,7 +1034,7 @@ const en: SiteCopy = {
           'Import: CSV, Excel, Zola',
           'Dashboard + transcripts',
         ],
-        cta: 'Get started →',
+        cta: `Order ${PLANS.essentials.name}`,
       },
       {
         id: 'signature',
@@ -1066,9 +1046,9 @@ const en: SiteCopy = {
           'Everything in Essentials',
           'Per-person, per-event RSVP',
           'Unlimited broadcasts',
-          'QR check-in + Zola sync',
+          'QR guest passes + check-in',
         ],
-        cta: 'Get started →',
+        cta: `Order ${PLANS.signature.name}`,
         popular: true,
       },
       {
@@ -1083,7 +1063,7 @@ const en: SiteCopy = {
           'Done-for-you setup',
           'Planner seat',
         ],
-        cta: 'Get started →',
+        cta: `Order ${PLANS.grande.name}`,
       },
     ],
     coordinator: {
@@ -1093,7 +1073,7 @@ const en: SiteCopy = {
     },
     guarantee:
       'Full refund before your first guest messages the concierge, or within 30 days.',
-    zolaLine: 'Keep Zola. We sync with it.',
+    zolaLine: 'Keep Zola. Import its guest list in one step.',
     fullListLabel: 'See everything included',
     fullLists: {
       essentials: [
@@ -1112,7 +1092,6 @@ const en: SiteCopy = {
         'Per-person, per-event RSVP',
         'Unlimited broadcasts, scheduled reminders',
         'QR guest passes + day-of check-in console',
-        'Zola RSVP sync',
         'Branded .xlsx exports, nine presets',
         'Priority support',
       ],
@@ -1123,7 +1102,6 @@ const en: SiteCopy = {
         'Planner seat: scrubbed portal, requests and approvals',
       ],
     },
-    channelsFootnote: 'SMS and Telegram concierge channels are coming soon and will join when they launch.',
     maintenanceLine: `Every plan includes ${MONTHS_INCLUDED} months live from delivery. Keep it live longer for $${MAINTENANCE_MONTHLY}/mo, cancel any time.`,
     coordLink: 'See it in action',
     compareLink: 'See how this compares',
@@ -1159,7 +1137,7 @@ const en: SiteCopy = {
       {
         ld: true,
         q: 'Why not just use Zola for free?',
-        a: 'Zola gives you a website and an RSVP form; it does not answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola. We sync with it.',
+        a: 'Zola gives you a website and an RSVP form; it does not answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola, and import its guest list into Guest-ly.',
       },
       {
         ld: true,
@@ -1183,11 +1161,7 @@ const en: SiteCopy = {
       },
       {
         q: 'What languages does it speak, and on which channels?',
-        a: 'Understands 30+ languages, perfected in English and Spanish. Web chat and WhatsApp are live today; SMS and Telegram are coming soon.',
-      },
-      {
-        q: 'When do SMS and Telegram arrive?',
-        a: 'They are on the roadmap and will be announced when live. Web and WhatsApp carry every wedding today.',
+        a: 'Understands 30+ languages, perfected in English and Spanish. It answers on web chat and WhatsApp.',
       },
       {
         q: 'What does my wedding planner get to see?',
@@ -1195,7 +1169,7 @@ const en: SiteCopy = {
       },
       {
         q: 'We already collected RSVPs on Zola. Do we lose them?',
-        a: 'No. We sync with Zola: a real 46-RSVP list came over with zero conflicts. Keep Zola if you like it.',
+        a: 'No. Import your Zola export: a real 46-RSVP list came over with zero conflicts. Keep Zola if you like it.',
       },
       {
         ld: true,
@@ -1260,7 +1234,7 @@ const en: SiteCopy = {
       ],
       dateLabel: 'Wedding date',
       locationLabel: 'City / Country',
-      next: 'Continue →',
+      next: 'Choose plan',
     },
     step2: {
       title: 'Our recommendation',
@@ -1273,8 +1247,8 @@ const en: SiteCopy = {
         includedNote: 'Included with Grande.',
         options: { none: 'Not now', once: `$${COORDINATOR_ONCE} one-time`, monthly: `$${COORDINATOR_MONTHLY} per month` },
       },
-      back: '← Back',
-      next: 'Continue →',
+      back: 'Back',
+      next: 'Add details',
     },
     step3: {
       title: 'Almost there',
@@ -1286,8 +1260,8 @@ const en: SiteCopy = {
         phone: 'Phone (optional)',
         notes: 'Anything we should know? (optional)',
       },
-      back: '← Back',
-      confirm: 'Confirm order →',
+      back: 'Back',
+      confirm: 'Place order',
     },
     step4: {
       badge: 'Order received',
@@ -1312,20 +1286,20 @@ const en: SiteCopy = {
         { title: 'We build your bot (~7 days)', body: 'AI training, channel setup, design: all handled.' },
         { title: 'You test, approve and share', body: 'Your guests get a 24/7 concierge experience.' },
       ],
-      payCta: 'Pay {price} securely →',
+      payCta: 'Pay {price}',
       payNoteLinked: 'Secure checkout by Stripe. Your build slot is reserved the moment payment comes through.',
       payNoteFallback: 'We will send a secure Stripe payment link to {email} within 2 hours to reserve your build slot.',
-      whatsapp: 'Prefer WhatsApp? Chat with us →',
+      whatsapp: 'Chat on WhatsApp',
       refundLine: 'Full refund before your first guest messages the concierge, or within 30 days, whichever comes first.',
       refundLink: 'Read the refund policy',
       mailFallback: 'No reply from us within 24 hours?',
       mailFallbackLink: 'Email us your order',
-      backHome: '← Back to home',
+      backHome: 'Back to home',
     },
   },
 
   legal: {
-    backHome: '← Back to guest-ly.com',
+    backHome: 'Back to guest-ly.com',
     contactLine: 'Questions? Write to nicolas@guest-ly.com. We answer every message ourselves.',
     pages: {
       privacy: {
@@ -1421,7 +1395,7 @@ const es: SiteCopy = {
       { label: 'Preguntas', href: '#faq' },
     ],
     login: { label: 'Acceso clientes', href: 'https://app.guest-ly.com' },
-    cta: 'Empezar',
+    cta: 'Empezar mi pedido',
     theme: { label: 'Tema', day: 'Día', night: 'Noche' },
     skip: 'Saltar al contenido',
   },
@@ -1493,7 +1467,7 @@ const es: SiteCopy = {
           },
           {
             h: 'Su idioma',
-            b: 'Entiende más de 30 idiomas, perfeccionado en inglés y español. SMS y Telegram llegan pronto.',
+            b: 'Entiende más de 30 idiomas, perfeccionado en inglés y español.',
             link: { label: 'Mira los canales', href: '#channels' },
           },
         ],
@@ -1589,7 +1563,7 @@ const es: SiteCopy = {
         body: 'El asistente de alta te guía paso a paso.',
         details: [
           'Su historia, eventos, lugares y datos de viaje',
-          'Importa tu lista desde CSV o Excel, o sincroniza desde Zola',
+          'Importa tu lista desde CSV, Excel o un export de Zola',
           'Elige tus idiomas y la dirección de tu página',
         ],
       },
@@ -1747,12 +1721,10 @@ const es: SiteCopy = {
     title: 'Un solo cerebro.\nTodos los canales.',
     intro: 'Tus invitados no descargan nada. Preguntan donde ya conversan y reciben la misma respuesta en todos lados.',
     liveLabel: 'Activo',
-    soonLabel: 'Muy pronto',
     cards: [
       {
         id: 'web',
         name: 'Chat web',
-        status: 'live',
         caption: 'Un chat elegante en la página de la boda. Cualquier navegador, nada que instalar.',
         fact: 'Activo para una boda real de noviembre 2026: más de 100 mensajes reales respondidos.',
         script: [
@@ -1763,7 +1735,6 @@ const es: SiteCopy = {
       {
         id: 'whatsapp',
         name: 'WhatsApp',
-        status: 'live',
         caption: 'Un número dedicado a tu boda. Tus invitados completan su RSVP entero en el chat, por persona.',
         script: [
           { from: 'guest', text: 'rsvp' },
@@ -1771,20 +1742,6 @@ const es: SiteCopy = {
           { from: 'guest', text: 'Sí, los dos, a ambos eventos' },
           { from: 'ai', text: 'Perfecto. Ana y Luis confirmados para ceremonia y recepción. ¿Algo que debamos saber sobre la comida?' },
         ],
-      },
-      {
-        id: 'sms',
-        name: 'SMS',
-        status: 'soon',
-        caption: 'En el plan de ruta. Aún no activo. Web y WhatsApp llevan cada boda hoy.',
-        script: [],
-      },
-      {
-        id: 'telegram',
-        name: 'Telegram',
-        status: 'soon',
-        caption: 'En el plan de ruta. Aún no activo. Web y WhatsApp llevan cada boda hoy.',
-        script: [],
       },
     ],
     languages: {
@@ -1844,7 +1801,7 @@ const es: SiteCopy = {
         facts: [
           'RSVP por persona y por evento: los conteos cuentan personas',
           'Importa desde CSV, Excel o Zola',
-          'Sincronización con Zola: 46 RSVPs reales migrados sin conflictos',
+          'Un export real de Zola: 46 RSVPs importados sin conflictos',
           'Exportes .xlsx con tu marca y nueve presets',
         ],
         wow: 'Un export real de Zola con 401 personas: 359 emparejadas automáticamente.',
@@ -2063,7 +2020,7 @@ const es: SiteCopy = {
     includedSr: 'Incluido',
     notIncludedSr: 'No incluido',
     footnote: 'Precios públicos según cada proveedor, mediados de 2026.',
-    zolaLine: 'Conserva Zola. Nos sincronizamos: 46 RSVPs reales migrados sin conflictos.',
+    zolaLine: 'Conserva Zola. Importa su lista: 46 RSVPs reales llegaron sin conflictos.',
     columns: [
       { id: 'guestly', name: 'Guest-ly', sub: 'Plan Signature', price: `$${PLANS.signature.price} una vez, ${MONTHS_INCLUDED} meses activos`, marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
       { id: 'vino', name: 'Vino', sub: 'Sin chat web', price: '$2,499', marks: ['yes', 'yes', 'no', 'no', 'yes', 'no'] },
@@ -2078,7 +2035,7 @@ const es: SiteCopy = {
     kicker: 'Precios',
     title: 'Un solo pago.\nCada pregunta respondida.',
     intro: `Desde $${PLANS.essentials.price}, una sola vez. ${MONTHS_INCLUDED} meses activos incluidos, luego $${MAINTENANCE_MONTHLY}/mes solo si quieres seguir.`,
-    popularTag: '✦ Más popular',
+    popularTag: 'Más popular',
     plans: [
       {
         id: 'essentials',
@@ -2092,7 +2049,7 @@ const es: SiteCopy = {
           'Importa: CSV, Excel, Zola',
           'Panel + conversaciones',
         ],
-        cta: 'Empezar →',
+        cta: `Pedir ${PLANS.essentials.name}`,
       },
       {
         id: 'signature',
@@ -2104,9 +2061,9 @@ const es: SiteCopy = {
           'Todo lo de Essentials',
           'RSVP por persona y por evento',
           'Difusiones ilimitadas',
-          'QR + sincronización con Zola',
+          'Pases QR + check-in',
         ],
-        cta: 'Empezar →',
+        cta: `Pedir ${PLANS.signature.name}`,
         popular: true,
       },
       {
@@ -2121,7 +2078,7 @@ const es: SiteCopy = {
           'Configuración hecha por nosotros',
           'Acceso para tu planner',
         ],
-        cta: 'Empezar →',
+        cta: `Pedir ${PLANS.grande.name}`,
       },
     ],
     coordinator: {
@@ -2131,7 +2088,7 @@ const es: SiteCopy = {
     },
     guarantee:
       'Reembolso total antes de que tu primer invitado le escriba al asistente, o dentro de 30 días.',
-    zolaLine: 'Conserva Zola. Nos sincronizamos con él.',
+    zolaLine: 'Conserva Zola. Importa su lista en un paso.',
     fullListLabel: 'Mira todo lo incluido',
     fullLists: {
       essentials: [
@@ -2150,7 +2107,6 @@ const es: SiteCopy = {
         'RSVP por persona y por evento',
         'Difusiones ilimitadas y recordatorios programados',
         'Pases QR + consola de check-in el gran día',
-        'Sincronización de RSVPs con Zola',
         'Exportes .xlsx con tu marca, nueve presets',
         'Soporte prioritario',
       ],
@@ -2161,7 +2117,6 @@ const es: SiteCopy = {
         'Lugar para tu planner: portal filtrado, solicitudes y aprobaciones',
       ],
     },
-    channelsFootnote: 'Los canales de SMS y Telegram llegan pronto y se sumarán cuando estén activos.',
     maintenanceLine: `Cada plan incluye ${MONTHS_INCLUDED} meses activos desde la entrega. Mantenlo activo más tiempo por $${MAINTENANCE_MONTHLY}/mes, cancela cuando quieras.`,
     coordLink: 'Míralo en acción',
     compareLink: 'Mira cómo se compara',
@@ -2196,7 +2151,7 @@ const es: SiteCopy = {
     items: [
       {
         q: '¿Por qué no usar Zola gratis y ya?',
-        a: 'Zola te da una página y un formulario de RSVP; no responde 600 preguntas de invitados a las 2am, en español, por WhatsApp. Conserva Zola. Nos sincronizamos con él.',
+        a: 'Zola te da una página y un formulario de RSVP; no responde 600 preguntas de invitados a las 2am, en español, por WhatsApp. Conserva Zola e importa su lista a Guest-ly.',
       },
       {
         q: '¿De verdad es un solo pago?',
@@ -2216,11 +2171,7 @@ const es: SiteCopy = {
       },
       {
         q: '¿Qué idiomas habla, y en qué canales?',
-        a: 'Entiende más de 30 idiomas, perfeccionado en inglés y español. Chat web y WhatsApp están activos hoy; SMS y Telegram llegan pronto.',
-      },
-      {
-        q: '¿Cuándo llegan SMS y Telegram?',
-        a: 'Están en el plan de ruta y se anunciarán cuando estén activos. Web y WhatsApp llevan cada boda hoy.',
+        a: 'Entiende más de 30 idiomas, perfeccionado en inglés y español. Responde por chat web y WhatsApp.',
       },
       {
         q: '¿Qué puede ver mi wedding planner?',
@@ -2228,7 +2179,7 @@ const es: SiteCopy = {
       },
       {
         q: 'Ya juntamos RSVPs en Zola. ¿Los perdemos?',
-        a: 'No. Nos sincronizamos con Zola: una lista real de 46 RSVPs migró sin conflictos. Conserva Zola si te gusta.',
+        a: 'No. Importa tu export de Zola: una lista real de 46 RSVPs llegó sin conflictos. Conserva Zola si te gusta.',
       },
       {
         q: '¿Y los reembolsos?',
@@ -2292,7 +2243,7 @@ const es: SiteCopy = {
       ],
       dateLabel: 'Fecha de la boda',
       locationLabel: 'Ciudad / País',
-      next: 'Continuar →',
+      next: 'Elegir plan',
     },
     step2: {
       title: 'Nuestra recomendación',
@@ -2305,8 +2256,8 @@ const es: SiteCopy = {
         includedNote: 'Incluido en Grande.',
         options: { none: 'Ahora no', once: `$${COORDINATOR_ONCE} pago único`, monthly: `$${COORDINATOR_MONTHLY} al mes` },
       },
-      back: '← Atrás',
-      next: 'Continuar →',
+      back: 'Atrás',
+      next: 'Agregar datos',
     },
     step3: {
       title: 'Ya casi',
@@ -2318,8 +2269,8 @@ const es: SiteCopy = {
         phone: 'Teléfono (opcional)',
         notes: '¿Algo que debamos saber? (opcional)',
       },
-      back: '← Atrás',
-      confirm: 'Confirmar pedido →',
+      back: 'Atrás',
+      confirm: 'Hacer pedido',
     },
     step4: {
       badge: 'Pedido recibido',
@@ -2344,20 +2295,20 @@ const es: SiteCopy = {
         { title: 'Construimos tu bot (~7 días)', body: 'Entrenamiento de IA, configuración de canales, diseño: nos encargamos de todo.' },
         { title: 'Pruebas, apruebas y compartes', body: 'Tus invitados reciben una experiencia de asistente 24/7.' },
       ],
-      payCta: 'Pagar {price} de forma segura →',
+      payCta: 'Pagar {price}',
       payNoteLinked: 'Checkout seguro con Stripe. Tu lugar queda reservado en cuanto se procesa el pago.',
       payNoteFallback: 'Te enviaremos un link de pago seguro de Stripe a {email} en menos de 2 horas para reservar tu lugar.',
-      whatsapp: '¿Prefieres WhatsApp? Escríbenos →',
+      whatsapp: 'Escribir por WhatsApp',
       refundLine: 'Reembolso total antes de que tu primer invitado le escriba al asistente, o dentro de 30 días, lo que ocurra primero.',
       refundLink: 'Lee la política de reembolsos',
       mailFallback: '¿No supiste de nosotros en 24 horas?',
       mailFallbackLink: 'Envíanos tu pedido por email',
-      backHome: '← Volver al inicio',
+      backHome: 'Volver al inicio',
     },
   },
 
   legal: {
-    backHome: '← Volver a guest-ly.com',
+    backHome: 'Volver a guest-ly.com',
     contactLine: '¿Preguntas? Escribe a nicolas@guest-ly.com. Respondemos cada mensaje nosotros mismos.',
     pages: {
       privacy: {

@@ -3,8 +3,8 @@ import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
 import { useHashParam } from './useHashParam';
 
-/* № 03 "One brain. Every channel.": channel switcher with honest Live /
-   Coming soon states, the languages strip (canonical claim + per-language
+/* № 03 "One brain. Every channel.": switcher over the live channels only
+   (web chat and WhatsApp; no roadmap cards), the languages strip (canonical claim + per-language
    sample bubbles), and the international guest guide expander. */
 export function Channels() {
   const { t } = useLang();
@@ -33,35 +33,27 @@ export function Channels() {
                 onClick={() => setActive(card.id)}
               >
                 {card.name}
-                {card.status === 'live' ? (
-                  <span className="chan-chip__live" aria-label={c.liveLabel}>
-                    <span className="badge__dot" aria-hidden="true" />
-                    {c.liveLabel}
-                  </span>
-                ) : (
-                  <span className="chan-chip__soon">{c.soonLabel}</span>
-                )}
+                <span className="chan-chip__live" aria-label={c.liveLabel}>
+                  <span className="badge__dot" aria-hidden="true" />
+                  {c.liveLabel}
+                </span>
               </button>
             ))}
           </div>
 
           {c.cards.map((card) => (
             <div key={card.id} hidden={active !== card.id} inert={active !== card.id} className="chan__pane">
-              <div className={card.status === 'soon' ? 'glass chan__stage chan__stage--soon' : 'glass chan__stage'}>
-                {card.script.length > 0 ? (
-                  <div className={card.id === 'whatsapp' ? 'chan__chat chan__chat--wa' : 'chan__chat'}>
-                    {card.script.map((line, i) => (
-                      <p key={i} className={line.from === 'guest' ? 'bubble bubble--guest' : 'bubble bubble--ai'}>
-                        {line.text}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="chan__soon-note">{card.caption}</p>
-                )}
+              <div className="glass chan__stage">
+                <div className={card.id === 'whatsapp' ? 'chan__chat chan__chat--wa' : 'chan__chat'}>
+                  {card.script.map((line, i) => (
+                    <p key={i} className={line.from === 'guest' ? 'bubble bubble--guest' : 'bubble bubble--ai'}>
+                      {line.text}
+                    </p>
+                  ))}
+                </div>
               </div>
               <div className="chan__side">
-                {card.script.length > 0 && <p className="chan__caption">{card.caption}</p>}
+                <p className="chan__caption">{card.caption}</p>
                 {card.fact && (
                   <p className="wow-chip">
                     <span aria-hidden="true">✦</span>

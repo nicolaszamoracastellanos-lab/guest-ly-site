@@ -2687,17 +2687,6 @@ body.js-ready .reveal.is-visible {
   color: var(--accent-text);
 }
 
-.chan-chip__soon {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--text-faint);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-pill);
-  padding: 0.12rem 0.5rem;
-}
-
 .chan__pane {
   margin-top: 0.9rem;
   display: grid;
@@ -2712,10 +2701,6 @@ body.js-ready .reveal.is-visible {
   justify-content: center;
 }
 
-.chan__stage--soon {
-  opacity: 0.65;
-}
-
 .chan__chat {
   display: flex;
   flex-direction: column;
@@ -2724,14 +2709,6 @@ body.js-ready .reveal.is-visible {
 
 .chan__chat--wa .bubble--ai {
   border-left: 2px solid var(--status-online);
-}
-
-.chan__soon-note {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  max-width: 26rem;
-  margin-inline: auto;
 }
 
 .chan__caption {
@@ -3826,5 +3803,4 @@ body.js-ready .reveal.is-visible {
 
 .plan-footnote--maintenance {
   color: var(--accent);
-  margin-top: 0.4rem;
 }
