@@ -27,6 +27,7 @@ import {
   Icon,
   EmptyState,
   Skeleton,
+  toastError,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
@@ -135,7 +136,7 @@ function SeatingTableScreen({ id }: { id: string }) {
     try {
       await save();
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
     } finally {
       setSaving(false);
     }

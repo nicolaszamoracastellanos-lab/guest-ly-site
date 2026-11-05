@@ -8,7 +8,7 @@ import { fmt, useLang, useCopy } from "@/i18n";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Row, Gem, EmptyState, SectionLabel, ButtonRow } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Row, Gem, EmptyState, SectionLabel, ButtonRow, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/settings/copy";
 import { useCoupleSettings, SETTINGS_KEY, type CoupleSettings } from "@/features/settings/hooks";
@@ -44,7 +44,7 @@ export default function InviteCode() {
             const r = await post<{ invite_code: string; invite_url: string }>("/couple/settings/invite-code", {});
             qc.setQueryData<CoupleSettings>(SETTINGS_KEY, (old) => (old ? { ...old, invite_code: r.invite_code, invite_url: r.invite_url } : old));
           } catch (err) {
-            Alert.alert(c.title, errorText(err, lang, app.common.errorBody));
+            toastError(errorText(err, lang, app.common.errorBody));
           } finally {
             setBusy(false);
           }

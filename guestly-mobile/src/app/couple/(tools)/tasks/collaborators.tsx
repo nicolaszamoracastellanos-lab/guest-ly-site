@@ -2,14 +2,14 @@
 // without a login (add, edit, remove).
 
 import React, { useState } from "react";
-import { Alert, View, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, ListRow, Avatar, SectionLabel, Sheet, SheetActions, Input, Toggle, Row, Segmented, Icon } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, ListRow, Avatar, SectionLabel, Sheet, SheetActions, Input, Toggle, Row, Segmented, Icon, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type Collaborator } from "@/features/tasks/hooks";
@@ -50,7 +50,7 @@ export default function Collaborators() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -64,7 +64,7 @@ export default function Collaborators() {
       await invalidate();
       setRemoving(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }

@@ -8,7 +8,7 @@
 // depend on it show (D-004).
 
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, Alert } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { fmt, useCopy, useLang, mediumDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -17,7 +17,7 @@ import { unregisterPush } from "@/lib/push";
 import { useGuestSession, useSession } from "@/lib/session";
 import { useGuestHome, useGuestSchedule } from "@/lib/hooks";
 import { useAlbumAvailable } from "@/features/album/hooks";
-import { Screen, Card, ListRow, Icon, LangToggle, Toggle, Footer, Stack, T, Sheet, Button, SectionLabel, PhotoHero } from "@/ui";
+import { Screen, Card, ListRow, Icon, LangToggle, Toggle, Footer, Stack, T, Sheet, Button, SectionLabel, PhotoHero, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { TOUR_COPY, startTour } from "@/features/tour";
 import { DressCodeSheet } from "@/features/guest/DressCodeSheet";
@@ -51,7 +51,7 @@ export default function GuestInfo() {
     try {
       // Off means off: the server stops sending before the switch moves.
       if (await unregisterPush("guest", pushToken)) setPushToken(null);
-      else Alert.alert(copy.common.error);
+      else toastError(copy.common.error);
     } finally {
       setNotifBusy(false);
     }

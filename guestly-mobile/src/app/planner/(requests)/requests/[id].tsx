@@ -16,7 +16,7 @@ import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { post, ApiFailure } from "@/lib/api";
 import { usePlannerRequest } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState, Composer, toast } from "@/ui";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState, Composer, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "@/app/couple/(tools)/requests/index";
 import { describeChanges } from "@/app/couple/(tools)/requests/[id]";
@@ -55,7 +55,7 @@ export default function PlannerRequestDetail() {
       toast(copy.planner.b12.replySent);
       await refresh();
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      toastError((err instanceof ApiFailure && err.messages[lang]) || copy.common.error);
     } finally {
       sending.current = false;
       setBusy(null);
@@ -80,7 +80,7 @@ export default function PlannerRequestDetail() {
       back();
       toast(copy.planner.b12.withdrawn);
     } catch (err) {
-      Alert.alert(copy.common.error, err instanceof ApiFailure ? err.messages[lang] : "");
+      toastError((err instanceof ApiFailure && err.messages[lang]) || copy.common.error);
     } finally {
       setBusy(null);
     }

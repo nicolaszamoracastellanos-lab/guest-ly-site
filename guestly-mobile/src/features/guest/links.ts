@@ -3,19 +3,20 @@
 // throw inside a press handler (fatal in a release build) and made
 // Linking.openURL reject with nobody listening. Nothing here ever throws.
 
-import { Alert, Linking, Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 import { absoluteUrl, mapsQuery } from "./format";
+import { toastError } from "@/ui/Toast";
 
 /** Opens a link. A missing or unopenable one shows `failMessage` (when given)
  *  instead of doing nothing. */
 export function openUrlSafe(url: string | null | undefined, failMessage?: string): void {
   const abs = absoluteUrl(url);
   if (!abs) {
-    if (failMessage) Alert.alert(failMessage);
+    if (failMessage) toastError(failMessage);
     return;
   }
   Linking.openURL(abs).catch(() => {
-    if (failMessage) Alert.alert(failMessage);
+    if (failMessage) toastError(failMessage);
   });
 }
 
@@ -25,7 +26,7 @@ export function openUrlSafe(url: string | null | undefined, failMessage?: string
 export function openMaps(url: string | null | undefined, failMessage?: string): void {
   const abs = absoluteUrl(url);
   if (!abs) {
-    if (failMessage) Alert.alert(failMessage);
+    if (failMessage) toastError(failMessage);
     return;
   }
   const q = Platform.OS === "ios" ? mapsQuery(abs) : null;

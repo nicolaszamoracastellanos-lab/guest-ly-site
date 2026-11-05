@@ -1,7 +1,7 @@
 // Suggest seating: preview the deterministic auto-assign, then apply it.
 
 import React, { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
+import { View, Pressable } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -19,6 +19,7 @@ import {
   ToggleRow,
   Icon,
   Badge,
+  toastError,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
@@ -81,7 +82,7 @@ export default function SeatingAuto() {
       }
       setPreview(r);
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
     } finally {
       setBusy(null);
     }

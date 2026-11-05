@@ -32,6 +32,7 @@ import {
   Avatar,
   Toggle,
   Icon,
+  toastError,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
@@ -143,7 +144,7 @@ export default function SeatingIndex() {
       await save();
       void qc.invalidateQueries({ queryKey: SEATING_KEY });
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
     } finally {
       setSaving(false);
     }

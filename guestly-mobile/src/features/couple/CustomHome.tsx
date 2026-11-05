@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toast } from "@/ui";
+import type { IconName } from "@/ui/Icon";
 import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
 import { fullDate, dayMonth } from "@/features/couple/ui";
@@ -337,8 +338,8 @@ function CardShell({
     <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
       {editing ? (
         <View style={styles.tools}>
-          <Tool label="↑" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
-          <Tool label="↓" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
+          <Tool icon="up" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
+          <Tool icon="down" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
           {(["s", "m", "l"] as CardSize[]).map((s) => (
             <Tool key={s} label={s.toUpperCase()} a11y={copy.size(s.toUpperCase())} on={card.size === s} onPress={() => onSize(s)} />
           ))}
@@ -367,12 +368,16 @@ function CardShell({
   );
 }
 
-function Tool({ label, a11y, onPress, disabled, on }: { label: string; a11y: string; onPress: () => void; disabled?: boolean; on?: boolean }) {
+function Tool({ label, icon, a11y, onPress, disabled, on }: { label?: string; icon?: IconName; a11y: string; onPress: () => void; disabled?: boolean; on?: boolean }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled: !!disabled, selected: !!on }} hitSlop={4} style={({ pressed }) => [styles.tool, on && styles.toolOn, disabled && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
-      <T v="meta13" color={on ? colors.night : colors.ivory}>
-        {label}
-      </T>
+      {icon ? (
+        <Icon name={icon} size={18} color={on ? colors.night : colors.ivory} />
+      ) : (
+        <T v="meta13" color={on ? colors.night : colors.ivory}>
+          {label}
+        </T>
+      )}
     </Pressable>
   );
 }

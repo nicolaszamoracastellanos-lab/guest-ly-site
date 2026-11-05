@@ -13,10 +13,10 @@ export type IconName =
   | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift" | "copy"
   | "replay" | "eye" | "concierge";
 
-type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
+type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number; /** Fills the outline (a rated star). Default none. */ fill?: string };
 
-export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 }: Props) {
-  const p = { stroke: color, strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6, fill = "none" }: Props) {
+  const p = { stroke: color, strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill };
   const dot = (cx: number, cy: number, r = 1.2) => <Circle key={`${cx}${cy}`} cx={cx} cy={cy} r={r} fill={color} />;
   const body = (() => {
     switch (name) {

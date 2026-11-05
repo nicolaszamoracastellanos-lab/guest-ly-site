@@ -1,14 +1,14 @@
 // Reminder email switch and the subscribable calendar feed.
 
 import React, { useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import { useLang, zoneLabel } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Toggle, SectionLabel } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Toggle, SectionLabel, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
@@ -53,7 +53,7 @@ export default function Reminders() {
       await post("/couple/tasks/reminders", { enabled });
       await invalidate();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }
@@ -75,7 +75,7 @@ export default function Reminders() {
       setCopied(false);
       setConfirmRotate(false);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }

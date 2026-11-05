@@ -5,8 +5,9 @@
 import React, { useRef, useState } from "react";
 import { View, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, T, Row, Stack, Button, SectionLabel } from "@/ui";
+import { Screen, TopBar, BigTitle, Row, Stack, Button, SectionLabel, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useVendors, useVendorWrites, type VendorCategory, type VendorStatus, type VendorRow } from "../hooks";
@@ -136,10 +137,8 @@ export function VendorFormScreen() {
             <SectionLabel>{copy.rating}</SectionLabel>
             <Row gap={4}>
               {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable key={n} onPress={() => setForm({ ...form, rating: form.rating === n ? null : n })} accessibilityRole="button" accessibilityLabel={`${n}`} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-                  <T v="title26" color={form.rating !== null && n <= form.rating ? colors.goldLight : colors.ivory25}>
-                    ★
-                  </T>
+                <Pressable key={n} onPress={() => setForm({ ...form, rating: form.rating === n ? null : n })} accessibilityRole="button" accessibilityLabel={fmt(copy.ratingStar, { n })} accessibilityState={{ selected: form.rating === n }} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="star" size={28} color={form.rating !== null && n <= form.rating ? colors.goldLight : colors.ivory40} fill={form.rating !== null && n <= form.rating ? colors.goldLight : "none"} />
                 </Pressable>
               ))}
             </Row>

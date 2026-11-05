@@ -79,6 +79,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "craft": "node scripts/craft-gate.mjs",
     "test": "for f in scripts/tests/*.test.ts; do node --no-warnings --experimental-strip-types \"$f\" || exit 1; done",
     "typecheck": "tsc --noEmit"
   },

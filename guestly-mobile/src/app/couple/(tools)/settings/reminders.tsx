@@ -1,13 +1,13 @@
 // Automatic RSVP reminder settings: switch, days before, send window, gap.
 
 import React, { useState } from "react";
-import { View, Alert } from "react-native";
+import { View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy, zoneLabel } from "@/i18n";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Input, Row, SectionLabel, EmptyState, Chip } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Stack, Skeleton, Button, Input, Row, SectionLabel, EmptyState, Chip, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/settings/copy";
 import { useCoupleSettings, SETTINGS_KEY, type CoupleSettings, type Reminders } from "@/features/settings/hooks";
@@ -47,7 +47,7 @@ export default function ReminderSettings() {
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
     } catch (err) {
-      Alert.alert(c.title, errorText(err, lang, app.common.errorBody));
+      toastError(errorText(err, lang, app.common.errorBody));
     } finally {
       setBusy(false);
     }

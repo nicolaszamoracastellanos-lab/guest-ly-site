@@ -17,7 +17,7 @@ import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure } from "@/lib/api";
 import { errorText, newSendKey, outcomeUnknown } from "@/features/shared/requests";
-import { Screen, TopBar, BigTitle, Card, Chip, ChipRow, Segmented, Input, Button, Badge, Banner, Sheet, Skeleton, Stack, SectionLabel, T, ListRow, Avatar, Hairline } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, Chip, ChipRow, Segmented, Input, Button, Badge, Banner, Sheet, Skeleton, Stack, SectionLabel, T, ListRow, Avatar, Hairline, Icon } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/broadcasts/copy";
 import { previewBroadcast, sendBroadcast, templateLanguages, useBroadcasts, type AudienceFilter, type BroadcastGuest, type Composition, type Lang, type Preview, type SendResult } from "@/features/broadcasts/hooks";
@@ -483,7 +483,12 @@ const PickRow = React.memo(function PickRow({ guest: g, on, noPhone, onToggle, l
       leading={<Avatar initials={g.name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")} />}
       title={g.name}
       sub={`${g.lang.toUpperCase()}${g.has_phone ? "" : ` · ${noPhone}`}${g.tags.length ? ` · ${g.tags.slice(0, 2).join(", ")}` : ""}`}
-      trailing={<Badge label={on ? "✓" : ""} kind={on ? "gold" : "mute"} />}
+      trailing={
+        // Picked: a gold disc with a check; not picked: an empty ring. Icons, not the check glyph (K17).
+        <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: on ? colors.gold : colors.ivory40, backgroundColor: on ? colors.gold : "transparent", alignItems: "center", justifyContent: "center" }}>
+          {on ? <Icon name="check" size={16} color={colors.night} strokeWidth={2.2} /> : null}
+        </View>
+      }
       chevron={false}
       onPress={g.has_phone ? () => onToggle(g.id) : undefined}
       last={last}

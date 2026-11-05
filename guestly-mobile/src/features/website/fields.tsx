@@ -3,10 +3,10 @@
 // up / down / remove controls for lists.
 
 import React, { createContext, useContext, useState } from "react";
-import { View, Image, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, Image, Pressable, ActivityIndicator } from "react-native";
 import { useLang } from "@/i18n";
 import { errorText } from "@/features/shared/requests";
-import { Input, T, Row, Icon, Button } from "@/ui";
+import { Input, T, Row, Icon, Button, toastError } from "@/ui";
 import { colors, radius, FILL } from "@/ui/tokens";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "./copy";
@@ -96,7 +96,7 @@ export function PhotoField({ label, path, uri, onChange, height = 160 }: { label
       const picked = await pickAndUpload();
       if (picked && picked[0]) onChange(picked[0].path, picked[0].url);
     } catch (err) {
-      Alert.alert(c.fields.photo, errorText(err, lang, c.errors.pickFailed));
+      toastError(errorText(err, lang, c.errors.pickFailed));
     } finally {
       setBusy(false);
     }

@@ -3,7 +3,7 @@
 // status change can be undone (v1.2, B4).
 
 import React, { useCallback, useState } from "react";
-import { View, Linking, Alert } from "react-native";
+import { View, Linking } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy } from "@/i18n";
@@ -21,6 +21,7 @@ import {
   Skeleton,
   EmptyState,
   IconButton,
+  toastError,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/runsheet/copy";
@@ -83,7 +84,7 @@ export default function CoupleRunsheet() {
       await post(`/couple/runsheet/${b.id}/status`, { status });
       return true;
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
       return false;
     } finally {
       void qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
@@ -96,7 +97,7 @@ export default function CoupleRunsheet() {
       const next = await post<RunsheetSurface>("/couple/runsheet/seed", {});
       qc.setQueryData(RUNSHEET_KEY, next);
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
     } finally {
       setSeeding(false);
     }

@@ -45,7 +45,7 @@ export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, 
  *  K9 to K12): `<KeyboardLiftView behavior="padding" style={{ flex: 1 }}>`. */
 export { KeyboardAvoidingView as KeyboardLiftView } from "react-native-keyboard-controller";
 export type { ChatListHandle, ComposerProps } from "./keyboard";
-export { toast, dismissToast, ToastHost, useDockLift } from "./Toast";
+export { toast, toastError, dismissToast, ToastHost, useDockLift } from "./Toast";
 export type { ToastOptions, DockLift } from "./Toast";
 export { RoleNativeTabs } from "./NativeRoleTabs";
 export type { RoleTab } from "./NativeRoleTabs";
@@ -103,8 +103,12 @@ export function Screen({
   scrollY,
   keyboard,
   dock,
+  modal = false,
 }: {
   children: ReactNode;
+  /** The route is presented as a native modal (presentation "modal"): the modal
+   *  covers the root layout's toast host, so the screen mounts its own. */
+  modal?: boolean;
   scroll?: boolean;
   padded?: boolean;
   bottomInset?: number;
@@ -274,6 +278,7 @@ export function Screen({
         </DockedAction>
       ) : null}
       {form ? <FormToolbar /> : null}
+      {modal ? <ToastHost base={insets.bottom} modal /> : null}
       <LockCover />
     </View>
     </MultilineRoomValue.Provider>

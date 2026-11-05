@@ -11,7 +11,7 @@
 // embedded natively and never gate it; a safety timer hides it regardless.
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet, Platform, Linking, Alert, AppState } from "react-native";
+import { View, StyleSheet, Platform, Linking, AppState } from "react-native";
 import { Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -31,7 +31,7 @@ import { drainQueue } from "@/lib/queue";
 import { setLockHandlers } from "@/lib/lock";
 import { flushPendingReports, installGlobalErrorHandlers, setTelemetryRoute } from "@/lib/telemetry";
 import { colors } from "@/ui/tokens";
-import { T, Button, Gem, Stack as VStack, LockCover, ToastHost } from "@/ui";
+import { T, Button, Gem, Stack as VStack, LockCover, ToastHost, toast } from "@/ui";
 import { TourHost, useTourOnScreen } from "@/features/tour";
 import * as ExpoLinking from "expo-linking";
 
@@ -120,7 +120,7 @@ function Gate() {
   // A session that ended on its own says so, once.
   useEffect(() => {
     if (!notice) return;
-    Alert.alert(copy.core.sessionEndedTitle, notice === "guest_ended" ? copy.core.guestEnded : copy.core.userEnded);
+    toast(notice === "guest_ended" ? copy.core.guestEnded : copy.core.userEnded, { icon: "info", ms: 8000 });
     clearNotice();
   }, [notice, clearNotice, copy]);
 

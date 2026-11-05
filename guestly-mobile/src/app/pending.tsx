@@ -27,7 +27,7 @@ import { ApiFailure } from "@/lib/api";
 import { useSession, useUserSession } from "@/lib/session";
 import { getStorefront, type StorefrontAnswer } from "@/lib/storefront";
 import { openProductPreview, productPreviewAvailable } from "@/lib/preview";
-import { Screen, T, Row, Stack, Wordmark, Card, Button, Icon, ListRow, SectionLabel, Skeleton, LangToggle, NightMotif } from "@/ui";
+import { Screen, T, Row, Stack, Wordmark, Card, Button, Icon, ListRow, SectionLabel, Skeleton, LangToggle, NightMotif, toast, toastError } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { COPY } from "@/features/signup/copy";
 import { resendActivationEmail, useSignupStatus } from "@/features/signup/api";
@@ -137,9 +137,9 @@ export default function PendingHome() {
           try {
             await deleteMyAccount();
             await signOut();
-            Alert.alert(p.deleteAccount, p.deleted);
+            toast(p.deleted);
           } catch (err) {
-            if (!(err instanceof DeleteCancelled)) Alert.alert(p.deleteAccount, p.deleteError);
+            if (!(err instanceof DeleteCancelled)) toastError(p.deleteError);
           } finally {
             setDeleting(false);
           }

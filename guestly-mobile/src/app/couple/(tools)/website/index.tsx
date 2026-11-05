@@ -10,7 +10,7 @@ import { useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, SheetActions, Banner, EmptyState } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, SheetActions, Banner, EmptyState, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useConfigDraft, WEBSITE_KEY, type SectionType, type WebsiteSurface } from "@/features/website/hooks";
@@ -53,7 +53,7 @@ export default function WebsiteHome() {
     try {
       await fn();
     } catch (err) {
-      Alert.alert(c.title, errorText(err, lang, c.errors.saveFailed));
+      toastError(errorText(err, lang, c.errors.saveFailed));
     } finally {
       setBusy(null);
     }

@@ -140,7 +140,7 @@ const VendorListRow = memo(function VendorListRow({ vendor: v, currency, copy, l
     <ListRow
       leading={<Avatar initials={v.name.slice(0, 2).toUpperCase()} />}
       title={v.name}
-      sub={`${copy.categories[v.category] ?? v.category}${v.price_quoted !== null ? ` · ${formatMoney(v.price_quoted, v.currency ?? currency, lang)}` : ""}${v.rating ? ` · ${"★".repeat(v.rating)}` : ""}`}
+      sub={`${copy.categories[v.category] ?? v.category}${v.price_quoted !== null ? ` · ${formatMoney(v.price_quoted, v.currency ?? currency, lang)}` : ""}${v.rating ? ` · ${fmt(copy.ratingOf, { n: v.rating })}` : ""}`}
       // Under the name, not beside it: a wide badge such as PRESELECCIONADO
       // squeezed the name to "Flor de..." on a 375 pt phone (D-012 pattern).
       below={<Badge label={copy.statuses[v.status] ?? v.status} kind={statusKind(v.status)} />}

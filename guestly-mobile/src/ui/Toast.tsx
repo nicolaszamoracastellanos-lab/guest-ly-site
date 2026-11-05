@@ -12,8 +12,9 @@
 // while VoiceOver or TalkBack is on so there is time to reach Undo.
 //
 // The root layout mounts one ToastHost. A Sheet is a native modal that covers
-// the root, so every open Sheet mounts its own host; the newest host shows the
-// toast and the others stay quiet.
+// the root, so every open Sheet mounts its own host; so does a Screen presented
+// as a native modal (`<Screen modal>`, the guest card, add guest, Record RSVP).
+// The newest such host shows the toast and the others stay quiet.
 
 import React, { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Pressable, StyleSheet } from "react-native";
@@ -62,6 +63,14 @@ export function toast(message: string, options: ToastOptions = {}): () => void {
   // VoiceOver and TalkBack read it without moving focus away from the work.
   AccessibilityInfo.announceForAccessibilityWithOptions?.(message, { queue: true });
   return () => dismissToast(id);
+}
+
+/** An error: what failed and what to do, with the warning mark, a little longer
+ *  on screen. Replaces the native "Error" alert (K17): an error is news about the
+ *  work, not a choice, so it never blocks the screen. Validation stays inline
+ *  where the form has a place for it. */
+export function toastError(message: string): () => void {
+  return toast(message, { icon: "warning", ms: 6000 });
 }
 
 /** Close the toast on screen (or only toast `id`, if it is still showing). */
@@ -142,10 +151,10 @@ const topHost = () => {
 /** Where toasts appear. The root layout mounts one; Sheet mounts its own.
  *  `base` and `lift` override the defaults (the tab bar or home indicator,
  *  and whatever the focused screen docked at its bottom). */
-export function ToastHost({ base, lift }: { base?: number; lift?: DockLift }) {
+export function ToastHost({ base, lift, modal }: { base?: number; lift?: DockLift; /** Inside a native modal screen: wins over the root host like a Sheet's. */ modal?: boolean }) {
   const id = useId();
-  // A host given its own lift is a Sheet's.
-  const sheet = !!lift;
+  // A host given its own lift is a Sheet's; a modal screen's host ranks with them.
+  const sheet = !!lift || !!modal;
   useEffect(() => {
     hosts.push({ id, sheet });
     hostListeners.forEach((l) => l());

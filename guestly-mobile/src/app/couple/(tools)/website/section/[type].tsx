@@ -3,12 +3,12 @@
 // hashtag). Edits autosave through useConfigDraft.
 
 import React, { useState } from "react";
-import { View, Alert } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useLang, mediumDate } from "@/i18n";
 import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Button, Stack, Skeleton, SectionLabel, Segmented, Row, Hairline, Banner } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Button, Stack, Skeleton, SectionLabel, Segmented, Row, Hairline, Banner, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useConfigDraft, flushWebsiteDraft, updateSection, imageUri, pickAndUpload, slugId, type Section, type SectionType, type WebsiteConfig, type Bilingual, type TravelItem, type PartyMember, type RegistryItem, type EventOverride } from "@/features/website/hooks";
@@ -283,7 +283,7 @@ function GalleryEditor({ section, signed, onChange, onSigned }: { section: Extra
         onChange((s) => ({ ...s, images: [...s.images, ...picked.map((p) => ({ url: p.path, caption: EMPTY }))].slice(0, 30) }));
       }
     } catch (err) {
-      Alert.alert(c.fields.images, errorText(err, lang, c.errors.pickFailed));
+      toastError(errorText(err, lang, c.errors.pickFailed));
     } finally {
       setBusy(false);
     }

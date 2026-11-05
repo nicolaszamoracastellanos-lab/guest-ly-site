@@ -15,7 +15,7 @@ import { unregisterPush } from "@/lib/push";
 import { fmt, plural, useCopy, useLang, shortDate } from "@/i18n";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricAvailable, biometricPrompt } from "@/lib/biometric";
-import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet, SectionLabel, toast, type IconName } from "@/ui";
+import { Screen, TopBar, T, Avatar, Row, Card, ListRow, Icon, LangToggle, Toggle, Badge, Footer, Stack, Sheet, SectionLabel, toast, type IconName, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useFeatureCopy } from "@/i18n/feature";
@@ -89,7 +89,7 @@ export default function Settings() {
     if (!pushToken) return;
     const ok = await unregisterPush(surface, pushToken);
     if (ok) setPushToken(null);
-    else Alert.alert(copy.common.error, copy.core.pushOffFailed);
+    else toastError(copy.core.pushOffFailed);
   }
 
   // Nothing changes unless the new wedding answered; the sheet stays open
@@ -103,7 +103,7 @@ export default function Settings() {
       setSwitching(false);
       // Same confirmation as the planner's wedding pill (F1).
       if (names) toast(fmt(copy.planner.b12.nowShowing, { names }), { icon: "rings" });
-    } else Alert.alert(copy.common.error, copy.core.switchFailed);
+    } else toastError(copy.core.switchFailed);
   }
 
   function deleteAccount() {
@@ -119,9 +119,9 @@ export default function Settings() {
           try {
             await deleteMyAccount();
             await signOut();
-            Alert.alert(copy.settings.deleteAccount, copy.settings.deleteRequested);
+            toast(copy.settings.deleteRequested);
           } catch (err) {
-            if (!(err instanceof DeleteCancelled)) Alert.alert(copy.common.error);
+            if (!(err instanceof DeleteCancelled)) toastError(copy.common.error);
           }
         },
       },

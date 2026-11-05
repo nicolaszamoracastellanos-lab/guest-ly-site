@@ -2,7 +2,7 @@
 // the planner. Web parity for /tasks and the tasks half of /requests.
 
 import React, { useMemo, useRef, useState } from "react";
-import { View, FlatList, Alert, Pressable } from "react-native";
+import { View, FlatList, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
@@ -10,7 +10,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skeleton, Stack, SectionLabel, T, Row, Icon, Banner, useTopInset, useBottomClearance, COLUMN, QueryError, OfflineState, StaleBanner, retryConnection, usePullRefresh, DockedActions, useScrimScroll } from "@/ui";
+import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skeleton, Stack, SectionLabel, T, Row, Icon, Banner, useTopInset, useBottomClearance, COLUMN, QueryError, OfflineState, StaleBanner, retryConnection, usePullRefresh, DockedActions, useScrimScroll, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, useSharedBoard, KEYS, TASK_INVALIDATE, type Board, type TaskGroup, type TaskView, type BoardTask } from "@/features/tasks/hooks";
@@ -76,10 +76,10 @@ export default function CoupleTasks() {
     try {
       const r = await post<{ task: TaskView; clone: TaskView | null }>(`/couple/tasks/${task.id}/status`, { status: next });
       for (const k of TASK_INVALIDATE) void qc.invalidateQueries({ queryKey: [k] });
-      if (r.clone?.due_date) Alert.alert(fmt(copy.repeatCloned, { date: r.clone.due_date }));
+      if (r.clone?.due_date) toast(fmt(copy.repeatCloned, { date: r.clone.due_date }), { icon: "info" });
     } catch (err) {
       qc.setQueryData<Board>(KEYS.board, (b) => (b ? patchTask(b, task.id, before) : b));
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(errorText(err, lang, copy.error));
     } finally {
       inFlight.current.delete(task.id);
     }

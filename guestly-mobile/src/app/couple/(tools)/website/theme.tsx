@@ -1,14 +1,14 @@
 // Look: the three site themes as swatch cards.
 
 import React, { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
+import { View, Pressable } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
 import { errorText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, T, Badge, Stack, Skeleton, Icon, Banner } from "@/ui";
+import { Screen, TopBar, BigTitle, T, Badge, Stack, Skeleton, Icon, Banner, toastError } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
 import { useWebsite, WEBSITE_KEY, type WebsiteSurface, type WebsiteTheme } from "@/features/website/hooks";
@@ -31,7 +31,7 @@ export default function WebsiteThemeScreen() {
       await post("/couple/website/theme", { theme });
       qc.setQueryData<WebsiteSurface>(WEBSITE_KEY, (old) => (old ? { ...old, theme } : old));
     } catch (err) {
-      Alert.alert(c.theme, errorText(err, lang, c.errors.saveFailed));
+      toastError(errorText(err, lang, c.errors.saveFailed));
     } finally {
       setBusy(null);
     }

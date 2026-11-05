@@ -1,14 +1,14 @@
 // The wedding checklist: pick template tasks, dated from the wedding day.
 
 import React, { useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, shortDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel, toast } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Icon, Badge, Chip, ChipRow, SectionLabel, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskCategory } from "@/features/tasks/hooks";
@@ -50,7 +50,7 @@ export default function Checklists() {
       back();
       toast(fmt(copy.checklistAddedToast, { n: r.created }));
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(errorText(err, lang, copy.error));
     } finally {
       setBusy(false);
     }

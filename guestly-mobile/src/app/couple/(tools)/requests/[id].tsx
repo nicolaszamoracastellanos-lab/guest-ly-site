@@ -2,7 +2,7 @@
 // unlock when enabled) or decline.
 
 import React, { useState } from "react";
-import { View, Alert } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
@@ -13,7 +13,7 @@ import { errorText } from "@/features/shared/requests";
 import { useCoupleRequests } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricPrompt } from "@/lib/biometric";
-import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, IconButton, EmptyState } from "@/ui";
+import { Screen, TopBar, T, Badge, Card, Row, Button, Input, Stack, SectionLabel, ButtonRow, IconButton, EmptyState, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { requestTitle } from "./index";
 import { useSafeBack } from "@/lib/nav";
@@ -51,7 +51,7 @@ export default function RequestDetail() {
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
       back();
     } catch (err) {
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(null);
     }
@@ -65,7 +65,7 @@ export default function RequestDetail() {
       setNote("");
       await qc.invalidateQueries({ queryKey: ["couple-requests"] });
     } catch (err) {
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(null);
     }
@@ -78,7 +78,7 @@ export default function RequestDetail() {
   const changes = r ? describeChanges(r.payload as Record<string, unknown>, names, copy.requests.changeWords, copy.requests.changeFields) : [];
 
   return (
-    <Screen query={mainQuery} header={<TopBar onBack={back} title={copy.requests.title} />} bottomInset={40} keyboard>
+    <Screen modal query={mainQuery} header={<TopBar onBack={back} title={copy.requests.title} />} bottomInset={40} keyboard>
       <>
         {r ? (
           <>

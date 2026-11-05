@@ -22,7 +22,7 @@
 // The body is built by lib/requestForm, exactly as the portal validates it.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Alert, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -31,7 +31,7 @@ import { post, ApiFailure } from "@/lib/api";
 import { usePlannerGuests, usePlannerRequest, type RequestRow, type PlannerGuest } from "@/lib/hooks";
 import { buildRequestBody, fieldValid, formReady, MAX_REMIND, type EditField, type RequestKind as Kind } from "@/lib/requestForm";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Chip, ChipRow, Input, Card, ListRow, Avatar, Button, Stack, Field, Skeleton, T, Banner, Icon, Sheet, EmptyState, Row, toast, type IconName } from "@/ui";
+import { Screen, TopBar, BigTitle, Chip, ChipRow, Input, Card, ListRow, Avatar, Button, Stack, Field, Skeleton, T, Banner, Icon, Sheet, EmptyState, Row, toast, type IconName, toastError } from "@/ui";
 import { colors, fonts, radius, HIT_TARGET } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
@@ -146,7 +146,7 @@ export default function NewRequest() {
       const f = err instanceof ApiFailure ? err : null;
       // not_open: the couple answered meanwhile. invalid: the server's own
       // sentence names the rule. Anything else: its bilingual message.
-      Alert.alert(copy.common.error, f?.reason === "not_open" ? copy.core.editNotOpen : f ? f.messages[lang] : c.couldNotSave);
+      toastError(f?.reason === "not_open" ? copy.core.editNotOpen : f ? f.messages[lang] : c.couldNotSave);
     } finally {
       setBusy(false);
     }

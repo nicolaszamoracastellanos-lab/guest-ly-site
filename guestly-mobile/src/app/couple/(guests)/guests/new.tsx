@@ -13,13 +13,13 @@
 // Hidden on builds without the module.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Alert, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
 import { post } from "@/lib/api";
 import { errorText } from "@/features/shared/requests";
-import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field, T, Icon, Sheet, ListRow, Avatar, toast } from "@/ui";
+import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field, T, Icon, Sheet, ListRow, Avatar, toast, toastError } from "@/ui";
 import { contactsSupported, contactsAccess, pickContacts, sharedMatching, onContactsChange, type PickedContact } from "@/features/guests/contacts";
 import { ContactAccessInline } from "@/features/guests/ContactAccessInline";
 import { colors, radius } from "@/ui/tokens";
@@ -115,7 +115,7 @@ export default function NewGuest() {
       // not Undo.
       toast(c.add.added, id ? { undo: () => router.push({ pathname: "/couple/guests/[id]", params: { id } }), undoLabel: c.add.view } : {});
     } catch (err) {
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(false);
     }
@@ -123,6 +123,7 @@ export default function NewGuest() {
 
   return (
     <Screen
+      modal
       header={
         <TopBar
           left={<Button label={copy.common.cancel} kind="text" small full={false} haptic={false} onPress={() => leave(back)} testID="guest-cancel" />}

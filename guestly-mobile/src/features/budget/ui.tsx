@@ -1,10 +1,10 @@
 // Small budget-only pieces built from the shared kit.
 
 import React, { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
+import { View, Pressable } from "react-native";
 import { useCopy, useLang } from "@/i18n";
 import { errorText } from "@/features/shared/requests";
-import { T, Row, Badge, Button, Sheet, Input, Field as KitField } from "@/ui";
+import { T, Row, Badge, Button, Sheet, Input, Field as KitField, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import type { ItemStatus } from "./hooks";
 
@@ -108,7 +108,7 @@ export function useAction() {
       return true;
     } catch (err) {
       // Never a blank alert: the API's own message, else a plain retry line.
-      Alert.alert(errorText(err, lang, fallback || common.error));
+      toastError(errorText(err, lang, fallback || common.error));
       return false;
     } finally {
       setBusy(false);

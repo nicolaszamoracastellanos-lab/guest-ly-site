@@ -1,0 +1,46 @@
+{
+  "$comment": "App craft gate ceilings (scripts/craft-gate.mjs). Each entry is what a file had on Nov 5 2026 after K17 (Master Wave L8); a file not listed has ceiling 0, so new files are gated from their first line. Lower with --ratchet; raise only by hand with a reason in the commit. Exempt from raw-hex by rule, not by ceiling: src/ui/tokens.ts and src/widgets/.",
+  "ceilings": {
+    "glyph": {
+      "src/app/couple/(guests)/guests/import.tsx": 1,
+      "src/app/couple/(tools)/brain/section/[key].tsx": 1,
+      "src/app/planner/(requests)/requests/new.tsx": 1,
+      "src/features/budget/SyncReview.tsx": 1,
+      "src/widgets/GuestlyWeddings.tsx": 1
+    },
+    "raw-hex": {
+      "src/app/guest/(index)/index.tsx": 1,
+      "src/app/guest/(index)/rsvp/confirm.tsx": 2,
+      "src/app/guest/(index)/rsvp/index.tsx": 1,
+      "src/features/album/Lightbox.tsx": 1,
+      "src/features/checkin/CheckinScreen.tsx": 2,
+      "src/features/guest/WalletButton.tsx": 3,
+      "src/features/runsheet/list.tsx": 1,
+      "src/features/tour/scenes/couple.tsx": 1,
+      "src/features/tour/scenes/Gem.tsx": 1,
+      "src/features/tour/scenes/guest.tsx": 3,
+      "src/features/tour/scenes/planner.tsx": 1,
+      "src/lib/push.ts": 2,
+      "src/ui/AssistantBubble.tsx": 1,
+      "src/ui/DevProbe.tsx": 1,
+      "src/ui/index.tsx": 1,
+      "src/ui/keyboard.tsx": 1,
+      "src/ui/Toast.tsx": 1
+    },
+    "spinner-screen": {
+      "src/app/find.tsx": 1
+    },
+    "pressable-a11y": {},
+    "literal-in-t": {
+      "src/app/couple/(tools)/website/theme.tsx": 1,
+      "src/app/dev-layout.tsx": 1,
+      "src/features/checkin/CheckinScreen.tsx": 1,
+      "src/features/website/fields.tsx": 2
+    },
+    "alert-error": {},
+    "font-size": {
+      "src/ui/DevProbe.tsx": 1
+    },
+    "ivory25-text": {}
+  }
+}

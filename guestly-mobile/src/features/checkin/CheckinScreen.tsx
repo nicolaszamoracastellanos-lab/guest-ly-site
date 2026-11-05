@@ -2,7 +2,7 @@
 // the ivory guest card, works offline with a replayable queue.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Pressable, Alert, Linking, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Linking, ScrollView } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import { checkIn, drainQueue, isForOpenWedding, newEventId, readQueue, type Chec
 import { QueueChip } from "./QueueChip";
 import { useCoupleDayOf, usePlannerCheckin, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast, toastError } from "@/ui";
 import { reservedRegionsAvailable, useReservedRegions } from "@/lib/duo";
 import { WelcomeAccessory } from "../../../modules/guestly-duo/src/WelcomeAccessoryView";
 import { can, useUserSession } from "@/lib/session";
@@ -143,7 +143,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
       void qc.invalidateQueries({ queryKey: [countsKey] });
     } catch (err) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(errorText(err, lang, copy.common.errorBody));
     } finally {
       setBusy(false);
     }

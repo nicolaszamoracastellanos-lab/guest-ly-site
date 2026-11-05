@@ -7,7 +7,7 @@
 // (SyncReview). Nothing is deleted unless ticked; a blank cell never erases.
 
 import React, { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
+import { View, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -17,7 +17,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { errorText } from "@/features/shared/requests";
 import { prepareImageForUpload } from "@/features/shared/images";
 import { useOnline } from "@/lib/query";
-import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Input, Banner, Icon, Hairline, Chip, ChipRow } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Input, Banner, Icon, Hairline, Chip, ChipRow, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "../copy";
 import { useBudgetSurface, useBudgetWrites, type ExtractedBudget, type ExtractedItem, type SyncPlan } from "../hooks";
@@ -52,7 +52,7 @@ export function BudgetImportScreen() {
   const [syncUi, setSyncUi] = useState<SyncUi>(() => emptySyncUi());
 
   function fail(err: unknown) {
-    Alert.alert(errorText(err, lang, copy.nothingRead));
+    toastError(errorText(err, lang, copy.nothingRead));
   }
 
   async function read(body: { text?: string; file_base64?: string; filename?: string; mime?: string }) {
@@ -60,7 +60,7 @@ export function BudgetImportScreen() {
     setReading(true);
     try {
       const r = await writes.extract(body);
-      if (!r.extracted.items.length) Alert.alert(copy.nothingRead);
+      if (!r.extracted.items.length) toastError(copy.nothingRead);
       else if (syncMode && params.b) {
         const cmp = await writes.syncPreview(params.b, r.extracted);
         setPlan(cmp.plan);
@@ -77,7 +77,7 @@ export function BudgetImportScreen() {
   async function fromCamera(library: boolean) {
     const perm = library ? await ImagePicker.requestMediaLibraryPermissionsAsync() : await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(copy.permission);
+      toastError(copy.permission);
       return;
     }
     // No base64 from the picker: the photo is shrunk to a 2048 px JPEG on the
@@ -95,12 +95,12 @@ export function BudgetImportScreen() {
       img = await prepareImageForUpload(src);
     } catch {
       setReading(false);
-      Alert.alert(copy.nothingRead);
+      toastError(copy.nothingRead);
       return;
     }
     setReading(false);
     if (!img.base64 || img.base64.length > 4_000_000) {
-      Alert.alert(copy.photoTooBig);
+      toastError(copy.photoTooBig);
       return;
     }
     await read({ file_base64: img.base64, filename: "photo.jpg", mime: img.mime });
@@ -137,7 +137,7 @@ export function BudgetImportScreen() {
     setSaving(true);
     try {
       const r = await writes.syncApply(params.b, buildSelection(plan, syncUi));
-      Alert.alert(copy.syncDone(r.updated, r.added, r.removed));
+      toast(copy.syncDone(r.updated, r.added, r.removed));
       back();
     } catch (err) {
       fail(err);
@@ -151,7 +151,7 @@ export function BudgetImportScreen() {
     setSaving(true);
     try {
       const r = await writes.commit(extracted, target);
-      Alert.alert(fmt(copy.imported, { items: r.items, payments: r.payments }));
+      toast(fmt(copy.imported, { items: r.items, payments: r.payments }));
       back();
     } catch (err) {
       fail(err);
