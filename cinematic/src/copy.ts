@@ -4,6 +4,8 @@
    House rules: no em dashes anywhere, no emojis in client-facing strings.
    Permitted symbols: the diamond, checkmarks, crosses, typographic marks. */
 
+import { PLANS, guestsLabel } from './pricing.ts';
+
 export type Locale = 'en' | 'es';
 
 export interface ChatMessage {
@@ -254,7 +256,8 @@ export interface SiteCopy {
     kicker: string;
     title: string;
     human: { title: string; body: string; email: string };
-    items: { q: string; a: string }[];
+    /* ld: also published in the FAQPage JSON-LD (EN copy only, see src/seo/jsonld.ts). */
+    items: { q: string; a: string; ld?: boolean }[];
   };
   cta: {
     kicker: string;
@@ -1033,9 +1036,9 @@ const en: SiteCopy = {
     plans: [
       {
         id: 'essentials',
-        name: 'Essentials',
-        guests: 'Up to 160 guests',
-        price: 199,
+        name: PLANS.essentials.name,
+        guests: guestsLabel('essentials', 'en'),
+        price: PLANS.essentials.price,
         priceNote: 'One payment · 5 months live',
         features: [
           'Concierge: WhatsApp + web, EN/ES',
@@ -1047,9 +1050,9 @@ const en: SiteCopy = {
       },
       {
         id: 'signature',
-        name: 'Signature',
-        guests: 'Up to 300 guests',
-        price: 399,
+        name: PLANS.signature.name,
+        guests: guestsLabel('signature', 'en'),
+        price: PLANS.signature.price,
         priceNote: 'One payment · 5 months live',
         features: [
           'Everything in Essentials',
@@ -1062,9 +1065,9 @@ const en: SiteCopy = {
       },
       {
         id: 'grande',
-        name: 'Grande',
-        guests: '500+ guests',
-        price: 699,
+        name: PLANS.grande.name,
+        guests: guestsLabel('grande', 'en'),
+        price: PLANS.grande.price,
         priceNote: 'One payment · 5 months live',
         features: [
           'Everything in Signature',
@@ -1146,22 +1149,27 @@ const en: SiteCopy = {
     },
     items: [
       {
+        ld: true,
         q: 'Why not just use Zola for free?',
         a: 'Zola gives you a website and an RSVP form; it does not answer 600 guest questions at 2am in Spanish on WhatsApp. Keep Zola. We sync with it.',
       },
       {
+        ld: true,
         q: 'Is it really one payment?',
         a: 'Yes. Every plan is a single one-time price that includes 5 months live, counted from the day we deliver your concierge. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo.',
       },
       {
+        ld: true,
         q: 'What happens after the 5 months?',
         a: 'If your wedding is within the 5 months, nothing: you are covered. If you want your website, RSVP and concierge to stay live longer, a $20/mo maintenance fee keeps everything running for as long as you need, cancel any time. We remind you inside your portal and by email when month 5 starts, so nothing ever switches off by surprise.',
       },
       {
+        ld: true,
         q: 'Does it work in Bolivia and Latin America?',
         a: 'That is our home turf. Guest-ly is WhatsApp-first and fully bilingual, with proper +591 (and any international) phone handling built in.',
       },
       {
+        ld: true,
         q: 'What if the AI is not sure?',
         a: 'It only answers from your wedding’s information. When it is not sure, it tells the guest it is checking with you and flags the question on your dashboard. You see every transcript.',
       },
@@ -1182,6 +1190,7 @@ const en: SiteCopy = {
         a: 'No. We sync with Zola: a real 46-RSVP list came over with zero conflicts. Keep Zola if you like it.',
       },
       {
+        ld: true,
         q: 'What about refunds?',
         a: 'Full refund before your first guest messages the concierge, or within 30 days, whichever comes first. The refunds page has the details.',
       },
@@ -2065,9 +2074,9 @@ const es: SiteCopy = {
     plans: [
       {
         id: 'essentials',
-        name: 'Essentials',
-        guests: 'Hasta 160 invitados',
-        price: 199,
+        name: PLANS.essentials.name,
+        guests: guestsLabel('essentials', 'es'),
+        price: PLANS.essentials.price,
         priceNote: 'Pago único · 5 meses activos',
         features: [
           'Asistente: WhatsApp + web, ES/EN',
@@ -2079,9 +2088,9 @@ const es: SiteCopy = {
       },
       {
         id: 'signature',
-        name: 'Signature',
-        guests: 'Hasta 300 invitados',
-        price: 399,
+        name: PLANS.signature.name,
+        guests: guestsLabel('signature', 'es'),
+        price: PLANS.signature.price,
         priceNote: 'Pago único · 5 meses activos',
         features: [
           'Todo lo de Essentials',
@@ -2094,9 +2103,9 @@ const es: SiteCopy = {
       },
       {
         id: 'grande',
-        name: 'Grande',
-        guests: '500+ invitados',
-        price: 699,
+        name: PLANS.grande.name,
+        guests: guestsLabel('grande', 'es'),
+        price: PLANS.grande.price,
         priceNote: 'Pago único · 5 meses activos',
         features: [
           'Todo lo de Signature',

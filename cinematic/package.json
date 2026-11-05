@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/prerender.mjs && node scripts/lint-copy.mjs",
+    "build": "tsc -b && vite build && node scripts/prerender.mjs && node scripts/lint-copy.mjs && node scripts/check-seo.mjs",
+    "test": "node scripts/test-paths.mjs && node scripts/test-jsonld.mjs",
+    "check:origins": "node scripts/check-origins.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "lint:copy": "node scripts/lint-copy.mjs"

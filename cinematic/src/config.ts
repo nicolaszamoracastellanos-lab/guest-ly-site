@@ -1,3 +1,5 @@
+import { COORDINATOR_MONTHLY, COORDINATOR_ONCE } from './pricing.ts';
+
 /* ── SITE CONFIG ──
    Every PENDING input from the wave 5 master prompt lands here, so going
    live is a paste-values-and-rebuild operation. */
@@ -26,9 +28,10 @@ export const PAY_LINKS: Record<PayLinkKey, string> = {
   'signature-coordinator-monthly': 'https://buy.stripe.com/4gMcMY3o96hp12Z70A63K06',
 };
 
-/* AI Coordinator add-on prices, must match the Stripe prices. */
-export const ADDON_PRICE = 79;
-export const ADDON_MONTHLY = 19;
+/* AI Coordinator add-on prices, must match the Stripe prices. The values
+   live in pricing.ts with every other price on the site. */
+export const ADDON_PRICE = COORDINATOR_ONCE;
+export const ADDON_MONTHLY = COORDINATOR_MONTHLY;
 
 /* Receives order notifications via FormSubmit (same inbox as production). */
 export const ORDER_INBOX = 'nicolas@guest-ly.com';

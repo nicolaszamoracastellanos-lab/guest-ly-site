@@ -35,8 +35,10 @@ REQUIRED=(
 OPTIONAL=(
   .well-known           # apple-app-site-association and similar
   .nojekyll
-  robots.txt
-  sitemap.xml
+  robots.txt            # crawler rules: allow all, points to the sitemap (cinematic/public).
+                        # Optional so a push of source before its build still deploys.
+  sitemap.xml           # public pages for search engines, written by cinematic/scripts/prerender.mjs
+                        # from its route list (never /reunion, never a demo wedding)
   404.html
   reunion               # /reunion/<name>/: private session pages (noindex), one per planner call
 )

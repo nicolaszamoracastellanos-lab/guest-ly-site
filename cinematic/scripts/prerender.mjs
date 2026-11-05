@@ -50,6 +50,11 @@ const port = server.address().port;
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ colorScheme: 'dark', reducedMotion: 'reduce' });
 
+/* GitHub Pages answers /privacy with a 301 to /privacy/, so the canonical
+   address of every page but the home page ends in a slash. */
+const SITE = 'https://guest-ly.com';
+const pageUrl = (route) => (route === '/' ? `${SITE}/` : `${SITE}${route}/`);
+
 const routes = [
   ['/', 'index.html'],
   ['/privacy', 'privacy/index.html'],
@@ -63,7 +68,7 @@ for (const [route, outFile] of routes) {
   await page.waitForSelector('#root > *');
   await page.waitForTimeout(400);
 
-  const html = await page.evaluate(() => {
+  const html = await page.evaluate((canonical) => {
     /* Strip runtime-only state so the served markup is the pre-JS state:
        js-ready gates the reveal animations (without it, content is visible
        even if JS never runs) and is-visible is added back by the observer. */
@@ -76,8 +81,14 @@ for (const [route, outFile] of routes) {
     document.querySelectorAll('.chat-card__note').forEach((el) => el.remove());
     /* Night-default markup: the bootstrap script re-resolves per visitor. */
     document.documentElement.setAttribute('data-theme', 'night');
+    /* Each page names itself as canonical (index.html ships the home URL). */
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonical);
+    /* The offers and FAQ JSON-LD describe the home page; the legal pages
+       show neither, so they do not carry it. */
+    if (!/\.com\/$/.test(canonical))
+      document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => el.remove());
     return '<!doctype html>\n' + document.documentElement.outerHTML;
-  });
+  }, pageUrl(route));
 
   const target = join(dist, outFile);
   mkdirSync(dirname(target), { recursive: true });
@@ -88,3 +99,17 @@ for (const [route, outFile] of routes) {
 
 await browser.close();
 server.close();
+
+/* sitemap.xml lists exactly the pages prerendered above, so a new public
+   page enters the sitemap and the stage-site.sh allowlist check together.
+   Private pages (/reunion/*) and demo weddings are never prerendered here
+   and so never listed. No lastmod: the same source builds the same file. */
+const sitemap = [
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+  ...routes.map(([route]) => `  <url><loc>${pageUrl(route)}</loc></url>`),
+  '</urlset>',
+  '',
+].join('\n');
+writeFileSync(join(dist, 'sitemap.xml'), sitemap);
+console.log(`wrote dist/sitemap.xml (${routes.length} pages)`);

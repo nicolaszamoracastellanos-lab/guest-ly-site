@@ -4,13 +4,16 @@
 
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { CINEMATIC } from './lib/paths.mjs';
 
 const [outDirArg, baseUrl = 'http://localhost:5173'] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const flags = Object.fromEntries(
   process.argv.slice(2).filter((a) => a.startsWith('--')).map((a) => a.replace(/^--/, '').split('=')),
 );
-const outDir = resolve(outDirArg || 'shots');
+/* A relative out dir is taken from where you run it; the default lands in
+   cinematic/shots wherever the repo lives. */
+const outDir = outDirArg ? resolve(outDirArg) : join(CINEMATIC, 'shots');
 const themes = (flags.themes || 'night,day').split(',');
 const langs = (flags.langs || 'en').split(',');
 const shotNames = flags.shots ? flags.shots.split(',') : null;
