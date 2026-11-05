@@ -87,6 +87,10 @@ export type CoupleDayOf = {
   day_of: boolean; parties_in: number; parties_total: number; seats_in: number; seats_total: number;
   runsheet: { id: string; title: string; starts_at: string; ends_at: string | null; location: string | null; owner: string | null; state: "done" | "now" | "next" | "later" }[];
   runsheet_available: boolean; escalations: { id: string; text: string; source: string; at: string | null }[];
+  /** The service day the runsheet list is (K2, additive). */
+  runsheet_day?: string | null;
+  /** #3 (MW_LIVE_DAY, 1.4.0+): the server's Now and Next; read with readLive (features/dayof/liveDayCore). */
+  live?: unknown;
 };
 export type MoreEntry = { key: string; available: boolean; count: number | null; note: string | null };
 export type GuestDetail = {
@@ -158,13 +162,29 @@ export type PlannerPortfolioWedding = {
   open_requests: number | null;
   asks_planner: number | null;
   tasks: { open: number; overdue: number; due_soon: number } | null;
+  /** #6 (MW_ROAD on for this wedding): { now_id, label, done, total }; read with readStage. */
+  stage?: unknown;
 };
 export type PlannerNeedItem = { id: string; kind: "request_answered" | "task_overdue" | "task_due_today" | "wedding_soon"; wedding_slug: string; couple_names: string; title: string; why: string; ref: { type: "request" | "task" | "wedding"; id: string | null }; urgent: boolean };
 export type PlannerAgendaItem = { id: string; wedding_slug: string; couple_names: string; time: string | null; title: string; location: string | null; kind: "runsheet" | "wedding_day" };
 export type PlannerWeekItem = { id: string; wedding_slug: string; couple_names: string; date: string; title: string; kind: "task_due" | "wedding" };
 export const usePlannerPortfolio = () => useQuery({ queryKey: ["planner-portfolio"], queryFn: () => get<{ weddings: PlannerPortfolioWedding[]; generated_at: string }>("/planner/portfolio") });
-export type PlannerAgenda = { today: string; needs_you: PlannerNeedItem[]; agenda: PlannerAgendaItem[]; week: PlannerWeekItem[] };
-export const usePlannerAgenda = () => useQuery({ queryKey: ["planner-agenda"], queryFn: () => get<PlannerAgenda>("/planner/agenda") });
+export type PlannerAgenda = {
+  today: string;
+  needs_you: PlannerNeedItem[];
+  agenda: PlannerAgendaItem[];
+  week: PlannerWeekItem[];
+  /** #3 (MW_LIVE_DAY per wedding, app 1.4.0+): each wedding live today; read with readLiveList. */
+  live?: unknown;
+};
+// #3: while a wedding is live today (a non-empty `live`) and the screen is in
+// view, the agenda refreshes every 60 s; minutes tick on the phone between.
+export const usePlannerAgenda = (opts?: { poll?: boolean }) =>
+  useQuery({
+    queryKey: ["planner-agenda"],
+    queryFn: () => get<PlannerAgenda>("/planner/agenda"),
+    refetchInterval: (q) => (opts?.poll && Array.isArray(q.state.data?.live) && q.state.data.live.length ? 60_000 : false),
+  });
 
 export const usePlannerHome = () => useQuery({ queryKey: ["planner-home"], queryFn: () => get<PlannerHome>("/planner/home") });
 export const usePlannerGuests = (slug: string) => useQuery({ queryKey: ["planner-guests", slug], queryFn: () => get<{ guests: PlannerGuest[]; count: number }>(`/planner/weddings/${slug}/guests`), enabled: !!slug });

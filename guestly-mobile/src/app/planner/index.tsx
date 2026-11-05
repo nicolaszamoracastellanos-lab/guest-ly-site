@@ -10,7 +10,7 @@
 
 import React from "react";
 import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { fmt, plural, useCopy, useLang, relTime, shortDate } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { usePlannerHome, usePlannerAgenda, usePlannerPortfolio, type PlannerNeedItem } from "@/lib/hooks";
@@ -20,6 +20,7 @@ import { colors, fonts, radius } from "@/ui/tokens";
 import { requestTitle } from "@/app/couple/(tools)/requests/index";
 import { COPY } from "@/features/planner/copy";
 import { HealthDot, WeddingCard, useWorkOnWedding } from "@/features/planner/Cockpit";
+import { LiveToday } from "@/features/planner/LiveToday";
 import { PlannerTop, IconDisc, TaskCheckRow, usePlannerBoardQ, usePlannerRequestsQ, useTaskToggle, asksPlanner, dueOf, todayIso, daysToGo, kindIcon } from "@/app/planner/_layout";
 
 export default function PlannerToday() {
@@ -46,7 +47,7 @@ function PlannerTodayBody() {
   // the wedding-level cards below keep working as before.
   const l = useFeatureCopy(COPY);
   const layout = useLayout();
-  const agenda = usePlannerAgenda();
+  const agenda = usePlannerAgenda({ poll: useIsFocused() });
   const portfolio = usePlannerPortfolio();
   const work = useWorkOnWedding();
 
@@ -86,6 +87,9 @@ function PlannerTodayBody() {
     else if (n.ref.type === "task" && n.ref.id) router.push({ pathname: "/planner/tasks/[id]", params: { id: n.ref.id } });
     else router.navigate({ pathname: "/planner/weddings/[slug]", params: { slug: n.wedding_slug } } as never);
   }
+
+  // #3: the weddings live today, above everything else (renders nothing without them).
+  const liveCard = agenda.isError ? null : <LiveToday raw={agenda.data?.live} receivedAt={agenda.dataUpdatedAt} />;
 
   const needsAllCard = agenda.isError || !multi ? null : (
     <Card kind="solid" padding={16}>
@@ -306,6 +310,7 @@ function PlannerTodayBody() {
       {layout.twoPane ? (
         <Row gap={16} style={{ marginTop: 20, alignItems: "flex-start" }}>
           <Stack gap={14} style={{ flex: 1, minWidth: 0 }}>
+            {liveCard}
             {needsAllCard}
             {agendaCard}
             {thisWedding}
@@ -317,6 +322,7 @@ function PlannerTodayBody() {
         </Row>
       ) : (
         <Stack gap={14} style={{ marginTop: 20 }}>
+          {liveCard}
           {needsAllCard}
           {agendaCard}
           {weddingsCard}

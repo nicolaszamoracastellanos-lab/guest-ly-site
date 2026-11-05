@@ -20,6 +20,7 @@ import { nightOrder } from "@/features/runsheet/list";
 import { useSafeBack } from "@/lib/nav";
 import { LiveDay } from "@/features/dayof/LiveDay";
 import { useDayPack, useDayPackFlag } from "@/features/dayof/hooks";
+import { ServerLivePanel, liveRowState, useServerLive } from "@/features/dayof/ServerLive";
 
 export default function CoupleDayOf() {
   const flag = useDayPackFlag();
@@ -46,13 +47,27 @@ function ServerDayOf() {
   const blocks = [...(data?.runsheet ?? [])]
     .sort((a, b) => nightOrder(a.starts_at) - nightOrder(b.starts_at))
     .map((b) => ({ ...b, state: live ? b.state : ("later" as const) }));
+  const rowState = (b: { id: string; state: string }) => (liveView ? liveRowState(liveView.state, b.id, b.state) : b.state);
   const layout = useLayout();
   const regions = useReservedRegions();
   const side = useSideInsetsStyle();
   const topInset = useTopInset();
   const qc = useQueryClient();
-  const canEdit = useUserSession()?.me.can_edit ?? false;
+  const session = useUserSession();
+  const canEdit = session?.me.can_edit ?? false;
   const [marking, setMarking] = React.useState(false);
+  // #3 (MW_LIVE_DAY, 1.4.0): Now and Next ticking on the phone from the server's
+  // answer; without `live` (flag off, an older portal) the screen is as before.
+  const [overlay, setOverlay] = React.useState<Record<string, string>>({});
+  const onOverlay = React.useCallback((id: string, status: string | null) => {
+    setOverlay((o) => {
+      const next = { ...o };
+      if (status) next[id] = status;
+      else delete next[id];
+      return next;
+    });
+  }, []);
+  const liveView = useServerLive(data, mainQuery.dataUpdatedAt, session?.me.tenant.slug, overlay);
   const pct = data && data.parties_total ? Math.min(100, Math.round((data.parties_in / data.parties_total) * 100)) : 0;
 
   // Wedding-day mode (iPhone Duo, half folded on the table): "Now" and "Next"
@@ -117,7 +132,8 @@ function ServerDayOf() {
 
   return (
     <Screen query={mainQuery} refresh header={<TopBar onBack={back} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
-      <Row gap={24} align="flex-end" style={{ marginTop: 16 }}>
+      {liveView ? <ServerLivePanel view={liveView} canEdit={canEdit} onOverlay={onOverlay} /> : null}
+      <Row gap={24} align="flex-end" style={{ marginTop: liveView ? 28 : 16 }}>
         <View>
           <SectionLabel color={colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>
           <Row gap={6} align="baseline">
@@ -140,9 +156,10 @@ function ServerDayOf() {
         </View>
       </Row>
       <View style={{ height: 3, borderRadius: 2, backgroundColor: "rgba(247,243,236,0.1)", marginTop: 12 }}>
-        <View style={{ width: `${pct}%`, height: "100%", backgroundColor: colors.gold, borderRadius: 2 }} />
+        {/* With the live panel the Now diamond is the screen's one gold. */}
+        <View style={{ width: `${pct}%`, height: "100%", backgroundColor: liveView ? colors.ivory70 : colors.gold, borderRadius: 2 }} />
       </View>
-      <Button label={copy.coupleDayOf.checkIn} icon="qr" onPress={() => router.push("/couple/checkin")} style={{ marginTop: 18 }} />
+      <Button label={copy.coupleDayOf.checkIn} icon="qr" kind={liveView ? "glass" : "primary"} onPress={() => router.push("/couple/checkin")} style={{ marginTop: 18 }} />
 
       <Row style={{ justifyContent: "space-between", marginTop: 28 }}>
         <SectionLabel>{copy.coupleDayOf.runsheet}</SectionLabel>
@@ -163,9 +180,11 @@ function ServerDayOf() {
             <Button label={copy.coupleDayOf.buildRunsheet} kind="glass" small onPress={() => router.push("/couple/runsheet")} />
           </View>
         ) : null}
-        {blocks.map((b, i, arr) => (
+        {blocks.map((row, i, arr) => {
+          const b = { ...row, state: rowState(row) };
+          return (
           <Row key={b.id} gap={14} style={{ minHeight: 48, paddingVertical: 6, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
-            <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 62 }}>
+            <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" && !liveView ? colors.goldLight : b.state === "now" ? colors.ivory : colors.ivory55} style={{ width: 62 }}>
               {b.starts_at.slice(0, 5)}
             </T>
             <View style={{ flex: 1 }}>
@@ -178,9 +197,10 @@ function ServerDayOf() {
                 </T>
               ) : null}
             </View>
-            {b.state === "done" ? <Badge label={copy.common.doneLabel} kind="mute" /> : b.state === "now" ? <Badge label={copy.common.now} kind="gold" /> : null}
+            {b.state === "done" ? <Badge label={copy.common.doneLabel} kind="mute" /> : b.state === "now" ? <Badge label={copy.common.now} kind={liveView ? "mute" : "gold"} /> : null}
           </Row>
-        ))}
+          );
+        })}
       </Card>
 
       {data?.escalations.length ? (

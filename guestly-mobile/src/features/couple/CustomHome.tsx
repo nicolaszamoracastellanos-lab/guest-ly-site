@@ -13,13 +13,14 @@ import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toastError } from "@/ui";
+import { T, Row, Stack, Card, Icon, Badge, Button, Chip, Gem, SectionLabel, toastError } from "@/ui";
 import type { IconName } from "@/ui/Icon";
 import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
 import { fullDate, dayMonth } from "@/features/couple/ui";
 import { CARD_IDS, rowSpans, markPhaseHandled, type CardId, type CardSize, type HomeCard } from "./homeLayout";
 import { moveCard, setCard, showCard } from "./homeEdit";
+import { readRoad, roadCardRoute, roadRows, type RoadCard, type RoadItem } from "./road";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
 
@@ -45,7 +46,10 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
   const [draft, setDraft] = useState<{ cards: HomeCard[]; dismissed: string[] } | null>(null);
   const editable = canEdit && layout.canEdit;
   const list = editing && draft ? draft.cards : layout.cards;
-  const visible = useMemo(() => list.filter((x) => !x.hidden), [list]);
+  // #6: the road card draws only with its data (MW_ROAD on, the read worked);
+  // without it the card stays in the layout (and in edit mode) but not on Home.
+  const road = useMemo(() => readRoad(cards?.road), [cards?.road]);
+  const visible = useMemo(() => list.filter((x) => !x.hidden && (editing || x.id !== "road" || !!road)), [list, editing, road]);
   const hidden = useMemo(() => list.filter((x) => x.hidden), [list]);
   const rows = rowsOf(visible, rowSpans(visible, 2));
 
@@ -112,7 +116,8 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
                   first={vi === 0}
                   last={vi === visible.length - 1}
                   copy={c}
-                  onOpen={() => router.push(CARD_ROUTES[item.id] as never)}
+                  onOpen={() => router.push((item.id === "road" ? roadCardRoute(road) : CARD_ROUTES[item.id]) as never)}
+                  hint={item.id === "road" ? road?.nextStep?.linkLabel || undefined : undefined}
                   onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir) }))}
                   onSize={(size) => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { size }) }))}
                   onHide={() => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { hidden: true }) }))}
@@ -289,6 +294,10 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
             </View>
           );
         }
+        case "road": {
+          if (!road) return <Quiet text={c.open} />;
+          return <RoadBody road={road} size={size} half={half} copy={c} />;
+        }
         case "planner": {
           const p = d.planner;
           const n = p?.open ?? data.needs_you_breakdown?.requests ?? 0;
@@ -320,6 +329,7 @@ function CardShell({
   onHide,
   children,
   testID,
+  hint,
 }: {
   card: HomeCard;
   title: string;
@@ -333,6 +343,8 @@ function CardShell({
   onHide: () => void;
   children: ReactNode;
   testID?: string;
+  /** Where the card goes when it is not the card's own screen (the road's Now step). */
+  hint?: string;
 }) {
   const body = (
     <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
@@ -362,9 +374,79 @@ function CardShell({
       {body}
     </View>
   ) : (
-    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={title} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}>
+    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={title} accessibilityHint={hint} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}>
       {body}
     </Pressable>
+  );
+}
+
+/**
+ * #6: the milestone line inside its card. Done rows lead with a check, the Now
+ * row with the gold diamond (the line's one mark), the rest with a ring. Every
+ * state is an icon plus words, never colour alone. The whole card opens the Now
+ * step's screen, so nothing inside is a second button.
+ */
+export function RoadBody({ road, size, half, copy }: { road: RoadCard; size: CardSize; half: boolean; copy: HomeCopy }) {
+  const rows = roadRows(road, half ? "s" : size);
+  const now = road.items.find((i) => i.id === road.nowId) ?? null;
+  return (
+    <View style={{ gap: 8 }}>
+      <T v="meta13" color={colors.ivory55} style={{ fontVariant: ["tabular-nums"] }}>
+        {road.doneText}
+      </T>
+      {!road.nowId && size !== "l" ? <Sub text={copy.roadAllDone} /> : null}
+      {rows.map((it) => (
+        <RoadRow key={it.id} item={it} isNow={it.id === road.nowId} isNext={!half && size === "m" && it.id === road.nextId} copy={copy} />
+      ))}
+      {now && road.nextStep && !half ? (
+        <View style={{ gap: 2 }}>
+          <T v="body15" color={colors.ivory90}>
+            {road.nextStep.text}
+          </T>
+          {road.nextStep.linkLabel ? (
+            <T v="meta13" color={colors.goldLight}>
+              {road.nextStep.linkLabel}
+            </T>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function RoadRow({ item, isNow, isNext, copy }: { item: RoadItem; isNow: boolean; isNext: boolean; copy: HomeCopy }) {
+  const done = item.state === "done";
+  const lead = isNow ? copy.roadNow : isNext ? copy.roadNext : null;
+  const a11y = [lead, item.label, done ? copy.roadDoneA11y : isNow ? null : copy.roadNotYetA11y, item.sub, item.overdue ? copy.roadOverdue : null].filter(Boolean).join(", ");
+  return (
+    <View style={styles.roadRow} accessible accessibilityLabel={a11y}>
+      <View style={styles.roadMark}>
+        {done ? <Icon name="check" size={16} color={colors.ivory55} /> : isNow ? <Gem size={9} /> : <View style={styles.roadRing} />}
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        {lead ? (
+          <T v="meta13" color={isNow ? colors.goldLight : colors.ivory55}>
+            {lead}
+          </T>
+        ) : null}
+        <T v="body15" color={done ? colors.ivory70 : isNow ? colors.ivory : colors.ivory70}>
+          {item.label}
+        </T>
+        {item.sub ? (
+          <T v="meta13" color={colors.ivory55} style={{ fontVariant: ["tabular-nums"] }}>
+            {item.sub}
+          </T>
+        ) : null}
+        {item.overdue ? (
+          <Row gap={4} style={{ marginTop: 2 }}>
+            <Icon name="warning" size={14} color={colors.amber} />
+            <T v="meta13" color={colors.amber}>
+              {copy.roadOverdue}
+            </T>
+          </Row>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -464,4 +546,7 @@ const styles = StyleSheet.create({
   addBox: { borderStyle: "dashed", borderWidth: 1, borderColor: colors.ivory25, marginTop: 4 },
   track: { height: 4, borderRadius: 2, backgroundColor: colors.ivory09, overflow: "hidden" },
   fill: { height: 4, borderRadius: 2 },
+  roadRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  roadMark: { width: 18, minHeight: 20, alignItems: "center", justifyContent: "center", paddingTop: 2 },
+  roadRing: { width: 9, height: 9, borderRadius: 5, borderWidth: 1, borderColor: colors.ivory40 },
 });

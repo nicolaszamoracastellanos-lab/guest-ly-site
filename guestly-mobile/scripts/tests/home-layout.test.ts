@@ -1,13 +1,13 @@
 // Run: node --experimental-strip-types scripts/tests/home-layout.test.ts
 // The customizable Home's pure core (src/features/couple/homeLayout.ts), a
 // verbatim copy of the portal's src/lib/home-layout-core.ts. These are the
-// portal's cases (scripts/test-home-layout-core.mjs) unchanged, so both copies
-// answer to the same assertions.
+// portal's cases (scripts/test-home-layout-core.mjs, K8 groups included)
+// unchanged, so both copies answer to the same assertions.
 
 import assert from "node:assert/strict";
 import * as core from "../../src/features/couple/homeLayout.ts";
 
-const { CARD_IDS, STANDARD_ANSWERS, phaseFor, suggestedCards, effectiveCards, markPhaseHandled, rowSpans, sanitizeLayout, sanitizeCards } = core;
+const { CARD_IDS, INTRODUCED, STANDARD_ANSWERS, phaseFor, suggestedCards, effectiveCards, markPhaseHandled, rowSpans, sanitizeLayout, sanitizeCards, mergeCards } = core;
 
 let n = 0;
 const t = (name, fn) => { fn(); n++; };
@@ -33,7 +33,7 @@ t("suggested: the mockup's default answers", () => {
   const a = { focus: ["rsvp", "budget", "questions"], detail: "balanced", when: "weekly", team: "partner", adapt: true };
   const s = suggestedCards(a);
   everyOnce(s);
-  assert.deepEqual(ids(s), ["countdown", "rsvp", "replies", "budget", "questions", "partner", "briefing", "activity"]);
+  assert.deepEqual(ids(s), ["countdown", "road", "rsvp", "replies", "budget", "questions", "partner", "briefing", "activity"]);
   assert.equal(s[0].size, "s");
 });
 
@@ -44,15 +44,17 @@ t("suggested: every combination has every card once", () => {
         for (const focus of [["rsvp"], ["seating", "website"], ["vendors", "tasks", "questions"]]) {
           const s = suggestedCards({ focus, detail, when, team, adapt: true });
           everyOnce(s);
-          if (when === "needed") assert.ok(ids(s).length <= 4);
+          // The road (#6, introduced) comes on top of the four "needed" cards.
+          if (when === "needed") assert.ok(ids(s).filter((id) => id !== "road").length <= 4);
+          assert.deepEqual(ids(s).slice(0, 2), ["countdown", "road"]);
           if (detail === "glance") assert.ok(s.filter((c) => !c.hidden).every((c) => c.size === "s"));
         }
 });
 
 t("suggested: needed puts the briefing large and first after the countdown", () => {
   const s = suggestedCards({ ...STANDARD_ANSWERS, when: "needed" });
-  assert.deepEqual(ids(s).slice(0, 2), ["countdown", "briefing"]);
-  assert.equal(s[1].size, "l");
+  assert.deepEqual(ids(s).slice(0, 3), ["countdown", "road", "briefing"]);
+  assert.equal(s[2].size, "l");
 });
 
 t("suggested: full detail widens the first focus card", () => {
@@ -70,7 +72,7 @@ t("effective: wedding week lifts its cards after the countdown and shows them", 
   const base = suggestedCards(STANDARD_ANSWERS);
   const e = effectiveCards(base, STANDARD_ANSWERS, "week", []);
   everyOnce(e);
-  assert.deepEqual(ids(e).slice(0, 4), ["countdown", "runsheet", "checkin", "questions"]);
+  assert.deepEqual(ids(e).slice(0, 5), ["countdown", "runsheet", "checkin", "questions", "road"]);
 });
 
 t("effective: handled phase cards stay where the couple put them", () => {
@@ -80,6 +82,7 @@ t("effective: handled phase cards stay where the couple put them", () => {
   assert.deepEqual(effectiveCards(base, STANDARD_ANSWERS, "after", d), base);
   const one = effectiveCards(base, STANDARD_ANSWERS, "after", ["after:album"]);
   assert.deepEqual(ids(one).slice(0, 3), ["countdown", "thankyou", "budget"]);
+  assert.ok(ids(one).includes("road"));
   assert.equal(one.find((c) => c.id === "album").hidden, true);
   assert.deepEqual(markPhaseHandled(["x"], STANDARD_ANSWERS, "planning"), ["x"]);
 });
@@ -113,12 +116,64 @@ t("sanitize: garbage in", () => {
   });
   assert.deepEqual(l.answers, { focus: ["budget", "tasks", "rsvp"], detail: "balanced", when: "daily", team: "solo", adapt: true });
   everyOnce(l.cards);
-  assert.deepEqual(l.cards[0], { id: "budget", size: "m", hidden: false });
-  assert.ok(l.cards.slice(1).every((c) => c.hidden));
+  // An old list never mentioned the road: it is placed once, visible, at the top (no countdown shown).
+  assert.deepEqual(l.cards[0], { id: "road", size: "l", hidden: false });
+  assert.deepEqual(l.cards[1], { id: "budget", size: "m", hidden: false });
+  assert.ok(l.cards.slice(2).every((c) => c.hidden));
   assert.deepEqual(l.dismissed, ["week:runsheet"]);
   const noCards = sanitizeLayout({ answers: STANDARD_ANSWERS });
   assert.deepEqual(noCards.cards, suggestedCards(STANDARD_ANSWERS));
   everyOnce(sanitizeCards("nope"));
+});
+
+// K8: new card ids are not hidden for every existing layout, and an older client's
+// save does not hide them again.
+const OLD_IDS = CARD_IDS.filter((id) => !(id in INTRODUCED));
+const oldLayout = [
+  { id: "countdown", size: "s", hidden: false },
+  { id: "rsvp", size: "m", hidden: false },
+  { id: "tasks", size: "m", hidden: false },
+  ...OLD_IDS.filter((id) => !["countdown", "rsvp", "tasks"].includes(id)).map((id) => ({ id, size: "m", hidden: true })),
+];
+
+t("K8: introduced cards are listed with their anchor", () => {
+  assert.deepEqual(INTRODUCED, { road: "countdown" });
+  assert.ok(CARD_IDS.includes("road"));
+  assert.equal(CARD_IDS[CARD_IDS.length - 1], "road", "new ids are appended, the order of the old ones does not move");
+});
+
+t("K8: an existing layout shows the road once, right after the countdown", () => {
+  const c = sanitizeCards(oldLayout);
+  everyOnce(c);
+  assert.deepEqual(ids(c), ["countdown", "road", "rsvp", "tasks"]);
+  assert.equal(c[1].size, "l");
+  // The same list stored again keeps the couple's choice from then on.
+  const hidden = c.map((x) => (x.id === "road" ? { ...x, hidden: true } : x));
+  assert.equal(sanitizeCards(hidden).find((x) => x.id === "road").hidden, true);
+  // Countdown hidden or absent: the road goes to the top.
+  assert.equal(ids(sanitizeCards([{ id: "countdown", size: "s", hidden: true }, { id: "budget", size: "m" }]))[0], "road");
+  assert.equal(ids(sanitizeCards([]))[0], "road");
+});
+
+t("K8: a save from an app that does not know the road keeps its stored entry", () => {
+  const stored = sanitizeCards(oldLayout).map((x) => (x.id === "road" ? { ...x, hidden: true, size: "m" } : x));
+  // The 1.3 app posts its own list: no road in it.
+  const posted = [{ id: "tasks", size: "m", hidden: false }, { id: "countdown", size: "s", hidden: false }, { id: "rsvp", size: "l", hidden: false }, ...OLD_IDS.filter((id) => !["countdown", "rsvp", "tasks"].includes(id)).map((id) => ({ id, size: "m", hidden: true }))];
+  const m = mergeCards(posted, stored);
+  everyOnce(m);
+  assert.deepEqual(m.find((x) => x.id === "road"), { id: "road", size: "m", hidden: true }, "hidden stays hidden");
+  assert.deepEqual(ids(m), ["tasks", "countdown", "rsvp"], "the app's own order and sizes win");
+  // A visible road stays visible and keeps its place after the card it followed.
+  const shown = sanitizeCards(oldLayout);
+  const m2 = mergeCards(posted, shown);
+  assert.deepEqual(ids(m2), ["tasks", "countdown", "road", "rsvp"]);
+  // Nothing stored: the usual rules (the road is introduced after the countdown).
+  assert.deepEqual(ids(mergeCards(posted, null)), ["tasks", "countdown", "road", "rsvp"]);
+  // An id the client did send wins over the stored entry.
+  const m3 = mergeCards([...posted, { id: "road", size: "s", hidden: false }], stored);
+  assert.deepEqual(m3.find((x) => x.id === "road"), { id: "road", size: "s", hidden: false });
+  // Garbage posted: the stored layout survives intact.
+  assert.deepEqual(mergeCards("nope", stored), stored);
 });
 
 console.log(`test-home-layout-core: ${n} groups ok`);

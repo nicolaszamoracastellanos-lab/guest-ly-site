@@ -10,6 +10,12 @@
 // moved to the top while that phase lasts (effectiveCards), until the couple
 // arranges or hides them in that phase themselves (the `dismissed` list).
 // Rows always end flush (rowSpans): the last card of a row widens to the edge.
+//
+// Cards added after the first release (INTRODUCED, Nov 2026: "road", #6) are
+// shown once to layouts that have never mentioned them, right after the
+// countdown, instead of being appended hidden; and a client that posts a card
+// list without an id (an older app that does not know it) keeps the stored
+// entry for that id (mergeCards), so it never hides a card for both partners.
 
 export const CARD_IDS = [
   "countdown",
@@ -30,6 +36,7 @@ export const CARD_IDS = [
   "partner",
   "planner",
   "activity",
+  "road",
 ] as const;
 export type CardId = (typeof CARD_IDS)[number];
 export type CardSize = "s" | "m" | "l";
@@ -80,7 +87,31 @@ export const DEFAULT_SIZE: Record<CardId, CardSize> = {
   partner: "s",
   planner: "s",
   activity: "m",
+  road: "l",
 };
+
+/**
+ * Cards added after the first release, each with the card it goes after the
+ * first time a layout meets it (top when that card is hidden or absent).
+ */
+export const INTRODUCED: Partial<Record<CardId, CardId>> = {
+  road: "countdown",
+};
+
+function isIntroduced(id: CardId): boolean {
+  return Object.prototype.hasOwnProperty.call(INTRODUCED, id);
+}
+
+/** Places every introduced card the list does not hold yet, visible, after its anchor. */
+function introduce(list: HomeCard[], size?: (id: CardId) => CardSize): HomeCard[] {
+  for (const id of CARD_IDS) {
+    if (!isIntroduced(id) || list.some((c) => c.id === id)) continue;
+    const after = INTRODUCED[id];
+    const anchor = list.findIndex((c) => c.id === after && !c.hidden);
+    list.splice(anchor >= 0 ? anchor + 1 : 0, 0, { id, size: size ? size(id) : DEFAULT_SIZE[id], hidden: false });
+  }
+  return list;
+}
 
 export const FOCUS_CARDS: Record<Focus, CardId[]> = {
   rsvp: ["rsvp", "replies"],
@@ -142,9 +173,9 @@ export function suggestedCards(a: HomeAnswers): HomeCard[] {
   const shown = a.when === "needed" ? out.slice(0, 4) : out;
   const shownIds = new Set(shown.map((c) => c.id));
   for (const id of CARD_IDS) {
-    if (!shownIds.has(id)) shown.push({ id, size: DEFAULT_SIZE[id], hidden: true });
+    if (!shownIds.has(id) && !isIntroduced(id)) shown.push({ id, size: DEFAULT_SIZE[id], hidden: true });
   }
-  return shown;
+  return introduce(shown, (id) => (a.detail === "glance" ? "s" : DEFAULT_SIZE[id]));
 }
 
 /**
@@ -231,8 +262,8 @@ export function sanitizeAnswers(raw: unknown): HomeAnswers | null {
   };
 }
 
-/** Cards from untrusted JSON: unknown ids and repeats dropped, sizes clamped, missing ids appended hidden. */
-export function sanitizeCards(raw: unknown): HomeCard[] {
+/** The valid entries of an untrusted card list, in order: unknown ids and repeats dropped, sizes clamped. */
+function parseCards(raw: unknown): HomeCard[] {
   const out: HomeCard[] = [];
   const seen = new Set<CardId>();
   if (Array.isArray(raw)) {
@@ -244,8 +275,44 @@ export function sanitizeCards(raw: unknown): HomeCard[] {
       out.push({ id: r.id, size: pick(r.size, ["s", "m", "l"] as const, DEFAULT_SIZE[r.id]), hidden: r.hidden === true });
     }
   }
-  for (const id of CARD_IDS) if (!seen.has(id)) out.push({ id, size: DEFAULT_SIZE[id], hidden: true });
   return out;
+}
+
+/**
+ * Cards from untrusted JSON: unknown ids and repeats dropped, sizes clamped,
+ * missing ids appended hidden; an introduced card the list never mentioned is
+ * placed once, visible, after its anchor.
+ */
+export function sanitizeCards(raw: unknown): HomeCard[] {
+  const out = parseCards(raw);
+  const seen = new Set(out.map((c) => c.id));
+  for (const id of CARD_IDS) if (!seen.has(id) && !isIntroduced(id)) out.push({ id, size: DEFAULT_SIZE[id], hidden: true });
+  return introduce(out);
+}
+
+/**
+ * A posted card list merged over the stored one. An id the client did not
+ * send (an older app that does not know it, or a surface that does not show
+ * it) keeps its stored entry, placed after the nearest card that came before
+ * it in the stored list. With nothing stored, sanitizeCards' rules apply.
+ */
+export function mergeCards(raw: unknown, stored: readonly HomeCard[] | null): HomeCard[] {
+  const out = parseCards(raw);
+  if (stored) {
+    stored.forEach((c, i) => {
+      if (!isCardId(c.id) || out.some((x) => x.id === c.id)) return;
+      let at = 0;
+      for (let j = i - 1; j >= 0; j--) {
+        const k = out.findIndex((x) => x.id === stored[j].id);
+        if (k >= 0) {
+          at = k + 1;
+          break;
+        }
+      }
+      out.splice(at, 0, { id: c.id, size: c.size, hidden: c.hidden });
+    });
+  }
+  return sanitizeCards(out);
 }
 
 /** `<phase>:<id>` strings only, no repeats, at most one per phase card. */

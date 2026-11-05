@@ -17,6 +17,7 @@ import { colors, radius } from "@/ui/tokens";
 import { FOCUS_IDS, STANDARD_ANSWERS, suggestedCards, type Focus, type HomeAnswers } from "./homeLayout";
 import { readLayout, useSaveHomeLayout, type CoupleHomeWithLayout, type RecapPref } from "./homeCards";
 import { HOME_COPY, hourLabel } from "./homeCopy";
+import { onlyServed } from "./road";
 
 const STEPS = 5;
 const HOURS = [6, 7, 8, 9, 10, 12, 13, 17, 18, 19, 20, 21];
@@ -33,7 +34,7 @@ export function HomeQuiz() {
     const l = readLayout(qc.getQueryData<CoupleHomeWithLayout>(["couple-home"])?.layout);
     const answers: HomeAnswers = l?.configured ? l.answers : { ...STANDARD_ANSWERS, focus: [] };
     const recap: RecapPref = l?.recap ?? { cadence: answers.when, weekday: 1, hour: 8 };
-    return { answers, recap };
+    return { answers, recap, served: l?.served ?? null };
   }, [qc]);
   const [a, setA] = useState<HomeAnswers>(start.answers);
   const [weekday, setWeekday] = useState(start.recap.weekday);
@@ -46,7 +47,8 @@ export function HomeQuiz() {
     try {
       await save.mutateAsync({
         answers,
-        cards: suggestedCards(answers),
+        // K8: a card the server did not show this phone is left to the server.
+        cards: onlyServed(suggestedCards(answers), start.served),
         dismissed: [],
         quiz_state: skip ? "skipped" : "done",
         ...(skip ? {} : { recap: { cadence: a.when, weekday, hour } }),

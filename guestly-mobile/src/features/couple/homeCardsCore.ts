@@ -25,6 +25,9 @@ export type HomeLayoutPayload = {
   quizState?: "done" | "skipped" | null;
   /** The caller's own recap choice (per person); `set` false = never chosen (the default). */
   recap?: (RecapPref & { set?: boolean }) | null;
+  /** The card ids the server listed (K8): a save posts only these, so the
+   *  server keeps its stored entry for any card it did not show this phone. */
+  served: CardId[];
 };
 
 // Mirrors the portal's src/lib/home-cards.ts (feat/custom-home b0319941).
@@ -49,6 +52,8 @@ export type HomeCardsData = {
   thankyou?: ThankYouCard | null;
   partner?: PartnerCard | null;
   planner?: PlannerCard | null;
+  /** #6 (MW_ROAD, app 1.4.0+): the milestone line, read with readRoad (./road.ts). */
+  road?: unknown;
 };
 
 export type CoupleHomeWithLayout = CoupleHome & { layout?: unknown; cards?: HomeCardsData | null };
@@ -73,6 +78,8 @@ export const CARD_ROUTES: Record<CardId, string> = {
   partner: "/couple/tasks",
   planner: "/couple/requests",
   activity: "/couple/insights",
+  // #6: the card opens its Now step (roadCardRoute); this is the fallback.
+  road: "/couple/runsheet",
 };
 
 /** Groups the visible cards into rows of two columns from rowSpans (each row sums to 2). */
