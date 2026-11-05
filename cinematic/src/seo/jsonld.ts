@@ -3,7 +3,7 @@
    JSON_LD_MARKER comment, so the Product offers always carry the plan
    cards' names, prices and guest caps (src/pricing.ts), and the FAQPage
    carries the visible answers of the EN FAQ items marked `ld: true`.
-   scripts/check-jsonld.mjs compares the built page against it. */
+   scripts/check-seo.mjs compares the built page against it. */
 
 import type { SiteCopy } from '../copy.ts';
 import { CURRENCY } from '../pricing.ts';

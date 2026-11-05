@@ -32,13 +32,15 @@ export function deskPath(p) {
 }
 
 /* A portal checkout to borrow tools from (playwright, sharp) or drive for
-   screenshots: GL_PORTAL_DIR when set, else the first existing default.
-   Returns null when none exists; callers say what to set. */
+   screenshots: GL_PORTAL_DIR when set, else the first existing default that
+   has playwright installed (a checkout whose node_modules link is stale is
+   skipped, the same guard as Guest-ly Docs/guia-sitio-y-coordinador/build/portal.mjs).
+   Returns null when none qualifies; callers say what to set. */
 export function findPortal(candidates = ['guest-ly/guestly-portal', 'guest-ly/guestly-portal-deploy']) {
   const list = process.env.GL_PORTAL_DIR ? [process.env.GL_PORTAL_DIR] : candidates.map((c) => join(MOVED, c));
   for (const c of list) {
     const p = deskPath(c);
-    if (existsSync(join(p, 'package.json'))) return p;
+    if (existsSync(join(p, 'node_modules', 'playwright', 'package.json'))) return p;
   }
   return null;
 }

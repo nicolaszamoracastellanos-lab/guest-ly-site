@@ -9,7 +9,7 @@
    Usage: node scripts/test-paths.mjs */
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { CINEMATIC, REPO_ROOT } from './lib/paths.mjs';
@@ -47,6 +47,13 @@ try {
   const home = join(sandbox, 'home');
   mkdirSync(join(home, 'Desktop', 'Desktop - Unknown', 'guest-ly', 'guestly-portal'), { recursive: true });
   mkdirSync(join(home, 'Desktop', 'old-only'), { recursive: true });
+  /* findPortal: a checkout with only package.json (stale node_modules link)
+     is skipped; the next one, with playwright installed, is chosen. */
+  const moved = join(home, 'Desktop', 'Desktop - Unknown', 'guest-ly');
+  writeFileSync(join(moved, 'guestly-portal', 'package.json'), '{}');
+  mkdirSync(join(moved, 'guestly-portal-deploy', 'node_modules', 'playwright'), { recursive: true });
+  writeFileSync(join(moved, 'guestly-portal-deploy', 'package.json'), '{}');
+  writeFileSync(join(moved, 'guestly-portal-deploy', 'node_modules', 'playwright', 'package.json'), '{}');
 
   const probe = `
     const m = await import(${JSON.stringify(join(spaced, 'paths.mjs'))});
@@ -56,9 +63,11 @@ try {
       moved: m.deskPath(process.env.HOME + '/Desktop/guest-ly/guestly-portal'),
       back: m.deskPath(process.env.HOME + '/Desktop/Desktop - Unknown/old-only'),
       missing: m.deskPath(process.env.HOME + '/Desktop/nowhere'),
+      portal: m.findPortal(),
+      noPortal: m.findPortal(['guest-ly/guestly-portal']),
     }));`;
   const out = JSON.parse(
-    execFileSync(process.execPath, ['--input-type=module', '-e', probe], { env: { ...process.env, HOME: home }, encoding: 'utf8' }),
+    execFileSync(process.execPath, ['--input-type=module', '-e', probe], { env: { ...process.env, HOME: home, GL_PORTAL_DIR: '' }, encoding: 'utf8' }),
   );
   const expect = (label, got, want) => {
     if (got !== want) errors.push(`${label}: got ${got}, want ${want}`);
@@ -68,6 +77,8 @@ try {
   expect('deskPath old Desktop path -> moved folder', out.moved, join(home, 'Desktop', 'Desktop - Unknown', 'guest-ly', 'guestly-portal'));
   expect('deskPath moved path -> old Desktop folder', out.back, join(home, 'Desktop', 'old-only'));
   expect('deskPath missing path stays as given', out.missing, join(home, 'Desktop', 'nowhere'));
+  expect('findPortal skips a checkout without playwright', out.portal, join(moved, 'guestly-portal-deploy'));
+  expect('findPortal returns null when no checkout has playwright', out.noPortal, null);
 } finally {
   rmSync(sandbox, { recursive: true, force: true });
 }
@@ -76,4 +87,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-paths: ${e}`);
   process.exit(1);
 }
-console.log(`test-paths clean: ${files.length} files without home paths; paths.mjs works from a spaced folder; deskPath maps both sides of the move`);
+console.log(`test-paths clean: ${files.length} files without home paths; paths.mjs works from a spaced folder; deskPath maps both sides of the move; findPortal requires playwright`);

@@ -83,10 +83,22 @@ for (const [route, outFile] of routes) {
     document.documentElement.setAttribute('data-theme', 'night');
     /* Each page names itself as canonical (index.html ships the home URL). */
     document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonical);
-    /* The offers and FAQ JSON-LD describe the home page; the legal pages
-       show neither, so they do not carry it. */
-    if (!/\.com\/$/.test(canonical))
+    if (!/\.com\/$/.test(canonical)) {
+      /* The offers and FAQ JSON-LD describe the home page; the legal pages
+         show neither, so they do not carry it. */
       document.querySelectorAll('script[type="application/ld+json"]').forEach((el) => el.remove());
+      /* A legal page shares nothing else with the home page either: its
+         title (set by LanguageProvider, "Privacy: Guest-ly"), its address
+         and a description: the first sentence of its own text. */
+      const set = (sel, value) => document.querySelector(sel)?.setAttribute('content', value);
+      const first = document.querySelector('.legal-page__section p')?.textContent?.trim() ?? '';
+      /* The first sentence: whole, never cut mid-thought. */
+      const description = first.match(/^.*?[.?](?=\s|$)/)?.[0] ?? first;
+      set('meta[property="og:url"]', canonical);
+      for (const sel of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) set(sel, document.title);
+      for (const sel of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]'])
+        set(sel, description);
+    }
     return '<!doctype html>\n' + document.documentElement.outerHTML;
   }, pageUrl(route));
 

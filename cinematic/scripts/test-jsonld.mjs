@@ -4,7 +4,15 @@
    Usage: node scripts/test-jsonld.mjs */
 
 import { copy } from '../src/copy.ts';
-import { PLANS, guestsLabel } from '../src/pricing.ts';
+import {
+  COORDINATOR_MONTHLY,
+  COORDINATOR_ONCE,
+  MAINTENANCE_MONTHLY,
+  MONTHS_INCLUDED,
+  PLANS,
+  guestsLabel,
+  ordinalEn,
+} from '../src/pricing.ts';
 import { faqLd, jsonLdScripts, productLd } from '../src/seo/jsonld.ts';
 
 const errors = [];
@@ -36,6 +44,37 @@ for (const loc of ['en', 'es']) {
 }
 expect('es caps', copy.es.pricing.plans.map((p) => p.guests), ['Hasta 160 invitados', 'Hasta 300 invitados', '500+ invitados']);
 
+/* Every copy string, EN and ES, may name only our own prices and the
+   included month count from pricing.ts. Competitor prices in the compare
+   table are the one exception. A hand-typed "$79" or "5 months" that
+   pricing.ts no longer says fails here, before the page or the JSON-LD
+   (built from this copy) can disagree with the wizard and the plan cards. */
+const OUR_AMOUNTS = new Set([...Object.values(PLANS).map((p) => p.price), COORDINATOR_ONCE, COORDINATOR_MONTHLY, MAINTENANCE_MONTHLY]);
+function* strings(node, path) {
+  if (typeof node === 'string') yield [path, node];
+  else if (Array.isArray(node)) for (const [i, v] of node.entries()) yield* strings(v, `${path}[${i}]`);
+  else if (node && typeof node === 'object') {
+    if (/\.compare\.columns\[\d+\]$/.test(path) && node.id !== 'guestly') return;
+    for (const [k, v] of Object.entries(node)) yield* strings(v, `${path}.${k}`);
+  }
+}
+let priced = 0;
+for (const loc of ['en', 'es']) {
+  for (const [path, s] of strings(copy[loc], loc)) {
+    for (const m of s.matchAll(/\$(\d[\d,]*)/g)) {
+      priced++;
+      const n = Number(m[1].replace(/,/g, ''));
+      if (!OUR_AMOUNTS.has(n)) errors.push(`${path}: "$${m[1]}" is not a price in pricing.ts`);
+    }
+    for (const m of s.matchAll(/\b(\d+) (?:months|meses)\b|\b(?:month|mes) (\d+)\b|\b(\d+)(?:st|nd|rd|th|°) (?:included month|mes incluido)/g)) {
+      const n = Number(m[1] ?? m[2] ?? m[3]);
+      if (n !== MONTHS_INCLUDED) errors.push(`${path}: "${m[0]}" but pricing.ts includes ${MONTHS_INCLUDED} months`);
+    }
+  }
+}
+if (priced < 30) errors.push(`only ${priced} prices found in the copy; the walk is not reaching the pricing strings`);
+expect('ordinalEn', [1, 2, 3, 4, 5, 11, 12, 13, 21, 22].map(ordinalEn), ['1st', '2nd', '3rd', '4th', '5th', '11th', '12th', '13th', '21st', '22nd']);
+
 /* FAQ: only items marked ld, word for word. */
 const faq = faqLd(copy.en);
 const marked = copy.en.faq.items.filter((i) => i.ld);
@@ -65,4 +104,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-jsonld: ${e}`);
   process.exit(1);
 }
-console.log(`test-jsonld clean: ${product.offers.length} offers from pricing.ts, ${faq.mainEntity.length} FAQ answers, script-safe`);
+console.log(`test-jsonld clean: ${product.offers.length} offers from pricing.ts, ${faq.mainEntity.length} FAQ answers, ${priced} prices in the copy all from pricing.ts, script-safe`);

@@ -1,4 +1,5 @@
 import { LanguageProvider, useLang } from './LanguageContext';
+import type { SiteCopy } from '../copy';
 import { ThemeEffects, useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
 import './overlay.css';
@@ -65,9 +66,13 @@ function LegalBody({ kind }: { kind: LegalKind }) {
   );
 }
 
+/* "Privacy: Guest-ly" / "Privacidad: Guest-ly": each legal page carries its
+   own title, in the page language, instead of the home page's. */
+const legalTitle = (t: SiteCopy, kind: LegalKind) => `${t.legal.pages[kind].title}: Guest-ly`;
+
 export function LegalPage({ kind }: { kind: LegalKind }) {
   return (
-    <LanguageProvider>
+    <LanguageProvider title={(t) => legalTitle(t, kind)}>
       <ThemeEffects />
       <div className="static-stage" aria-hidden="true" />
       <div className="overlay-root">

@@ -1,9 +1,12 @@
-/* The one source for every price and guest cap on guest-ly.com.
-   The plan cards (copy.ts, EN and ES), the order wizard (config.ts) and the
-   JSON-LD offers in index.html (src/seo/jsonld.ts, injected at build time)
-   all read these values, so the page and what search and AI engines read
-   cannot drift apart again. scripts/check-jsonld.mjs fails the build if
-   they do. Prices must match the Stripe Payment Links in config.ts. */
+/* Guest-ly's own prices, guest caps and included months on guest-ly.com.
+   The plan cards and every copy line that names one of our prices (copy.ts,
+   EN and ES, built with template literals), the order wizard (config.ts)
+   and the JSON-LD offers and FAQ in index.html (src/seo/jsonld.ts, built
+   from that copy) read these values. scripts/test-jsonld.mjs fails if any
+   copy string names a dollar amount or a month count that is not one of
+   these (the compare table's competitor prices are the only exception), and
+   scripts/check-seo.mjs fails the build if the built JSON-LD differs from
+   the rendered page. Prices must match the Stripe Payment Links in config.ts. */
 
 export type PlanId = 'essentials' | 'signature' | 'grande';
 
@@ -27,6 +30,13 @@ export const PLANS: Record<PlanId, PlanPrice> = {
   signature: { name: 'Signature', price: 399, maxGuests: 300 },
   grande: { name: 'Grande', price: 699, maxGuests: null, fromGuests: 500 },
 };
+
+/* "5th", "1st", "22nd": the English ordinal for a month count in copy. */
+export function ordinalEn(n: number): string {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return `${n}th`;
+  return `${n}${({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'}`;
+}
 
 /* The guests line on a plan card, in the page language. */
 export function guestsLabel(id: PlanId, locale: 'en' | 'es'): string {

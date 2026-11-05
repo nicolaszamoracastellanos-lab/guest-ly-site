@@ -20,10 +20,10 @@ export const PAY_LINKS: Record<PayLinkKey, string> = {
   essentials: 'https://buy.stripe.com/aFa14g1g1219bHDdoY63K00',
   signature: 'https://buy.stripe.com/cNi8wI3o95dl9zvckU63K01',
   grande: 'https://buy.stripe.com/14AeV69Mx49hdPLet263K02',
-  /* Plan + AI Coordinator add-on ($79) in one checkout. Grande includes it. */
+  /* Plan + AI Coordinator add-on (COORDINATOR_ONCE) in one checkout. Grande includes it. */
   'essentials-coordinator': 'https://buy.stripe.com/14AdR28It7ltaDzbgQ63K03',
   'signature-coordinator': 'https://buy.stripe.com/00w4gscYJ9tB7rn5Ww63K04',
-  /* Plan (one-time) + AI Coordinator $19/mo subscription in one checkout. */
+  /* Plan (one-time) + AI Coordinator COORDINATOR_MONTHLY per month subscription in one checkout. */
   'essentials-coordinator-monthly': 'https://buy.stripe.com/bJe7sE1g1bBJ9zvgBa63K05',
   'signature-coordinator-monthly': 'https://buy.stripe.com/4gMcMY3o96hp12Z70A63K06',
 };

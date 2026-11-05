@@ -4,7 +4,15 @@
    House rules: no em dashes anywhere, no emojis in client-facing strings.
    Permitted symbols: the diamond, checkmarks, crosses, typographic marks. */
 
-import { PLANS, guestsLabel } from './pricing.ts';
+import {
+  COORDINATOR_MONTHLY,
+  COORDINATOR_ONCE,
+  MAINTENANCE_MONTHLY,
+  MONTHS_INCLUDED,
+  PLANS,
+  guestsLabel,
+  ordinalEn,
+} from './pricing.ts';
 
 export type Locale = 'en' | 'es';
 
@@ -236,7 +244,7 @@ export interface SiteCopy {
     fullListLabel: string;
     fullLists: { essentials: string[]; signature: string[]; grande: string[] };
     channelsFootnote: string;
-    /* 5 months included, then $20/mo: rendered under the plan cards. */
+    /* Months included, then the monthly fee (pricing.ts): rendered under the plan cards. */
     maintenanceLine: string;
     coordLink: string;
     compareLink: string;
@@ -1002,7 +1010,7 @@ const en: SiteCopy = {
       'Escalation handling',
     ],
     capsClosing: 'Each action is gated by its own capability switch.',
-    priceLine: 'Included with Grande. Or add to any plan: $79 one-time or $19 per month.',
+    priceLine: `Included with Grande. Or add to any plan: $${COORDINATOR_ONCE} one-time or $${COORDINATOR_MONTHLY} per month.`,
     cta: 'Get my concierge',
     seePricing: 'See pricing',
   },
@@ -1019,7 +1027,7 @@ const en: SiteCopy = {
     footnote: 'Public pricing as listed by each vendor, mid-2026.',
     zolaLine: 'Keep Zola. We sync with it: 46 real RSVPs brought over with zero conflicts.',
     columns: [
-      { id: 'guestly', name: 'Guest-ly', sub: 'Signature plan', price: '$399 once, 5 months live', marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
+      { id: 'guestly', name: 'Guest-ly', sub: 'Signature plan', price: `$${PLANS.signature.price} once, ${MONTHS_INCLUDED} months live`, marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
       { id: 'vino', name: 'Vino', sub: 'No web chat', price: '$2,499', marks: ['yes', 'yes', 'no', 'no', 'yes', 'no'] },
       { id: 'daisy', name: 'Daisy Chat', sub: 'SMS only', price: '$125 to $175', marks: ['no', 'no', 'no', 'no', 'yes', 'no'] },
       { id: 'guestbook', name: 'GuestBook', sub: 'Web chat only', price: '$10 to $99/mo', marks: ['no', 'no', 'no', 'no', 'no', 'no'] },
@@ -1031,7 +1039,7 @@ const en: SiteCopy = {
     no: '№ 08',
     kicker: 'Pricing',
     title: 'One price.\nEvery question answered.',
-    intro: 'From $199, once. 5 months live included, then $20/mo only if you want to keep it going.',
+    intro: `From $${PLANS.essentials.price}, once. ${MONTHS_INCLUDED} months live included, then $${MAINTENANCE_MONTHLY}/mo only if you want to keep it going.`,
     popularTag: '✦ Most popular',
     plans: [
       {
@@ -1039,7 +1047,7 @@ const en: SiteCopy = {
         name: PLANS.essentials.name,
         guests: guestsLabel('essentials', 'en'),
         price: PLANS.essentials.price,
-        priceNote: 'One payment · 5 months live',
+        priceNote: `One payment · ${MONTHS_INCLUDED} months live`,
         features: [
           'Concierge: WhatsApp + web, EN/ES',
           'Website + registry + RSVP',
@@ -1053,7 +1061,7 @@ const en: SiteCopy = {
         name: PLANS.signature.name,
         guests: guestsLabel('signature', 'en'),
         price: PLANS.signature.price,
-        priceNote: 'One payment · 5 months live',
+        priceNote: `One payment · ${MONTHS_INCLUDED} months live`,
         features: [
           'Everything in Essentials',
           'Per-person, per-event RSVP',
@@ -1068,7 +1076,7 @@ const en: SiteCopy = {
         name: PLANS.grande.name,
         guests: guestsLabel('grande', 'en'),
         price: PLANS.grande.price,
-        priceNote: 'One payment · 5 months live',
+        priceNote: `One payment · ${MONTHS_INCLUDED} months live`,
         features: [
           'Everything in Signature',
           'AI Coordinator included',
@@ -1081,7 +1089,7 @@ const en: SiteCopy = {
     coordinator: {
       badge: 'Add-on',
       name: 'AI Coordinator',
-      body: 'runs your wedding by chat. $79 once or $19/mo. Included with Grande.',
+      body: `runs your wedding by chat. $${COORDINATOR_ONCE} once or $${COORDINATOR_MONTHLY}/mo. Included with Grande.`,
     },
     guarantee:
       'Full refund before your first guest messages the concierge, or within 30 days.',
@@ -1116,7 +1124,7 @@ const en: SiteCopy = {
       ],
     },
     channelsFootnote: 'SMS and Telegram concierge channels are coming soon and will join when they launch.',
-    maintenanceLine: 'Every plan includes 5 months live from delivery. Keep it live longer for $20/mo, cancel any time.',
+    maintenanceLine: `Every plan includes ${MONTHS_INCLUDED} months live from delivery. Keep it live longer for $${MAINTENANCE_MONTHLY}/mo, cancel any time.`,
     coordLink: 'See it in action',
     compareLink: 'See how this compares',
   },
@@ -1156,12 +1164,12 @@ const en: SiteCopy = {
       {
         ld: true,
         q: 'Is it really one payment?',
-        a: 'Yes. Every plan is a single one-time price that includes 5 months live, counted from the day we deliver your concierge. Only the optional AI Coordinator has a monthly option: $79 one-time or $19/mo.',
+        a: `Yes. Every plan is a single one-time price that includes ${MONTHS_INCLUDED} months live, counted from the day we deliver your concierge. Only the optional AI Coordinator has a monthly option: $${COORDINATOR_ONCE} one-time or $${COORDINATOR_MONTHLY}/mo.`,
       },
       {
         ld: true,
-        q: 'What happens after the 5 months?',
-        a: 'If your wedding is within the 5 months, nothing: you are covered. If you want your website, RSVP and concierge to stay live longer, a $20/mo maintenance fee keeps everything running for as long as you need, cancel any time. We remind you inside your portal and by email when month 5 starts, so nothing ever switches off by surprise.',
+        q: `What happens after the ${MONTHS_INCLUDED} months?`,
+        a: `If your wedding is within the ${MONTHS_INCLUDED} months, nothing: you are covered. If you want your website, RSVP and concierge to stay live longer, a $${MAINTENANCE_MONTHLY}/mo maintenance fee keeps everything running for as long as you need, cancel any time. We remind you inside your portal and by email when month ${MONTHS_INCLUDED} starts, so nothing ever switches off by surprise.`,
       },
       {
         ld: true,
@@ -1261,9 +1269,9 @@ const en: SiteCopy = {
       reasonPlus: 'For more than 500 guests, Grande is the fit, plus add-on blocks of 100 guests. We will confirm capacity with you.',
       addon: {
         title: 'Add the AI Coordinator',
-        pitch: 'Run your wedding by chat: $79 one-time or $19/mo, cancel any time.',
+        pitch: `Run your wedding by chat: $${COORDINATOR_ONCE} one-time or $${COORDINATOR_MONTHLY}/mo, cancel any time.`,
         includedNote: 'Included with Grande.',
-        options: { none: 'Not now', once: '$79 one-time', monthly: '$19 per month' },
+        options: { none: 'Not now', once: `$${COORDINATOR_ONCE} one-time`, monthly: `$${COORDINATOR_MONTHLY} per month` },
       },
       back: '← Back',
       next: 'Continue →',
@@ -1293,10 +1301,10 @@ const en: SiteCopy = {
         addon: 'AI Coordinator',
         price: 'Price · one-time',
       },
-      addonOnce: 'Yes · $79 one-time',
-      addonMonthly: 'Yes · $19/mo, cancel any time',
+      addonOnce: `Yes · $${COORDINATOR_ONCE} one-time`,
+      addonMonthly: `Yes · $${COORDINATOR_MONTHLY}/mo, cancel any time`,
       addonNo: 'No',
-      priceMonthly: '{total} today, then $19/mo',
+      priceMonthly: `{total} today, then $${COORDINATOR_MONTHLY}/mo`,
       nextTitle: 'What happens next',
       next: [
         { title: 'Pay once to lock your build slot', body: 'Secure Stripe checkout. We confirm within 2 hours during business hours.' },
@@ -1358,11 +1366,11 @@ const en: SiteCopy = {
             ],
           },
           {
-            h: 'One-time payment, 5 months live included',
+            h: `One-time payment, ${MONTHS_INCLUDED} months live included`,
             body: [
-              'Every plan is a single one-time payment that includes 5 months of live service, counted from the delivery date (the day we email you that your concierge is ready). During those months the concierge, website, RSVP and portal run with no further charge.',
-              'After the included 5 months, keeping the service live costs a maintenance fee of $20 per month, billed monthly through Stripe and cancellable at any time. We notify you in your portal and by email when your 5th included month starts, a week before the included period ends, and on the day it ends. If no maintenance plan is active after the included period, the service may be paused until one is.',
-              'The optional AI Coordinator is billed separately: $79 one-time (stays active for as long as your service is live) or $19 per month, which continues alongside the maintenance fee.',
+              `Every plan is a single one-time payment that includes ${MONTHS_INCLUDED} months of live service, counted from the delivery date (the day we email you that your concierge is ready). During those months the concierge, website, RSVP and portal run with no further charge.`,
+              `After the included ${MONTHS_INCLUDED} months, keeping the service live costs a maintenance fee of $${MAINTENANCE_MONTHLY} per month, billed monthly through Stripe and cancellable at any time. We notify you in your portal and by email when your ${ordinalEn(MONTHS_INCLUDED)} included month starts, a week before the included period ends, and on the day it ends. If no maintenance plan is active after the included period, the service may be paused until one is.`,
+              `The optional AI Coordinator is billed separately: $${COORDINATOR_ONCE} one-time (stays active for as long as your service is live) or $${COORDINATOR_MONTHLY} per month, which continues alongside the maintenance fee.`,
             ],
           },
           {
@@ -2040,7 +2048,7 @@ const es: SiteCopy = {
       'Manejo de escalaciones',
     ],
     capsClosing: 'Cada acción tiene su propio interruptor de permiso.',
-    priceLine: 'Incluido en Grande. O agrégalo a cualquier plan: $79 una vez o $19 al mes.',
+    priceLine: `Incluido en Grande. O agrégalo a cualquier plan: $${COORDINATOR_ONCE} una vez o $${COORDINATOR_MONTHLY} al mes.`,
     cta: 'Obtener mi asistente',
     seePricing: 'Ver precios',
   },
@@ -2057,7 +2065,7 @@ const es: SiteCopy = {
     footnote: 'Precios públicos según cada proveedor, mediados de 2026.',
     zolaLine: 'Conserva Zola. Nos sincronizamos: 46 RSVPs reales migrados sin conflictos.',
     columns: [
-      { id: 'guestly', name: 'Guest-ly', sub: 'Plan Signature', price: '$399 una vez, 5 meses activos', marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
+      { id: 'guestly', name: 'Guest-ly', sub: 'Plan Signature', price: `$${PLANS.signature.price} una vez, ${MONTHS_INCLUDED} meses activos`, marks: ['yes', 'yes', 'yes', 'yes', 'yes', 'yes'], highlight: true },
       { id: 'vino', name: 'Vino', sub: 'Sin chat web', price: '$2,499', marks: ['yes', 'yes', 'no', 'no', 'yes', 'no'] },
       { id: 'daisy', name: 'Daisy Chat', sub: 'Solo SMS', price: '$125 a $175', marks: ['no', 'no', 'no', 'no', 'yes', 'no'] },
       { id: 'guestbook', name: 'GuestBook', sub: 'Solo chat web', price: '$10 a $99/mes', marks: ['no', 'no', 'no', 'no', 'no', 'no'] },
@@ -2069,7 +2077,7 @@ const es: SiteCopy = {
     no: '№ 08',
     kicker: 'Precios',
     title: 'Un solo pago.\nCada pregunta respondida.',
-    intro: 'Desde $199, una sola vez. 5 meses activos incluidos, luego $20/mes solo si quieres seguir.',
+    intro: `Desde $${PLANS.essentials.price}, una sola vez. ${MONTHS_INCLUDED} meses activos incluidos, luego $${MAINTENANCE_MONTHLY}/mes solo si quieres seguir.`,
     popularTag: '✦ Más popular',
     plans: [
       {
@@ -2077,7 +2085,7 @@ const es: SiteCopy = {
         name: PLANS.essentials.name,
         guests: guestsLabel('essentials', 'es'),
         price: PLANS.essentials.price,
-        priceNote: 'Pago único · 5 meses activos',
+        priceNote: `Pago único · ${MONTHS_INCLUDED} meses activos`,
         features: [
           'Asistente: WhatsApp + web, ES/EN',
           'Página + regalos + RSVP',
@@ -2091,7 +2099,7 @@ const es: SiteCopy = {
         name: PLANS.signature.name,
         guests: guestsLabel('signature', 'es'),
         price: PLANS.signature.price,
-        priceNote: 'Pago único · 5 meses activos',
+        priceNote: `Pago único · ${MONTHS_INCLUDED} meses activos`,
         features: [
           'Todo lo de Essentials',
           'RSVP por persona y por evento',
@@ -2106,7 +2114,7 @@ const es: SiteCopy = {
         name: PLANS.grande.name,
         guests: guestsLabel('grande', 'es'),
         price: PLANS.grande.price,
-        priceNote: 'Pago único · 5 meses activos',
+        priceNote: `Pago único · ${MONTHS_INCLUDED} meses activos`,
         features: [
           'Todo lo de Signature',
           'Coordinador IA incluido',
@@ -2119,7 +2127,7 @@ const es: SiteCopy = {
     coordinator: {
       badge: 'Add-on',
       name: 'Coordinador IA',
-      body: 'maneja tu boda por chat. $79 una vez o $19/mes. Incluido en Grande.',
+      body: `maneja tu boda por chat. $${COORDINATOR_ONCE} una vez o $${COORDINATOR_MONTHLY}/mes. Incluido en Grande.`,
     },
     guarantee:
       'Reembolso total antes de que tu primer invitado le escriba al asistente, o dentro de 30 días.',
@@ -2154,7 +2162,7 @@ const es: SiteCopy = {
       ],
     },
     channelsFootnote: 'Los canales de SMS y Telegram llegan pronto y se sumarán cuando estén activos.',
-    maintenanceLine: 'Cada plan incluye 5 meses activos desde la entrega. Mantenlo activo más tiempo por $20/mes, cancela cuando quieras.',
+    maintenanceLine: `Cada plan incluye ${MONTHS_INCLUDED} meses activos desde la entrega. Mantenlo activo más tiempo por $${MAINTENANCE_MONTHLY}/mes, cancela cuando quieras.`,
     coordLink: 'Míralo en acción',
     compareLink: 'Mira cómo se compara',
   },
@@ -2192,11 +2200,11 @@ const es: SiteCopy = {
       },
       {
         q: '¿De verdad es un solo pago?',
-        a: 'Sí. Cada plan es un único pago que incluye 5 meses activos, contados desde el día en que te entregamos tu asistente. Solo el Coordinador IA, que es opcional, tiene opción mensual: $79 pago único o $19/mes.',
+        a: `Sí. Cada plan es un único pago que incluye ${MONTHS_INCLUDED} meses activos, contados desde el día en que te entregamos tu asistente. Solo el Coordinador IA, que es opcional, tiene opción mensual: $${COORDINATOR_ONCE} pago único o $${COORDINATOR_MONTHLY}/mes.`,
       },
       {
-        q: '¿Qué pasa después de los 5 meses?',
-        a: 'Si tu boda es dentro de esos 5 meses, nada: estás cubierto. Si quieres que tu página, RSVP y asistente sigan activos más tiempo, una cuota de mantenimiento de $20/mes mantiene todo funcionando el tiempo que necesites, y la cancelas cuando quieras. Te avisamos en tu portal y por email cuando empieza el mes 5, así nada se apaga por sorpresa.',
+        q: `¿Qué pasa después de los ${MONTHS_INCLUDED} meses?`,
+        a: `Si tu boda es dentro de esos ${MONTHS_INCLUDED} meses, nada: estás cubierto. Si quieres que tu página, RSVP y asistente sigan activos más tiempo, una cuota de mantenimiento de $${MAINTENANCE_MONTHLY}/mes mantiene todo funcionando el tiempo que necesites, y la cancelas cuando quieras. Te avisamos en tu portal y por email cuando empieza el mes ${MONTHS_INCLUDED}, así nada se apaga por sorpresa.`,
       },
       {
         q: '¿Funciona en Bolivia y Latinoamérica?',
@@ -2293,9 +2301,9 @@ const es: SiteCopy = {
       reasonPlus: 'Para más de 500 invitados, Grande es el plan, más bloques de 100 invitados adicionales. Confirmamos la capacidad contigo.',
       addon: {
         title: 'Agregar el Coordinador IA',
-        pitch: 'Maneja tu boda por chat: $79 pago único o $19/mes, cancela cuando quieras.',
+        pitch: `Maneja tu boda por chat: $${COORDINATOR_ONCE} pago único o $${COORDINATOR_MONTHLY}/mes, cancela cuando quieras.`,
         includedNote: 'Incluido en Grande.',
-        options: { none: 'Ahora no', once: '$79 pago único', monthly: '$19 al mes' },
+        options: { none: 'Ahora no', once: `$${COORDINATOR_ONCE} pago único`, monthly: `$${COORDINATOR_MONTHLY} al mes` },
       },
       back: '← Atrás',
       next: 'Continuar →',
@@ -2325,10 +2333,10 @@ const es: SiteCopy = {
         addon: 'Coordinador IA',
         price: 'Precio · pago único',
       },
-      addonOnce: 'Sí · $79 pago único',
-      addonMonthly: 'Sí · $19/mes, cancela cuando quieras',
+      addonOnce: `Sí · $${COORDINATOR_ONCE} pago único`,
+      addonMonthly: `Sí · $${COORDINATOR_MONTHLY}/mes, cancela cuando quieras`,
       addonNo: 'No',
-      priceMonthly: '{total} hoy, luego $19/mes',
+      priceMonthly: `{total} hoy, luego $${COORDINATOR_MONTHLY}/mes`,
       nextTitle: 'Qué pasa después',
       next: [
         { title: 'Paga una sola vez para reservar tu lugar', body: 'Checkout seguro con Stripe. Confirmamos en menos de 2 horas en horario laboral.' },
@@ -2390,11 +2398,11 @@ const es: SiteCopy = {
             ],
           },
           {
-            h: 'Pago único, 5 meses activos incluidos',
+            h: `Pago único, ${MONTHS_INCLUDED} meses activos incluidos`,
             body: [
-              'Cada plan es un único pago que incluye 5 meses de servicio activo, contados desde la fecha de entrega (el día en que te enviamos el email de que tu asistente está listo). Durante esos meses el asistente, la página, el RSVP y el portal funcionan sin ningún cargo adicional.',
-              'Después de los 5 meses incluidos, mantener el servicio activo cuesta una cuota de mantenimiento de $20 al mes, cobrada mensualmente por Stripe y cancelable en cualquier momento. Te avisamos en tu portal y por email cuando empieza tu 5° mes incluido, una semana antes de que termine el periodo incluido y el día en que termina. Si no hay un plan de mantenimiento activo después del periodo incluido, el servicio puede pausarse hasta que lo haya.',
-              'El Coordinador IA opcional se cobra por separado: $79 pago único (sigue activo mientras tu servicio esté activo) o $19 al mes, que continúa junto con la cuota de mantenimiento.',
+              `Cada plan es un único pago que incluye ${MONTHS_INCLUDED} meses de servicio activo, contados desde la fecha de entrega (el día en que te enviamos el email de que tu asistente está listo). Durante esos meses el asistente, la página, el RSVP y el portal funcionan sin ningún cargo adicional.`,
+              `Después de los ${MONTHS_INCLUDED} meses incluidos, mantener el servicio activo cuesta una cuota de mantenimiento de $${MAINTENANCE_MONTHLY} al mes, cobrada mensualmente por Stripe y cancelable en cualquier momento. Te avisamos en tu portal y por email cuando empieza tu ${MONTHS_INCLUDED}° mes incluido, una semana antes de que termine el periodo incluido y el día en que termina. Si no hay un plan de mantenimiento activo después del periodo incluido, el servicio puede pausarse hasta que lo haya.`,
+              `El Coordinador IA opcional se cobra por separado: $${COORDINATOR_ONCE} pago único (sigue activo mientras tu servicio esté activo) o $${COORDINATOR_MONTHLY} al mes, que continúa junto con la cuota de mantenimiento.`,
             ],
           },
           {

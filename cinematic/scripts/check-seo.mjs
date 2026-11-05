@@ -5,7 +5,9 @@
    - a FAQPage answer is not the visible answer to the same question;
    - robots.txt blocks anything or lacks the Sitemap line;
    - sitemap.xml lists a page that was not prerendered, misses one that was,
-     or names /reunion or a demo wedding.
+     or names /reunion or a demo wedding;
+   - a listed page's og:url is not its canonical, or it shares its title or
+     description with another listed page.
    Usage: node scripts/check-seo.mjs [distDir]   (default: cinematic/dist) */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -93,7 +95,9 @@ else {
   if (!robots.includes(`Sitemap: ${SITE}/sitemap.xml`)) fail('robots.txt has no Sitemap line');
 }
 
-/* 3. sitemap.xml */
+/* 3. sitemap.xml, and each listed page's own head: canonical, og:url,
+   a title and a description no other listed page shares. */
+const seenHeads = [];
 const sitemapPath = join(dist, 'sitemap.xml');
 if (!existsSync(sitemapPath)) fail('dist/sitemap.xml missing');
 else {
@@ -112,6 +116,19 @@ else {
       const html = readFileSync(file, 'utf8');
       if (!html.includes(`<link rel="canonical" href="${SITE}${p}">`)) fail(`${p}: canonical link does not name ${SITE}${p}`);
       if (p !== '/' && html.includes('application/ld+json')) fail(`${p}: carries the home page JSON-LD`);
+      const meta = (re) => html.match(re)?.[1] ?? '';
+      const head = {
+        title: meta(/<title>([^<]*)<\/title>/),
+        description: meta(/<meta name="description" content="([^"]*)"/),
+        ogUrl: meta(/<meta property="og:url" content="([^"]*)"/),
+      };
+      if (head.ogUrl !== `${SITE}${p}`) fail(`${p}: og:url is "${head.ogUrl}", not its canonical ${SITE}${p}`);
+      if (!head.title || !head.description) fail(`${p}: missing title or meta description`);
+      for (const [key, value] of Object.entries(head)) {
+        const other = seenHeads.find((h) => h[key] === value);
+        if (key !== 'ogUrl' && other) fail(`${p}: same ${key} as ${other.page} ("${value.slice(0, 50)}")`);
+      }
+      seenHeads.push({ page: p, ...head });
     }
   }
 }

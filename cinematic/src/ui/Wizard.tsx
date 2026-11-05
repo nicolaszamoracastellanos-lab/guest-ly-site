@@ -84,7 +84,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
   const couple = [fields.name, fields.partner].filter(Boolean).join(' & ') || '·';
   const addonIncluded = plan === 'grande';
   /* What the couple pays today: plan price, plus the add-on when picked
-     ($79 once, or the first $19 month of the subscription). */
+     (ADDON_PRICE once, or the first ADDON_MONTHLY month of the subscription). */
   const addonMode: AddonChoice = addonIncluded ? 'none' : addon;
   const addonCharged = addonMode !== 'none';
   const total = price + (addonMode === 'once' ? ADDON_PRICE : addonMode === 'monthly' ? ADDON_MONTHLY : 0);

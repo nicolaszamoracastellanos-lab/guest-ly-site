@@ -34,7 +34,9 @@ for (const vp of VIEWPORTS) {
   for (const path of PAGES) {
     const page = await ctx.newPage();
     page.on('request', (req) => {
-      if (!allowed(req.url())) offOrigin.set(new URL(req.url()).origin, `${path} at ${width}`);
+      const origin = new URL(req.url()).origin;
+      /* Keep the first page and width an origin shows up on, not the last. */
+      if (!allowed(req.url()) && !offOrigin.has(origin)) offOrigin.set(origin, `${path} at ${width}`);
     });
     page.on('response', async (res) => {
       const h = await res.allHeaders().catch(() => ({}));
