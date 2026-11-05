@@ -33,7 +33,10 @@ export default function GuestTravelScreen() {
   const data = q.data ?? null;
   const [draft, setDraft] = useState<{ arrival: TravelLeg; departure: TravelLeg } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // The failure itself, so its sentence follows the language on screen.
+  const [failure, setFailure] = useState<{ err: unknown } | { text: "errTimeDate" | "required" } | null>(null);
+  const error = !failure ? null : "text" in failure ? c[failure.text] : failure.err instanceof ApiFailure && failure.err.code === "bad_request" ? failure.err.messages[lang] : failedText(c.saveFailed, failure.err, lang);
+  const setError = (v: null) => setFailure(v);
   const current = draft ?? (data ? data.travel : { arrival: EMPTY_LEG, departure: EMPTY_LEG });
   const leave = useUnsavedGuard(!!draft && !!data && JSON.stringify(draft) !== JSON.stringify(data.travel));
 
@@ -44,8 +47,8 @@ export default function GuestTravelScreen() {
 
   async function save() {
     if (busy) return;
-    if (legProblem(current.arrival) || legProblem(current.departure)) return setError(c.errTimeDate);
-    if (data?.required && !current.arrival.date) return setError(c.required);
+    if (legProblem(current.arrival) || legProblem(current.departure)) return setFailure({ text: "errTimeDate" });
+    if (data?.required && !current.arrival.date) return setFailure({ text: "required" });
     setBusy(true);
     setError(null);
     try {
@@ -57,7 +60,7 @@ export default function GuestTravelScreen() {
       toast(c.saved);
     } catch (err) {
       // The server's own sentence for a date or time it refuses (EN and ES).
-      setError(err instanceof ApiFailure && err.code === "bad_request" ? err.messages[lang] : failedText(c.saveFailed, err, lang));
+      setFailure({ err });
     } finally {
       setBusy(false);
     }
@@ -88,11 +91,8 @@ export default function GuestTravelScreen() {
         </View>
       ) : data ? (
         <Stack gap={16} style={{ marginTop: 18 }}>
-          {data.required ? (
-            <T v="meta13" color={colors.ivory55}>
-              {c.required}
-            </T>
-          ) : null}
+          {/* One helper line (the intro); "We need at least your arrival date"
+              shows only when Save is pressed without it. */}
           <LegCard title={c.arrival} leg={current.arrival} points={data.points} weddingDate={data.wedding_date} onChange={(p) => setLeg("arrival", p)} testID="travel-arrival" />
           <LegCard title={c.departure} leg={current.departure} points={data.points} weddingDate={current.arrival.date ?? data.wedding_date} onChange={(p) => setLeg("departure", p)} testID="travel-departure" />
         </Stack>

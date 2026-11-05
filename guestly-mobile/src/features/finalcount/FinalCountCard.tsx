@@ -13,7 +13,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { del, post } from "@/lib/api";
 import { failedText } from "@/features/shared/requests";
 import { dayMonth } from "@/features/guest/format";
-import { Badge, Button, Card, Icon, Row, Stack, T, toast, toastError } from "@/ui";
+import { Button, Card, Icon, Row, Stack, T, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { FINAL_COUNT_COPY } from "./copy";
 import { countBadge, mealLine, readFinalCount, runCountLock, type FinalCount } from "./core";
@@ -64,9 +64,12 @@ export function FinalCountCard({ data, online }: { data: unknown; online: boolea
         <T v="body16" style={{ flexShrink: 1 }}>
           {c.title}
         </T>
+        {/* Sentence case, an icon and a word (never color alone, never an uppercase tag). */}
         <Row gap={6}>
           <Icon name={b.icon} size={16} color={TONE[b.tone]} />
-          <Badge label={word} kind={b.tone} />
+          <T v="meta13" color={TONE[b.tone]} style={{ fontVariant: ["tabular-nums"] }}>
+            {word}
+          </T>
         </Row>
       </Row>
       <Stack gap={4} style={{ marginTop: 8 }}>
