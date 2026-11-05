@@ -14,6 +14,7 @@
 //   fallback, so an alert is never blank.
 
 import * as Crypto from "expo-crypto";
+import { onlineManager } from "@tanstack/react-query";
 import { api, ApiFailure, get } from "@/lib/api";
 import { failText, TOO_LARGE } from "./failText";
 
@@ -60,9 +61,12 @@ export function errorText(err: unknown, lang: "en" | "es", fallback: string): st
 
 /** An error toast that says what failed (`what`, the screen's own sentence),
  *  then what to do: the server's reason, or "Check your connection and try
- *  again." when the request never arrived. See failText.ts. */
-export function failedText(what: string, err: unknown, lang: "en" | "es"): string {
-  return failText(what, err instanceof ApiFailure ? err : null, lang);
+ *  again." when the phone was offline. When no answer came back (a timeout,
+ *  or a lost connection while online) a write may have landed, so the toast
+ *  says so instead of "Could not": check before trying again. Pass
+ *  `{ read: true }` for a call that only reads. See failText.ts. */
+export function failedText(what: string, err: unknown, lang: "en" | "es", opts: { read?: boolean } = {}): string {
+  return failText(what, err instanceof ApiFailure ? err : null, lang, { read: opts.read, online: onlineManager.isOnline() });
 }
 
 /** For raw fetch/XHR calls outside lib/api (file export, the Coordinator

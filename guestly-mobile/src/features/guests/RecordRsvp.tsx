@@ -76,7 +76,7 @@ export function RecordRsvpScreen() {
       setNotes(rsvpNoteText(r.detail.rsvp?.notes));
     } catch (err) {
       if (preset) setFailed(true);
-      else toastError(failedText(copy.fail.openGuest, err, lang));
+      else toastError(failedText(copy.fail.openGuest, err, lang, { read: true }));
     } finally {
       setOpening(null);
     }

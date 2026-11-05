@@ -52,8 +52,10 @@ export function BudgetImportScreen() {
   const [syncUi, setSyncUi] = useState<SyncUi>(() => emptySyncUi());
 
   const failCopy = useCopy().fail;
-  function fail(err: unknown, what: string = copy.nothingRead) {
-    toastError(failedText(what, err, lang));
+  // No sentence given: the read (extract, compare) failed, which is safe to
+  // repeat. A write (apply, import) names itself and may have landed.
+  function fail(err: unknown, what?: string) {
+    toastError(failedText(what ?? copy.nothingRead, err, lang, { read: !what }));
   }
 
   async function read(body: { text?: string; file_base64?: string; filename?: string; mime?: string }) {
