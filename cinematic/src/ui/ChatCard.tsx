@@ -214,7 +214,9 @@ export function ChatCard() {
       ) : (
         <div className="chat-card__input" aria-hidden="true">
           <span className="chat-card__placeholder">{chat.inputPlaceholder}</span>
-          <span className="chat-card__send">→</span>
+          <span className="chat-card__send">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </span>
         </div>
       )}
     </div>

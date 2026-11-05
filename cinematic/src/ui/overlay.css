@@ -937,6 +937,8 @@ body.js-ready .reveal.is-visible {
 }
 
 .chat-card__send {
+  display: inline-flex;
+  align-items: center;
   color: var(--accent-text-strong);
 }
 

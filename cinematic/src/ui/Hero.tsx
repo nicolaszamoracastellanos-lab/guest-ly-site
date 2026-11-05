@@ -32,7 +32,7 @@ export function Hero() {
                 {h.secondary}
               </a>
               <a className="hero__watch" href="#scenarios">
-                {`${h.watchLink} →`}
+                {h.watchLink}
               </a>
             </div>
             <div className="hero__stats reveal">

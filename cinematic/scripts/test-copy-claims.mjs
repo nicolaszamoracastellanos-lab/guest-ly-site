@@ -5,7 +5,10 @@
 
 import { copy } from '../src/copy.ts';
 import { faqLd, productLd } from '../src/seo/jsonld.ts';
-import { copyClaimProblems } from './check-copy-claims.mjs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { copyClaimProblems, htmlControlArrowProblems, tsxArrowProblems } from './check-copy-claims.mjs';
+import { CINEMATIC } from './lib/paths.mjs';
 
 /* The blocked terms features.json holds today for F24, F60 and F63. */
 const blockedTerms = ['sync with Zola', 'Zola sync', 'sincroniza con Zola', 'sincronización con Zola', 'SMS concierge', 'concierge por SMS', 'Telegram', 'two-way sync'];
@@ -35,10 +38,27 @@ mustFail('Telegram anywhere', (c) => (c.en.channels.cards[0].name = 'Telegram'),
 mustFail('"Get started" button', (c) => (c.en.nav.cta = 'Get started'), 'generic button label');
 mustFail('"Empezar" button', (c) => (c.es.pricing.plans[0].cta = 'Empezar'), 'generic button label');
 mustFail('glyph arrow in a button', (c) => (c.en.wizard.step1.next = 'Choose plan →'), 'glyph arrow');
+mustFail('EN arrow on a link label', (c) => (c.en.hero.watchLink = 'Watch it happen →'), 'glyph arrow in a button or link label');
+mustFail('ES arrow on the compare link', (c) => (c.es.pricing.compareLink = 'Mira cómo se compara →'), 'glyph arrow in a button or link label');
 mustFail('exclamation in the JSON-LD', (c) => (c.en.faq.items.find((i) => i.ld).a = 'Yes!'), 'exclamation mark');
+
+/* Arrows appended in the TSX (round 2): today's src is clean, a planted
+   {`${label} →`} fails, the portal mocks' change data stays allowed. */
+const walk = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(join(dir, e.name)) : e.name.endsWith('.tsx') ? [join(dir, e.name)] : [],
+  );
+const src = walk(join(CINEMATIC, 'src')).map((f) => [relative(CINEMATIC, f).split('\\').join('/'), readFileSync(f, 'utf8')]);
+const tsxToday = tsxArrowProblems(src);
+if (tsxToday.length) errors.push(`today's TSX has glyph arrows:\n  ${tsxToday.join('\n  ')}`);
+if (!tsxArrowProblems([['src/ui/Hero.tsx', '<a href="#x">{`${h.watchLink} →`}</a>']]).length) errors.push('a TSX-appended arrow was not caught');
+if (tsxArrowProblems([['src/ui/MockScreens.tsx', '<span>table 7 → 4</span>']]).length) errors.push('the portal mock change data was flagged');
+if (!htmlControlArrowProblems('<p>x <a class="hero__watch" href="#s">Watch it happen →</a></p>', 'p').length) errors.push('an arrow in a built <a> was not caught');
+if (!htmlControlArrowProblems('<button type="button"><span>Pay</span> ➔</button>', 'p').length) errors.push('an arrow in a built <button> was not caught');
+if (htmlControlArrowProblems('<span>table 7 → 4</span><a href="#s">Watch it happen</a>', 'p').length) errors.push('an arrow outside any control was flagged');
 
 if (errors.length) {
   for (const e of errors) console.error(`test-copy-claims: ${e}`);
   process.exit(1);
 }
-console.log('test-copy-claims clean: copy and JSON-LD clean today; 14 planted claims each fail');
+console.log('test-copy-claims clean: copy and JSON-LD clean today; 16 planted claims each fail; TSX and built-page arrows caught (4 cases), mock data and plain controls pass');

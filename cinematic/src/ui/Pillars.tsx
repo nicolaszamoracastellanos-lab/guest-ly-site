@@ -50,7 +50,7 @@ export function Pillars() {
                             {` ${d.b}`}
                             {d.link ? (
                               <a className="pillar__link" href={d.link.href}>
-                                {`${d.link.label} →`}
+                                {d.link.label}
                               </a>
                             ) : null}
                           </li>

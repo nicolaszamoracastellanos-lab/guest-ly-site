@@ -93,7 +93,7 @@ export function Pricing() {
           </span>
           {p.zolaLine}
           <a className="zola-line__link" href="#compare">
-            {`${p.compareLink} →`}
+            {p.compareLink}
           </a>
         </p>
 
@@ -102,7 +102,7 @@ export function Pricing() {
           <p className="coord-strip__body">
             <strong>{p.coordinator.name}</strong>
             {` ${p.coordinator.body}`}
-            <a href="#coordinator">{`${p.coordLink} →`}</a>
+            <a href="#coordinator">{p.coordLink}</a>
           </p>
         </div>
 
