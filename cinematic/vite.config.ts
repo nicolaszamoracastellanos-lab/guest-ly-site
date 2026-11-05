@@ -26,9 +26,18 @@ function jsonLd(): Plugin {
    beacon chunk, its loader and every emit() call. */
 const SITE_BEACON_URL = process.env.VITE_SITE_BEACON_URL ?? ''
 
+/* #24 LIVE SCREENS: the page reads src/live-screens.data.ts, which only
+   scripts/live-screens.mjs --publish writes. A build may point
+   GL_LIVE_SCREENS_MODULE at another copy of it (scripts/test-live-screens.mjs
+   builds the page with fixture shots in a temp folder this way). */
+const LIVE_SCREENS_MODULE = process.env.GL_LIVE_SCREENS_MODULE ?? ''
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), jsonLd()],
+  resolve: {
+    alias: LIVE_SCREENS_MODULE ? [{ find: /^\.\.\/live-screens\.data\.ts$/, replacement: LIVE_SCREENS_MODULE }] : [],
+  },
   define: {
     'import.meta.env.VITE_SITE_BEACON_URL': JSON.stringify(SITE_BEACON_URL),
   },

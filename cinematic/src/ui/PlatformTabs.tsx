@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
+import { LiveScreen } from './LiveScreen';
 import { MockPane, MockWindowBar } from './MockScreens';
 import { useHashParam } from './useHashParam';
 
 /* № 04 "Inside the platform": the portal rebuilt in miniature. A proper
    tablist (arrow keys, aria-selected) over 8 MockScreen vignettes, each
    with real product facts and one micro-interaction. Deep links like
-   #platform=seating preselect a pane. */
+   #platform=seating preselect a pane. A pane with a real screenshot in
+   src/live-screens.data.ts shows it instead (#24, LiveScreen); none yet. */
 export function PlatformTabs() {
   const { t } = useLang();
   const p = t.platform;
@@ -68,7 +70,11 @@ export function PlatformTabs() {
               >
                 <div className="tour__mock">
                   {/* key remounts the micro state when re-entering a pane */}
-                  {active === item.id && <MockPane key={item.id} id={item.id} cta={item.microCta} done={item.microDone} />}
+                  {active === item.id && (
+                    <LiveScreen key={item.id} id={item.id} alt={item.title}>
+                      <MockPane id={item.id} cta={item.microCta} done={item.microDone} />
+                    </LiveScreen>
+                  )}
                 </div>
                 <div className="tour__facts">
                   <h3 className="tour__title">{item.title}</h3>

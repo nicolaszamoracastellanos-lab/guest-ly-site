@@ -38,6 +38,7 @@ const SHOTS = [
   { name: 'pillars', sel: '#pillars', optional: true },
   { name: 'pillars-open', sel: '#pillars', optional: true, action: 'expand-pillars' },
   { name: 'cards', sel: '#included', optional: true },
+  { name: 'platform', sel: '#platform .tour', optional: true },
   { name: 'how', sel: '#how' },
   { name: 'pricing', sel: '#pricing' },
   { name: 'founding', sel: '#founding', optional: true },

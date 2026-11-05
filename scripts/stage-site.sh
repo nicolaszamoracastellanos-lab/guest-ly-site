@@ -45,6 +45,10 @@ OPTIONAL=(
   404.html
   reunion               # /reunion/<name>/: private session pages (noindex), one per planner call;
                         # each page self-hosts its fonts in reunion/<name>/fonts/ (checked below)
+  screens               # #24 real portal screenshots for the platform tour (WebP, one version
+                        # folder), written by cinematic/scripts/live-screens.mjs --publish into
+                        # cinematic/public/screens. Absent until the first published set; the
+                        # check below ties the folder to src/live-screens.data.ts.
   llms.txt              # AI facts file, EN (#48): written by cinematic/scripts/llms.mjs from the
                         # portal's docs/product/features.json, live and approved features only.
                         # Optional so a push of source before its build still stages; the
@@ -88,6 +92,20 @@ fi
 if [ -d es ]; then
   extra="$(find es -mindepth 1 ! -path es/llms.txt ! -name .DS_Store | head -1)"
   [ -z "$extra" ] || { echo "stage-site: es/ may hold only llms.txt, found $extra" >&2; exit 1; }
+fi
+
+# The live screens (#24): screens/ holds exactly the version the page's
+# manifest names, or nothing while the manifest is empty.
+if [ -f cinematic/src/live-screens.data.ts ]; then
+  shots="$(grep -m1 -oE "\"?version\"?: *['\"][^'\"]*['\"]" cinematic/src/live-screens.data.ts | sed -E "s/.*: *['\"]([^'\"]*)['\"]/\1/")"
+  if [ -n "$shots" ]; then
+    [ -n "$(find "screens/$shots" -name '*.webp' 2>/dev/null | head -1)" ] \
+      || { echo "stage-site: the page shows live screens $shots, but screens/$shots has no images (build cinematic and copy dist in)" >&2; exit 1; }
+  fi
+  if [ -d screens ]; then
+    extra="$(find screens -mindepth 1 -maxdepth 1 ! -name "${shots:-none}" ! -name .DS_Store | head -1)"
+    [ -z "$extra" ] || { echo "stage-site: screens/ holds $extra, which src/live-screens.data.ts does not name" >&2; exit 1; }
+  fi
 fi
 
 rm -rf "$OUT"

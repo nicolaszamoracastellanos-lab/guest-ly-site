@@ -3030,6 +3030,38 @@ body.js-ready .reveal.is-visible {
 
 /* mock vignettes */
 
+/* #24 A real portal screenshot in a tour pane (LiveScreen.tsx). The box
+   takes its final aspect ratio from the manifest before the image loads, so
+   nothing shifts. Phone shot below 880px in a 260px frame, desktop shot
+   across the column from 880px up. One neutral hairline frame that reads on
+   night and day; the screenshot keeps the portal's own colors. */
+.live-screen {
+  width: 100%;
+  max-width: 260px;
+  margin-inline: auto;
+  aspect-ratio: var(--live-ar-phone);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--glass-bg);
+}
+
+.live-screen__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+@media (min-width: 880px) {
+  .live-screen {
+    max-width: none;
+    aspect-ratio: var(--live-ar-desktop);
+    border-radius: calc(var(--radius-card) - 6px);
+  }
+}
+
 .mock {
   border: 1px solid var(--glass-border);
   border-radius: calc(var(--radius-card) - 6px);
