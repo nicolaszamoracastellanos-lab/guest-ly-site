@@ -62,6 +62,8 @@ export type Me = {
     locale_default: string;
     /** Self-serve signup: "pending_payment" until the wedding is activated. */
     billing_status?: string;
+    /** The demo wedding sandbox (tenants.is_demo), when the portal sends it. */
+    is_demo?: boolean;
   };
   /** True while a self-serve wedding awaits activation: the locked home. */
   locked?: boolean;

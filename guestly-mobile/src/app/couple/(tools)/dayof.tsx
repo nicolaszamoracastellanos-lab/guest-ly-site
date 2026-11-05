@@ -22,6 +22,8 @@ import { useSafeBack } from "@/lib/nav";
 import { LiveDay } from "@/features/dayof/LiveDay";
 import { useDayPack, useDayPackFlag } from "@/features/dayof/hooks";
 import { ServerLivePanel, liveRowState, useServerLive } from "@/features/dayof/ServerLive";
+import { PreviewBanner, PreviewDayControl, usePreviewActive } from "@/features/dayof/PreviewDay";
+import { dayofBlocks, readLive } from "@/features/dayof/liveDayCore";
 
 export default function CoupleDayOf() {
   const flag = useDayPackFlag();
@@ -70,6 +72,12 @@ function ServerDayOf() {
     });
   }, []);
   const liveView = useServerLive(data, mainQuery.dataUpdatedAt, session?.me.tenant.slug, overlay);
+  // Demo weddings only: "Preview the day" runs the live view at a chosen moment (previewClock.ts).
+  const slug = session?.me.tenant.slug ?? null;
+  const previewOn = usePreviewActive(slug);
+  const liveRead = React.useMemo(() => readLive(data?.live), [data?.live]);
+  const previewDay = data?.runsheet_day ?? session?.me.tenant.wedding_date?.slice(0, 10) ?? null;
+  const previewBlocks = React.useMemo(() => (data && previewDay ? dayofBlocks(data.runsheet, previewDay) : []), [data, previewDay]);
   const pct = data && data.parties_total ? Math.min(100, Math.round((data.parties_in / data.parties_total) * 100)) : 0;
 
   // Wedding-day mode (iPhone Duo, half folded on the table): "Now" and "Next"
@@ -134,7 +142,9 @@ function ServerDayOf() {
 
   return (
     <Screen query={mainQuery} refresh header={<TopBar onBack={back} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
-      {liveView ? <ServerLivePanel view={liveView} canEdit={canEdit} onOverlay={onOverlay} /> : null}
+      {liveRead ? <PreviewBanner slug={slug} now={liveView?.now ?? mainQuery.dataUpdatedAt} timeZone={liveRead.timeZone} onEnd={() => setOverlay({})} /> : null}
+      {liveRead && !previewOn ? <PreviewDayControl slug={slug} blocks={previewBlocks} timeZone={liveRead.timeZone} day={previewDay} /> : null}
+      {liveView ? <ServerLivePanel view={liveView} canEdit={canEdit} onOverlay={onOverlay} preview={previewOn} /> : null}
       <Row gap={24} align="flex-end" style={{ marginTop: liveView ? 28 : 16 }}>
         <View>
           <SectionLabel color={liveView ? undefined : colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>
@@ -223,7 +233,7 @@ function ServerDayOf() {
           </T>
         </Card>
       ) : null}
-      {data && !data.day_of ? (
+      {data && !data.day_of && !previewOn ? (
         <Row gap={10} style={{ marginTop: 16 }}>
           <Icon name="info" size={18} color={colors.ivory55} />
           <T v="meta13" color={colors.ivory55} style={{ flex: 1 }}>

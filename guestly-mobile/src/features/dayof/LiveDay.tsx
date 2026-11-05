@@ -24,6 +24,7 @@ import { useSafeBack } from "@/lib/nav";
 import { Banner, Button, Gem, IconButton, Icon, Row, Screen, Skeleton, Stack, T, TopBar, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { DAYOF_COPY } from "./copy";
+import { PreviewBanner, PreviewDayControl, usePreviewActive } from "./PreviewDay";
 import { useDayPack, useNow, usePackOwner, usePendingStatus, useQueuedGuestIds, useSettledOnline } from "./hooks";
 import { patchBlockStatus, type PackKind } from "./packStore";
 import { doorCounts, formatSize, isPackDay, packBanner, withPendingStatus, type DayPack, type PackBlock } from "./packCore";
@@ -60,7 +61,8 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
   const coupleCounts = useCoupleDayOf({ poll: online, enabled: role === "couple" });
   const plannerCounts = usePlannerCheckin({ poll: online, enabled: role === "planner" && can(me, "checkin", "view") });
   const server = role === "couple" ? coupleCounts.data : plannerCounts.data;
-  const now = useNow(entry?.offsetMs ?? 0);
+  const now = useNow(entry?.offsetMs ?? 0, slug);
+  const previewOn = usePreviewActive(slug);
   const [showDone, setShowDone] = useState(false);
   // Taps sent online that the saved pack does not show yet.
   const [optimistic, setOptimistic] = useState<Record<string, string>>({});
@@ -84,7 +86,7 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
 
   const canMark = pack?.meta.can_mark_status !== false && (role === "couple" ? me?.can_edit !== false : can(me, "runsheet", "edit"));
   const packDay = pack && view ? isPackDay(pack, view.live.serviceDay) : false;
-  const banner = packBanner({ online, savedAt: entry ? entry.checkedAt : null, now: now - (entry?.offsetMs ?? 0), packDay: packDay || (!pack && status.ready), refreshFailed: status.failed });
+  const banner = packBanner({ online, savedAt: entry ? entry.checkedAt : null, now: now - (entry?.offsetMs ?? 0), packDay: (packDay && !previewOn) || (!pack && status.ready), refreshFailed: status.failed });
   const zoneDiffers = (() => {
     try {
       return zoneOffsetMinutes(tz, now) !== -new Date(now).getTimezoneOffset();
@@ -97,6 +99,20 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
 
   async function setStatus(b: PackBlock, status: "done" | "planned" | "confirmed", previous: string, undoable: boolean) {
     if (!owner) return;
+    // Demo "Preview the day": the tap changes only the preview, nothing is queued or sent.
+    if (previewOn) {
+      setOptimistic((o) => ({ ...o, [b.id]: status }));
+      if (undoable)
+        toast(fmt(c.previewMarked, { title: b.title }), {
+          undo: () =>
+            setOptimistic((o) => {
+              const next = { ...o };
+              delete next[b.id];
+              return next;
+            }),
+        });
+      return;
+    }
     const item: QueuedBlockStatus = {
       kind: "block_status",
       client_event_id: newEventId(),
@@ -217,6 +233,8 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
         {[dayLabel(showDay, lang), fmt(c.updated, { time: savedTime })].join(" · ")}
       </T>
       {bannerNode ? <View style={{ marginTop: 14 }}>{bannerNode}</View> : null}
+      <PreviewBanner slug={slug} now={now} timeZone={tz} onEnd={() => setOptimistic({})} />
+      {previewOn ? null : <PreviewDayControl slug={slug} blocks={pack.runsheet} timeZone={tz} day={pack.meta.wedding_date ?? showDay} />}
 
       {!view.blocks.length ? (
         <Stack gap={12} style={{ marginTop: 24 }}>

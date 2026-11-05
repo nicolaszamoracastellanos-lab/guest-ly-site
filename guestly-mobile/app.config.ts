@@ -121,6 +121,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           NSPrivacyCollectedDataTypePurposes: ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
         },
         {
+          // Master Wave D5 (Nov 5 2026): a Coordinator voice note, recorded only
+          // after the mic tap and the 5.1.2(i) permission screen, leaves the
+          // device for speech to text (AssemblyAI) and is deleted on both sides
+          // once the text is read. Leaving the device makes it "collected".
+          NSPrivacyCollectedDataType: "NSPrivacyCollectedDataTypeAudioData",
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+        },
+        {
           NSPrivacyCollectedDataType: "NSPrivacyCollectedDataTypeOtherUserContent",
           NSPrivacyCollectedDataTypeLinked: true,
           NSPrivacyCollectedDataTypeTracking: false,

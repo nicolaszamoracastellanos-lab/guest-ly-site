@@ -62,6 +62,15 @@ const en = {
     promptBody: "Open Guest-ly once on Wi-Fi so tomorrow works without signal.",
     plannerPromptTitle: "A wedding tomorrow",
     plannerPromptBody: "Open Guest-ly once on Wi-Fi so {names} works without signal tomorrow.",
+    previewOpen: "Preview the day",
+    previewTitle: "Preview the wedding day",
+    previewIntro: "Demo wedding only. Pick a moment to see this screen as it reads then. Nothing you do in the preview is saved.",
+    previewBefore: "Before it starts",
+    previewAt: "{title}, {time}",
+    previewBanner: "Preview of the wedding day, {time}",
+    previewBannerBody: "Demo wedding. Nothing you do here is saved.",
+    previewExit: "End preview",
+    previewMarked: "{title} marked done in the preview",
 };
 
 export type DayofCopy = { [K in keyof typeof en]: string };
@@ -122,6 +131,15 @@ const es: DayofCopy = {
     promptBody: "Abre Guest-ly una vez con wifi para que mañana funcione sin señal.",
     plannerPromptTitle: "Una boda mañana",
     plannerPromptBody: "Abre Guest-ly una vez con wifi para que {names} funcione sin señal mañana.",
+    previewOpen: "Ver el día de la boda",
+    previewTitle: "Ver el día de la boda",
+    previewIntro: "Solo en la boda de demostración. Elige un momento para ver esta pantalla como se verá entonces. Nada de lo que hagas aquí se guarda.",
+    previewBefore: "Antes de empezar",
+    previewAt: "{title}, {time}",
+    previewBanner: "Vista del día de la boda, {time}",
+    previewBannerBody: "Boda de demostración. Nada de lo que hagas aquí se guarda.",
+    previewExit: "Terminar la vista",
+    previewMarked: "{title} marcado como hecho en la vista",
 };
 
 export const DAYOF_COPY: { en: DayofCopy; es: DayofCopy } = { en, es };

@@ -8,6 +8,7 @@ import { featureOn, useSession } from "@/lib/session";
 import { isBlockStatus, readQueue, subscribeQueue, type QueuedBlockStatus } from "@/lib/queue";
 import { cachedPack, fetchPack, loadPack, packKey, packStatus, packsVersion, subscribePacks, type PackEntry, type PackKind, type PackStatus } from "./packStore";
 import type { DayPack, GuestPack } from "./packCore";
+import { previewNow, previewVersion, subscribePreview } from "./previewClock";
 
 /** The release flag every #30 surface waits for (Lane 1 registers it). */
 export const DAY_PACK_FLAG = "MW_DAY_PACK";
@@ -56,26 +57,30 @@ export function useDayPack<P extends DayPack | GuestPack>(kind: PackKind, slug: 
  * Wall-clock milliseconds corrected by the server offset, ticking every 30 s
  * (aligned so the minute changes on time) and again whenever the app comes
  * back to the foreground: intervals are not trusted across a sleep.
+ * `slug`: while a demo-only "Preview the day" runs on this wedding
+ * (previewClock.ts), the preview's instant instead of the real one.
  */
-export function useNow(offsetMs: number): number {
-  const [now, setNow] = useState(() => Date.now() + offsetMs);
+export function useNow(offsetMs: number, slug?: string | null): number {
+  const [real, setReal] = useState(() => Date.now() + offsetMs);
+  useSyncExternalStore(subscribePreview, previewVersion, previewVersion);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const tick = () => {
-      setNow(Date.now() + offsetMs);
+      setReal(Date.now() + offsetMs);
       const ms = 30_000 - (Date.now() % 30_000) + 50;
       timer = setTimeout(tick, ms);
     };
     tick();
     const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") setNow(Date.now() + offsetMs);
+      if (s === "active") setReal(Date.now() + offsetMs);
     });
     return () => {
       if (timer) clearTimeout(timer);
       sub.remove();
     };
   }, [offsetMs]);
-  return now;
+  // `real` is in the deps on purpose: the preview moves with the same 30 s tick.
+  return previewNow(slug, real - offsetMs) ?? real;
 }
 
 /**

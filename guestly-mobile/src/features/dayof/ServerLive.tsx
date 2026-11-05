@@ -45,7 +45,7 @@ function instantLabel(ms: number, tz: string, lang: Lang): string {
 export function useServerLive(data: CoupleDayOf | undefined, receivedAt: number, slug: string | null | undefined, overlay: Record<string, string>) {
   const live = useMemo(() => (liveDayAllowed(slug) ? readLive(data?.live) : null), [data?.live, slug]);
   const offset = live ? clockOffset(live.serverNow, receivedAt) : 0;
-  const now = useNow(offset);
+  const now = useNow(offset, slug);
   return useMemo(() => {
     if (!live || !data) return null;
     const blocks = dayofBlocks(data.runsheet, data.runsheet_day ?? live.serviceDay, overlay);
@@ -60,7 +60,7 @@ export function useServerLive(data: CoupleDayOf | undefined, receivedAt: number,
 export type ServerLiveView = NonNullable<ReturnType<typeof useServerLive>>;
 
 /** The Now and Next panel, with Mark done for a person who may mark. */
-export function ServerLivePanel({ view, canEdit, onOverlay }: { view: ServerLiveView; canEdit: boolean; onOverlay: (id: string, status: string | null) => void }) {
+export function ServerLivePanel({ view, canEdit, onOverlay, preview = false }: { view: ServerLiveView; canEdit: boolean; onOverlay: (id: string, status: string | null) => void; /** Demo "Preview the day": marks change only the preview, nothing is sent. */ preview?: boolean }) {
   const c = useFeatureCopy(DAYOF_COPY);
   const { lang } = useLang();
   const qc = useQueryClient();
@@ -83,6 +83,11 @@ export function ServerLivePanel({ view, canEdit, onOverlay }: { view: ServerLive
 
   async function mark(b: DayofBlock, status: string, undoable: boolean, previous: string) {
     if (busy) return;
+    if (preview) {
+      onOverlay(b.id, status);
+      if (undoable) toast(fmt(c.previewMarked, { title: b.title }), { undo: () => onOverlay(b.id, null) });
+      return;
+    }
     setBusy(b.id);
     onOverlay(b.id, status);
     try {
