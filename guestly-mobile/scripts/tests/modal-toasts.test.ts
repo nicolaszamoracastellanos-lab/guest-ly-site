@@ -197,4 +197,16 @@ assert.deepEqual(raw, RAW_ALLOWED, "raw-sentence toasts: none in new files, olde
 const rawFixture = code(`toastError(errorText(err, lang, x)); toastError((err instanceof ApiFailure && err.messages[lang]) || y); toastError(failedText(fail.saveGuest, err, lang));`);
 assert.equal(calls(rawFixture, "toastError").filter((c) => RAW.test(c)).length, 2);
 
+// Rule 4: a tab screen with its own fixed bottom bar registers it, so a toast
+// rides above it. The door's counter and "Type a name" row (both layouts) was
+// half covered by its own 6 s refusal toast (review round 3).
+{
+  const door = code(readFileSync(path.join(root, "src/features/checkin/CheckinScreen.tsx"), "utf8"));
+  assert.equal(calls(door, "useDockLift").length, 1, "the door registers its bottom row");
+  assert.equal((door.match(/<View onLayout=\{onDoorRow\}/g) ?? []).length, 2, "both door layouts measure the bottom row");
+  // The screen's insets include the native tab bar and the root host's do
+  // not: the row is given from the window, never against the host's base.
+  assert.match(door, /restFromWindow: clearance \+ doorRowH/, "the lift is the row's top from the window bottom");
+}
+
 console.log(`modal-toasts: ${found.length} modal routes, failure toasts carry the warning mark, error toasts say what failed (${Object.values(raw).reduce((a, b) => a + b, 0)} older raw toasts held)`);

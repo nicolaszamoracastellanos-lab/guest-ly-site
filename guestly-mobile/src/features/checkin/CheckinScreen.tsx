@@ -2,7 +2,7 @@
 // the ivory guest card, works offline with a replayable queue.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Pressable, Linking, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Linking, ScrollView, type LayoutChangeEvent } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import { checkIn, drainQueue, isForOpenWedding, newEventId, readQueue, type Chec
 import { QueueChip } from "./QueueChip";
 import { useCoupleDayOf, usePlannerCheckin, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast, toastError } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast, toastError, useDockLift } from "@/ui";
 import { reservedRegionsAvailable, useReservedRegions } from "@/lib/duo";
 import { WelcomeAccessory } from "../../../modules/guestly-duo/src/WelcomeAccessoryView";
 import { can, useUserSession } from "@/lib/session";
@@ -175,6 +175,14 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const layout = useLayout();
   const regions = useReservedRegions();
   const keyboardOpen = useKeyboardOpen();
+  // The counter and "Type a name" row is the door's own fixed bottom bar: a
+  // toast (a refused scan, a failed check-in, 6 s) rides above it instead of
+  // covering the name search it points to. The row ends `clearance` above the
+  // window bottom (this screen's own insets, which include the native tab
+  // bar, so it is given from the window), or 12 above the keyboard.
+  const [doorRowH, setDoorRowH] = useState(0);
+  useDockLift(doorRowH ? { rest: 0, restFromWindow: clearance + doorRowH, open: 12 + doorRowH } : null);
+  const onDoorRow = (e: LayoutChangeEvent) => setDoorRowH(Math.round(e.nativeEvent.layout.height));
   // Denied is only what the person answered; while iOS is still asking, the
   // status is "undetermined" and the scanner frame stays. With the camera
   // denied there is nothing to point at, so the frame and the pointing hint
@@ -254,6 +262,8 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
                 </ScrollView>
               </Card>
             ) : null}
+            {/* Anchored at the bottom of the lower half, like the normal screen, so toasts know where it is. */}
+            <View onLayout={onDoorRow} style={{ marginTop: "auto" }}>
             <Row style={{ justifyContent: "space-between" }}>
               <T v="body15" color={colors.ivory70}>
                 {dayof ? `${dayof.parties_in} ${fmt(copy.checkin.partiesIn, { n: "", total: dayof.parties_total }).replace(/^\s*of\s*/i, "/ ").replace(/^\s*de\s*/i, "/ ")}` : "·"}
@@ -267,6 +277,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
                 </Row>
               </Pressable>
             </Row>
+            </View>
           </View>
         </KeyboardLiftView>
       </View>
@@ -362,6 +373,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
         ) : null}
         {viewOnlyNote}
         {welcomeToggle ? <View style={{ alignItems: "flex-start" }}>{welcomeToggle}</View> : null}
+        <View onLayout={onDoorRow}>
         <Row style={{ justifyContent: "space-between" }}>
           <Row gap={6} align="baseline">
             <T v="name24" style={{ fontVariant: ["lining-nums"] }}>
@@ -380,6 +392,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             </Row>
           </Pressable>
         </Row>
+        </View>
       </View>
       </KeyboardLiftView>
     </View>
