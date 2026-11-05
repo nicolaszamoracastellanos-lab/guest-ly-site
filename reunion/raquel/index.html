@@ -9,10 +9,14 @@
 <title>Tu sesión de inicio con Guest-ly</title>
 <meta name="description" content="Miércoles 21 de octubre, 14:00 a 15:30 (hora de Bolivia). Unirte a la videollamada, agregar la cita a tu calendario y ver qué tener a mano.">
 <link rel="icon" type="image/svg+xml" href="/favicon-diamond.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/cormorant-garamond-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Self-hosted (OFL, licenses in fonts/), latin subset: no request leaves guest-ly.com.
+     The page uses Cormorant Garamond 500 and Jost 400, 500, 600 only. */
+  @font-face { font-family: "Cormorant Garamond"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/cormorant-garamond-latin-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jost"; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/jost-latin-400-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jost"; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/jost-latin-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jost"; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/jost-latin-600-normal.woff2) format("woff2"); }
   :root {
     --night: #0d1117; --navy: #16213a; --ivory: #f7f3ec; --gold: #c9a96e; --gold-lt: #e0c791;
     --muted: rgba(247, 243, 236, 0.68); --line: rgba(201, 169, 110, 0.28);

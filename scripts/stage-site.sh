@@ -43,7 +43,8 @@ OPTIONAL=(
   sitemap.xml           # public pages for search engines, written by cinematic/scripts/prerender.mjs
                         # from its route list (never /reunion, never a demo wedding)
   404.html
-  reunion               # /reunion/<name>/: private session pages (noindex), one per planner call
+  reunion               # /reunion/<name>/: private session pages (noindex), one per planner call;
+                        # each page self-hosts its fonts in reunion/<name>/fonts/ (checked below)
   llms.txt              # AI facts file, EN (#48): written by cinematic/scripts/llms.mjs from the
                         # portal's docs/product/features.json, live and approved features only.
                         # Optional so a push of source before its build still stages; the
@@ -111,6 +112,24 @@ missing_fonts=no
 for f in $(grep -rhoE "/fonts/[A-Za-z0-9._-]+" "$OUT" --include='*.html' --include='*.css' | sort -u); do
   [ -f "$OUT$f" ] || { echo "stage-site: $f is used by the site but not staged (build cinematic and copy it in)" >&2; missing_fonts=yes; }
 done
+[ "$missing_fonts" = no ] || exit 1
+
+# No staged page or stylesheet may load Google Fonts: every visitor's IP
+# would go to Google (D4). Fonts are self-hosted, site-wide under /fonts/
+# and per page next to it (reunion/<name>/fonts/).
+google="$(grep -rlE "fonts\.(googleapis|gstatic)\.com" "$OUT" --include='*.html' --include='*.css' || true)"
+if [ -n "$google" ]; then
+  echo "stage-site: these staged files name fonts.googleapis.com or fonts.gstatic.com; self-host the fonts instead:" >&2
+  echo "$google" | sed "s|^$OUT/|  |" >&2
+  exit 1
+fi
+# A page-relative font url (url(fonts/x.woff2)) must resolve to a staged file.
+while IFS= read -r file; do
+  dir="$(dirname "$file")"
+  for u in $(grep -oE "url\(['\"]?[A-Za-z0-9._/-]+\.woff2" "$file" | sed -E "s/^url\(['\"]?//" | grep -v '^/' | sort -u); do
+    [ -f "$dir/$u" ] || { echo "stage-site: ${file#"$OUT"/} loads $u, which is not staged" >&2; missing_fonts=yes; }
+  done
+done < <(find "$OUT" -type f \( -name '*.html' -o -name '*.css' \))
 [ "$missing_fonts" = no ] || exit 1
 
 find "$OUT" -name .DS_Store -delete

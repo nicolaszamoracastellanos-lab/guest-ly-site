@@ -1499,13 +1499,13 @@ body.js-ready .reveal.is-visible {
   color: var(--text-faint);
 }
 
-.footer__crafted {
+.footer__slogan {
   font-family: var(--font-serif);
   font-style: italic;
   color: var(--accent-text-strong);
 }
 
-/* Trademark notice: its own full-width line under the copyright/crafted row,
+/* Trademark notice: its own full-width line under the copyright/slogan row,
    so the footer grows by exactly one line. */
 .footer__tm {
   flex-basis: 100%;

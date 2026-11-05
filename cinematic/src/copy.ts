@@ -13,6 +13,7 @@ import {
   guestsLabel,
   ordinalEn,
 } from './pricing.ts';
+import { SLOGAN } from './site-facts.ts';
 
 export type Locale = 'en' | 'es';
 
@@ -279,7 +280,7 @@ export interface SiteCopy {
     entityNote: string;
     copyright: string;
     tmNotice: string;
-    crafted: string;
+    slogan: string;
   };
   wizard: {
     stepLabels: string[];
@@ -1217,7 +1218,7 @@ const en: SiteCopy = {
     entityNote: '',
     copyright: '© 2026 Guest-ly',
     tmNotice: 'Guest-ly™ and the Guest-ly logo are trademarks of ZC Ventures LLC.',
-    crafted: 'Crafted with ✦ for unforgettable celebrations',
+    slogan: SLOGAN.en,
   },
 
   wizard: {
@@ -2226,7 +2227,7 @@ const es: SiteCopy = {
     entityNote: '',
     copyright: '© 2026 Guest-ly',
     tmNotice: 'Guest-ly™ y el logotipo de Guest-ly son marcas de ZC Ventures LLC.',
-    crafted: 'Hecho con ✦ para celebraciones inolvidables',
+    slogan: SLOGAN.es,
   },
 
   wizard: {

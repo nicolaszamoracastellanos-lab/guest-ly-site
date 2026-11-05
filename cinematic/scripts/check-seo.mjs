@@ -19,6 +19,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { CINEMATIC } from './lib/paths.mjs';
+import { SLOGAN } from '../src/site-facts.ts';
 
 const dist = resolve(process.argv[2] || join(CINEMATIC, 'dist'));
 const SITE = 'https://guest-ly.com';
@@ -139,9 +140,9 @@ else {
 
 /* 4. The AI facts files. */
 const LLMS = [
-  ['llms.txt', 'More wedding, less stress.'],
-  ['llms-full.txt', 'More wedding, less stress.'],
-  ['es/llms.txt', 'Más boda, menos estrés.'],
+  ['llms.txt', SLOGAN.en],
+  ['llms-full.txt', SLOGAN.en],
+  ['es/llms.txt', SLOGAN.es],
 ];
 const homeHtml = existsSync(join(dist, 'index.html')) ? readFileSync(join(dist, 'index.html'), 'utf8') : '';
 for (const [name, slogan] of LLMS) {
@@ -168,8 +169,20 @@ for (const [name, slogan] of LLMS) {
   }
 }
 
+/* 5. Every prerendered page with the site footer closes it with the slogan
+   (EN in the snapshot; ES comes from the same constant in src/site-facts.ts).
+   The home page must have it; the legal pages have no site footer. */
+let sloganPages = 0;
+for (const route of PAGES) {
+  const file = join(dist, route, 'index.html');
+  const html = existsSync(file) ? readFileSync(file, 'utf8') : '';
+  if (route !== '/' && !html.includes('<footer')) continue;
+  sloganPages += 1;
+  if (!html.includes(`<p class="footer__slogan">${SLOGAN.en}</p>`)) fail(`${route} has no footer slogan "${SLOGAN.en}"`);
+}
+
 if (errors.length) {
   for (const e of errors) console.error(`check-seo: ${e}`);
   process.exit(1);
 }
-console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok`);
+console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok; footer slogan on ${sloganPages} page(s) with the site footer`);

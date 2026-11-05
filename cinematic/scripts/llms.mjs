@@ -42,11 +42,11 @@ import {
   PLANS,
   guestsLabel,
 } from '../src/pricing.ts';
-import { APP_URL, IOS_APP_URL, LEGAL_ENTITY, SITE_URL } from '../src/site-facts.ts';
+import { APP_URL, IOS_APP_URL, LEGAL_ENTITY, SITE_URL, SLOGAN } from '../src/site-facts.ts';
 import { copyProblems } from './lib/copy-rules.mjs';
 import { CINEMATIC, REPO_ROOT } from './lib/paths.mjs';
 
-export const SLOGAN = { en: 'More wedding, less stress.', es: 'Más boda, menos estrés.' };
+export { SLOGAN };
 export const OUTPUTS = ['llms.txt', 'llms-full.txt', 'es/llms.txt'];
 const SCHEMA = 'guestly-product-facts/1';
 const FACTS_PATH = join('docs', 'product', 'features.json');
