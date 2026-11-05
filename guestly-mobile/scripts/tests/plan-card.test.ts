@@ -146,6 +146,10 @@ t("static: the chat draws plans from the card, handles plan_step, sends keepStep
   }
   const card = src("src/features/assistant/PlanCard.tsx");
   assert.ok(card.includes('accessibilityRole="checkbox"'));
+  assert.ok(card.includes('<T v="liveTitle" style={styles.tnum}>{title}</T>'), "the title carries a count: Jost with tabular figures, never Cormorant");
+  assert.ok(/label=\{c\.undo\}[\s\S]{0,160}kind="ghost"/.test(card), "Undo is ivory; the Run button stays the one gold");
+  const kb = src("src/ui/keyboard.tsx");
+  assert.ok(kb.includes("restFromWindow: chat.rest + height"), "toasts clear the chat composer inside the native tabs");
   assert.ok(!/colors\.gold\b(?!Border|Light)/.test(card.replace(/border=\{proposed \? colors\.goldBorder/, "")), "the Run button is the card's one gold");
   const stream = src("src/features/assistant/stream.ts");
   assert.ok(stream.includes('t: "plan_step"') && stream.includes("keepStepIds?: string[]"));

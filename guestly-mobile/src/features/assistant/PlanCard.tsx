@@ -101,7 +101,7 @@ export function PlanCard({ card, plan, lang, canEdit, busy, locked, undoBusy, er
   return (
     <View style={{ paddingLeft: 38 }} testID="plan-card">
       <Card kind="glass" padding={16} border={proposed ? colors.goldBorder : undefined}>
-        <T v="name24" style={styles.tnum}>{title}</T>
+        <T v="liveTitle" style={styles.tnum}>{title}</T>
         {proposed && canEdit ? (
           <T v="meta13" color={colors.ivory55} style={{ marginTop: 4 }}>
             {c.helper}
@@ -172,7 +172,8 @@ export function PlanCard({ card, plan, lang, canEdit, busy, locked, undoBusy, er
                   {canUndo ? (
                     <Button
                       label={c.undo}
-                      kind="text"
+                      // Ivory, not the text kind's gold: a plan can hold several Undo lines.
+                      kind="ghost"
                       small
                       full={false}
                       icon="undo"
@@ -181,6 +182,7 @@ export function PlanCard({ card, plan, lang, canEdit, busy, locked, undoBusy, er
                       disabled={busy || locked || (undoBusy !== null && undoBusy !== step.id)}
                       onPress={() => onUndo(step)}
                       testID={`plan-undo-${step.id}`}
+                      style={{ marginTop: 6 }}
                     />
                   ) : null}
                 </View>

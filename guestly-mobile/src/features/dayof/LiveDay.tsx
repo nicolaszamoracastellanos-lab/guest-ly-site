@@ -63,9 +63,15 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
   const server = role === "couple" ? coupleCounts.data : plannerCounts.data;
   const now = useNow(entry?.offsetMs ?? 0, slug);
   const previewOn = usePreviewActive(slug);
+  // A preview's marks live only in `optimistic`: they go when it starts or ends (any way it ends).
+  const [wasPreview, setWasPreview] = useState(previewOn);
   const [showDone, setShowDone] = useState(false);
   // Taps sent online that the saved pack does not show yet.
   const [optimistic, setOptimistic] = useState<Record<string, string>>({});
+  if (wasPreview !== previewOn) {
+    setWasPreview(previewOn);
+    setOptimistic({});
+  }
 
   // Opening the screen is a foreground use: check the pack once (a 304 when
   // nothing changed), whatever the 7-day window says.
@@ -233,7 +239,7 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
         {[dayLabel(showDay, lang), fmt(c.updated, { time: savedTime })].join(" · ")}
       </T>
       {bannerNode ? <View style={{ marginTop: 14 }}>{bannerNode}</View> : null}
-      <PreviewBanner slug={slug} now={now} timeZone={tz} onEnd={() => setOptimistic({})} />
+      <PreviewBanner slug={slug} now={now} timeZone={tz} />
       {previewOn ? null : <PreviewDayControl slug={slug} blocks={pack.runsheet} timeZone={tz} day={pack.meta.wedding_date ?? showDay} />}
 
       {!view.blocks.length ? (

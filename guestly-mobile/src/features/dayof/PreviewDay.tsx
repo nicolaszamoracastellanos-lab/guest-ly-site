@@ -77,7 +77,7 @@ export function PreviewDayControl<B extends LiveBlockInput & { title?: string | 
   );
 }
 
-export function PreviewBanner({ slug, now, timeZone, onEnd }: { slug: string | null | undefined; now: number; timeZone: string; onEnd?: () => void }) {
+export function PreviewBanner({ slug, now, timeZone }: { slug: string | null | undefined; now: number; timeZone: string }) {
   const c = useFeatureCopy(DAYOF_COPY);
   const { lang } = useLang();
   const active = usePreviewActive(slug);
@@ -92,14 +92,12 @@ export function PreviewBanner({ slug, now, timeZone, onEnd }: { slug: string | n
         action={
           <Button
             label={c.previewExit}
-            kind="text"
+            // Ivory: the live screen's one gold is the Now diamond.
+            kind="ghost"
             small
             full={false}
             haptic={false}
-            onPress={() => {
-              endPreview();
-              onEnd?.();
-            }}
+            onPress={endPreview}
             testID="dayof-preview-end"
           />
         }

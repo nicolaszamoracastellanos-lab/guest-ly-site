@@ -13,7 +13,7 @@
 // works over a tab, a pushed screen or another modal.
 
 import React, { useCallback, useRef, useState } from "react";
-import { Linking, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useUserSession } from "@/lib/session";
@@ -98,9 +98,23 @@ export function useAiConsentGate() {
   const scope = pending ? pending.scopes[pending.index] : null;
   const s = scope ? c[scope] : null;
   const sheet = (
-    <Sheet visible={!!pending} onClose={() => finish(false)} top={110}>
+    <Sheet
+      visible={!!pending}
+      onClose={() => finish(false)}
+      top={110}
+      form={false}
+      // Allow and Not now stay in view at every text size; the details scroll above them.
+      footer={
+        s ? (
+          <Stack gap={10}>
+            <Button label={c.allow} onPress={() => void allow()} testID="consent-allow" />
+            <Button label={c.decline} kind="ghost" onPress={() => finish(false)} testID="consent-decline" />
+          </Stack>
+        ) : undefined
+      }
+    >
       {s ? (
-        <Stack gap={16} style={{ paddingBottom: 8 }} >
+        <Stack gap={16} style={{ paddingBottom: 8 }}>
           <View testID={`consent-${scope}`}>
             <T v="title26">{s.title}</T>
             <T v="body15" color={colors.ivory70} style={{ marginTop: 8 }}>
@@ -110,11 +124,12 @@ export function useAiConsentGate() {
           <ConsentRow icon="globe" label={c.sentTo} text={s.who} />
           <ConsentRow icon="mail" label={c.whatIsSent} text={s.what} />
           <ConsentRow icon="info" label={c.whatFor} text={s.why} />
-          <Button label={c.privacy} kind="text" small full={false} haptic={false} onPress={() => void Linking.openURL("https://guest-ly.com/privacy").catch(() => {})} />
-          <Stack gap={10}>
-            <Button label={c.allow} onPress={() => void allow()} testID="consent-allow" />
-            <Button label={c.decline} kind="ghost" onPress={() => finish(false)} testID="consent-decline" />
-          </Stack>
+          {/* A plain link in ivory: the sheet's one gold is Allow and continue. */}
+          <Pressable accessibilityRole="link" accessibilityLabel={c.privacy} onPress={() => void Linking.openURL("https://guest-ly.com/privacy").catch(() => {})} hitSlop={10} style={{ alignSelf: "flex-start", minHeight: 44, justifyContent: "center" }}>
+            <T v="body15" color={colors.ivory70} style={{ textDecorationLine: "underline" }}>
+              {c.privacy}
+            </T>
+          </Pressable>
         </Stack>
       ) : null}
     </Sheet>

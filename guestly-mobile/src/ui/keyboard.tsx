@@ -449,7 +449,12 @@ type ChatComposerProps = Partial<ComposerProps> & {
 export function ChatComposer({ accessory, below, children, ...composer }: ChatComposerProps) {
   const chat = useContext(ChatContext);
   const [height, setHeight] = useState(0);
-  useDockLift(height ? { rest: height, open: height } : null);
+  // Where the box's top edge is, counted from the bottom of the window, at
+  // rest: the sticky view lifts it by chat.rest from the window's bottom. Inside
+  // the native tabs the screen's safe area holds the tab bar and the root toast
+  // host's does not, so `rest` alone left toasts about 40 pt into the box (seen
+  // on the Coordinator tab, Nov 5); the door screen had the same fix.
+  useDockLift(height ? { rest: height, open: height, restFromWindow: chat.rest + height } : null);
   const onLayout = (e: LayoutChangeEvent) => {
     const h = Math.round(e.nativeEvent.layout.height);
     if (h === height) return;

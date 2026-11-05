@@ -75,6 +75,12 @@ function ServerDayOf() {
   // Demo weddings only: "Preview the day" runs the live view at a chosen moment (previewClock.ts).
   const slug = session?.me.tenant.slug ?? null;
   const previewOn = usePreviewActive(slug);
+  // A preview's marks live only in the overlay: they go when it starts or ends (any way it ends).
+  const [wasPreview, setWasPreview] = React.useState(previewOn);
+  if (wasPreview !== previewOn) {
+    setWasPreview(previewOn);
+    setOverlay({});
+  }
   const liveRead = React.useMemo(() => readLive(data?.live), [data?.live]);
   const previewDay = data?.runsheet_day ?? session?.me.tenant.wedding_date?.slice(0, 10) ?? null;
   const previewBlocks = React.useMemo(() => (data && previewDay ? dayofBlocks(data.runsheet, previewDay) : []), [data, previewDay]);
@@ -142,7 +148,7 @@ function ServerDayOf() {
 
   return (
     <Screen query={mainQuery} refresh header={<TopBar onBack={back} right={<Row gap={8}><Badge label={copy.coupleDayOf.title} kind="green" /><IconButton name="bell" label={copy.coupleHome.tabs.messages} onPress={() => router.push("/couple/messages")} /></Row>} />}>
-      {liveRead ? <PreviewBanner slug={slug} now={liveView?.now ?? mainQuery.dataUpdatedAt} timeZone={liveRead.timeZone} onEnd={() => setOverlay({})} /> : null}
+      {liveRead ? <PreviewBanner slug={slug} now={liveView?.now ?? mainQuery.dataUpdatedAt} timeZone={liveRead.timeZone} /> : null}
       {liveRead && !previewOn ? <PreviewDayControl slug={slug} blocks={previewBlocks} timeZone={liveRead.timeZone} day={previewDay} /> : null}
       {liveView ? <ServerLivePanel view={liveView} canEdit={canEdit} onOverlay={onOverlay} preview={previewOn} /> : null}
       <Row gap={24} align="flex-end" style={{ marginTop: liveView ? 28 : 16 }}>
