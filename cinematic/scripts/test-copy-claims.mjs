@@ -33,6 +33,8 @@ mustFail('ES "Nos sincronizamos con él"', (c) => (c.es.faq.items[0].a = 'Conser
 mustFail('FAQPage answer with a sync claim', (c) => (c.en.faq.items.find((i) => i.ld).a = 'Keep Zola. We sync with it.'), 'json-ld[1]');
 mustFail('EN coming soon', (c) => (c.en.channels.liveLabel = 'Coming soon'), 'roadmap promise');
 mustFail('ES "Muy pronto"', (c) => (c.es.channels.liveLabel = 'Muy pronto'), 'roadmap promise');
+mustFail('EN founding offer back', (c) => (c.en.founding.body[1] = 'First 10 weddings: 30% off with FOUNDING30.'), 'retired Founding Couples offer');
+mustFail('ES Parejas Fundadoras', (c) => (c.es.founding.kicker = 'Parejas Fundadoras'), 'retired Founding Couples offer');
 mustFail('ES "llegan pronto"', (c) => (c.es.faq.items[0].a = 'SMS y WhatsApp llegan pronto.'), 'roadmap promise');
 mustFail('Telegram anywhere', (c) => (c.en.channels.cards[0].name = 'Telegram'), 'blocked term "Telegram"');
 mustFail('"Get started" button', (c) => (c.en.nav.cta = 'Get started'), 'generic button label');
@@ -61,4 +63,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-copy-claims: ${e}`);
   process.exit(1);
 }
-console.log('test-copy-claims clean: copy and JSON-LD clean today; 16 planted claims each fail; TSX and built-page arrows caught (4 cases), mock data and plain controls pass');
+console.log('test-copy-claims clean: copy and JSON-LD clean today; 18 planted claims each fail; TSX and built-page arrows caught (4 cases), mock data and plain controls pass');

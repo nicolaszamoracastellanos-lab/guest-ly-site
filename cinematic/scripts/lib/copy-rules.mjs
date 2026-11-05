@@ -15,6 +15,10 @@ const COMING_SOON = /\bcoming soon\b|pr[oó]ximamente|\bmuy pronto\b|\bllegan? p
    "Nos sincronizamos con él". Within one string or line. */
 const ZOLA_SYNC = /\bsync(s|ed|ing)?\b.*\bZola\b|\bZola\b.*\bsync(s|ed|ing)?\b|sincroniz\p{L}*.*\bZola\b|\bZola\b.*sincroniz/iu;
 
+/* The Founding Couples offer is gone for good (Nicolas, Nov 5 2026): its
+   name, its code and its discount never come back in copy, JSON-LD or llms. */
+const RETIRED_OFFER = /\bFOUNDING ?30\b|\bfounding (couples?|spots?|offer|price)\b|\bparejas? fundadoras?\b|\blugar(es)? fundador(es)?\b|\b30 ?% (off|de descuento)\b/iu;
+
 const RULES = [
   { name: 'em dash', re: /[—―]/u },
   { name: 'en dash', re: /–/u },
@@ -30,6 +34,7 @@ const RULES = [
   { name: 'successfully', re: /\bsuccessfully\b|\bexitosamente\b|con [eé]xito/iu },
   { name: 'coming soon', re: COMING_SOON },
   { name: 'Zola sync claim', re: ZOLA_SYNC },
+  { name: 'retired Founding Couples offer', re: RETIRED_OFFER },
   /* "Guest-ly" always with the hyphen; addresses (guest-ly.com) already have it. */
   { name: 'brand without the hyphen', re: /\bguest ?ly\b/iu },
 ];
@@ -58,6 +63,7 @@ export function claimProblems(text, { blockedTerms = [] } = {}) {
   const out = [];
   if (COMING_SOON.test(text)) out.push('roadmap promise');
   if (ZOLA_SYNC.test(text)) out.push('Zola sync claim (it is a file import)');
+  if (RETIRED_OFFER.test(text)) out.push('retired Founding Couples offer');
   for (const term of blockedTerms) if (termRe(term).test(text)) out.push(`blocked term "${term}"`);
   return out;
 }

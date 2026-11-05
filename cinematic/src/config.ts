@@ -33,10 +33,6 @@ export const PAY_LINKS: Record<PayLinkKey, string> = {
 export const ADDON_PRICE = COORDINATOR_ONCE;
 export const ADDON_MONTHLY = COORDINATOR_MONTHLY;
 
-/* FOUNDING COUPLES OFFER: the end date and the check live in founding.ts
-   (pure, so Node tests can import it); set the date there. */
-export { FOUNDING_ENDS, foundingOfferOpen } from './founding.ts';
-
 /* Receives order notifications via FormSubmit (same inbox as production). */
 export const ORDER_INBOX = 'nicolas@guest-ly.com';
 

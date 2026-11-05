@@ -252,7 +252,6 @@ export interface SiteCopy {
     kicker: string;
     title: string;
     body: string[];
-    offer: { badge: string; body: string; ends: string; cta: string };
     /* Real testimonials land here later; the section renders nothing extra
        while the list is empty. */
     proof: { quote: string; names: string; place: string }[];
@@ -1116,12 +1115,6 @@ const en: SiteCopy = {
       'Being built and tested for our own wedding: 400 guests in Tarija, Bolivia, this November.',
       'Every feature exists because a real guest needed it.',
     ],
-    offer: {
-      badge: 'Founding Couples',
-      body: 'First 10 weddings: 30% off and the AI Coordinator included, for an honest testimonial.',
-      ends: 'Ends Oct 31, 2026',
-      cta: 'Claim a founding spot',
-    },
     proof: [],
   },
 
@@ -2131,12 +2124,6 @@ const es: SiteCopy = {
       'Se está construyendo y probando para nuestra propia boda: 400 invitados en Tarija, Bolivia, este noviembre.',
       'Cada función existe porque un invitado real la necesitó.',
     ],
-    offer: {
-      badge: 'Parejas Fundadoras',
-      body: 'Primeras 10 bodas: 30% de descuento y Coordinador IA incluido, por un testimonio honesto.',
-      ends: 'Termina el 31 de octubre de 2026',
-      cta: 'Reservar un lugar fundador',
-    },
     proof: [],
   },
 

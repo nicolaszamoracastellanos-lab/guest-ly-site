@@ -1213,35 +1213,6 @@ body.js-ready .reveal.is-visible {
   font-weight: 600;
 }
 
-/* Founding Couples banner */
-
-.founding {
-  margin-top: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.7rem;
-  padding: clamp(1.5rem, 3.5vw, 2.2rem);
-  text-align: center;
-  border-color: var(--accent-text);
-  background: var(--accent-08);
-  box-shadow: 0 0 50px var(--accent-12), var(--shadow-card);
-}
-
-.founding__body {
-  font-family: var(--font-serif);
-  font-size: clamp(1.08rem, 1.6vw, 1.25rem);
-  line-height: 1.55;
-  max-width: 46rem;
-}
-
-.founding__ends {
-  font-size: var(--text-label);
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-faint);
-}
-
 /* Guarantee line */
 
 .guarantee {
@@ -2007,13 +1978,7 @@ body.js-ready .reveal.is-visible {
   }
 }
 
-/* ------------------------------------------------- wave 5: founding */
-
-.founding-grid {
-  display: grid;
-  gap: 1.75rem;
-  align-items: start;
-}
+/* ------------------------------------------------- wave 5: origin story */
 
 .founding-story__p {
   font-family: var(--font-serif);
@@ -2025,10 +1990,6 @@ body.js-ready .reveal.is-visible {
 .founding-story__p + .founding-story__p {
   margin-top: 1.1rem;
   color: var(--text-muted);
-}
-
-.founding__cta {
-  margin-top: 0.4rem;
 }
 
 .proof-grid {
@@ -2062,16 +2023,6 @@ body.js-ready .reveal.is-visible {
 }
 
 @media (min-width: 880px) {
-  .founding-grid {
-    grid-template-columns: 1.15fr 1fr;
-    gap: 3rem;
-  }
-
-  /* No offer card (past FOUNDING_ENDS): the story stands alone. */
-  .founding-grid--solo {
-    grid-template-columns: 1fr;
-  }
-
   .proof-grid {
     grid-template-columns: repeat(3, 1fr);
   }
