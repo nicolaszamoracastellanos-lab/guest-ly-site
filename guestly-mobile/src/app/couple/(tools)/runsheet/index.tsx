@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { post, ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import {
@@ -84,7 +85,7 @@ export default function CoupleRunsheet() {
       await post(`/couple/runsheet/${b.id}/status`, { status });
       return true;
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
+      toastError(failedText(app.fail.blockStatus, err, lang));
       return false;
     } finally {
       void qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
@@ -97,7 +98,7 @@ export default function CoupleRunsheet() {
       const next = await post<RunsheetSurface>("/couple/runsheet/seed", {});
       qc.setQueryData(RUNSHEET_KEY, next);
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
+      toastError(failedText(app.fail.startFromTemplate, err, lang));
     } finally {
       setSeeding(false);
     }

@@ -12,9 +12,9 @@ import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { readAsStringAsync } from "expo-file-system/legacy";
-import { useLang, fmt } from "@/i18n";
+import { useCopy, useLang, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { prepareImageForUpload } from "@/features/shared/images";
 import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, Input, Banner, Icon, Hairline, Chip, ChipRow, toast, toastError } from "@/ui";
@@ -51,8 +51,9 @@ export function BudgetImportScreen() {
   const [nameMatchSkipped, setNameMatchSkipped] = useState(false);
   const [syncUi, setSyncUi] = useState<SyncUi>(() => emptySyncUi());
 
-  function fail(err: unknown) {
-    toastError(errorText(err, lang, copy.nothingRead));
+  const failCopy = useCopy().fail;
+  function fail(err: unknown, what: string = copy.nothingRead) {
+    toastError(failedText(what, err, lang));
   }
 
   async function read(body: { text?: string; file_base64?: string; filename?: string; mime?: string }) {
@@ -140,7 +141,7 @@ export function BudgetImportScreen() {
       toast(copy.syncDone(r.updated, r.added, r.removed));
       back();
     } catch (err) {
-      fail(err);
+      fail(err, failCopy.updateBudget);
     } finally {
       setSaving(false);
     }
@@ -154,7 +155,7 @@ export function BudgetImportScreen() {
       toast(fmt(copy.imported, { items: r.items, payments: r.payments }));
       back();
     } catch (err) {
-      fail(err);
+      fail(err, failCopy.importBudget);
     } finally {
       setSaving(false);
     }

@@ -3,19 +3,21 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { Screen, TopBar, Button, Stack, Banner, toastError } from "@/ui";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
-import { TaskForm, emptyForm, errorText, type TaskFormValue } from "@/features/tasks/ui";
+import { TaskForm, emptyForm, type TaskFormValue } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
 
 export default function NewTask() {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -45,7 +47,7 @@ export default function NewTask() {
       leave.release();
       back();
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.addTask, err, lang));
     } finally {
       setBusy(false);
     }

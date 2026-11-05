@@ -6,7 +6,7 @@ import { View, Alert, Pressable, ScrollView } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { ApiFailure } from "@/lib/api";
+import { failedText } from "@/features/shared/requests";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
 import {
@@ -136,7 +136,7 @@ function SeatingTableScreen({ id }: { id: string }) {
     try {
       await save();
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
+      toastError(failedText(app.fail.saveSeating, err, lang));
     } finally {
       setSaving(false);
     }

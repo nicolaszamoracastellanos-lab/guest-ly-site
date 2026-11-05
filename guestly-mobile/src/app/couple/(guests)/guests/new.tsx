@@ -18,7 +18,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCopy, useLang } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Input, Button, Row, Stack, Segmented, Field, T, Icon, Sheet, ListRow, Avatar, toast, toastError } from "@/ui";
 import { contactsSupported, contactsAccess, pickContacts, sharedMatching, onContactsChange, type PickedContact } from "@/features/guests/contacts";
 import { ContactAccessInline } from "@/features/guests/ContactAccessInline";
@@ -115,7 +115,7 @@ export default function NewGuest() {
       // not Undo.
       toast(c.add.added, id ? { undo: () => router.push({ pathname: "/couple/guests/[id]", params: { id } }), undoLabel: c.add.view } : {});
     } catch (err) {
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.addGuest, err, lang));
     } finally {
       setBusy(false);
     }

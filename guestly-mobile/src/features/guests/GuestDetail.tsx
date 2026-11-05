@@ -11,7 +11,7 @@ import { usePane } from "@/ui/MasterDetail";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, localized, useCopy, useLang, relTime, mediumDate } from "@/i18n";
 import { get, post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useGuestDetail, useCoupleRsvps, type InboxItem } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, toast, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Field, ButtonRow, type IconName, toastError } from "@/ui";
@@ -136,7 +136,7 @@ export function GuestDetail({ id }: { id: string }) {
       setEditing(false);
       showNotice(c.card.saved);
     } catch (err) {
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.saveGuest, err, lang));
     } finally {
       setBusy(false);
     }
@@ -152,7 +152,7 @@ export function GuestDetail({ id }: { id: string }) {
       await qc.invalidateQueries({ queryKey: ["couple-inbox"] });
       showNotice(fmt(copy.inbox.sent, { name: d?.name ?? "" }));
     } catch (err) {
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.sendMessage, err, lang));
     } finally {
       setBusy(false);
     }

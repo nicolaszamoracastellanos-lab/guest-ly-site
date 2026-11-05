@@ -5,7 +5,8 @@ import { View, Pressable } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { post, ApiFailure } from "@/lib/api";
+import { failedText } from "@/features/shared/requests";
+import { post } from "@/lib/api";
 import {
   Screen,
   TopBar,
@@ -82,7 +83,7 @@ export default function SeatingAuto() {
       }
       setPreview(r);
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
+      toastError(failedText(apply ? app.fail.applySeating : app.fail.suggestSeating, err, lang));
     } finally {
       setBusy(null);
     }

@@ -6,9 +6,9 @@ import { View, Alert, Pressable, Share } from "react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useCopy, useLang } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, SheetActions, Banner, EmptyState, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -34,6 +34,7 @@ const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar
 
 export default function WebsiteHome() {
   const c = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -53,7 +54,7 @@ export default function WebsiteHome() {
     try {
       await fn();
     } catch (err) {
-      toastError(errorText(err, lang, c.errors.saveFailed));
+      toastError(failedText(fail.updateWebsite, err, lang));
     } finally {
       setBusy(null);
     }

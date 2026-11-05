@@ -15,7 +15,7 @@
 
 import * as Crypto from "expo-crypto";
 import { api, ApiFailure, get } from "@/lib/api";
-import { failText } from "./failText";
+import { failText, TOO_LARGE } from "./failText";
 
 /** Model and vision calls: the portal routes allow up to 60 s. */
 export const AI_TIMEOUT_MS = 90_000;
@@ -48,11 +48,6 @@ export function postOnce<T>(path: string, body: Record<string, unknown>, key: st
 export function outcomeUnknown(err: unknown): boolean {
   return err instanceof ApiFailure && (err.status === 0 || err.code === "offline" || err.code === "timeout" || err.code === "send_in_progress");
 }
-
-const TOO_LARGE = {
-  en: "That file is too large to send. Choose a smaller one.",
-  es: "Ese archivo es demasiado grande para enviarlo. Elige uno más pequeño.",
-};
 
 export function errorText(err: unknown, lang: "en" | "es", fallback: string): string {
   if (err instanceof ApiFailure) {

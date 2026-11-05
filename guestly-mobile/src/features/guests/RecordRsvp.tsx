@@ -12,7 +12,7 @@ import { fmt, localized, useCopy, useLang } from "@/i18n";
 import { get, post } from "@/lib/api";
 import type { GuestDetail } from "@/lib/hooks";
 import { useGuestPages } from "@/features/guests/hooks";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, Card, Row, Segmented, Button, T, Badge, Stack, Skeleton, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
@@ -76,7 +76,7 @@ export function RecordRsvpScreen() {
       setNotes(rsvpNoteText(r.detail.rsvp?.notes));
     } catch (err) {
       if (preset) setFailed(true);
-      else toastError(errorText(err, lang, copy.common.errorBody));
+      else toastError(failedText(copy.fail.openGuest, err, lang));
     } finally {
       setOpening(null);
     }
@@ -121,7 +121,7 @@ export function RecordRsvpScreen() {
       else toast(c.card.rsvpSaved);
       back();
     } catch (err) {
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.saveRsvp, err, lang));
     } finally {
       setBusy(false);
     }

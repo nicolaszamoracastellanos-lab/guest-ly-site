@@ -4,15 +4,16 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
-import { useLang, zoneLabel } from "@/i18n";
+import { useCopy, useLang, zoneLabel } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { post } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, Row, Toggle, SectionLabel, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE } from "@/features/tasks/hooks";
-import { errorText, ConfirmSheet } from "@/features/tasks/ui";
+import { ConfirmSheet } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 
 // The feed URL carries a bearer token as a query param: anyone holding the
@@ -32,6 +33,7 @@ function maskFeedUrl(url: string): string {
 
 export default function Reminders() {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -53,7 +55,7 @@ export default function Reminders() {
       await post("/couple/tasks/reminders", { enabled });
       await invalidate();
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.changeReminders, err, lang));
     } finally {
       setBusy(false);
     }
@@ -75,7 +77,7 @@ export default function Reminders() {
       setCopied(false);
       setConfirmRotate(false);
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.newLink, err, lang));
     } finally {
       setBusy(false);
     }

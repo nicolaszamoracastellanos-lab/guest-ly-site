@@ -5,8 +5,8 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useLang, mediumDate } from "@/i18n";
-import { errorText } from "@/features/shared/requests";
+import { useCopy, useLang, mediumDate } from "@/i18n";
+import { failedText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Screen, TopBar, BigTitle, Card, T, Button, Stack, Skeleton, SectionLabel, Segmented, Row, Hairline, Banner, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
@@ -272,6 +272,7 @@ export default function SectionEditor() {
 
 function GalleryEditor({ section, signed, onChange, onSigned }: { section: Extract<Section, { type: "gallery" }>; signed?: Record<string, string>; onChange: (fn: (s: Extract<Section, { type: "gallery" }>) => Extract<Section, { type: "gallery" }>) => void; onSigned: (p: string, u: string) => void }) {
   const c = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const [busy, setBusy] = useState(false);
   async function add() {
@@ -283,7 +284,7 @@ function GalleryEditor({ section, signed, onChange, onSigned }: { section: Extra
         onChange((s) => ({ ...s, images: [...s.images, ...picked.map((p) => ({ url: p.path, caption: EMPTY }))].slice(0, 30) }));
       }
     } catch (err) {
-      toastError(errorText(err, lang, c.errors.pickFailed));
+      toastError(failedText(fail.addPhotos, err, lang));
     } finally {
       setBusy(false);
     }

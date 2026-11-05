@@ -5,8 +5,9 @@ import React, { useMemo, useRef, useState } from "react";
 import { View, FlatList, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { useCopy, fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { post } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
@@ -14,7 +15,7 @@ import { Screen, TopBar, BigTitle, Segmented, Chip, ChipRow, Card, Button, Skele
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, useSharedBoard, KEYS, TASK_INVALIDATE, type Board, type TaskGroup, type TaskView, type BoardTask } from "@/features/tasks/hooks";
-import { TaskRowItem, SharedTaskRow, EmptyList, errorText } from "@/features/tasks/ui";
+import { TaskRowItem, SharedTaskRow, EmptyList } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 
 type Segment = "ours" | "board";
@@ -22,6 +23,7 @@ type Row_ = { kind: "header"; key: string; label: string; count: number } | { ki
 
 export default function CoupleTasks() {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -79,7 +81,7 @@ export default function CoupleTasks() {
       if (r.clone?.due_date) toast(fmt(copy.repeatCloned, { date: r.clone.due_date }), { icon: "info" });
     } catch (err) {
       qc.setQueryData<Board>(KEYS.board, (b) => (b ? patchTask(b, task.id, before) : b));
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.updateTask, err, lang));
     } finally {
       inFlight.current.delete(task.id);
     }

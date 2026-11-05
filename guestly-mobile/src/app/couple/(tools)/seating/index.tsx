@@ -8,6 +8,7 @@ import { useSafeBack } from "@/lib/nav";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
@@ -144,7 +145,7 @@ export default function SeatingIndex() {
       await save();
       void qc.invalidateQueries({ queryKey: SEATING_KEY });
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || app.common.errorBody);
+      toastError(failedText(app.fail.saveSeating, err, lang));
     } finally {
       setSaving(false);
     }

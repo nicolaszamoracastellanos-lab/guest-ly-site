@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useIsFocused } from "expo-router";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { get } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { checkIn, drainQueue, isForOpenWedding, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
 import { QueueChip } from "./QueueChip";
 import { useCoupleDayOf, usePlannerCheckin, type GuestListItem } from "@/lib/hooks";
@@ -103,8 +103,10 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const drainNow = useCallback(async () => {
     try {
       const r = await drainQueue();
-      if (r.refused.length) toast(fmt(copy.checkin.refusedToast, { names: r.refused.join(", ") }));
-      else if (r.already.length) toast(fmt(copy.checkin.conflictToast, { names: r.already.join(", ") }));
+      // A refusal is a failure (warning mark); a party already in at another
+      // door is news, not success (info mark). Never the success check.
+      if (r.refused.length) toastError(fmt(copy.checkin.refusedToast, { names: r.refused.join(", ") }));
+      else if (r.already.length) toast(fmt(copy.checkin.conflictToast, { names: r.already.join(", ") }), { icon: "info" });
     } catch {
       // The queue keeps everything it could not send.
     }
@@ -143,7 +145,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
       void qc.invalidateQueries({ queryKey: [countsKey] });
     } catch (err) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(fmt(copy.fail.checkIn, { name }), err, lang));
     } finally {
       setBusy(false);
     }

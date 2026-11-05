@@ -27,6 +27,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, plural, useCopy, useLang } from "@/i18n";
+import { failedText } from "@/features/shared/requests";
 import { post, ApiFailure } from "@/lib/api";
 import { usePlannerGuests, usePlannerRequest, type RequestRow, type PlannerGuest } from "@/lib/hooks";
 import { buildRequestBody, fieldValid, formReady, MAX_REMIND, type EditField, type RequestKind as Kind } from "@/lib/requestForm";
@@ -145,8 +146,8 @@ export default function NewRequest() {
     } catch (err) {
       const f = err instanceof ApiFailure ? err : null;
       // not_open: the couple answered meanwhile. invalid: the server's own
-      // sentence names the rule. Anything else: its bilingual message.
-      toastError(f?.reason === "not_open" ? copy.core.editNotOpen : f ? f.messages[lang] : c.couldNotSave);
+      // sentence names the rule (failedText keeps it after what failed).
+      toastError(f?.reason === "not_open" ? copy.core.editNotOpen : failedText(replacing ? copy.fail.updateRequest : copy.fail.sendRequest, err, lang));
     } finally {
       setBusy(false);
     }

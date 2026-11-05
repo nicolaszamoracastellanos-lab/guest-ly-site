@@ -13,7 +13,8 @@ import { View, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
-import { post, ApiFailure } from "@/lib/api";
+import { failedText } from "@/features/shared/requests";
+import { post } from "@/lib/api";
 import { usePlannerRequest } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, T, Badge, Card, Row, Button, Stack, SectionLabel, ButtonRow, Skeleton, EmptyState, Composer, toast, toastError } from "@/ui";
@@ -55,7 +56,7 @@ export default function PlannerRequestDetail() {
       toast(copy.planner.b12.replySent);
       await refresh();
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || copy.common.error);
+      toastError(failedText(copy.fail.sendComment, err, lang));
     } finally {
       sending.current = false;
       setBusy(null);
@@ -80,7 +81,7 @@ export default function PlannerRequestDetail() {
       back();
       toast(copy.planner.b12.withdrawn);
     } catch (err) {
-      toastError((err instanceof ApiFailure && err.messages[lang]) || copy.common.error);
+      toastError(failedText(copy.fail.withdrawRequest, err, lang));
     } finally {
       setBusy(null);
     }

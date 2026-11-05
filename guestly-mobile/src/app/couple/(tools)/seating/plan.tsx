@@ -11,7 +11,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { get } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
 import { prepareImageForUpload } from "@/features/shared/images";
-import { postLong, outcomeUnknown, AI_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, errorText } from "@/features/shared/requests";
+import { postLong, outcomeUnknown, AI_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, failedText } from "@/features/shared/requests";
 import {
   Screen,
   TopBar,
@@ -97,7 +97,7 @@ export default function SeatingPlan() {
         qc.invalidateQueries({ queryKey: SEATING_KEY }),
       ]);
     } catch (err) {
-      toastError(errorText(err, lang, app.common.errorBody));
+      toastError(failedText(app.fail.uploadPlan, err, lang));
     } finally {
       setBusy(null);
     }
@@ -126,7 +126,7 @@ export default function SeatingPlan() {
         toast(c.readMaybeDone, { icon: "info" });
         void qc.invalidateQueries({ queryKey: SEATING_KEY });
       } else {
-        toastError(errorText(err, lang, app.common.errorBody));
+        toastError(failedText(app.fail.readPlan, err, lang));
       }
     } finally {
       setBusy(null);

@@ -9,7 +9,7 @@ import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import type { Copy } from "@/i18n/en";
 import { post } from "@/lib/api";
 import { useGuestsByIds } from "@/features/guests/hooks";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useCoupleRequests } from "@/lib/hooks";
 import { useSession, useUserSession } from "@/lib/session";
 import { biometricPrompt } from "@/lib/biometric";
@@ -51,7 +51,7 @@ export default function RequestDetail() {
       await qc.invalidateQueries({ queryKey: ["couple-home"] });
       back();
     } catch (err) {
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(kind === "approve" ? copy.fail.approveRequest : copy.fail.declineRequest, err, lang));
     } finally {
       setBusy(null);
     }
@@ -65,7 +65,7 @@ export default function RequestDetail() {
       setNote("");
       await qc.invalidateQueries({ queryKey: ["couple-requests"] });
     } catch (err) {
-      toastError(errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.sendComment, err, lang));
     } finally {
       setBusy(null);
     }

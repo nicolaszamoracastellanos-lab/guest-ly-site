@@ -7,7 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, relTime, shortDate, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { post, del, ApiFailure } from "@/lib/api";
+import { failedText } from "@/features/shared/requests";
+import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { usePlannerGuests } from "@/lib/hooks";
 import { useGuestPages } from "@/features/guests/hooks";
@@ -44,10 +45,6 @@ export function dueColor(t: Pick<TaskView, "days_left" | "status">): string {
 
 export function priorityKind(p: TaskPriority): "red" | "gold" | "mute" {
   return p === "high" ? "red" : p === "normal" ? "gold" : "mute";
-}
-
-export function errorText(err: unknown, lang: Lang, fallback: string): string {
-  return (err instanceof ApiFailure ? err.messages[lang] : "") || fallback;
 }
 
 // ---------------------------------------------------------------- task row
@@ -382,6 +379,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
 
 function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: string }) {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -410,7 +408,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       setTitle(null);
       setDetail(null);
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.saveTask, err, lang));
     } finally {
       setBusy(false);
     }
@@ -425,7 +423,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       setComment("");
       await invalidate();
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.sendComment, err, lang));
     } finally {
       setBusy(false);
     }
@@ -440,7 +438,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       leave.release();
       back();
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.deleteTask, err, lang));
     } finally {
       setBusy(false);
     }
@@ -548,6 +546,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
 /** New shared task, for either side. */
 export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner" }) {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -597,7 +596,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
       leave.release();
       back();
     } catch (err) {
-      toastError(errorText(err, lang, copy.error));
+      toastError(failedText(fail.addTask, err, lang));
     } finally {
       setBusy(false);
     }
