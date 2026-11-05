@@ -80,8 +80,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "craft": "node scripts/craft-gate.mjs",
-    "test": "for f in scripts/tests/*.test.ts; do node --no-warnings --experimental-strip-types \"$f\" || exit 1; done",
-    "typecheck": "tsc --noEmit"
+    "test": "node scripts/check-verbatim-copies.mjs && for f in scripts/tests/*.test.ts; do node --no-warnings --experimental-strip-types \"$f\" || exit 1; done",
+    "typecheck": "tsc --noEmit",
+    "verbatim": "node scripts/check-verbatim-copies.mjs"
   },
   "private": true,
   "expo": {

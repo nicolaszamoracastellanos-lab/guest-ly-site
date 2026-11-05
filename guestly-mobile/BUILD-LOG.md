@@ -171,3 +171,10 @@ page names Guest-ly instead of the Supabase host.
 - A Screen presented as a native modal (guest card, add guest, Record RSVP, a request) covers the root toast host, so `<Screen modal>` mounts its own host there.
 - Glyphs replaced with the Icon set: vendor stars (detail, form, list text), the broadcast pick mark, the Home edit up and down tools. `Icon` takes an optional `fill`. ivory25 text gone (vendor stars, past days in the sign-up date picker now ivory40).
 - Left under ceilings: 5 glyphs (import mapping arrow, two minus signs, budget sync arrow, the weddings widget dot), 24 raw hex (paper greens and the RSVP error red, wallet badge white, shadows, tour scenes, push light colour), 1 spinner screen (find.tsx while the code resolves), 5 strings in `<T>` (RSVP sample, EN/ES field tags, dev probe, check-in spacing), 1 dev-only font size.
+
+## Nov 5 2026: Now engine copy and drift check (Master Wave L8 step 3)
+
+- `src/features/dayof/live.ts` is the portal's `src/lib/runsheet-live.ts` byte for byte (the #3 Now engine: service day to 05:00, open ends to the next start capped at 60 minutes, done, overlaps, wedding zone through Intl). It imports nothing. Never edit it here: change the portal file, then copy it.
+- `scripts/check-verbatim-copies.mjs` (also `npm run verbatim`, and the first step of `npm test`) compares the three shared files with the portal (`GL_PORTAL_DIR`, default /Users/nicolas_z/gl-mw/l0 until Lane 0 merges): the Now engine, the Home layout core, and milestones (skipped until it exists). One character of difference fails; a missing portal checkout or a missing side skips with a warning.
+- `scripts/tests/dayof-live.test.ts`: the portal's engine cases against the app copy, run twice, the second time with `Intl.DateTimeFormat.prototype.formatToParts` deleted (the fallback Hermes would use), plus a year-long wall-clock sweep in five zones that must match on both paths. Still needs a check on a device. `scripts/tests/verbatim-copies.test.ts` tests the checker on fixture folders.
+- No UI wired yet: the day-of screens use it with the #3 and #30 work.
