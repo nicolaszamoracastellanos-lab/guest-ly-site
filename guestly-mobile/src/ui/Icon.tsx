@@ -11,7 +11,7 @@ export type IconName =
   | "plus" | "x" | "x-circle" | "filter" | "map" | "camera" | "share" | "phone" | "contacts" | "lock" | "warning" | "info"
   | "edit" | "coins" | "grid" | "store" | "list" | "megaphone" | "globe" | "book" | "gear" | "signout"
   | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift" | "copy"
-  | "replay" | "eye" | "eye-off" | "concierge" | "unlock";
+  | "replay" | "eye" | "eye-off" | "concierge" | "unlock" | "mic" | "stop";
 
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number; /** Fills the outline (a rated star). Default none. */ fill?: string };
 
@@ -85,6 +85,8 @@ export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6,
       case "google": return <><Circle {...p} cx="12" cy="12" r="8" /><Path {...p} d="M12 12h7" /><Path {...p} d="M17.5 7.5A8 8 0 1 0 19.7 14" /></>;
       case "undo": return <><Path {...p} d="M8 8H4V4" /><Path {...p} d="M4.5 8A8 8 0 1 1 6 16.5" /></>;
       case "wifi-off": return <><Path {...p} d="M5 9.5a11 11 0 0 1 4-2.4M12 5c3.2 0 6 1.2 8 3.5M8 13a6 6 0 0 1 2.5-1.6M16 13a6 6 0 0 0-1-.8" />{dot(12, 17.5, 1)}<Path {...p} d="M4 4l16 16" /></>;
+      case "mic": return <><Rect {...p} x="9" y="3.5" width="6" height="11" rx="3" /><Path {...p} d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5" /></>;
+      case "stop": return <Rect {...p} x="6.5" y="6.5" width="11" height="11" rx="2" fill={color} />;
       case "star": return <Path {...p} d="m12 4 2.4 5 5.6.7-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9L9.6 9z" />;
       case "photo": return <><Rect {...p} x="3.5" y="5" width="17" height="14" rx="2" /><Circle {...p} cx="9" cy="10" r="1.6" /><Path {...p} d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4" /></>;
     }

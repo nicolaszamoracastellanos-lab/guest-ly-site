@@ -1,0 +1,440 @@
+{
+  "now": 1793890800000,
+  "source": "portal mw/integration lib/coordinator-plan-core.ts buildPlanCard (793c44b9)",
+  "cards": {
+    "proposed": {
+      "id": "11111111-2222-4333-8444-555555555555",
+      "toolName": "propose_plan",
+      "status": "proposed",
+      "title": {
+        "en": "4 actions to confirm",
+        "es": "4 acciones por confirmar"
+      },
+      "fields": [
+        {
+          "label": {
+            "en": "Step 1",
+            "es": "Paso 1"
+          },
+          "after": {
+            "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+            "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 2",
+            "es": "Paso 2"
+          },
+          "after": {
+            "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+            "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 3",
+            "es": "Paso 3"
+          },
+          "after": {
+            "en": "Add the budget line “Flores” for $1,200.00",
+            "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 4",
+            "es": "Paso 4"
+          },
+          "after": {
+            "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+            "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+          }
+        }
+      ],
+      "requiresTypedConfirm": false,
+      "proposedAt": "2026-11-05T14:59:00.000Z",
+      "expiresAtMs": 1793891340000,
+      "plan": {
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "add_task",
+            "area": "tasks",
+            "sentence": {
+              "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+              "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s2",
+            "tool": "add_vendor",
+            "area": "vendors",
+            "sentence": {
+              "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+              "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s3",
+            "tool": "add_budget_line",
+            "area": "budget",
+            "sentence": {
+              "en": "Add the budget line “Flores” for $1,200.00",
+              "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s4",
+            "tool": "add_runsheet_block",
+            "area": "runsheet",
+            "sentence": {
+              "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+              "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+            },
+            "status": "pending"
+          }
+        ],
+        "total": 4,
+        "done": 0,
+        "failed": 0,
+        "remaining": 4,
+        "ran": false,
+        "expired": false,
+        "replaced": false,
+        "retryable": 0,
+        "retryKind": null
+      }
+    },
+    "ran_partial": {
+      "id": "11111111-2222-4333-8444-555555555555",
+      "toolName": "propose_plan",
+      "status": "confirmed",
+      "title": {
+        "en": "2 of 3 actions done",
+        "es": "2 de 3 acciones hechas"
+      },
+      "fields": [
+        {
+          "label": {
+            "en": "Step 1",
+            "es": "Paso 1"
+          },
+          "after": {
+            "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority (Done)",
+            "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta (Hecho)"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 2",
+            "es": "Paso 2"
+          },
+          "after": {
+            "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00 (Not done)",
+            "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00 (No se hizo)"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 3",
+            "es": "Paso 3"
+          },
+          "after": {
+            "en": "Add the budget line “Flores” for $1,200.00 (Skipped)",
+            "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto (Omitida)"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 4",
+            "es": "Paso 4"
+          },
+          "after": {
+            "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30 (Done)",
+            "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30 (Hecho)"
+          }
+        }
+      ],
+      "requiresTypedConfirm": false,
+      "proposedAt": "2026-11-05T14:59:00.000Z",
+      "expiresAtMs": 1793891340000,
+      "plan": {
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "add_task",
+            "area": "tasks",
+            "sentence": {
+              "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+              "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+            },
+            "status": "done",
+            "undoUntilMs": 1793892570000
+          },
+          {
+            "id": "s2",
+            "tool": "add_vendor",
+            "area": "vendors",
+            "sentence": {
+              "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+              "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+            },
+            "status": "failed",
+            "error": {
+              "en": "Vendors already has one with that name.",
+              "es": "Ya existe en Proveedores con ese nombre."
+            }
+          },
+          {
+            "id": "s3",
+            "tool": "add_budget_line",
+            "area": "budget",
+            "sentence": {
+              "en": "Add the budget line “Flores” for $1,200.00",
+              "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+            },
+            "status": "skipped"
+          },
+          {
+            "id": "s4",
+            "tool": "add_runsheet_block",
+            "area": "runsheet",
+            "sentence": {
+              "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+              "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+            },
+            "status": "done",
+            "undoUntilMs": 1793892580000
+          }
+        ],
+        "total": 3,
+        "done": 2,
+        "failed": 1,
+        "remaining": 0,
+        "ran": true,
+        "expired": false,
+        "replaced": false,
+        "retryable": 0,
+        "retryKind": null
+      }
+    },
+    "expired": {
+      "id": "11111111-2222-4333-8444-555555555555",
+      "toolName": "propose_plan",
+      "status": "proposed",
+      "title": {
+        "en": "4 actions not run",
+        "es": "4 acciones sin ejecutar"
+      },
+      "fields": [
+        {
+          "label": {
+            "en": "Step 1",
+            "es": "Paso 1"
+          },
+          "after": {
+            "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+            "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 2",
+            "es": "Paso 2"
+          },
+          "after": {
+            "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+            "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 3",
+            "es": "Paso 3"
+          },
+          "after": {
+            "en": "Add the budget line “Flores” for $1,200.00",
+            "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 4",
+            "es": "Paso 4"
+          },
+          "after": {
+            "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+            "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+          }
+        }
+      ],
+      "requiresTypedConfirm": false,
+      "proposedAt": "2026-11-05T12:00:00.000Z",
+      "expiresAtMs": 1793880600000,
+      "plan": {
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "add_task",
+            "area": "tasks",
+            "sentence": {
+              "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+              "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s2",
+            "tool": "add_vendor",
+            "area": "vendors",
+            "sentence": {
+              "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+              "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s3",
+            "tool": "add_budget_line",
+            "area": "budget",
+            "sentence": {
+              "en": "Add the budget line “Flores” for $1,200.00",
+              "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s4",
+            "tool": "add_runsheet_block",
+            "area": "runsheet",
+            "sentence": {
+              "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+              "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+            },
+            "status": "pending"
+          }
+        ],
+        "total": 4,
+        "done": 0,
+        "failed": 0,
+        "remaining": 4,
+        "ran": false,
+        "expired": true,
+        "replaced": false,
+        "retryable": 0,
+        "retryKind": null
+      }
+    },
+    "replaced": {
+      "id": "11111111-2222-4333-8444-555555555555",
+      "toolName": "propose_plan",
+      "status": "cancelled",
+      "title": {
+        "en": "4 actions not run",
+        "es": "4 acciones sin ejecutar"
+      },
+      "fields": [
+        {
+          "label": {
+            "en": "Step 1",
+            "es": "Paso 1"
+          },
+          "after": {
+            "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+            "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 2",
+            "es": "Paso 2"
+          },
+          "after": {
+            "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+            "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 3",
+            "es": "Paso 3"
+          },
+          "after": {
+            "en": "Add the budget line “Flores” for $1,200.00",
+            "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+          }
+        },
+        {
+          "label": {
+            "en": "Step 4",
+            "es": "Paso 4"
+          },
+          "after": {
+            "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+            "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+          }
+        }
+      ],
+      "requiresTypedConfirm": false,
+      "proposedAt": "2026-11-05T14:59:00.000Z",
+      "expiresAtMs": 1793891340000,
+      "plan": {
+        "steps": [
+          {
+            "id": "s1",
+            "tool": "add_task",
+            "area": "tasks",
+            "sentence": {
+              "en": "Add the task “Llamar a Ana”, due Fri, Nov 13, high priority",
+              "es": "Agregar la tarea “Llamar a Ana”, para el vie 13 de nov, prioridad alta"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s2",
+            "tool": "add_vendor",
+            "area": "vendors",
+            "sentence": {
+              "en": "Add Florería Las Camelias de Santa Cruz de la Sierra to vendors as Flowers, quote BOB 1,200.00",
+              "es": "Agregar a Florería Las Camelias de Santa Cruz de la Sierra a proveedores en Flores, cotización Bs 1.200,00"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s3",
+            "tool": "add_budget_line",
+            "area": "budget",
+            "sentence": {
+              "en": "Add the budget line “Flores” for $1,200.00",
+              "es": "Agregar la línea “Flores” por USD 1.200,00 al presupuesto"
+            },
+            "status": "pending"
+          },
+          {
+            "id": "s4",
+            "tool": "add_runsheet_block",
+            "area": "runsheet",
+            "sentence": {
+              "en": "Add “Cóctel” to the day-of runsheet, Fri, Nov 27 at 18:30 to 19:30",
+              "es": "Agregar “Cóctel” al cronograma del día, vie 27 de nov, 18:30 a 19:30"
+            },
+            "status": "pending"
+          }
+        ],
+        "total": 4,
+        "done": 0,
+        "failed": 0,
+        "remaining": 4,
+        "ran": false,
+        "expired": false,
+        "replaced": true,
+        "retryable": 0,
+        "retryKind": null
+      }
+    }
+  }
+}
