@@ -12,8 +12,10 @@ two should never disagree, and this section wins if they ever do.
   36 and min SDK 26 (Expo SDK 57 defaults, unchanged in this wave), an
   adaptive icon (`assets/brand/adaptive-foreground.png` on `#0d1117`), the
   four permissions the app actually uses (`CAMERA`, `USE_BIOMETRIC`,
-  `POST_NOTIFICATIONS`, `VIBRATE`), `RECORD_AUDIO` explicitly blocked (the
-  app never records audio; `expo-image-picker` would otherwise add it), and
+  `POST_NOTIFICATIONS`, `VIBRATE`), plus `RECORD_AUDIO` and
+  `MODIFY_AUDIO_SETTINGS` from `expo-audio` since Nov 5 2026 (the
+  Coordinator's mic button, D5; before that `RECORD_AUDIO` was blocked, and
+  Play's Data safety form must list Audio once the button ships), and
   an intent filter for `https://app.guest-ly.com/i/*` (App Links, guest
   invite deep links).
 - `eas.json`: `appVersionSource: "remote"`; Android `versionCode` is **4**

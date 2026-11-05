@@ -154,3 +154,11 @@ Known follow-ups: bubble badge for a waiting Coordinator card; planner
 insights screen (route exists); photo accents editor in the website builder;
 client-side image resize before upload; native Google sign-in so the consent
 page names Guest-ly instead of the Supabase host.
+
+## Nov 5 2026: Expo alignment for 1.4.0 (Master Wave L8 step 1)
+
+- Every Expo package moved to what SDK 58 expects today (`npx expo install --check` listed 26 behind: expo 58.0.17 to 58.0.23, ExpoModulesCore 58.0.24 to 58.0.30, react-native 0.88.0 to 0.88.1, safe-area-context 5.10 to 5.11, and 22 more patch bumps).
+- expo-contacts moved from the exact pin 58.0.8 to the exact pin 58.0.10, the version SDK 58 expects. Its prebuilt xcframework is what crashed build 36 against core 58.0.24; against core 58.0.30 `check-prebuilt-symbols.mjs` reports 9 frameworks, 0 missing symbols after a clean `npm ci`. Still an exact pin: move it only together with expo and the symbol check.
+- Added expo-store-review (#20 rating prompt) and expo-audio (D5 mic; expo-av is not in SDK 58). expo-asset installed directly because expo-audio needs it as a peer (expo-doctor 20/20). Neither new module ships a prebuild, so both compile against the installed core.
+- Microphone purpose string rewritten in app.config.ts and both locale files for the Coordinator mic button. The expo-audio plugin is configured with both background switches off: its defaults would add UIBackgroundModes "audio". Android RECORD_AUDIO is no longer blocked.
+- Guarded by `scripts/tests/native-config.test.ts`. No UI is wired yet.

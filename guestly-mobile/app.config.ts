@@ -10,9 +10,12 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com";
 // Spanish twin in locales/es.json; keep the three in step. They describe what
 // the app really does (Part 9 audit, D-028): the camera scans passes at the door
 // and photographs a floor plan or a receipt; the photo library feeds the website
-// builder, the floor plan and budget receipts. The app never records audio, but
-// the camera library links the audio capture API, so a truthful microphone
-// string stays (an upload without it can be refused, ITMS-90683).
+// builder, the floor plan and budget receipts. The microphone (Master Wave,
+// Nov 5 2026): expo-audio is in the 1.4.0 binary for the Coordinator's mic
+// button (decision D5). Nothing records until a person taps that button, and
+// the string says exactly that. Until the button ships the app records
+// nothing; the camera library links the audio capture API anyway, so a
+// microphone string is required either way (ITMS-90683).
 const CAMERA_PURPOSE = "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.";
 const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding album, the wedding website, the floor plan and budget receipts.";
 const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking you to sign in again.";
@@ -24,7 +27,7 @@ const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking y
 // reads the whole address book and never writes to it. iOS only; Android
 // blocks the permission.
 const CONTACTS_PURPOSE = "Guest-ly fills in a guest's name, phone and email from the contacts you choose to share. It never reads the rest of your address book.";
-const MICROPHONE_PURPOSE = "Guest-ly does not record audio. iOS shows this text only if a video with sound is ever captured, which the app does not do.";
+const MICROPHONE_PURPOSE = "Guest-ly uses the microphone only when you tap the mic button in the Coordinator, to turn what you say into text. It never records at any other time.";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -156,10 +159,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#0d1117",
     },
     permissions: ["CAMERA", "USE_BIOMETRIC", "POST_NOTIFICATIONS", "VIBRATE"],
-    // The app never records sound. expo-camera is told so below; expo-image-picker
-    // (an automatic plugin) would still add RECORD_AUDIO, so it is blocked here,
-    // which writes tools:node="remove" into the manifest whoever asks for it.
-    blockedPermissions: ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS", "android.permission.RECORD_AUDIO"],
+    // RECORD_AUDIO is no longer blocked (Nov 5 2026): the expo-audio plugin below
+    // adds it for the Coordinator's mic button (D5), which asks for it only on
+    // the first tap. Contacts stay blocked: the system picker needs no permission.
+    blockedPermissions: ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS"],
     intentFilters: [
       {
         action: "VIEW",
@@ -201,8 +204,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     [
       "expo-camera",
-      // recordAudioAndroid false drops RECORD_AUDIO from the Android manifest: the app never records sound.
+      // The camera never records sound (no video capture), so it does not ask for
+      // RECORD_AUDIO itself; expo-audio below owns the microphone.
       { cameraPermission: CAMERA_PURPOSE, microphonePermission: MICROPHONE_PURPOSE, recordAudioAndroid: false },
+    ],
+    [
+      // Recording module for the Coordinator's mic button (D5). expo-av left the
+      // SDK at 55, so SDK 58 ships expo-audio. Both background switches default
+      // to on in the plugin and would add UIBackgroundModes "audio" (an App
+      // Review question for an app with no background audio) and Android
+      // foreground services: both off, the mic records only on screen.
+      "expo-audio",
+      { microphonePermission: MICROPHONE_PURPOSE, recordAudioAndroid: true, enableBackgroundRecording: false, enableBackgroundPlayback: false },
     ],
     [
       "expo-contacts",
