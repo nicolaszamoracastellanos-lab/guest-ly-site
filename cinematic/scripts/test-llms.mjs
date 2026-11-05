@@ -14,14 +14,14 @@
      accents intact. Needs a built dist/ (npm run build first).
    Usage: node scripts/test-llms.mjs */
 
-import { spawnSync, spawn } from 'node:child_process';
+import { execFileSync, spawnSync, spawn } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { copy } from '../src/copy.ts';
 import { PLANS, guestsLabel } from '../src/pricing.ts';
 import { CINEMATIC, REPO_ROOT } from './lib/paths.mjs';
-import { LlmsError, OUTPUTS, SLOGAN, buildLlms, findFeaturesJson, isPrintable, storeUrlProblems } from './llms.mjs';
+import { LlmsError, OUTPUTS, SLOGAN, buildLlms, findFeaturesJson, isPrintable, portalCheckoutProblems, storeUrlProblems } from './llms.mjs';
 
 const errors = [];
 const check = (ok, msg) => {
@@ -190,6 +190,29 @@ mustFail('schema', (f) => (f.schema = 'something/2'), 'schema');
   mkdirSync(join(root, 'guestly-portal', 'src', 'lib'), { recursive: true });
   writeFileSync(join(root, 'guestly-portal', 'src', 'lib', 'routes.ts'), 'export const DEFAULT_IOS_STORE_URL = "https://apps.apple.com/app/id1";\n');
   check(storeUrlProblems(join(root, 'guestly-portal')).length === 1, 'store URL drift not caught');
+
+  /* The deploy path (nested checkout): features.json must equal origin/main's. */
+  const gitIn = (dir, ...args) =>
+    execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args], { stdio: 'pipe' });
+  const origin = join(tmp, 'origin.git');
+  const work = join(tmp, 'deploy-checkout');
+  check(portalCheckoutProblems(join(root, 'guestly-portal-deploy')).some((p) => /not a git checkout/.test(p)), 'checkout guard: a non-git folder passed');
+  execFileSync('git', ['init', '--quiet', '--bare', '-b', 'main', origin]);
+  execFileSync('git', ['clone', '--quiet', origin, work], { stdio: 'pipe' });
+  gitIn(work, 'checkout', '--quiet', '-B', 'main');
+  mkdirSync(join(work, 'docs', 'product'), { recursive: true });
+  writeFileSync(join(work, 'docs', 'product', 'features.json'), '{"v":1}\n');
+  gitIn(work, 'add', '.');
+  gitIn(work, 'commit', '--quiet', '-m', 'facts');
+  gitIn(work, 'push', '--quiet', 'origin', 'main');
+  check(portalCheckoutProblems(work).length === 0, `checkout guard: a clean checkout at origin/main failed: ${portalCheckoutProblems(work)}`);
+  writeFileSync(join(work, 'docs', 'product', 'features.json'), '{"v":2}\n');
+  check(portalCheckoutProblems(work).some((p) => /uncommitted edits/.test(p)), 'checkout guard: an uncommitted features.json edit passed');
+  gitIn(work, 'commit', '--quiet', '-am', 'local only');
+  check(portalCheckoutProblems(work).some((p) => /origin\/main does not/.test(p)), 'checkout guard: a local-only features.json commit passed');
+  gitIn(work, 'push', '--quiet', 'origin', 'main');
+  gitIn(work, 'fetch', '--quiet', 'origin');
+  check(portalCheckoutProblems(work).length === 0, 'checkout guard: still failing after the push');
 }
 
 /* ---------- the real features.json ---------- */

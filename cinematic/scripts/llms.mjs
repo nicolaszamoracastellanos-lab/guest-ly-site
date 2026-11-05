@@ -1,8 +1,12 @@
 /* #48: the AI facts files of guest-ly.com, generated at build time.
    Writes dist/llms.txt (EN), dist/es/llms.txt (ES) and dist/llms-full.txt
    (EN, with each feature's approved "say" lines) from the portal's
-   docs/product/features.json, the one record of what Guest-ly can do, so
-   these files can never claim something that is not live:
+   docs/product/features.json, the one record of what Guest-ly can do. They
+   describe features.json as of the last landing build: a portal release
+   that changes a feature's status or marketing reaches these files only
+   with the next landing deploy (STUDY-platform-ops ship checklist: the
+   landing deploys after the release commit is on the deploy checkout).
+   Within that, the build enforces:
    - a feature prints only when its status is "live", its marketing is "ok"
      and its rollout is for everyone; never building, hold, never, off;
    - "avoid" text never prints; a line holding a number the feature marks
@@ -17,9 +21,14 @@
    features.json is found from env GL_PORTAL_DIR, else the portal checkouts
    nested next to cinematic/ in this repo (guestly-portal-deploy, which is
    main, then guestly-portal), else the build stops and says what to set.
+   A nested checkout (the deploy path) must hold features.json exactly as
+   its origin/main has it: no uncommitted edit, no local-only commit. The
+   build stops otherwise (portalCheckoutProblems). GL_PORTAL_DIR (lane and
+   test builds on a feature branch) skips that check.
 
    Usage: node scripts/llms.mjs [outDir]   (default: cinematic/dist) */
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -67,6 +76,33 @@ export function findFeaturesJson({ env = process.env, repoRoot = REPO_ROOT } = {
       'Set GL_PORTAL_DIR to a portal checkout, for example: GL_PORTAL_DIR=/path/to/guestly-portal-deploy npm run build. ' +
       `Tried: ${tried.join(', ')}`,
   );
+}
+
+/* The deploy reads the nested checkout's working tree, which nothing fetches
+   or cleans. Its features.json must equal origin/main's (as last fetched):
+   no uncommitted edit and no commit that is not on origin/main. Returns
+   problems as strings; empty means fine. */
+export function portalCheckoutProblems(portalDir) {
+  const git = (...args) => execFileSync('git', ['-C', portalDir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  try {
+    git('rev-parse', '--is-inside-work-tree');
+  } catch {
+    return [`${portalDir} is not a git checkout, so the facts cannot be tied to the portal's main`];
+  }
+  const problems = [];
+  if (git('status', '--porcelain', '--', FACTS_PATH))
+    problems.push(`${join(portalDir, FACTS_PATH)} has uncommitted edits; commit or discard them before a landing build`);
+  try {
+    git('rev-parse', '--verify', '--quiet', 'origin/main');
+  } catch {
+    return [...problems, `${portalDir} has no origin/main; fetch it before a landing build`];
+  }
+  try {
+    git('diff', '--quiet', 'origin/main', 'HEAD', '--', FACTS_PATH);
+  } catch {
+    problems.push(`${portalDir} HEAD has a features.json that origin/main does not; fast-forward or push that checkout first`);
+  }
+  return problems;
 }
 
 /* ---------- which features may be printed ---------- */
@@ -399,6 +435,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const outDir = resolve(process.argv[2] || join(CINEMATIC, 'dist'));
   try {
     const { file, portalDir } = findFeaturesJson();
+    if (!process.env.GL_PORTAL_DIR) {
+      const checkout = portalCheckoutProblems(portalDir);
+      if (checkout.length) throw new LlmsError(checkout);
+    }
     const facts = JSON.parse(readFileSync(file, 'utf8'));
     const storeIssues = storeUrlProblems(portalDir);
     if (storeIssues.length) throw new LlmsError(storeIssues);
