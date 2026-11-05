@@ -26,6 +26,7 @@ const en = {
     faq: "Questions",
     gallery: "Photos",
     story: "Our story",
+    before: "Before you go",
   },
   countdown: { days: "days", hours: "hours", min: "min" },
   today: "Today is the day.",
@@ -49,6 +50,7 @@ const en = {
     faq: "No questions and answers yet. Ask the concierge anything.",
     gallery: "No photos yet.",
     story: "The couple has not written their story yet.",
+    before: "The couple has not added what to pack or know yet.",
   },
 };
 
@@ -78,6 +80,7 @@ const es: typeof en = {
     faq: "Preguntas",
     gallery: "Fotos",
     story: "Nuestra historia",
+    before: "Antes de ir",
   },
   countdown: { days: "días", hours: "horas", min: "min" },
   today: "Hoy es el día.",
@@ -101,6 +104,7 @@ const es: typeof en = {
     faq: "Todavía no hay preguntas y respuestas. Pregúntale lo que quieras al concierge.",
     gallery: "Todavía no hay fotos.",
     story: "La pareja todavía no ha escrito su historia.",
+    before: "La pareja todavía no ha agregado qué llevar ni qué saber.",
   },
 };
 

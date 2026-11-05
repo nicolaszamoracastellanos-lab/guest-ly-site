@@ -19,6 +19,8 @@ export default function GuestsStack() {
       {/* "Edit RSVP" opens over the guest card and returns to it. */}
       <Stack.Screen name="record" options={{ presentation: "modal" }} />
       <Stack.Screen name="import" />
+      {/* #26 arrivals and departures (read only). */}
+      <Stack.Screen name="arrivals" />
     </Stack>
   );
 }

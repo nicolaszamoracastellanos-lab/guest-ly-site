@@ -48,6 +48,7 @@ import { lockView, openRequests, placesOn, requestsByBlock } from "@/features/ru
 import { LockLine, PlacesSection, RequestList, useChangeValue } from "@/features/runsheet/mw";
 import { PlaceSheet } from "@/features/runsheet/PlaceSheet";
 import { isLocked, useBlockActions } from "@/features/runsheet/actions";
+import { useRunsheetStamp } from "@/features/seen/useRunsheetStamp";
 
 export default function CoupleRunsheet() {
   const c = useFeatureCopy(COPY);
@@ -63,6 +64,8 @@ export default function CoupleRunsheet() {
   const me = useUserSession()?.me;
   const actions = useBlockActions();
   const [placeEditing, setPlaceEditing] = useState<string | "new" | null>(null);
+  // #37: this screen in focus is an open of the runsheet (the version GET gave).
+  useRunsheetStamp((data as { version?: unknown } | undefined)?.version);
 
   const [menuFor, setMenuFor] = useState<RunsheetBlock | null>(null);
   const [undo, setUndo] = useState<{ block: RunsheetBlock; from: RunsheetStatus; text: string } | null>(null);

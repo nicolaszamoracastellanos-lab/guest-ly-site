@@ -152,6 +152,16 @@ export default function SectionEditor() {
               <TravelEditor section={section} onChange={(fn) => setSec("travel", fn)} />
             ) : null}
 
+            {section?.type === "knowbefore" ? (
+              <KnowBeforeEditor section={section} onChange={(fn) => setSec("knowbefore", fn)} />
+            ) : null}
+
+            {section?.type === "album" || section?.type === "music" ? (
+              <T v="body15" color={colors.ivory70}>
+                {c.webOnly}
+              </T>
+            ) : null}
+
             {section?.type === "registry" ? (
               <RegistryEditor draft={draft} section={section} signed={signed} update={update} onChange={(fn) => setSec("registry", fn)} onSigned={rememberSigned} />
             ) : null}
@@ -338,6 +348,49 @@ function TravelEditor({ section, onChange }: { section: Extract<Section, { type:
       <EditOnly>
         <Button label={c.fields.addItem} kind="glass" icon="plus" disabled={section.items.length >= 12} onPress={() => onChange((s) => ({ ...s, items: [...s.items, { id: slugId("item"), kind: "hotel", title: EMPTY, body: EMPTY, url: null, map_url: null, address: null, phone: null, promo_code: null }] }))} />
       </EditOnly>
+    </Stack>
+  );
+}
+
+/** #45 the know-before card: the couple's own words; anything left empty
+ *  reads from the wedding info on the site (the server resolves it). */
+function KnowBeforeEditor({ section, onChange }: { section: Extract<Section, { type: "knowbefore" }>; onChange: (fn: (s: Extract<Section, { type: "knowbefore" }>) => Extract<Section, { type: "knowbefore" }>) => void }) {
+  const c = useFeatureCopy(COPY);
+  const k = c.knowBefore;
+  const packing = section.packing ?? [];
+  const setItem = (i: number, v: Bilingual) => onChange((s) => ({ ...s, packing: (s.packing ?? []).map((x, j) => (j === i ? v : x)) }));
+  return (
+    <Stack gap={12}>
+      <Card kind="solid" padding={16}>
+        <BiField label={c.fields.heading} value={section.heading} onChange={(v) => onChange((s) => ({ ...s, heading: v }))} />
+      </Card>
+      <SectionLabel>{k.packing}</SectionLabel>
+      <T v="meta13" color={colors.ivory55}>
+        {k.packingHint}
+      </T>
+      {packing.map((it, i) => (
+        <Card key={i} kind="solid" padding={16}>
+          <Stack gap={12}>
+            <BiField label={k.packingItem.replace("{n}", String(i + 1))} value={it} onChange={(v) => setItem(i, v)} />
+            <RowControls onUp={i > 0 ? () => onChange((s) => ({ ...s, packing: move(s.packing, i, i - 1) })) : undefined} onDown={i < packing.length - 1 ? () => onChange((s) => ({ ...s, packing: move(s.packing, i, i + 1) })) : undefined} onRemove={() => onChange((s) => ({ ...s, packing: s.packing.filter((_, j) => j !== i) }))} />
+          </Stack>
+        </Card>
+      ))}
+      <EditOnly>
+        <Button label={k.addItem} kind="glass" icon="plus" disabled={packing.length >= 20} onPress={() => onChange((s) => ({ ...s, packing: [...(s.packing ?? []), { en: null, es: null }] }))} />
+      </EditOnly>
+      <Card kind="solid" padding={16}>
+        <Stack gap={16}>
+          <SwitchRow label={k.showWeather} value={section.show_weather !== false} onChange={(v) => onChange((s) => ({ ...s, show_weather: v }))} />
+          <BiField label={k.dressNote} value={section.dress_code_note ?? EMPTY} multiline onChange={(v) => onChange((s) => ({ ...s, dress_code_note: v }))} />
+          <BiField label={k.entryNote} value={section.entry_note ?? EMPTY} multiline onChange={(v) => onChange((s) => ({ ...s, entry_note: v }))} />
+          <T v="meta13" color={colors.ivory55}>
+            {k.entryHint}
+          </T>
+          <TextField label={k.entryLink} value={section.entry_link} keyboardType="url" placeholder="https://" onChange={(v) => onChange((s) => ({ ...s, entry_link: v }))} />
+          <SwitchRow label={k.showMoney} value={section.show_money !== false} onChange={(v) => onChange((s) => ({ ...s, show_money: v }))} />
+        </Stack>
+      </Card>
     </Stack>
   );
 }

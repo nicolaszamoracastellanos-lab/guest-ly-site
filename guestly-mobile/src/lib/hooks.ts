@@ -3,6 +3,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiFailure, get, post } from "@/lib/api";
+import { fetchGuestHome } from "@/lib/appOpen";
 
 // ---- guest
 export type ScheduleEvent = {
@@ -16,6 +17,8 @@ export type RsvpSummary = {
   status: "attending" | "declined" | "pending"; answers: Record<string, "attending" | "declined">;
   party_size: number | null; max_party: number; responded_at: string | null; deadline: string | null;
   deadline_passed: boolean; can_edit: boolean;
+  /** #1, 1.4.0 with MW_FINAL_COUNT on: the couple locked the final count. */
+  locked?: boolean;
 };
 export type GuestHome = {
   guest: { id: string; name: string; language: string | null };
@@ -34,12 +37,16 @@ export type GuestPayload = {
   guestToken: string; displayName: string; maxParty: number; members: string[]; language: string | null;
   hasContact: boolean; events: { id: string; title: { en: string; es: string }; date: string | null; time: string | null; location: string | null; cost: string | null }[];
   // The portal field is `kind`; `type` is kept only for older payloads.
-  questions: { id: string; label: { en: string | null; es: string | null }; kind?: "select" | "text"; type?: string; required?: boolean; options?: { id: string; label: { en: string | null; es: string | null } }[]; event_id: string | null }[];
-  existing: { answers: Record<string, string>; questionAnswers: Record<string, string>; partySize: number | null; companions: { name: string | null; attending: boolean; main?: boolean; events?: Record<string, string> }[]; notes: string | null; respondedAt: string | null } | null;
+  questions: { id: string; label: { en: string | null; es: string | null }; kind?: "select" | "text"; type?: string; required?: boolean; options?: { id: string; label: { en: string | null; es: string | null } }[]; event_id: string | null; per_person?: boolean }[];
+  existing: { answers: Record<string, string>; questionAnswers: Record<string, string>; partySize: number | null; companions: { name: string | null; attending: boolean; main?: boolean; events?: Record<string, string>; answers?: Record<string, string> }[]; notes: string | null; respondedAt: string | null } | null;
+  /** #1, 1.4.0 with MW_FINAL_COUNT on: replies are closed. */
+  locked?: boolean;
 };
 export type ThreadMessage = { id: string; role: "guest" | "bot" | "couple"; text: string; created_at: string; needs_couple: boolean; replied_at: string | null; kind?: "broadcast" };
 
-export const useGuestHome = () => useQuery({ queryKey: ["guest-home"], queryFn: () => get<GuestHome>("/guest/home") });
+// K21: only the first fetch after a launch or a return to the foreground
+// counts as the guest's open; refetches send ?seen=0 (lib/appOpen).
+export const useGuestHome = () => useQuery({ queryKey: ["guest-home"], queryFn: () => fetchGuestHome<GuestHome>() });
 export const useGuestSchedule = () => useQuery({ queryKey: ["guest-schedule"], queryFn: () => get<{ wedding_date: string | null; timezone: string; events: ScheduleEvent[]; arrival_advice: string | null }>("/guest/schedule") });
 // `poll` false stops the interval while the screen is not visible (tabs stay mounted).
 export const useGuestDayOf = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["guest-dayof"], queryFn: () => get<DayOf>("/guest/dayof"), refetchInterval: opts?.poll === false ? false : 60_000 });
@@ -73,7 +80,7 @@ export type CoupleHome = {
 };
 export type HomeSetupStep = { key: string; done: boolean; label: string; path: string; progress?: { have: number; need: number } };
 export type HomeActivity = { kind: string; text: string; at: string; target: { kind: "guest"; id: string } | null; count: number };
-export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null };
+export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null; /** #37, 1.4.0 with MW_SEEN on: the last open, or null. Absent otherwise. */ seen_at?: string | null };
 export type RsvpListItem = { id: string; guest_id: string | null; name: string; initials: string; status: "attending" | "declined" | "pending"; party_size: number | null; seats_answered: string; channel: string | null; source: string | null; updated_at: string | null };
 export type InboxItem = { id: string; channel: string; name: string; initials: string; preview: string; last_at: string; needs_you: boolean; upset: boolean; guest_id: string | null };
 export type CoupleDayOf = {

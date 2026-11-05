@@ -45,6 +45,8 @@ import { useRouter } from "expo-router";
 import { can, featureOn, useUserSession } from "@/lib/session";
 import { DAYOF_COPY } from "@/features/dayof/copy";
 import { useDayPack, useDayPackFlag } from "@/features/dayof/hooks";
+import { RunsheetSeenLine } from "@/features/seen/Seen";
+import { readRunsheetSeen } from "@/features/seen/core";
 
 type Stale = { id: string; kind: "stale" | "target_gone"; current: FieldChange[] };
 
@@ -183,6 +185,8 @@ export default function PlannerRunsheet() {
       bottomInset={40}
     >
       <BigTitle title={c.title} sub={resolver ? c.plannerIntro : c.readOnly} size={38} />
+      {/* #37: who of the couple's side saw this version (1.4.0, MW_SEEN). */}
+      <RunsheetSeenLine seen={readRunsheetSeen(data)} />
       {error instanceof ApiFailure ? (
         <T v="body15" color={colors.ivory55} style={{ marginTop: 16 }}>
           {error.messages[lang]}

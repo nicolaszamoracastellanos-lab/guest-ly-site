@@ -13,7 +13,9 @@ import { usePlannerPortfolio, type PlannerPortfolioWedding } from "@/lib/hooks";
 import { useUserSession } from "@/lib/session";
 import { useSafeBack } from "@/lib/nav";
 import { usePane } from "@/ui/MasterDetail";
-import { Screen, TopBar, BigTitle, Stack, Skeleton, Card, Row, T, Icon, Button, StatTile, SectionLabel, Chip, EmptyState } from "@/ui";
+import { Screen, TopBar, BigTitle, Stack, Skeleton, Card, Row, T, Icon, Button, StatTile, SectionLabel, Chip, EmptyState, ListRow } from "@/ui";
+import { TRAVEL_COPY } from "@/features/travel/copy";
+import { usePlannerArrivals } from "@/features/travel/hooks";
 import { colors } from "@/ui/tokens";
 import { PlannerTop } from "@/app/planner/_layout";
 import { COPY } from "./copy";
@@ -67,6 +69,8 @@ export function WeddingSummary({ slug }: { slug: string }) {
   const work = useWorkOnWedding();
   const w: PlannerPortfolioWedding | undefined = q.data?.weddings.find((x) => x.slug === slug);
   const current = !!me && w?.slug === me.tenant.slug;
+  const travel = useFeatureCopy(TRAVEL_COPY);
+  const arrivals = usePlannerArrivals(w?.slug ?? slug);
 
   async function openTool(path: string) {
     if (!w) return;
@@ -128,6 +132,13 @@ export function WeddingSummary({ slug }: { slug: string }) {
               {w.tasks?.overdue ? <T v="body16" color={colors.red}>{plural(w.tasks.overdue, l.tasksOverdue)}</T> : null}
             </Stack>
           </Card>
+
+          {/* #26: only while the wedding's arrivals answer (MW_TRAVEL_WINDOWS, logistics view). */}
+          {arrivals.data ? (
+            <Card kind="solid" padding={2} style={{ paddingHorizontal: 16 }}>
+              <ListRow testID="planner-arrivals" leading={<Icon name="bus" size={22} color={colors.goldLight} />} title={travel.boardTitle} sub={`${travel.tabArrivals} · ${travel.tabDepartures}`} onPress={() => router.push({ pathname: "/planner/weddings/arrivals", params: { slug: w.slug, names: w.couple_names } } as never)} last />
+            </Card>
+          ) : null}
 
           <View style={{ gap: 8 }}>
             <SectionLabel color={colors.goldLight}>{l.access}</SectionLabel>

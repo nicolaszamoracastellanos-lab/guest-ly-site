@@ -19,15 +19,21 @@ import { exportGuests, type ExportPreset } from "@/features/exports/download";
 import { useGuestPages } from "@/features/guests/hooks";
 import { useCoupleSettings } from "@/features/settings/hooks";
 import { useCoupleHome, useCoupleRsvps } from "@/lib/hooks";
-import { useUserSession } from "@/lib/session";
+import { featureOn, useUserSession } from "@/lib/session";
+import { TRAVEL_COPY } from "@/features/travel/copy";
+import { useCoupleArrivals } from "@/features/travel/hooks";
 import { Screen, TopBar, IconButton, BigTitle, Input, Chip, Avatar, Badge, Icon, EmptyState, Button, Skeleton, Stack, Sheet, SheetActions, Card, T, Row, useTopInset, useBottomClearance, COLUMN, QueryError, OfflineState, retryConnection, usePullRefresh, useScrimScroll, StaleBanner, ChipRow, ListRow, toast } from "@/ui";
 import { useOnline } from "@/lib/query";
+import { FinalCountCard } from "@/features/finalcount/FinalCountCard";
+import { SeenLine, useSeenWhen } from "@/features/seen/Seen";
+import { SEEN_COPY } from "@/features/seen/copy";
+import { guestSeenAt } from "@/features/seen/core";
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, FadedChipRow, guestStatusText, statusIcon, statusColor, useShareInvite, dayMonth, MenuRow, MenuCard } from "@/features/couple/ui";
 
 const FILTERS = ["all", "pending", "attending", "declined", "changed"] as const;
 type Filter = (typeof FILTERS)[number];
-type Row_ = { id: string; guest_id: string | null; name: string; initials: string; status: string; party: number; sub?: string; changed?: boolean };
+type Row_ = { id: string; guest_id: string | null; name: string; initials: string; status: string; party: number; sub?: string; changed?: boolean; /** #37: undefined while Seen is off; null: never opened. */ seenAt?: string | null };
 /** Reminder reach the v1.2 portal adds to GET /couple/rsvps (B2). */
 type Reach = { pending_with_phone?: number; pending_without_phone?: number; pending_remindable?: number };
 
@@ -49,6 +55,8 @@ export function GuestsList() {
   const scrim = useScrimScroll();
   const online = useOnline();
   const canEdit = user?.me.can_edit ?? false;
+  const travel = useFeatureCopy(TRAVEL_COPY);
+  const arrivals = useCoupleArrivals(featureOn(user?.me, "MW_TRAVEL_WINDOWS"));
 
   // Home's numbers and reminder rows (and the old /couple/rsvps links) open
   // this list on a filter.
@@ -100,7 +108,10 @@ export function GuestsList() {
         });
     }
     if (filterLoading) return [];
-    return pages.items.map((g) => ({ id: g.id, guest_id: g.id, name: g.name, initials: g.initials, status: g.status, party: g.party_size }));
+    return pages.items.map((g) => {
+      const seen = guestSeenAt(g);
+      return { id: g.id, guest_id: g.id, name: g.name, initials: g.initials, status: g.status, party: g.party_size, ...(seen.on ? { seenAt: seen.at } : {}) };
+    });
   }, [filter, q, changed.data, pages.items, copy.rsvps, lang, filterLoading]);
 
   const listQuery = filter === "changed" ? changed : pages;
@@ -224,6 +235,12 @@ export function GuestsList() {
         <View style={{ marginTop: 10 }}>
           <BigTitle title={c.guests.title} sub={totals ? c.guests.subtitle(totals.parties, totals.people_expected) : ""} />
         </View>
+        {/* #1: the final count (1.4.0 with MW_FINAL_COUNT; absent otherwise). */}
+        {pendingRsvps.data ? (
+          <View style={{ marginTop: 14 }}>
+            <FinalCountCard data={pendingRsvps.data} online={online} />
+          </View>
+        ) : null}
         {/* Saved rows shown offline say so (QA Sep 29). */}
         {rows.length && (!online || listQuery.isError) ? (
           <View style={{ marginTop: 14 }}>
@@ -330,6 +347,8 @@ export function GuestsList() {
           />
           {canEdit ? <MenuRow icon="edit" title={c.guests.menu.questions} sub={c.guests.menu.questionsSub} onPress={() => menu(() => router.push("/couple/rsvps/questions"))} /> : null}
           <MenuRow icon="bell" title={c.guests.menu.auto} sub={settings.data ? (settings.data.reminders.enabled ? c.guests.menu.autoOn : c.guests.menu.autoOff) : undefined} onPress={() => menu(() => router.push("/couple/settings/reminders"))} />
+          {/* #26: only while the portal answers (MW_TRAVEL_WINDOWS on for the wedding). */}
+          {arrivals.data ? <MenuRow icon="bus" title={travel.boardTitle} sub={travel.boardIntro} onPress={() => menu(() => router.push("/couple/guests/arrivals" as never))} /> : null}
           <MenuRow icon="mail" title={c.guests.menu.share} sub={c.guests.menu.shareSub} onPress={() => menu(() => void shareInvite())} last />
         </MenuCard>
       </Sheet>
@@ -413,13 +432,16 @@ export function GuestsList() {
 
 const GuestRow = React.memo(function GuestRow({ row, status, changedLabel, onOpen, selected }: { row: Row_; status: string; changedLabel: string; onOpen: (id: string) => void; selected?: boolean }) {
   const tone = statusColor(row.status);
+  const seenWords = useFeatureCopy(SEEN_COPY);
+  const when = useSeenWhen();
+  const seenText = row.seenAt ? `, ${fmt(seenWords.seen, { when: when(row.seenAt) })}` : "";
   return (
     <View style={{ paddingHorizontal: 24 }}>
       <Pressable
         onPress={row.guest_id ? () => onOpen(row.guest_id!) : undefined}
         disabled={!row.guest_id}
         accessibilityRole="button"
-        accessibilityLabel={`${row.name}, ${status}${row.changed ? `, ${changedLabel}` : ""}`}
+        accessibilityLabel={`${row.name}, ${status}${row.changed ? `, ${changedLabel}` : ""}${seenText}`}
         accessibilityState={{ selected: !!selected }}
         style={({ pressed }) => [styles.row, selected && styles.rowSelected, pressed && { opacity: 0.75 }]}
       >
@@ -435,6 +457,8 @@ const GuestRow = React.memo(function GuestRow({ row, status, changedLabel, onOpe
               {row.sub ? ` · ${row.sub}` : ""}
             </T>
           </Row>
+          {/* #37: only a party that opened something gets the line (as on the web). */}
+          {row.seenAt ? <SeenLine at={row.seenAt} /> : null}
         </View>
         {row.changed ? <Badge label={changedLabel} kind="gold" /> : null}
         {row.guest_id ? <Icon name="chev" size={18} color={colors.ivory40} /> : null}

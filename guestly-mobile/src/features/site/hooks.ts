@@ -4,6 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/api";
 import { useLang } from "@/i18n";
+import type { KnowBeforeSection } from "./knowbeforeCore";
 
 export type SiteLink = { label: string | null; url: string };
 
@@ -35,7 +36,9 @@ export type SiteSection =
   | { type: "gallery"; heading: string | null; images: { url: string; caption: string | null }[] }
   | { type: "video"; heading: string | null; provider: "youtube" | "vimeo"; id: string; embed_url: string; url: string }
   | { type: "chat"; heading: string | null; body: string | null; whatsapp_url: string | null; planner_url: string | null; planner_name: string | null }
-  | { type: "custom"; id: string; heading: string | null; body: string | null; image_url: string | null };
+  | { type: "custom"; id: string; heading: string | null; body: string | null; image_url: string | null }
+  // #45 (1.4.0, MW_KNOW_BEFORE): data only, rendered by features/site/knowbefore.
+  | KnowBeforeSection;
 
 export type SectionType = SiteSection["type"];
 

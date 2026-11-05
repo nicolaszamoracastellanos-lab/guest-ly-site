@@ -13,6 +13,8 @@ import { fmt, localized, useCopy, useLang, relTime, mediumDate } from "@/i18n";
 import { get, post } from "@/lib/api";
 import { failedText } from "@/features/shared/requests";
 import { useGuestDetail, useCoupleRsvps, type InboxItem } from "@/lib/hooks";
+import { GuestSeenLine } from "@/features/seen/Seen";
+import { readGuestSeen } from "@/features/seen/core";
 import { useUserSession } from "@/lib/session";
 import { Screen, TopBar, toast, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Field, ButtonRow, type IconName, toastError } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
@@ -218,6 +220,8 @@ export function GuestDetail({ id }: { id: string }) {
                 <T v="meta13" color={colors.ivory70}>
                   {answered && d.rsvp?.updatedAt ? c.card.repliedOn(relTime(d.rsvp.updatedAt, lang), channel) : deadline ? c.card.noReplyDeadline(deadline) : c.card.noReply}
                 </T>
+                {/* #37: when the party last opened their invitation, the app or the site (1.4.0, MW_SEEN). */}
+                <GuestSeenLine seen={readGuestSeen(mainQuery.data)} />
               </View>
             </Row>
             <Row gap={8} style={{ marginTop: 12, flexWrap: "wrap" }}>
