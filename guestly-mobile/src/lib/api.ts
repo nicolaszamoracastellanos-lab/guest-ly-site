@@ -73,12 +73,16 @@ export class ApiFailure extends Error {
   messages: { en: string; es: string };
   /** Per-field form errors (Settings routes): app field key to its sentence. */
   fields: Record<string, { en: string; es: string }>;
-  constructor(status: number, err: (ApiError & { reason?: string; fields?: unknown }) | null) {
+  /** What the server holds now, when a write was refused as stale (a runsheet
+   *  change request approved after its block changed: `error.current`). */
+  current: unknown[] | null;
+  constructor(status: number, err: (ApiError & { reason?: string; fields?: unknown; current?: unknown }) | null) {
     super(err?.code ?? `http_${status}`);
     this.status = status;
     this.code = err?.code ?? `http_${status}`;
     this.reason = typeof err?.reason === "string" ? err.reason : null;
     this.fields = parseFields(err?.fields);
+    this.current = Array.isArray(err?.current) ? err.current : null;
     const local = LOCAL[this.code];
     if (local) this.messages = { ...local };
     else if (this.code === "forbidden" && (!err?.message_es || USTED.test(err.message_es))) this.messages = { ...FORBIDDEN_GENERIC };

@@ -6,27 +6,34 @@
 // the middle of a row moved the status along silently, with no way back.
 
 import React, { useEffect } from "react";
-import { View, Pressable, AccessibilityInfo, Platform, StyleSheet } from "react-native";
+import { View, Pressable, AccessibilityInfo, Platform, StyleSheet, useWindowDimensions } from "react-native";
 import { useLang, longDate, fmt } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { Card, T, Badge, Stack, SectionLabel, Sheet, Icon, Row, useTabBarTop } from "@/ui";
 import { colors, COLUMN } from "@/ui/tokens";
 import { COPY } from "./copy";
 import { statusKind, STATUS_ORDER, type RunsheetBlock, type RunsheetStatus, type RunsheetSurface } from "./hooks";
+import { isGlam, placeById, type ChangeRequest } from "./core";
+import { GlamPanel, RequestWaitingLine } from "./mw";
 
 export function RunsheetList({
   data,
   canEdit,
   onStatus,
   onOpen,
+  waiting,
 }: {
   data: RunsheetSurface;
+  /** May change statuses: the status opens its menu. False: a plain badge. */
   canEdit: boolean;
   onStatus?: (b: RunsheetBlock) => void;
   onOpen?: (b: RunsheetBlock) => void;
+  /** #2: open change requests by block id (a muted line under the row). */
+  waiting?: Map<string, ChangeRequest[]>;
 }) {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
+  const stacked = useWindowDimensions().fontScale >= 1.2;
   return (
     <Stack gap={18} style={{ marginTop: 20 }}>
       {data.days.map((d) => (
@@ -39,9 +46,34 @@ export function RunsheetList({
             padding={2}
             style={{ marginTop: 8, paddingHorizontal: 18 }}
           >
-            {[...d.blocks].sort((a, b) => nightOrder(a.starts_at) - nightOrder(b.starts_at)).map((b, i) => (
+            {[...d.blocks].sort((a, b) => nightOrder(a.starts_at) - nightOrder(b.starts_at)).map((b, i) => {
+              const place = placeById(data.places, b.place_id);
+              const last = i === d.blocks.length - 1;
+              // The status is a control of its own at the end of the row (B4):
+              // it opens the status menu, never changes on a stray tap. 44 pt
+              // target; read-only, it is a plain badge. At the largest text
+              // sizes it sits under the title, so titles keep their words whole.
+              const status = canEdit && onStatus ? (
+                  <Pressable
+                    onPress={() => onStatus(b)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${c.status}: ${c.statuses[b.status]}`}
+                    accessibilityHint={c.changeStatus}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.statusHit, pressed && { opacity: 0.6 }]}
+                  >
+                    <Badge label={c.statuses[b.status]} kind={statusKind(b.status)} />
+                    <Icon name="down" size={14} color={colors.ivory55} />
+                  </Pressable>
+                ) : (
+                  <View style={styles.statusHit}>
+                    <Badge label={c.statuses[b.status]} kind={statusKind(b.status)} />
+                  </View>
+                );
+              return (
+              <View key={b.id} style={{ borderBottomWidth: last ? 0 : 1, borderBottomColor: colors.ivory09 }}>
               <Pressable
-                key={b.id}
+                testID={`runsheet-row-${b.id}`}
                 onPress={onOpen ? () => onOpen(b) : undefined}
                 accessibilityRole={onOpen ? "button" : undefined}
                 accessibilityHint={onOpen ? c.openHint : undefined}
@@ -55,8 +87,6 @@ export function RunsheetList({
                   alignItems: "flex-start",
                   minHeight: 56,
                   paddingVertical: 10,
-                  borderBottomWidth: i === d.blocks.length - 1 ? 0 : 1,
-                  borderBottomColor: colors.ivory09,
                 }}
               >
                 {/* Wide enough for "09:00" in the display face, and one line always:
@@ -91,36 +121,26 @@ export function RunsheetList({
                   >
                     {b.title}
                   </T>
-                  {b.location || b.owner || b.vendor_name ? (
-                    <T v="meta13" color={colors.ivory55}>
-                      {[b.location, b.owner, b.vendor_name]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </T>
+                  {place || b.location || b.owner || b.vendor_name ? (
+                    <Row gap={4} align="flex-start">
+                      {place ? <Icon name="pin" size={13} color={colors.ivory55} /> : null}
+                      <T v="meta13" color={colors.ivory55} style={{ flex: 1 }}>
+                        {/* #9: the place first; the area line only when it says more. */}
+                        {[place?.name, b.location && b.location !== place?.name ? b.location : null, b.owner, b.vendor_name]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </T>
+                    </Row>
                   ) : null}
+                  <RequestWaitingLine requests={waiting?.get(b.id)} />
+                  {stacked ? status : null}
                 </View>
-                {/* The status is a control of its own at the end of the row
-                    (B4): it opens the status menu, never changes on a stray
-                    tap. 44 pt target; read-only, it is a plain badge. */}
-                {canEdit && onStatus ? (
-                  <Pressable
-                    onPress={() => onStatus(b)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${c.status}: ${c.statuses[b.status]}`}
-                    accessibilityHint={c.changeStatus}
-                    hitSlop={6}
-                    style={({ pressed }) => [styles.statusHit, pressed && { opacity: 0.6 }]}
-                  >
-                    <Badge label={c.statuses[b.status]} kind={statusKind(b.status)} />
-                    <Icon name="down" size={14} color={colors.ivory55} />
-                  </Pressable>
-                ) : (
-                  <View style={styles.statusHit}>
-                    <Badge label={c.statuses[b.status]} kind={statusKind(b.status)} />
-                  </View>
-                )}
+                {stacked ? null : status}
               </Pressable>
-            ))}
+              {isGlam(b) ? <GlamPanel slots={b.glam ?? []} warnings={b.glam_warnings} /> : null}
+              </View>
+              );
+            })}
           </Card>
         </View>
       ))}

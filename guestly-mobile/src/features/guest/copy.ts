@@ -36,6 +36,8 @@ const en = {
   directions: {
     title: "Directions",
     openMaps: "Open in Maps",
+    appleMaps: "Apple Maps",
+    googleMaps: "Google Maps",
     copyAddress: "Copy address",
     copied: "Address copied",
     arrival: "Arrival advice",
@@ -196,6 +198,8 @@ const es: typeof en = {
   directions: {
     title: "Cómo llegar",
     openMaps: "Abrir en Mapas",
+    appleMaps: "Apple Maps",
+    googleMaps: "Google Maps",
     copyAddress: "Copiar dirección",
     copied: "Dirección copiada",
     arrival: "Consejo de llegada",

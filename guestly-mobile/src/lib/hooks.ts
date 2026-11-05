@@ -8,6 +8,8 @@ import { ApiFailure, get, post } from "@/lib/api";
 export type ScheduleEvent = {
   id: string; title: string; date: string | null; time: string | null; start_minutes: number | null;
   location: string | null; address_note: string | null; maps_url: string | null; dress_code: string | null;
+  /** #9 (MW_PLACES on): the Apple Maps link beside maps_url (Google's); absent otherwise. */
+  apple_maps_url?: string | null;
   notes: string | null; ics_url: string; invited: boolean;
 };
 export type RsvpSummary = {
