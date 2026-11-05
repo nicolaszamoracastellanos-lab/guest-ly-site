@@ -57,6 +57,12 @@ export const DEMO_LIMITS = {
   minIntervalMs: 3000,
 };
 
+/* LANDING ANALYTICS (#23): where the cookieless beacon posts its counts.
+   '' today (off). The value is set in vite.config.ts (SITE_BEACON_URL there),
+   which writes it into the build as a literal so an empty one leaves the
+   beacon out entirely. */
+export const SITE_BEACON_URL: string = import.meta.env.VITE_SITE_BEACON_URL;
+
 /* LEGAL: registered entity name for the footer and terms page. */
 export const LEGAL_ENTITY = 'ZC Ventures LLC';
 

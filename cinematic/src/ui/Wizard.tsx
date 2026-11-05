@@ -4,6 +4,7 @@ import { useLang } from './LanguageContext';
 import type { PlanId } from './WizardContext';
 import { ADDON_MONTHLY, ADDON_PRICE, ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
 import type { PayLinkKey } from '../config';
+import { emit } from '../analytics/emit';
 
 type AddonChoice = 'none' | 'once' | 'monthly';
 
@@ -68,9 +69,10 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
     };
   }, [onClose]);
 
-  /* Back to top of the sheet on step change. */
+  /* Back to top of the sheet on step change; #23 counts the step (number only). */
   useEffect(() => {
     sheetRef.current?.scrollTo(0, 0);
+    emit({ k: 'wizard_step', n: step });
   }, [step]);
 
   const setField = (key: keyof Fields) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -164,6 +166,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
   return (
     <div
       className="wiz-backdrop"
+      data-area="wizard"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -383,7 +386,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
             <div className="wiz-pay">
               {payUrl ? (
                 <>
-                  <a className="btn btn--gold btn--lg" href={payUrl} target="_blank" rel="noopener noreferrer">
+                  <a className="btn btn--gold btn--lg" href={payUrl} target="_blank" rel="noopener noreferrer" data-track={`pay-${payKey}`}>
                     {w.step4.payCta.replace('{price}', `$${total}`)}
                   </a>
                   <p className="wiz-pay__note">{w.step4.payNoteLinked}</p>
@@ -396,6 +399,7 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               {WHATSAPP ? (
                 <a
                   className="wiz-pay__wa"
+                  data-track="wizard-whatsapp"
                   href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(orderSubject)}`}
                   target="_blank"
                   rel="noopener noreferrer"

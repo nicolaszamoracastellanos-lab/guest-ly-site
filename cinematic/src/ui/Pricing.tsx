@@ -75,6 +75,7 @@ export function Pricing() {
                     type="button"
                     className={plan.popular ? 'btn btn--gold btn--lg plan__cta' : 'btn btn--gold-line btn--lg plan__cta'}
                     onClick={() => open(plan.id)}
+                    data-track={`plan-${plan.id}-start`}
                   >
                     {plan.cta}
                   </button>

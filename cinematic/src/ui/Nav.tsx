@@ -95,6 +95,7 @@ export function Nav() {
 
   return (
     <header
+      data-area="nav"
       className={['nav', scrolled || menuOpen ? 'nav--scrolled' : '', menuOpen ? 'nav--open' : '']
         .filter(Boolean)
         .join(' ')}
@@ -118,7 +119,7 @@ export function Nav() {
           </a>
           <ThemeToggle />
           <LangToggle />
-          <button type="button" className="btn btn--gold" onClick={() => open()}>
+          <button type="button" className="btn btn--gold" onClick={() => open()} data-track="nav-start">
             {t.nav.cta}
           </button>
         </div>
@@ -157,7 +158,7 @@ export function Nav() {
             <ThemeToggle className="lang-toggle--menu" />
             <LangToggle className="lang-toggle--menu" />
           </div>
-          <button type="button" className="btn btn--gold btn--lg" onClick={startOrder} tabIndex={menuOpen ? 0 : -1}>
+          <button type="button" className="btn btn--gold btn--lg" onClick={startOrder} tabIndex={menuOpen ? 0 : -1} data-track="menu-start">
             {t.nav.cta}
           </button>
         </div>

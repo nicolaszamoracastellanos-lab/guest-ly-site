@@ -13,7 +13,9 @@ import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
-const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+/* GL_DIST prerenders another build folder (scripts/test-beacon.mjs builds a
+   beacon-on copy outside dist/); the default is cinematic/dist. */
+const dist = process.env.GL_DIST || join(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 if (!existsSync(join(dist, 'index.html'))) {
   console.error('dist/index.html missing; run vite build first');
   process.exit(1);

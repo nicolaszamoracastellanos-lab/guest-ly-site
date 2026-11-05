@@ -94,7 +94,7 @@ export function CoordinatorSpotlight() {
             <div className="coord-caps__cta">
               <p className="coord-caps__price">{c.priceLine}</p>
               <div className="coord-caps__row">
-                <button type="button" className="btn btn--gold-line" onClick={() => open()}>
+                <button type="button" className="btn btn--gold-line" onClick={() => open()} data-track="coordinator-start">
                   {c.cta}
                 </button>
                 <a className="coord-caps__link" href="#pricing">

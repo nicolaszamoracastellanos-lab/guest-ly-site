@@ -10,7 +10,7 @@ export function Footer() {
   const intakeMailto = `mailto:${f.contact.email}?subject=${encodeURIComponent(f.contact.intakeForm)}`;
 
   return (
-    <footer className="footer">
+    <footer className="footer" data-sec="footer">
       <div className="container footer__grid">
         <div className="footer__brand">
           <Logo className="footer__logo" />
@@ -35,7 +35,7 @@ export function Footer() {
               <a href={`mailto:${f.contact.email}`}>{f.contact.email}</a>
             </li>
             <li>
-              <button type="button" className="footer__link-btn" onClick={() => open()}>
+              <button type="button" className="footer__link-btn" onClick={() => open()} data-track="footer-start">
                 {f.contact.startOrder}
               </button>
             </li>

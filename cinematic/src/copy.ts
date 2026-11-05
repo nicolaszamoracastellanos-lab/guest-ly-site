@@ -2441,3 +2441,27 @@ const es: SiteCopy = {
 };
 
 export const copy: Record<Locale, SiteCopy> = { en, es };
+
+/* #23: the privacy page's visit-counts paragraph, EN and ES. Shown only
+   while SITE_BEACON_URL is set (LegalPage), so the disclosure goes live with
+   the beacon and never before; an empty URL leaves it out of the bundle. */
+export const visitCountsCopy: Record<'en' | 'es', { h: string; body: string[] }> = {
+  en: {
+    h: 'Visit counts',
+    body: [
+      'To learn which parts of this site help couples and planners, the site counts visits without cookies. It notes which sections were shown, how far the page was scrolled, which buttons and links were used (by their name or where they lead, never what you type), the page language, the screen size group and the site that linked here.',
+      'Nothing is stored on your device. Your IP address is never kept: it is combined with a value that changes every day into a code that does not identify you and cannot link one day to the next. Visit details are kept for two days at most; after that only daily totals remain.',
+      'The counts go to our own server at app.guest-ly.com. No analytics company or ad network receives them.',
+      'If your browser sends Do Not Track or Global Privacy Control, nothing is counted.',
+    ],
+  },
+  es: {
+    h: 'Conteo de visitas',
+    body: [
+      'Para saber qué partes del sitio ayudan a parejas y planners, el sitio cuenta las visitas sin cookies. Registra qué secciones se mostraron, hasta dónde se desplazó la página, qué botones y enlaces se usaron (por su nombre o a dónde llevan, nunca lo que escribes), el idioma de la página, el tipo de pantalla y el sitio que te trajo aquí.',
+      'No se guarda nada en tu dispositivo. Tu dirección IP nunca se conserva: se combina con un valor que cambia cada día para formar un código que no te identifica y no permite unir un día con otro. El detalle de las visitas se conserva dos días como máximo; después solo quedan totales por día.',
+      'Los conteos van a nuestro propio servidor en app.guest-ly.com. Ninguna empresa de analítica ni red de publicidad los recibe.',
+      'Si tu navegador envía Do Not Track o Global Privacy Control, no se cuenta nada.',
+    ],
+  },
+};

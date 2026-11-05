@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLang } from './LanguageContext';
 import { DEMO_LIMITS, LIVE_DEMO, SANDBOX_BOT_ENDPOINT } from '../config';
+import { emit } from '../analytics/emit';
 
 interface VisibleMsg {
   key: number;
@@ -119,6 +120,7 @@ export function ChatCard() {
     setNote(null);
     lastSentRef.current = now;
     sentCountRef.current += 1;
+    emit({ k: 'demo_chat', n: sentCountRef.current });
     setInput('');
     push('guest', text);
     setTyping(true);

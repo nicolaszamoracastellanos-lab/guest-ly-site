@@ -1,7 +1,9 @@
 import { LanguageProvider, useLang } from './LanguageContext';
 import type { SiteCopy } from '../copy';
+import { visitCountsCopy } from '../copy';
 import { ThemeEffects, useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
+import { SITE_BEACON_URL } from '../config';
 import './overlay.css';
 
 export type LegalKind = 'privacy' | 'terms' | 'refunds';
@@ -14,9 +16,14 @@ function LegalBody({ kind }: { kind: LegalKind }) {
   const { t, lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
   const page = t.legal.pages[kind];
+  /* The visit-counts disclosure goes live with the beacon, never before. */
+  const sections =
+    kind === 'privacy' && SITE_BEACON_URL
+      ? [page.sections[0], visitCountsCopy[lang], ...page.sections.slice(1)]
+      : page.sections;
 
   return (
-    <div className="overlay-page legal-page">
+    <div className="overlay-page legal-page" data-area="legal">
       <header className="legal-page__top">
         <a href="/" className="nav__logo" aria-label="Guest-ly">
           <Logo />
@@ -49,7 +56,7 @@ function LegalBody({ kind }: { kind: LegalKind }) {
       <main className="legal-page__main">
         <h1 className="legal-page__title">{page.title}</h1>
         <p className="legal-page__updated">{page.updated}</p>
-        {page.sections.map((section) => (
+        {sections.map((section) => (
           <section key={section.h} className="legal-page__section">
             <h2>{section.h}</h2>
             {section.body.map((paragraph, i) => (

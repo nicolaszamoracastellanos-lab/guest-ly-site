@@ -25,7 +25,7 @@ export function Hero() {
             </h1>
             <p className="hero__sub reveal">{h.sub}</p>
             <div className="hero__actions reveal">
-              <button type="button" className="btn btn--gold btn--lg" onClick={() => open()}>
+              <button type="button" className="btn btn--gold btn--lg" onClick={() => open()} data-track="hero-start">
                 {h.primary}
               </button>
               <a className="btn btn--ghost btn--lg" href="#demo">

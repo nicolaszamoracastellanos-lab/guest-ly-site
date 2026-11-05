@@ -21,3 +21,16 @@ if (rootEl.childElementCount > 0) {
 } else {
   createRoot(rootEl).render(app)
 }
+
+/* #23 landing analytics: its own small chunk, fetched only when a beacon URL
+   is configured, after hydration and at idle, so it never competes with the
+   first paint. Any failure stays silent. The URL is a build-time literal
+   (vite.config.ts), read here directly so an empty one drops the chunk. */
+const beaconUrl: string = import.meta.env.VITE_SITE_BEACON_URL
+if (beaconUrl) {
+  const load = () => {
+    import('./analytics/beacon.ts').then((m) => m.start(beaconUrl)).catch(() => {})
+  }
+  if ('requestIdleCallback' in window) requestIdleCallback(load, { timeout: 4000 })
+  else setTimeout(load, 1500)
+}

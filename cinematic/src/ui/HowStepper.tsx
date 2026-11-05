@@ -63,7 +63,7 @@ export function HowStepper() {
         </ol>
 
         <div className="how__cta reveal">
-          <button type="button" className="btn btn--gold btn--lg" onClick={() => open()}>
+          <button type="button" className="btn btn--gold btn--lg" onClick={() => open()} data-track="how-start">
             {h.cta}
           </button>
           <p className="how__note">{h.ctaNote}</p>

@@ -38,7 +38,7 @@ export function FinalCta() {
   const { open } = useWizard();
   const c = t.cta;
   return (
-    <section className="section section--final">
+    <section className="section section--final" data-sec="final">
       <div className="container final-cta reveal">
         <p className="sec-kicker">{c.kicker}</p>
         <h2 className="sec-title">
@@ -48,7 +48,7 @@ export function FinalCta() {
         </h2>
         {c.body ? <p className="final-cta__body">{c.body}</p> : null}
         <div className="final-cta__actions">
-          <button type="button" className="btn btn--gold btn--lg" onClick={() => open()}>
+          <button type="button" className="btn btn--gold btn--lg" onClick={() => open()} data-track="final-start">
             {c.primary}
           </button>
           <a className="btn btn--ghost btn--lg" href="#pricing">

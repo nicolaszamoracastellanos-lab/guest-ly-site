@@ -30,7 +30,7 @@ export function Founding() {
             </span>
             <p className="founding__body">{f.offer.body}</p>
             <p className="founding__ends">{f.offer.ends}</p>
-            <button type="button" className="btn btn--gold founding__cta" onClick={() => open()}>
+            <button type="button" className="btn btn--gold founding__cta" onClick={() => open()} data-track="founding-start">
               {f.offer.cta}
             </button>
           </div>

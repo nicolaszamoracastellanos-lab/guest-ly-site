@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/prerender.mjs && node scripts/lint-copy.mjs && node scripts/check-seo.mjs && node scripts/check-fonts.mjs",
-    "test": "node scripts/test-paths.mjs && node scripts/test-jsonld.mjs",
+    "test": "node scripts/test-paths.mjs && node scripts/test-jsonld.mjs && node --no-warnings scripts/test-beacon.mjs",
     "check:origins": "node scripts/check-origins.mjs",
     "lint": "oxlint",
     "preview": "vite preview",

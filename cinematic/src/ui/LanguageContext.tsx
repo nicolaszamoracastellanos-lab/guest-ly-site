@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { copy } from '../copy';
 import type { Locale, SiteCopy } from '../copy';
@@ -42,16 +42,22 @@ export function LanguageProvider({ children, title }: { children: ReactNode; tit
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      /* non-fatal */
-    }
     document.documentElement.lang = lang;
     document.title = title ? title(copy[lang]) : copy[lang].meta.title;
   }, [lang, title]);
 
-  const value = useMemo<LanguageValue>(() => ({ lang, setLang, t: copy[lang] }), [lang]);
+  /* Stored only when the visitor picks a language, like the theme: a visit
+     alone leaves nothing on the device (#23, decision D23). */
+  const choose = useCallback((next: Locale) => {
+    setLang(next);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* non-fatal */
+    }
+  }, []);
+
+  const value = useMemo<LanguageValue>(() => ({ lang, setLang: choose, t: copy[lang] }), [lang, choose]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
