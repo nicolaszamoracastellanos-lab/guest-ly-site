@@ -14,12 +14,17 @@ import {
   Stack,
   EmptyState,
   IconButton,
+  Row,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/runsheet/copy";
 import { usePlannerRunsheet } from "@/features/runsheet/hooks";
 import { RunsheetList } from "@/features/runsheet/list";
 import { useSafeBack } from "@/lib/nav";
+import { useRouter } from "expo-router";
+import { can, useUserSession } from "@/lib/session";
+import { DAYOF_COPY } from "@/features/dayof/copy";
+import { useDayPack, useDayPackFlag } from "@/features/dayof/hooks";
 
 export default function PlannerRunsheet() {
   const c = useFeatureCopy(COPY);
@@ -27,6 +32,13 @@ export default function PlannerRunsheet() {
   const back = useSafeBack();
   const mainQuery = usePlannerRunsheet();
   const { data, isLoading, error } = mainQuery;
+  // #30: with the open wedding's Day pack saved, the live day-of view is one tap away.
+  const router = useRouter();
+  const me = useUserSession()?.me;
+  const live = useFeatureCopy(DAYOF_COPY);
+  const packOn = useDayPackFlag() && can(me, "runsheet", "view");
+  const pack = useDayPack("planner", me?.tenant.slug, packOn);
+  const liveButton = packOn && pack.entry ? <IconButton name="clock" label={live.openLive} onPress={() => router.push("/planner/dayof" as never)} testID="runsheet-open-live" /> : null;
   return (
     <Screen query={mainQuery} refresh
       header={
@@ -34,12 +46,17 @@ export default function PlannerRunsheet() {
           onBack={back}
           title={c.title}
           right={
-            data?.blocks_total ? (
-              <IconButton
-                name="calendar-plus"
-                label={c.addCalendar}
-                onPress={() => Linking.openURL(data.ics_url)}
-              />
+            data?.blocks_total || liveButton ? (
+              <Row gap={8}>
+                {liveButton}
+                {data?.blocks_total ? (
+                  <IconButton
+                    name="calendar-plus"
+                    label={c.addCalendar}
+                    onPress={() => Linking.openURL(data.ics_url)}
+                  />
+                ) : null}
+              </Row>
             ) : undefined
           }
         />

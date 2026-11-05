@@ -1,0 +1,1 @@
+{ "status": 423, "headers": {}, "body": { "ok": false, "error": { "code": "workspace_locked", "message_en": "Activate your wedding to make changes.", "message_es": "Activa tu boda para hacer cambios." } } }

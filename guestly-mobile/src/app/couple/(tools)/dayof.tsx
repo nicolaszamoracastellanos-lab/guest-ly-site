@@ -1,4 +1,8 @@
-// Day-of mode for the couple: parties in, the runsheet, escalations.
+// Day-of mode for the couple. With the Day pack on for this wedding (#30,
+// MW_DAY_PACK) the live view reads the saved pack and works offline; without
+// it (flag off, or a portal that answers 404) the older screen below shows
+// parties in, the runsheet and escalations from the server. The half-folded
+// Duo table pose keeps its own layout.
 
 import React from "react";
 import { View } from "react-native";
@@ -14,8 +18,19 @@ import { StyleSheet } from "react-native";
 import { colors } from "@/ui/tokens";
 import { nightOrder } from "@/features/runsheet/list";
 import { useSafeBack } from "@/lib/nav";
+import { LiveDay } from "@/features/dayof/LiveDay";
+import { useDayPack, useDayPackFlag } from "@/features/dayof/hooks";
 
 export default function CoupleDayOf() {
+  const flag = useDayPackFlag();
+  const slug = useUserSession()?.me.tenant.slug ?? null;
+  const { status } = useDayPack("couple", slug, flag);
+  const layout = useLayout();
+  if (flag && slug && !status.missing && layout.pose !== "table") return <LiveDay role="couple" slug={slug} />;
+  return <ServerDayOf />;
+}
+
+function ServerDayOf() {
   const copy = useCopy();
   const router = useRouter();
   // A section like the others: a back button to where you came from (N2).

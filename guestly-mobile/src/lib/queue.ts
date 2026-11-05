@@ -1,5 +1,7 @@
-// Offline queue for door check-ins. Each entry carries a client_event_id so
-// the portal ignores replays. Persists across restarts; drains whenever the
+// Offline outbox: door check-ins and (#30) runsheet block status taps. Each
+// entry carries a client_event_id so the portal ignores replays; a check-in
+// keeps the scanned_at of the scan, a status tap its tapped_at, so a late
+// sync never stamps server time on what happened earlier. Persists across restarts; drains whenever the
 // app is foregrounded or a check-in succeeds online.
 //
 // Every read-modify-write of the stored queue runs behind one promise chain,
@@ -22,10 +24,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { post, ApiFailure, getCredential } from "@/lib/api";
-import { isConflict, settle, type Outcome } from "@/lib/queueMath";
+import { classifyFailure, replay, settle } from "@/lib/queueMath";
 
-/** What a drain did. `already` and `refused` are guest names, for the door. */
-export type DrainResult = { sent: number; remaining: number; already: string[]; refused: string[] };
+/** What a drain did. `already` and `refused` are guest names, for the door;
+ *  `locked` and `gone` are block titles whose status taps were dropped. */
+export type DrainResult = { sent: number; remaining: number; already: string[]; refused: string[]; locked: string[]; gone: string[] };
+
+// Everyone who wants to hear how a drain ended (the day-of notices), whoever
+// started it (the root layout on launch, foreground and reconnect, or a screen).
+type DrainListener = (r: DrainResult) => void;
+const drainListeners = new Set<DrainListener>();
+export function subscribeDrain(fn: DrainListener): () => void {
+  drainListeners.add(fn);
+  return () => {
+    drainListeners.delete(fn);
+  };
+}
 
 // ---------------------------------------------------------------- listeners
 
@@ -38,9 +52,9 @@ export function subscribeQueue(fn: Listener): () => void {
     listeners.delete(fn);
   };
 }
-function announce(items: QueuedCheckin[]) {
+function announce(items: OutboxItem[]) {
   if (!listeners.size) return;
-  const n = items.filter(isForOpenWedding).length;
+  const n = items.filter((i) => isCheckin(i) && isForOpenWedding(i)).length;
   listeners.forEach((fn) => {
     try {
       fn(n);
@@ -53,6 +67,8 @@ function announce(items: QueuedCheckin[]) {
 export const QUEUE_KEY = "gl.checkin.queue";
 
 export type QueuedCheckin = {
+  /** Absent on entries stored before #30. */
+  kind?: "checkin";
   client_event_id: string;
   guest_id: string;
   seats: number;
@@ -63,6 +79,32 @@ export type QueuedCheckin = {
   /** The wedding (slug) the pass was scanned for. Sent only while that wedding is the open one. */
   tenant?: string;
 };
+
+/** A runsheet status tap made on the day (#30, D4.4). */
+export type QueuedBlockStatus = {
+  kind: "block_status";
+  client_event_id: string;
+  block_id: string;
+  status: "planned" | "confirmed" | "done";
+  /** When the person tapped (device clock corrected by the pack's server offset). */
+  tapped_at: string;
+  /** The block's updated_at as this phone last saw it. */
+  base_updated_at: string | null;
+  /** The block title, to name it if the server drops the tap. */
+  name: string;
+  /** /couple/runsheet/{id}/status or /planner/runsheet/{id}/status. */
+  path: string;
+  tenant?: string;
+};
+
+export type OutboxItem = QueuedCheckin | QueuedBlockStatus;
+
+export function isCheckin(i: OutboxItem): i is QueuedCheckin {
+  return i.kind !== "block_status";
+}
+export function isBlockStatus(i: OutboxItem): i is QueuedBlockStatus {
+  return i.kind === "block_status";
+}
 
 export type CheckinResult = {
   already: boolean;
@@ -79,10 +121,15 @@ export type CheckinResult = {
 };
 
 /** The one call the queue makes; replaceable in tests. */
-export type Sender = (item: QueuedCheckin) => Promise<unknown>;
+export type Sender = (item: OutboxItem) => Promise<unknown>;
 let send: Sender = (item) => {
-  const { path, tenant, ...body } = item;
+  if (isBlockStatus(item)) {
+    const { path, client_event_id, status, tapped_at, base_updated_at } = item;
+    return post(path, { status, client_event_id, tapped_at, base_updated_at });
+  }
+  const { path, tenant, kind, ...body } = item;
   void tenant;
+  void kind;
   return post<CheckinResult>(path ?? "/couple/checkin", body);
 };
 
@@ -92,7 +139,7 @@ function openTenant(): string | undefined {
   return c.kind === "user" && c.tenantSlug ? c.tenantSlug : undefined;
 }
 /** True when the entry belongs to the wedding that is open now (entries from before the stamp count as open). */
-export function isForOpenWedding(item: QueuedCheckin): boolean {
+export function isForOpenWedding(item: OutboxItem): boolean {
   const open = openTenant();
   return !item.tenant || !open || item.tenant === open;
 }
@@ -114,27 +161,27 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function read(): Promise<QueuedCheckin[]> {
+async function read(): Promise<OutboxItem[]> {
   try {
     const raw = await AsyncStorage.getItem(QUEUE_KEY);
     const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? (parsed as QueuedCheckin[]) : [];
+    return Array.isArray(parsed) ? (parsed as OutboxItem[]) : [];
   } catch {
     return [];
   }
 }
 
-async function write(items: QueuedCheckin[]) {
+async function write(items: OutboxItem[]) {
   if (items.length) await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(items));
   else await AsyncStorage.removeItem(QUEUE_KEY);
   announce(items);
 }
 
-export function readQueue(): Promise<QueuedCheckin[]> {
+export function readQueue(): Promise<OutboxItem[]> {
   return serial(read);
 }
 
-export function enqueue(item: QueuedCheckin): Promise<void> {
+export function enqueue(item: OutboxItem): Promise<void> {
   return serial(async () => {
     const q = await read();
     if (!q.some((i) => i.client_event_id === item.client_event_id)) q.push(item);
@@ -150,11 +197,47 @@ export function clearQueue(): Promise<void> {
   });
 }
 
+/** Removes one entry that has not been sent yet. True when it was still
+ *  waiting (an Undo then needs no request at all). */
+export function cancelQueued(clientEventId: string): Promise<boolean> {
+  return serial(async () => {
+    const q = await read();
+    const left = q.filter((i) => i.client_event_id !== clientEventId);
+    if (left.length === q.length) return false;
+    await write(left);
+    return true;
+  });
+}
+
+function failureOf(err: unknown): { status: number; code: string } | null {
+  return err instanceof ApiFailure ? { status: err.status, code: err.code } : null;
+}
+
 /** True when the entry should stay queued after this failure. */
 export function retryable(err: unknown): boolean {
-  if (!(err instanceof ApiFailure)) return true;
-  const s = err.status;
-  return s === 0 || s === 401 || s === 408 || s === 429 || s >= 500 || err.code === "offline" || err.code === "timeout";
+  return classifyFailure("checkin", failureOf(err)) === "retry";
+}
+
+/** How a status tap ended: sent, queued for later, or dropped for good. */
+export type StatusTapResult = { kind: "sent" } | { kind: "queued" } | { kind: "locked" } | { kind: "gone" };
+
+/** Sends one status tap; when it cannot reach the server, queues it. A
+ *  locked timeline or a deleted block is final (never queued); any other
+ *  final refusal throws for the screen to say what failed. */
+export async function sendBlockStatus(raw: QueuedBlockStatus): Promise<StatusTapResult> {
+  const item = { ...raw, tenant: raw.tenant ?? openTenant() };
+  try {
+    await send(item);
+    return { kind: "sent" };
+  } catch (err) {
+    const c = classifyFailure("block_status", failureOf(err));
+    if (c === "retry") {
+      await enqueue(item);
+      return { kind: "queued" };
+    }
+    if (c === "locked" || c === "gone") return { kind: c };
+    throw err;
+  }
 }
 
 /** Sends one check-in; when it cannot reach the server, queues it and
@@ -192,30 +275,27 @@ export function drainQueue(): Promise<DrainResult> {
     // wrong tenant, be refused as "guest not found" and be dropped for good.
     const open = openTenant();
     const eligible = snapshot.filter((item) => !(item.tenant && open && item.tenant !== open));
-    const outcomes: Outcome[] = [];
-    for (const item of eligible) {
-      try {
-        const result = await send(item);
-        outcomes.push({ kind: "sent", already: isConflict(result) });
-      } catch (err) {
-        if (retryable(err)) {
-          outcomes.push({ kind: "retry" });
-          break;
-        }
-        // Guest removed, forbidden, bad payload: a retry cannot fix it.
-        outcomes.push({ kind: "refused" });
-      }
-    }
-    const { done, sent, already, refused } = settle(eligible, outcomes);
+    // Offline, timeout, 5xx: the replay stops and keeps the order for next
+    // time. Guest removed, timeline locked, block deleted: a retry cannot fix it.
+    const outcomes = await replay(eligible, send, failureOf);
+    const { done, sent, already, refused, locked, gone } = settle(eligible, outcomes);
     // Re-read under the lock and remove only what this drain settled, so
     // anything enqueued meanwhile survives.
     const remaining = await serial(async () => {
       const now = await read();
       const left = now.filter((i) => !done.has(i.client_event_id));
       if (done.size) await write(left);
-      return left.filter(isForOpenWedding).length;
+      return left.filter((i) => isCheckin(i) && isForOpenWedding(i)).length;
     });
-    return { sent, remaining, already, refused };
+    const result = { sent, remaining, already, refused, locked, gone };
+    drainListeners.forEach((fn) => {
+      try {
+        fn(result);
+      } catch {
+        // a listener never breaks the outbox
+      }
+    });
+    return result;
   })().finally(() => {
     draining = null;
     // And that it ended, with the count left.

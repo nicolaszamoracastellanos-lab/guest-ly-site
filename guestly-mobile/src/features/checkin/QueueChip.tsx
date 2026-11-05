@@ -8,7 +8,7 @@ import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useCopy } from "@/i18n";
 import { useOnline } from "@/lib/query";
-import { isDraining, isForOpenWedding, readQueue, subscribeQueue } from "@/lib/queue";
+import { isCheckin, isDraining, isForOpenWedding, readQueue, subscribeQueue } from "@/lib/queue";
 import { chipState } from "@/lib/queueMath";
 import { T, Icon } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
@@ -20,7 +20,7 @@ export function usePendingCheckins(): { pending: number; syncing: boolean } {
   useEffect(() => {
     let alive = true;
     void readQueue().then((items) => {
-      if (alive) setPending(items.filter(isForOpenWedding).length);
+      if (alive) setPending(items.filter((i) => isCheckin(i) && isForOpenWedding(i)).length);
     });
     const off = subscribeQueue((n) => {
       if (!alive) return;

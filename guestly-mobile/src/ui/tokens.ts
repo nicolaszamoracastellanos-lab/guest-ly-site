@@ -130,6 +130,11 @@ export const type = {
   name24: { fontFamily: fonts.display, fontSize: 27, lineHeight: 30 },
   /** Times in a timeline column (day-of, schedule). */
   time20: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24 },
+  /** Wedding-day times read at arm's length (#3, #30 live day-of): Jost, never
+   *  Cormorant for numbers, tabular so a ticking "18 min left" never shifts. */
+  live22: { fontFamily: fonts.bodyMedium, fontSize: 22, lineHeight: 28, fontVariant: ["tabular-nums"] as ("tabular-nums")[] },
+  /** The title of the block running now. */
+  liveTitle: { fontFamily: fonts.bodyMedium, fontSize: 20, lineHeight: 26 },
   button17: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 24 },
   body16: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25 },
   body15: { fontFamily: fonts.body, fontSize: 17, lineHeight: 24 },

@@ -1395,9 +1395,10 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
   );
 }
 
-export function Banner({ icon, title, body, kind = "amber", action }: { icon: IconName; title: string; body?: string; kind?: "amber" | "gold" | "red"; action?: ReactNode }) {
-  const border = kind === "amber" ? "rgba(245,158,11,0.35)" : kind === "red" ? "rgba(240,162,162,0.4)" : colors.goldBorder;
-  const fg = kind === "amber" ? colors.amber : kind === "red" ? colors.red : colors.goldLight;
+export function Banner({ icon, title, body, kind = "amber", action }: { icon: IconName; title: string; body?: string; kind?: "amber" | "gold" | "red" | "neutral"; action?: ReactNode }) {
+  // neutral: news that is not a problem (offline with a saved Day pack, #30 D5).
+  const border = kind === "amber" ? "rgba(245,158,11,0.35)" : kind === "red" ? "rgba(240,162,162,0.4)" : kind === "neutral" ? colors.ivory14 : colors.goldBorder;
+  const fg = kind === "amber" ? colors.amber : kind === "red" ? colors.red : kind === "neutral" ? colors.ivory70 : colors.goldLight;
   return (
     <Card kind="solid" radiusKey="tile" padding={12} border={border}>
       <Row gap={12} align="flex-start">

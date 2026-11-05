@@ -69,6 +69,9 @@ export type Me = {
    *  "edit"). Null for couples; absent from older portals (everything on). */
   capabilities?: Record<string, "off" | "view" | "edit"> | null;
   tenants: { slug: string; couple_names: string; status: string; tier: string }[];
+  /** Master wave (Nov 2026), additive: release flags for the open wedding,
+   *  { MW_KEY: bool }. Absent on older portals: every flagged feature reads off. */
+  features?: Record<string, boolean> | null;
   min_version: string;
   update_required: boolean;
 };
@@ -82,6 +85,12 @@ export function can(me: Me | null | undefined, tool: string, level: "view" | "ed
   if (!me || me.surface !== "planner" || !me.capabilities) return true;
   const have = me.capabilities[tool] ?? "off";
   return level === "view" ? have === "view" || have === "edit" : have === "edit";
+}
+
+/** True only when the portal says the release flag is on for the open
+ *  wedding. A portal without the map, or without the key, reads off. */
+export function featureOn(me: Me | null | undefined, key: string): boolean {
+  return me?.features?.[key] === true;
 }
 
 type State =

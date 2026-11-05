@@ -42,6 +42,7 @@ import { can, useSession, useUserSession, type Me } from "@/lib/session";
 import { resetTabs } from "@/ui/tabNav";
 import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRoleTabs";
 import { PlannerWidgetSync } from "@/features/widgets/WidgetSync";
+import { PlannerDayPackSync } from "@/features/dayof/PackSync";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "@/features/planner/copy";
 import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, toastError, CoordinatorMark, type IconName } from "@/ui";
@@ -75,13 +76,14 @@ export default function PlannerTabs() {
     // Vendors stays a route (budget lines and pushes open it) but is no tool
     // of its own any more (F5). "more" (settings, guide, language, sign out) is
     // a screen of this stack now, opened from the header menu.
-    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more", "checkin", "messages", "insights"] },
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more", "checkin", "dayof", "messages", "insights"] },
   ];
   const tenantReset = useTenantStackReset(PLANNER_STACKS, true);
   return (
     <>
       <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
       <PlannerWidgetSync />
+      <PlannerDayPackSync />
     </>
   );
 }

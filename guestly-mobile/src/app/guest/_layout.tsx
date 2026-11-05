@@ -19,6 +19,7 @@ import { useGuestSession } from "@/lib/session";
 import { useGuestPermissionCheck } from "@/features/guest/permission";
 import { RoleNativeTabs, type RoleTab } from "@/ui/NativeRoleTabs";
 import { GuestWidgetSync } from "@/features/widgets/WidgetSync";
+import { GuestDayPackSync } from "@/features/dayof/PackSync";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useAskSeen } from "@/features/guest/state";
 
@@ -54,6 +55,7 @@ export default function GuestTabs() {
     <>
       <RoleNativeTabs surface="guest" tabs={tabs} fallback="(more)" />
       <GuestWidgetSync />
+      <GuestDayPackSync />
     </>
   );
 }

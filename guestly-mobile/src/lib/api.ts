@@ -191,6 +191,10 @@ export type ApiOptions = {
   credential?: Credential;
   /** False: a 401 is the caller's to handle; no refresh, no sign out. */
   handleAuth?: boolean;
+  /** Sees the final HTTP answer before the envelope is read (the Day pack
+   *  reads its ETag and Date headers). A 304 then throws ApiFailure with
+   *  status 304, which the caller treats as "unchanged". */
+  onResponse?: (res: Response) => void;
 };
 
 async function once(path: string, opts: ApiOptions, c: Credential, jwt: string | null): Promise<Response> {
@@ -271,7 +275,12 @@ export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
     }
   }
 
-  const json = (await res.json().catch(() => null)) as
+  try {
+    opts.onResponse?.(res);
+  } catch {
+    // a header reader never breaks the request
+  }
+  const json = (res.status === 304 ? null : await res.json().catch(() => null)) as
     | { ok: true; data: T }
     | { ok: false; error: ApiError }
     | null;
