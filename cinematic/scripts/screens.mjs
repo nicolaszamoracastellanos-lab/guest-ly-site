@@ -1,6 +1,8 @@
 /* Wave 5 screenshot harness.
-   Usage: node scripts/screens.mjs <outDir> <baseUrl> [--themes=night,day] [--langs=en] [--shots=hero,cards,pricing,faq]
-   Viewports are fixed by the master prompt: 390x844 and 1440x900. */
+   Usage: node scripts/screens.mjs <outDir> <baseUrl> [--themes=night,day] [--langs=en] [--shots=hero,cards,pricing,faq] [--widths=1200,1280]
+   Viewports are fixed by the master prompt: 390x844 and 1440x900; --widths
+   swaps in other widths (height 900, or 844 under 600), e.g. the 1200 and
+   1280 desktop nav row check of review round 2. */
 
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -18,10 +20,15 @@ const themes = (flags.themes || 'night,day').split(',');
 const langs = (flags.langs || 'en').split(',');
 const shotNames = flags.shots ? flags.shots.split(',') : null;
 
-const VIEWPORTS = [
-  { tag: '390x844', width: 390, height: 844 },
-  { tag: '1440x900', width: 1440, height: 900 },
-];
+const VIEWPORTS = flags.widths
+  ? flags.widths.split(',').map(Number).map((width) => {
+      const height = width < 600 ? 844 : 900;
+      return { tag: `${width}x${height}`, width, height };
+    })
+  : [
+      { tag: '390x844', width: 390, height: 844 },
+      { tag: '1440x900', width: 1440, height: 900 },
+    ];
 
 /* Each shot scrolls its anchor into view, waits for reveals, screenshots the viewport. */
 const SHOTS = [
