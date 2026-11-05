@@ -63,8 +63,9 @@ export const DEMO_LIMITS = {
    beacon out entirely. */
 export const SITE_BEACON_URL: string = import.meta.env.VITE_SITE_BEACON_URL;
 
-/* LEGAL: registered entity name for the footer and terms page. */
-export const LEGAL_ENTITY = 'ZC Ventures LLC';
+/* LEGAL: registered entity name for the footer and terms page. Lives in
+   site-facts.ts so the build scripts can read it too. */
+export { LEGAL_ENTITY } from './site-facts.ts';
 
 export function sendNotification(subject: string, data: Record<string, string>) {
   return fetch(`https://formsubmit.co/ajax/${ORDER_INBOX}`, {

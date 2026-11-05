@@ -44,6 +44,14 @@ OPTIONAL=(
                         # from its route list (never /reunion, never a demo wedding)
   404.html
   reunion               # /reunion/<name>/: private session pages (noindex), one per planner call
+  llms.txt              # AI facts file, EN (#48): written by cinematic/scripts/llms.mjs from the
+                        # portal's docs/product/features.json, live and approved features only.
+                        # Optional so a push of source before its build still stages; the
+                        # build itself fails without it (check-seo.mjs), and the check below
+                        # stages the three files together or not at all.
+  llms-full.txt         # AI facts file, EN, with each feature's approved wording (#48, same generator)
+  es                    # es/llms.txt only: the Spanish AI facts file (#48). Nothing else may
+                        # live in es/ (checked below), so this entry cannot publish a page by accident.
 )
 
 cd "$ROOT"
@@ -66,6 +74,19 @@ if [ -f cinematic/scripts/prerender.mjs ]; then
     for p in "${REQUIRED[@]}"; do [ "$p" = "$page" ] && listed=yes; done
     [ "$listed" = yes ] || { echo "stage-site: prerendered page $page is not in the allowlist in scripts/stage-site.sh" >&2; exit 1; }
   done
+fi
+
+# The AI facts files (#48) ship together or not at all, and es/ holds only
+# the Spanish one.
+llms_present=0
+for f in llms.txt llms-full.txt es/llms.txt; do [ -f "$f" ] && llms_present=$((llms_present + 1)); done
+if [ "$llms_present" != 0 ] && [ "$llms_present" != 3 ]; then
+  echo "stage-site: llms.txt, llms-full.txt and es/llms.txt must be published together ($llms_present of 3 present); build cinematic and copy them in" >&2
+  exit 1
+fi
+if [ -d es ]; then
+  extra="$(find es -mindepth 1 ! -path es/llms.txt ! -name .DS_Store | head -1)"
+  [ -z "$extra" ] || { echo "stage-site: es/ may hold only llms.txt, found $extra" >&2; exit 1; }
 fi
 
 rm -rf "$OUT"

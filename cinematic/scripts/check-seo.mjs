@@ -7,7 +7,11 @@
    - sitemap.xml lists a page that was not prerendered, misses one that was,
      or names /reunion or a demo wedding;
    - a listed page's og:url is not its canonical, or it shares its title or
-     description with another listed page.
+     description with another listed page;
+   - an AI facts file (#48: llms.txt, llms-full.txt, es/llms.txt, written by
+     scripts/llms.mjs) is missing, does not open with "# Guest-ly" or close
+     with the slogan, lists a plan unlike the prerendered card (name, price,
+     guests line), or links a guest-ly.com address the build does not serve.
    Usage: node scripts/check-seo.mjs [distDir]   (default: cinematic/dist) */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -133,8 +137,39 @@ else {
   }
 }
 
+/* 4. The AI facts files. */
+const LLMS = [
+  ['llms.txt', 'More wedding, less stress.'],
+  ['llms-full.txt', 'More wedding, less stress.'],
+  ['es/llms.txt', 'Más boda, menos estrés.'],
+];
+const homeHtml = existsSync(join(dist, 'index.html')) ? readFileSync(join(dist, 'index.html'), 'utf8') : '';
+for (const [name, slogan] of LLMS) {
+  const file = join(dist, name);
+  if (!existsSync(file)) {
+    fail(`dist/${name} missing (scripts/llms.mjs writes it)`);
+    continue;
+  }
+  const text = readFileSync(file, 'utf8');
+  if (!text.startsWith('# Guest-ly\n')) fail(`${name} does not open with "# Guest-ly"`);
+  if (text.trimEnd().split('\n').pop() !== slogan) fail(`${name} does not close with "${slogan}"`);
+  if (name !== 'es/llms.txt') {
+    for (const card of seen.plans) {
+      if (!text.includes(`- ${card.name}: USD ${card.price}. ${card.guests}.`))
+        fail(`${name} has no plan line equal to the ${card.name} card (USD ${card.price}, ${card.guests})`);
+    }
+  }
+  for (const [, url] of text.matchAll(/(https:\/\/guest-ly\.com[^\s)]*)/g)) {
+    const u = new URL(url.replace(/[.,;:]$/, ''));
+    const path = decodeURIComponent(u.pathname);
+    const target = path.endsWith('/') ? join(dist, path, 'index.html') : join(dist, path);
+    if (!existsSync(target)) fail(`${name} links ${u.href}, which the build does not serve`);
+    if (u.hash && path === '/' && !homeHtml.includes(`id="${u.hash.slice(1)}"`)) fail(`${name} links ${u.href}, but the home page has no such anchor`);
+  }
+}
+
 if (errors.length) {
   for (const e of errors) console.error(`check-seo: ${e}`);
   process.exit(1);
 }
-console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok`);
+console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok`);
