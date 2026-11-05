@@ -7,7 +7,8 @@
 import React from "react";
 import { View } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
-import { fmt, useCopy } from "@/i18n";
+import { fmt, useCopy, useLang } from "@/i18n";
+import { clockLabel } from "@/features/guest/format";
 import { useCoupleDayOf } from "@/lib/hooks";
 import { Screen, TopBar, IconButton, Badge, T, Row, Button, Card, SectionLabel, Stack, Skeleton, Icon, useLayout, useSideInsetsStyle, useTopInset, toast } from "@/ui";
 import { useReservedRegions } from "@/lib/duo";
@@ -54,6 +55,7 @@ function ServerDayOf() {
   const topInset = useTopInset();
   const qc = useQueryClient();
   const session = useUserSession();
+  const { lang } = useLang();
   const canEdit = session?.me.can_edit ?? false;
   const [marking, setMarking] = React.useState(false);
   // #3 (MW_LIVE_DAY, 1.4.0): Now and Next ticking on the phone from the server's
@@ -135,7 +137,7 @@ function ServerDayOf() {
       {liveView ? <ServerLivePanel view={liveView} canEdit={canEdit} onOverlay={onOverlay} /> : null}
       <Row gap={24} align="flex-end" style={{ marginTop: liveView ? 28 : 16 }}>
         <View>
-          <SectionLabel color={colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>
+          <SectionLabel color={liveView ? undefined : colors.goldLight}>{copy.coupleDayOf.partiesIn}</SectionLabel>
           <Row gap={6} align="baseline">
             <T v="numeral80" style={{ lineHeight: 78, letterSpacing: -1 }}>
               {data ? data.parties_in : "·"}
@@ -184,9 +186,16 @@ function ServerDayOf() {
           const b = { ...row, state: rowState(row) };
           return (
           <Row key={b.id} gap={14} style={{ minHeight: 48, paddingVertical: 6, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderBottomColor: colors.ivory09 }}>
-            <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" && !liveView ? colors.goldLight : b.state === "now" ? colors.ivory : colors.ivory55} style={{ width: 62 }}>
-              {b.starts_at.slice(0, 5)}
-            </T>
+            {liveView ? (
+              // #3: wedding-day times in Jost with tabular figures, in the reader's clock (never Cormorant for numbers).
+              <T v="liveTitle" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} color={b.state === "now" ? colors.ivory : colors.ivory55} style={{ width: 84, fontVariant: ["tabular-nums"] }}>
+                {clockLabel(null, b.starts_at.slice(0, 5), lang)}
+              </T>
+            ) : (
+              <T v="time20" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} color={b.state === "now" ? colors.goldLight : colors.ivory55} style={{ width: 62 }}>
+                {b.starts_at.slice(0, 5)}
+              </T>
+            )}
             <View style={{ flex: 1 }}>
               <T v="body15" color={b.state === "now" ? colors.ivory : b.state === "done" ? colors.ivory40 : colors.ivory70} style={b.state === "done" && { textDecorationLine: "line-through" }}>
                 {b.title}

@@ -404,9 +404,13 @@ export function RoadBody({ road, size, half, copy }: { road: RoadCard; size: Car
             {road.nextStep.text}
           </T>
           {road.nextStep.linkLabel ? (
-            <T v="meta13" color={colors.goldLight}>
-              {road.nextStep.linkLabel}
-            </T>
+            // The card is the link; the diamond stays the line's one gold mark.
+            <Row gap={4}>
+              <T v="meta13" color={colors.ivory70}>
+                {road.nextStep.linkLabel}
+              </T>
+              <Icon name="chev" size={14} color={colors.ivory55} />
+            </Row>
           ) : null}
         </View>
       ) : null}
