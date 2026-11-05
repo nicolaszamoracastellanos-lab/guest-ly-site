@@ -278,7 +278,12 @@ export function Screen({
         </DockedAction>
       ) : null}
       {form ? <FormToolbar /> : null}
-      {modal ? <ToastHost base={insets.bottom} modal /> : null}
+      {/* No `base`: the host takes the same rest line as DockedAction (above the
+          tab bar's place when the tab layout reports one, else the home
+          indicator), so a toast never lands on the screen's docked action.
+          base={insets.bottom} put it 12 pt into the guest card's dock and over
+          Record RSVP's Cancel and Save (simulator, largest Dynamic Type). */}
+      {modal ? <ToastHost modal /> : null}
       <LockCover />
     </View>
     </MultilineRoomValue.Provider>

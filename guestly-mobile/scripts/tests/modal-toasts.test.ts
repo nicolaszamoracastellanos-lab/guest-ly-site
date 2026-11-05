@@ -59,6 +59,9 @@ for (const [route, file] of Object.entries(MODAL_ROUTES)) {
   if (toasts(s)) assert.ok(screenModal(s), `${route}: ${file} shows a toast, so its Screen needs the modal prop`);
 }
 assert.ok(screenModal(code(read("src/features/couple/HomeQuiz.tsx"))), "Home setup has its own toast host");
+// The modal host takes the dock's rest line (no `base`): with base={insets.bottom}
+// the toast sat on the guest card's docked buttons (simulator, review round 1).
+assert.match(code(read("src/ui/index.tsx")), /\{modal \? <ToastHost modal \/> : null\}/, "Screen's modal host has no base override");
 
 // Rule 2.
 function calls(s: string, name: string): string[] {
