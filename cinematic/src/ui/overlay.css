@@ -2067,6 +2067,11 @@ body.js-ready .reveal.is-visible {
     gap: 3rem;
   }
 
+  /* No offer card (past FOUNDING_ENDS): the story stands alone. */
+  .founding-grid--solo {
+    grid-template-columns: 1fr;
+  }
+
   .proof-grid {
     grid-template-columns: repeat(3, 1fr);
   }
