@@ -11,7 +11,8 @@
 //  #40 hair and makeup: glam blocks carry `glam` slots and `glam_warnings`
 //      (MW_HMU), read only in the app this wave.
 //  K7  a delete answers { deleted, restorable }: Undo restores the same block
-//      (same id) when restorable, else records it again (an older portal).
+//      (same id). On a portal not known to restore, the DELETE waits until the
+//      Undo toast leaves (runDelete); a block is never re-created by Undo.
 //
 // Every key is optional: builds below 1.4.0 never get them and a flag that is
 // off leaves them out, so a missing key means "this feature is not here".
@@ -193,11 +194,14 @@ function norm(field: string, v: unknown): string {
 
 /** What a request would change, the way the portal's proposalDiff counts it:
  *  only fields that differ (times by HH:MM, text trimmed); place_id only when
- *  places are on for the wedding. Empty: nothing to send. */
-export function proposalChanges(base: BlockLike | null, form: FormLike, placesOn: boolean): FieldChange[] {
+ *  places are on for the wedding; status only when this person may mark
+ *  (D28: on a locked timeline the planner marks, so a request never carries
+ *  a status). Empty: nothing to send. */
+export function proposalChanges(base: BlockLike | null, form: FormLike, placesOn: boolean, statusOn = true): FieldChange[] {
   const out: FieldChange[] = [];
   for (const field of FIELDS) {
     if (field === "place_id" && !placesOn) continue;
+    if (field === "status" && !statusOn) continue;
     const before = norm(field, base ? (base as Record<string, unknown>)[field] : "");
     const after = norm(field, (form as Record<string, unknown>)[field]);
     if (before !== after) out.push({ field, before, after });
@@ -253,9 +257,164 @@ export function approveOutcome(f: { status: number; code: string; reason: string
 
 // ------------------------------------------------------------------ K7 delete
 
-/** How Undo brings a deleted block back. */
-export function undoKind(answer: unknown): "restore" | "recreate" {
-  return answer && typeof answer === "object" && (answer as { restorable?: unknown }).restorable === true ? "restore" : "recreate";
+/** Did the DELETE answer say the same block can come back (K7)? */
+export function undoKind(answer: unknown): "restore" | "none" {
+  return answer && typeof answer === "object" && (answer as { restorable?: unknown }).restorable === true ? "restore" : "none";
+}
+
+/** The effects a delete with Undo needs, injected so node can fault them. */
+export type DeleteEffects = {
+  /** Optimistic: the row leaves the list. */
+  hide(): void;
+  /** The row comes back (Undo, or a rollback). */
+  show(): void;
+  /** DELETE /couple/runsheet/{id}. */
+  send(): Promise<unknown>;
+  /** POST /couple/runsheet/{id}/restore. */
+  restore(): Promise<unknown>;
+  /** Shows "Moment deleted: X" with Undo; onLeave runs when it leaves without
+   *  Undo. Returns a function that closes it. */
+  toast(undo: () => void, onLeave?: () => void): () => void;
+  /** Says what failed (and that the row is back, or gone again). */
+  failed(what: "delete" | "restore", err: unknown): void;
+  /** Reads the server again. */
+  settled(): void;
+  /** This portal is known to restore deleted blocks (an earlier DELETE said so). */
+  knowsRestore(): boolean;
+  learnRestore(restorable: boolean): void;
+};
+
+export type DeleteOutcome = "deleted" | "undone" | "restored" | "rolled_back";
+
+/** K7 and quality bar 5.3. Never undoes by re-creating (a new id):
+ *  - the portal restores (known): commit now; Undo restores the same id;
+ *  - not known yet (an older portal): hide the row and send the DELETE only
+ *    when the toast leaves without Undo; Undo then sends nothing.
+ *  A refused delete puts the row back and says so; a refused restore takes the
+ *  row out again and says so. Resolves once the sequence has settled. */
+export function runDelete(fx: DeleteEffects): Promise<DeleteOutcome> {
+  fx.hide();
+  return new Promise<DeleteOutcome>((resolve) => {
+    if (fx.knowsRestore()) {
+      const pending = fx.send();
+      let undone = false;
+      const dismiss = fx.toast(() => {
+        undone = true;
+        void undo();
+      });
+      pending.then(
+        (answer) => {
+          fx.learnRestore(undoKind(answer) === "restore");
+          if (!undone) {
+            fx.settled();
+            resolve("deleted");
+          }
+        },
+        (err) => {
+          dismiss();
+          fx.show();
+          // Undo pressed before the refusal came back: the row is simply back.
+          if (!undone) fx.failed("delete", err);
+          fx.settled();
+          resolve(undone ? "undone" : "rolled_back");
+        },
+      );
+      async function undo() {
+        let answer: unknown;
+        try {
+          answer = await pending;
+        } catch {
+          return; // the refusal above already put the row back
+        }
+        if (undoKind(answer) !== "restore") {
+          // Deleted for good on a portal that cannot restore: say so, never re-create.
+          fx.failed("restore", null);
+          fx.settled();
+          resolve("deleted");
+          return;
+        }
+        fx.show();
+        try {
+          await fx.restore();
+          resolve("restored");
+        } catch (err) {
+          fx.hide();
+          fx.failed("restore", err);
+          resolve("deleted");
+        } finally {
+          fx.settled();
+        }
+      }
+      return;
+    }
+    let decided = false;
+    fx.toast(
+      () => {
+        if (decided) return;
+        decided = true;
+        fx.show();
+        resolve("undone");
+      },
+      () => {
+        if (decided) return;
+        decided = true;
+        fx.send().then(
+          (answer) => {
+            fx.learnRestore(undoKind(answer) === "restore");
+            fx.settled();
+            resolve("deleted");
+          },
+          (err) => {
+            fx.show();
+            fx.failed("delete", err);
+            fx.settled();
+            resolve("rolled_back");
+          },
+        );
+      },
+    );
+  });
+}
+
+// ------------------------------------------------------------------ #2 lock toggle
+
+/** Lock or unlock with the screen updated first (quality bar 5.2): the new
+ *  state shows at once, the server's lock replaces it, a refusal puts the
+ *  previous lock back. `draft`: the server refused because the timeline is
+ *  still a draft the couple has not seen (offer "Release and lock"). */
+export async function runLockToggle(
+  before: RunsheetLock,
+  locked: boolean,
+  fx: { apply(lock: RunsheetLock): void; send(): Promise<{ lock: RunsheetLock | null }> },
+): Promise<{ ok: true; lock: RunsheetLock } | { ok: false; draft: boolean; err: unknown }> {
+  fx.apply({ ...before, locked });
+  try {
+    const res = await fx.send();
+    const lock = res && res.lock ? res.lock : { ...before, locked };
+    fx.apply(lock);
+    return { ok: true, lock };
+  } catch (err) {
+    fx.apply(before);
+    const reason = err && typeof err === "object" ? (err as { reason?: unknown }).reason : null;
+    return { ok: false, draft: reason === "draft", err };
+  }
+}
+
+/** The Idempotency-Key of one approval: the same request, the same choice and
+ *  the same version of the block give the same key, so a retry after a
+ *  timeout is the same approval (quality bar 5.4). The server takes
+ *  [A-Za-z0-9_-]{8,100}. */
+export function approveKey(r: Pick<ChangeRequest, "id" | "base">, opts: { applyAnyway?: boolean; asNew?: boolean } = {}): string {
+  const mode = opts.asNew ? "new" : opts.applyAnyway ? "any" : "ok";
+  const version = r.base?.updated_at ?? "";
+  // FNV-1a over the version stamp: short and in the allowed alphabet.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < version.length; i++) {
+    h ^= version.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  const id = r.id.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
+  return `ap-${id}-${mode}-${h.toString(16)}`;
 }
 
 // ------------------------------------------------------------------ #9 places

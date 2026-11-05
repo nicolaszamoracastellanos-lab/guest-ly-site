@@ -515,7 +515,7 @@ export const COPY = {
       seatingNum: (n: number) => `${n} sin mesa`,
       seatingDone: "Todos tienen mesa",
       runsheet: "Itinerario del día",
-      runsheetNum: (n: number) => plural(n, "1 bloque", "{n} bloques"),
+      runsheetNum: (n: number) => plural(n, "1 momento", "{n} momentos"),
       runsheetNone: "Sin armar",
       budgetNone: "Sin presupuesto",
       tasksSee: "Ver tareas",

@@ -38,6 +38,10 @@ export type ToastOptions = {
   icon?: IconName;
   /** How long it stays, in ms. Default 4000, 5000 with Undo (clamped 3000 to 8000). */
   ms?: number;
+  /** Runs once when the toast leaves without its Undo: its time ran out, a
+   *  newer toast replaced it, or it was closed. A deferred commit (the write
+   *  that has no restore, quality bar 5.3) is sent from here. */
+  onLeave?: () => void;
 };
 
 type ToastItem = { id: number; message: string } & ToastOptions;
@@ -59,8 +63,10 @@ const getCurrent = () => current;
 /** Show a toast. Returns a function that closes it early. */
 export function toast(message: string, options: ToastOptions = {}): () => void {
   const id = ++seq;
+  const replaced = current;
   current = { id, message, ...options };
   emit();
+  replaced?.onLeave?.();
   // VoiceOver and TalkBack read it without moving focus away from the work.
   AccessibilityInfo.announceForAccessibilityWithOptions?.(message, { queue: true });
   return () => dismissToast(id);
@@ -74,11 +80,14 @@ export function toastError(message: string): () => void {
   return toast(message, { icon: "warning", ms: 6000 });
 }
 
-/** Close the toast on screen (or only toast `id`, if it is still showing). */
-export function dismissToast(id?: number) {
+/** Close the toast on screen (or only toast `id`, if it is still showing).
+ *  `undone`: closed by its Undo, so its onLeave does not run. */
+export function dismissToast(id?: number, undone = false) {
   if (!current || (id !== undefined && current.id !== id)) return;
+  const leaving = current;
   current = null;
   emit();
+  if (!undone) leaving.onLeave?.();
 }
 
 // ------------------------------------------------------------------ lifts
@@ -229,7 +238,7 @@ export function ToastHost({ base, lift, modal }: { base?: number; lift?: DockLif
               accessibilityLabel={showing.undoLabel ?? c.undo}
               onPress={() => {
                 const run = latest.current?.undo;
-                dismissToast(showing.id);
+                dismissToast(showing.id, true);
                 run?.();
               }}
               style={({ pressed }) => [styles.undo, pressed && { opacity: 0.6 }]}

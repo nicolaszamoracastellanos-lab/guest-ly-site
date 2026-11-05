@@ -30,7 +30,7 @@ import {
   type BlockForm,
 } from "@/features/runsheet/hooks";
 import { lockView, newRequestKey, placesOn, proposalChanges } from "@/features/runsheet/core";
-import { RequestDiff, useChangeValue } from "@/features/runsheet/mw";
+import { LockedNotice, RequestDiff, useChangeValue } from "@/features/runsheet/mw";
 import { isLocked, useBlockActions } from "@/features/runsheet/actions";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
@@ -65,7 +65,7 @@ export default function EditBlock() {
   const lv = data ? lockView(data) : null;
   const withPlace = data ? placesOn(data) : false;
   const mode: "edit" | "request" | "read" = lv?.canEdit ? "edit" : lv?.canRequest ? "request" : "read";
-  const changes = block && current && mode === "request" ? proposalChanges(block, current, withPlace) : [];
+  const changes = block && current && mode === "request" ? proposalChanges(block, current, withPlace, lv?.canMark ?? false) : [];
   const show = useChangeValue({ vendors: data?.vendors, places: data?.places });
   // Typed changes not saved yet ask before leaving (lib/unsaved).
   const leave = useUnsavedGuard(!!(mode !== "read" && form && block && (JSON.stringify(form) !== JSON.stringify(formFromBlock(block)) || note.trim())));
@@ -85,6 +85,9 @@ export default function EditBlock() {
     } catch (err) {
       if (isLocked(err)) {
         // Locked meanwhile: read the lock, keep the typing, offer the request.
+        // The status goes back to the block's own: a request never carries a
+        // status (D28, the planner marks the locked timeline).
+        if (block) setForm({ ...current, status: block.status });
         setNotice(c.lockedMeanwhile);
         await qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
       } else {
@@ -138,7 +141,7 @@ export default function EditBlock() {
     if (!block) return;
     leave.release();
     back();
-    actions.deleteBlock(block, withPlace);
+    actions.deleteBlock(block);
   }
 
   return (
@@ -153,17 +156,13 @@ export default function EditBlock() {
           <Skeleton h={300} r={18} style={{ marginTop: 20 }} />
         ) : (
           <>
-            {notice && mode === "request" ? (
-              <T v="body15" color={colors.ivory70} style={{ marginTop: 10 }} testID="runsheet-locked-meanwhile">
-                {notice}
-              </T>
-            ) : null}
             <BlockFormFields
               form={current}
               onChange={setForm}
               vendors={data?.vendors ?? []}
               places={data?.places}
               disabled={mode === "read"}
+              statusEditable={mode === "edit"}
             />
             {mode === "request" ? (
               <>
@@ -199,6 +198,8 @@ export default function EditBlock() {
               </>
             ) : mode === "request" ? (
               <>
+                {/* Locked while this person typed: said where they pressed Save. */}
+                {notice ? <LockedNotice text={notice} /> : null}
                 <Button label={c.sendRequest} onPress={sendChange} loading={busy === "send"} disabled={!online || !!busy} style={{ marginTop: 22 }} testID="runsheet-send-request" />
                 <Button label={c.askRemove} kind="ghost" onPress={askRemove} loading={busy === "remove"} disabled={!online || !!busy} style={{ marginTop: 10 }} />
               </>

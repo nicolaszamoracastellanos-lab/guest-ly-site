@@ -26,6 +26,7 @@ import {
 } from "@/features/runsheet/hooks";
 import { lockView, newRequestKey, placesOn } from "@/features/runsheet/core";
 import { isLocked, useBlockActions } from "@/features/runsheet/actions";
+import { LockedNotice } from "@/features/runsheet/mw";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
 
@@ -85,6 +86,8 @@ export default function NewBlock() {
       if (request) toast(c.requestSent);
     } catch (err) {
       if (!request && isLocked(err)) {
+        // A request never carries a status (D28): a new moment starts planned.
+        setForm({ ...current, status: "planned" });
         setNotice(c.lockedMeanwhile);
         await qc.invalidateQueries({ queryKey: RUNSHEET_KEY });
       } else if (request) {
@@ -105,16 +108,12 @@ export default function NewBlock() {
     >
       <>
         <BigTitle title={request ? c.requestNew : c.newBlock} size={34} />
-        {notice && request ? (
-          <T v="body15" color={colors.ivory70} style={{ marginTop: 10 }}>
-            {notice}
-          </T>
-        ) : null}
         <BlockFormFields
           form={current}
           onChange={setForm}
           vendors={data?.vendors ?? []}
           places={data?.places}
+          statusEditable={!request}
         />
         {request ? (
           <View style={{ marginTop: 18 }}>
@@ -133,6 +132,8 @@ export default function NewBlock() {
             {error}
           </T>
         ) : null}
+        {/* Locked while this person typed: said where they pressed Save. */}
+        {notice && request ? <LockedNotice text={notice} /> : null}
         <Button
           label={request ? c.sendRequest : c.save}
           onPress={save}

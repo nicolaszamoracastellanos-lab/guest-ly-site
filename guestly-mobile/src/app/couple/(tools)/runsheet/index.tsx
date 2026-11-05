@@ -3,7 +3,7 @@
 // status change can be undone (v1.2, B4).
 // 1.4.0, each part only when the portal sends it (its flag on for the wedding):
 //  #2  the lock line; on a locked timeline rows open "Request a change", the
-//      header adds "Request a new block", the open requests sit above the days
+//      header adds "Request a new moment", the open requests sit below the days
 //      (Withdraw with Undo), and a person who may not mark sees D28's sentence
 //      and a plain status badge, never a control that would be refused;
 //  #9  the places of the day with Apple Maps and Google Maps (Add place and
@@ -161,8 +161,9 @@ export default function CoupleRunsheet() {
       }
       bottomInset={40}
     >
-      <BigTitle title={c.title} sub={c.intro} size={38} />
-      {data?.lock ? <LockLine lock={data.lock} hint={canRequest && !!data.blocks_total} markSentence={lv?.showMarkSentence ?? false} /> : null}
+      {/* Locked: the lock line carries the page's one helper sentence. */}
+      <BigTitle title={c.title} sub={lv?.locked ? undefined : c.intro} size={38} />
+      {data?.lock ? <LockLine lock={data.lock} hint={false} markSentence={lv?.showMarkSentence ?? false} /> : null}
       {error instanceof ApiFailure ? (
         <T v="body15" color={colors.ivory55} style={{ marginTop: 16 }}>
           {error.messages[lang]}
@@ -216,7 +217,7 @@ export default function CoupleRunsheet() {
             {data.blocks_total === 1
               ? c.block
               : fmt(c.blocks, { n: data.blocks_total })}
-            {canEdit ? ` · ${c.tapStatus}` : canRequest || lv?.locked ? "" : ` · ${c.readOnly}`}
+            {canEdit ? ` · ${c.tapStatus}` : canRequest ? ` · ${c.lockedHint}` : lv?.locked ? "" : ` · ${c.readOnly}`}
           </T>
           <RunsheetList
             data={data}

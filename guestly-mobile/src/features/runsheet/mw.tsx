@@ -68,30 +68,63 @@ export function LockLine({ lock, hint, markSentence }: { lock: RunsheetLock; hin
   );
 }
 
-/** The planner's lock control: the state in words and one button. */
-export function PlannerLockRow({ lock, busy, onToggle }: { lock: RunsheetLock; busy: boolean; onToggle: (locked: boolean) => void }) {
+/** "Your planner locked the timeline. Send this as a request." beside the
+ *  button the person just pressed (a save refused because the timeline was
+ *  locked meanwhile), with the warning mark. */
+export function LockedNotice({ text }: { text: string }) {
+  return (
+    <View style={{ marginTop: 18 }} testID="runsheet-locked-meanwhile">
+      <Row gap={8} align="flex-start">
+        <Icon name="warning" size={18} color={colors.amber} />
+        <T v="body15" color={colors.ivory} style={{ flex: 1 }} accessibilityLiveRegion="polite">
+          {text}
+        </T>
+      </Row>
+    </View>
+  );
+}
+
+/** The planner's lock control: the state in words and one button. A lock
+ *  refused because the timeline is still a draft stays as a line in the card
+ *  with "Release and lock" (persistent state is a page notice, not a toast). */
+export function PlannerLockRow({ lock, busy, draft, onToggle, onRelease }: { lock: RunsheetLock; busy: boolean; draft?: boolean; onToggle: (locked: boolean) => void; onRelease?: () => void }) {
   const c = useFeatureCopy(COPY);
   const { lang } = useLang();
   const date = lockDate(lock.at, lang);
+  const showDraft = !!draft && !lock.locked && lock.can_resolve && !!onRelease;
   return (
     <Card kind="solid" padding={14} style={{ marginTop: 14 }}>
       <Row gap={10} align="flex-start">
-        <Icon name="lock" size={20} color={lock.locked ? colors.ivory : colors.ivory55} />
+        <Icon name={lock.locked ? "lock" : "unlock"} size={20} color={lock.locked ? colors.ivory : colors.ivory55} />
         <T v="body15" color={colors.ivory} style={{ flex: 1 }} testID="planner-lock-line">
           {lock.locked ? (date ? fmt(c.plannerLockedLine, { date }) : c.plannerLockedNoDate) : c.openLine}
         </T>
       </Row>
+      {showDraft ? (
+        <View style={{ marginTop: 10 }} testID="planner-lock-draft">
+          <Row gap={10} align="flex-start">
+            <Icon name="warning" size={20} color={colors.amber} />
+            <T v="body15" color={colors.ivory70} style={{ flex: 1 }}>
+              {c.draftLock}
+            </T>
+          </Row>
+        </View>
+      ) : null}
       {lock.can_resolve ? (
-        <Button
-          label={lock.locked ? c.unlockTimeline : c.lockTimeline}
-          kind="glass"
-          small
-          icon="lock"
-          loading={busy}
-          onPress={() => onToggle(!lock.locked)}
-          style={{ marginTop: 12 }}
-          testID="planner-lock-toggle"
-        />
+        showDraft ? (
+          <Button label={c.releaseAndLock} kind="glass" small icon="lock" loading={busy} onPress={onRelease} style={{ marginTop: 12 }} testID="planner-lock-release" />
+        ) : (
+          <Button
+            label={lock.locked ? c.unlockTimeline : c.lockTimeline}
+            kind="glass"
+            small
+            icon={lock.locked ? "unlock" : "lock"}
+            loading={busy}
+            onPress={() => onToggle(!lock.locked)}
+            style={{ marginTop: 12 }}
+            testID="planner-lock-toggle"
+          />
+        )
       ) : null}
     </Card>
   );
@@ -338,7 +371,7 @@ export function MapButtons({ place }: { place: Pick<RunsheetPlace, "name" | "add
           accessibilityLabel={fmt(c.openIn, { name: place.name, app: c.appleMaps })}
           style={({ pressed }) => [styles.mapBtn, pressed && { opacity: 0.6 }]}
         >
-          <Icon name="apple" size={16} color={colors.ivory} />
+          <Icon name="map" size={16} color={colors.ivory} />
           <T v="body15">{c.appleMaps}</T>
         </Pressable>
       ) : null}

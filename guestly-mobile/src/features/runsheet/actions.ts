@@ -1,9 +1,10 @@
 // Couple runsheet writes that answer with a toast and an Undo.
-//  K7: a delete commits at once (the row leaves the list before the server
-//      answers); Undo restores the same block, same id, through
-//      POST /couple/runsheet/{id}/restore when the DELETE answered
-//      restorable: true, and records it again on an older portal. A refused
-//      delete puts the row back and says what failed.
+//  K7: the row leaves the list at once. On a portal that restores, the
+//      DELETE goes now and Undo restores the same block, same id, through
+//      POST /couple/runsheet/{id}/restore; on a portal not known to restore,
+//      the DELETE waits until the Undo toast leaves, so Undo sends nothing.
+//      A block is never re-created by Undo. A refused delete puts the row back
+//      and says what failed.
 //  #2: a change request (edit, add, remove) is sent once per tap of Send (an
 //      Idempotency-Key per draft); a removal request offers Undo (withdraw);
 //      withdrawing offers Undo (reopen).
@@ -15,10 +16,16 @@ import { ApiFailure, del, post } from "@/lib/api";
 import { failedText } from "@/features/shared/requests";
 import { toast, toastError } from "@/ui";
 import { COPY } from "./copy";
-import { requestBody, undoKind, type ChangeRequest } from "./core";
-import { RUNSHEET_KEY, formFromBlock, toBody, type RunsheetBlock, type RunsheetSurface } from "./hooks";
+import { requestBody, runDelete, type ChangeRequest } from "./core";
+import { RUNSHEET_KEY, type RunsheetBlock, type RunsheetSurface } from "./hooks";
 
 export const isLocked = (err: unknown) => err instanceof ApiFailure && err.code === "runsheet_locked";
+
+// This portal restores deleted blocks: a DELETE answered restorable: true
+// once in this run of the app. A payload carrying a wave key (lock, requests,
+// places) comes from a portal with K7 too (the same lane shipped it first).
+let portalRestores = false;
+const wavePortal = (s: RunsheetSurface | undefined) => !!s && (s.lock !== undefined || s.requests !== undefined || s.places !== undefined);
 
 function without(cur: RunsheetSurface | undefined, id: string): RunsheetSurface | undefined {
   if (!cur) return cur;
@@ -51,40 +58,31 @@ export function useBlockActions() {
   const { lang } = useLang();
   const qc = useQueryClient();
 
-  /** Deletes now, Undo for a few seconds. Call after leaving the block's screen. */
-  function deleteBlock(b: RunsheetBlock, withPlace: boolean) {
-    const prev = qc.getQueryData<RunsheetSurface>(RUNSHEET_KEY);
-    qc.setQueryData<RunsheetSurface | undefined>(RUNSHEET_KEY, (cur) => without(cur, b.id));
-    const done = del<{ deleted: boolean; restorable?: boolean }>(`/couple/runsheet/${b.id}`);
-    const dismiss = toast(fmt(c.deleted, { title: b.title }), { undo: () => void undo(done) });
-    done.then(
-      () => refresh(qc),
-      (err) => {
-        dismiss();
-        qc.setQueryData<RunsheetSurface | undefined>(RUNSHEET_KEY, (cur) => withBlock(cur ?? prev, b));
-        toastError(isLocked(err) ? c.lockedContent : failedText(fmt(c.deleteFailed, { title: b.title }), err, lang));
-        refresh(qc);
+  /** Deletes with Undo for a few seconds (runDelete in core.ts: commit now and
+   *  restore the same id on a portal that restores; otherwise the DELETE waits
+   *  for the toast to leave). Call after leaving the block's screen. */
+  function deleteBlock(b: RunsheetBlock) {
+    const surface = qc.getQueryData<RunsheetSurface>(RUNSHEET_KEY);
+    void runDelete({
+      hide: () => qc.setQueryData<RunsheetSurface | undefined>(RUNSHEET_KEY, (cur) => without(cur, b.id)),
+      show: () => qc.setQueryData<RunsheetSurface | undefined>(RUNSHEET_KEY, (cur) => withBlock(cur ?? surface, b)),
+      send: () => del<{ deleted: boolean; restorable?: boolean }>(`/couple/runsheet/${b.id}`),
+      restore: () => post(`/couple/runsheet/${b.id}/restore`),
+      toast: (undo, onLeave) => toast(fmt(c.deleted, { title: b.title }), { undo, onLeave }),
+      failed: (what, err) =>
+        toastError(
+          isLocked(err)
+            ? c.lockedContent
+            : what === "delete"
+              ? failedText(fmt(c.deleteFailed, { title: b.title }), err, lang)
+              : failedText(fmt(c.restoreFailed, { title: b.title }), err, lang),
+        ),
+      settled: () => refresh(qc),
+      knowsRestore: () => portalRestores || wavePortal(surface),
+      learnRestore: (v) => {
+        if (v) portalRestores = true;
       },
-    );
-
-    async function undo(pending: Promise<unknown>) {
-      let answer: unknown;
-      try {
-        answer = await pending;
-      } catch {
-        return; // the delete itself failed: the row is already back
-      }
-      qc.setQueryData<RunsheetSurface | undefined>(RUNSHEET_KEY, (cur) => withBlock(cur, b));
-      try {
-        if (undoKind(answer) === "restore") await post(`/couple/runsheet/${b.id}/restore`);
-        else await post("/couple/runsheet", toBody(formFromBlock(b), withPlace));
-      } catch (err) {
-        qc.setQueryData<RunsheetSurface | undefined>(RUNSHEET_KEY, (cur) => without(cur, b.id));
-        toastError(isLocked(err) ? c.lockedContent : failedText(fmt(c.restoreFailed, { title: b.title }), err, lang));
-      } finally {
-        refresh(qc);
-      }
-    }
+    });
   }
 
   /** Sends a change request. Resolves to the request, or throws ApiFailure. */

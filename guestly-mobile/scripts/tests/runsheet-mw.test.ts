@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  approveKey,
   approveOutcome,
   glamSummary,
   glamWarningParts,
@@ -163,11 +164,29 @@ test("#2 lock date as people say it", () => {
   assert.equal(lockDate("garbage", "en"), null);
 });
 
-test("K7 Undo: restore the same id only when the delete said restorable", () => {
+test("K7 Undo: restore the same id only when the delete said restorable, never re-create", () => {
   assert.equal(undoKind({ deleted: true, restorable: true }), "restore");
-  assert.equal(undoKind({ deleted: true, restorable: false }), "recreate");
-  assert.equal(undoKind({ deleted: true }), "recreate");
-  assert.equal(undoKind(null), "recreate");
+  assert.equal(undoKind({ deleted: true, restorable: false }), "none");
+  assert.equal(undoKind({ deleted: true }), "none");
+  assert.equal(undoKind(null), "none");
+});
+
+test("#2 a request never carries a status the person may not mark (D28)", () => {
+  const b = blocks(couple14)[0] as never as Parameters<typeof proposalChanges>[0] & { status: string };
+  const form = { ...(b as object), ends_at: (b as { ends_at: string | null }).ends_at ?? "", vendor_id: (b as { vendor_id: string | null }).vendor_id ?? "", place_id: "", status: b!.status === "done" ? "planned" : "done" } as never;
+  assert.ok(proposalChanges(b, form, false, true).some((ch) => ch.field === "status"));
+  assert.ok(!proposalChanges(b, form, false, false).some((ch) => ch.field === "status"));
+});
+
+test("#2 approve: one Idempotency-Key per request, choice and block version", () => {
+  const r = { id: "4f1c2a3b-0000-4000-8000-1234567890ab", base: { updated_at: "2026-11-05T15:20:00.123+00:00" } } as never;
+  const k = approveKey(r);
+  assert.equal(k, approveKey(r), "a retry after a timeout reuses the key");
+  assert.match(k, /^[A-Za-z0-9_-]{8,100}$/, "the server's key alphabet");
+  assert.notEqual(k, approveKey(r, { applyAnyway: true }));
+  assert.notEqual(k, approveKey(r, { asNew: true }));
+  assert.notEqual(k, approveKey({ id: (r as { id: string }).id, base: { updated_at: "2026-11-05T15:21:00+00:00" } } as never), "a newer block version is a new approval");
+  assert.match(approveKey({ id: "x", base: null } as never), /^[A-Za-z0-9_-]{8,100}$/);
 });
 
 test("#9 places: on with the key, server links kept, block place resolves", () => {
@@ -264,6 +283,12 @@ test("copy: EN and ES keys and placeholders match; no dashes, no exclamation, no
   assert.equal(COPY.es.hmu, "Peinado y maquillaje");
   assert.ok(!/glam|HMU/i.test(Object.values(en).concat(Object.values(es)).join("\n")));
   assert.ok(!/bloquear/i.test(Object.values(es).join("\n")));
+  // One name for one thing, as the portal and the glossary: cronograma and
+  // momento, moment in English (never guion, bloque, block).
+  assert.equal(COPY.es.title, "Cronograma del día");
+  assert.equal(COPY.es.addBlock, "Agregar momento");
+  assert.ok(!/guion|bloque/i.test(Object.values(es).join("\n")), "no guion or bloque");
+  assert.ok(!/\bblocks?\b/i.test(Object.values(en).join("\n")), "no block in English");
 });
 
 test("screens: flags hide places, delete has no confirm, Undo uses restore, locked refusals use the one sentence", () => {
@@ -274,7 +299,20 @@ test("screens: flags hide places, delete has no confirm, Undo uses restore, lock
   for (const s of [couple, planner]) assert.match(s, /featureOn\(me, "MW_PLACES"\)/);
   assert.doesNotMatch(detail, /Alert\.alert/);
   assert.match(actions, /\/couple\/runsheet\/\$\{b\.id\}\/restore/);
-  assert.match(actions, /undoKind\(answer\) === "restore"/);
+  assert.match(actions, /runDelete\(/);
+  // Undo never records the block again (a new id): no POST of the block body.
+  assert.doesNotMatch(actions, /post\("\/couple\/runsheet",/);
+  // Request and read modes show the status as a badge (D28).
+  assert.match(detail, /statusEditable=\{mode === "edit"\}/);
+  assert.match(src("src/app/couple/(tools)/runsheet/new.tsx"), /statusEditable=\{!request\}/);
+  // The Apple logo is for Sign in with Apple only, never a Maps button.
+  assert.doesNotMatch(src("src/features/runsheet/mw.tsx"), /name="apple"/);
+  assert.doesNotMatch(src("src/app/guest/schedule.tsx"), /icon="apple"/);
+  // Unlock shows the open lock.
+  assert.match(src("src/features/runsheet/mw.tsx"), /lock\.locked \? "unlock" : "lock"/);
+  // The draft refusal is a line in the lock card, not a passing toast.
+  assert.doesNotMatch(planner, /c\.draftLock/);
+  assert.match(planner, /approveKey\(r, opts\)/);
   assert.match(couple, /isLocked\(err\) \? c\.lockedStatus/);
   assert.match(actions, /"Idempotency-Key": key/);
   // Maps open by deep link (https universal links), no map SDK or key.

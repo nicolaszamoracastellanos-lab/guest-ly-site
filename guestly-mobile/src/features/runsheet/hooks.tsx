@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import {
-  T,
+  Badge,
   Input,
   Segmented,
   SectionLabel,
@@ -17,7 +17,6 @@ import {
   ChipRow,
 } from "@/ui";
 import { DateInput, TimeInput } from "@/ui/Pickers";
-import { colors } from "@/ui/tokens";
 import { COPY } from "./copy";
 import type { ChangeRequest, GlamSlot, GlamWarning, RunsheetLock, RunsheetPlace } from "./core";
 
@@ -174,6 +173,7 @@ export function BlockFormFields({
   vendors,
   places,
   disabled = false,
+  statusEditable = true,
 }: {
   form: BlockForm;
   onChange: (f: BlockForm) => void;
@@ -182,6 +182,10 @@ export function BlockFormFields({
   places?: RunsheetPlace[];
   /** Read-only role: the fields show the block but do not change. */
   disabled?: boolean;
+  /** The status control shows only when this person may change it here (an
+   *  open timeline). A request on a locked timeline, or a read-only role,
+   *  sees the status as a plain badge (D28: the planner marks it). */
+  statusEditable?: boolean;
 }) {
   const c = useFeatureCopy(COPY);
   const [vendorOpen, setVendorOpen] = useState(false);
@@ -228,14 +232,20 @@ export function BlockFormFields({
       <View>
         <SectionLabel>{c.status}</SectionLabel>
         <View style={{ marginTop: 6 }}>
-          <Segmented<RunsheetStatus>
-            value={form.status}
-            options={STATUS_ORDER.map((s) => ({
-              value: s,
-              label: c.statuses[s],
-            }))}
-            onChange={(v) => set({ status: v })}
-          />
+          {statusEditable && !disabled ? (
+            <Segmented<RunsheetStatus>
+              value={form.status}
+              options={STATUS_ORDER.map((s) => ({
+                value: s,
+                label: c.statuses[s],
+              }))}
+              onChange={(v) => set({ status: v })}
+            />
+          ) : (
+            <View style={{ alignSelf: "flex-start" }} testID="runsheet-status-badge">
+              <Badge label={c.statuses[form.status]} kind={statusKind(form.status)} />
+            </View>
+          )}
         </View>
       </View>
       {places && places.length ? (
@@ -341,9 +351,6 @@ export function BlockFormFields({
           }}
         />
       </View>
-      <T v="meta13" color={colors.ivory40}>
-        {c.endHint}: {c.end}
-      </T>
     </Stack>
   );
 }

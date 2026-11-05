@@ -222,7 +222,7 @@ function EventSheet({ event, onClose, onDress }: { event: ScheduleEvent | null; 
             {/* #9: with places on, both apps by deep link; otherwise the one Maps button. */}
             {e.apple_maps_url ? (
               <>
-                <Button label={g.directions.appleMaps} icon="apple" onPress={() => openUrlSafe(e.apple_maps_url, fail)} />
+                <Button label={g.directions.appleMaps} icon="map" onPress={() => openUrlSafe(e.apple_maps_url, fail)} />
                 {e.maps_url && !/maps\.apple\.com/i.test(e.maps_url) ? <Button label={g.directions.googleMaps} icon="map" kind="glass" onPress={() => openUrlSafe(e.maps_url, fail)} /> : null}
               </>
             ) : e.maps_url ? (

@@ -1,7 +1,8 @@
 // The planner's runsheet: the couple's day, read-only, as on the web.
 // 1.4.0, each part only when the portal sends it (its flag on for the wedding):
 //  #2  the lock: "Lock timeline" / "Unlock timeline" commits at once with Undo
-//      (a draft offers "Release and lock"); the couple's change requests with
+//      (a draft: the card says so and offers "Release and lock"); the couple's
+//      change requests with
 //      Approve and Decline (optional note). A block that changed after the
 //      request stays with both versions and "Apply anyway"; a deleted block
 //      offers "Add as a new block". Read-only planners see the list only.
@@ -37,7 +38,7 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/runsheet/copy";
 import { usePlannerRunsheet, PLANNER_RUNSHEET_KEY, type RunsheetSurface } from "@/features/runsheet/hooks";
 import { RunsheetList } from "@/features/runsheet/list";
-import { approveOutcome, newRequestKey, openRequests, placesOn, requestsByBlock, type ChangeRequest, type FieldChange, type RunsheetLock } from "@/features/runsheet/core";
+import { approveKey, approveOutcome, openRequests, runLockToggle, placesOn, requestsByBlock, type ChangeRequest, type FieldChange, type RunsheetLock } from "@/features/runsheet/core";
 import { PlacesSection, PlannerLockRow, RequestList, useChangeValue } from "@/features/runsheet/mw";
 import { useSafeBack } from "@/lib/nav";
 import { useRouter } from "expo-router";
@@ -64,6 +65,7 @@ export default function PlannerRunsheet() {
   const liveButton = packOn && pack.entry ? <IconButton name="clock" label={live.openLive} onPress={() => router.push("/planner/dayof" as never)} testID="runsheet-open-live" /> : null;
 
   const [lockBusy, setLockBusy] = useState(false);
+  const [draft, setDraft] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [stale, setStale] = useState<Stale | null>(null);
   const [declining, setDeclining] = useState<ChangeRequest | null>(null);
@@ -83,23 +85,22 @@ export default function PlannerRunsheet() {
     const before = data?.lock;
     if (!before) return;
     setLockBusy(true);
-    patch((cur) => ({ ...cur, lock: { ...before, locked } }));
-    try {
-      const res = await post<{ lock: RunsheetLock | null }>("/planner/runsheet/lock", { locked, ...(release ? { release: true } : {}) });
-      if (res.lock) patch((cur) => ({ ...cur, lock: res.lock as RunsheetLock }));
+    const res = await runLockToggle(before, locked, {
+      apply: (lock) => patch((cur) => ({ ...cur, lock })),
+      send: () => post<{ lock: RunsheetLock | null }>("/planner/runsheet/lock", { locked, ...(release ? { release: true } : {}) }),
+    });
+    if (res.ok) {
+      setDraft(false);
       toast(locked ? c.timelineLocked : c.timelineUnlocked, undoable ? { undo: () => void setLock(!locked, false, false) } : {});
-    } catch (err) {
-      patch((cur) => ({ ...cur, lock: before }));
-      if (err instanceof ApiFailure && err.reason === "draft") {
-        // The couple has not seen the draft yet: offer to share and lock in one go.
-        toast(c.draftLock, { icon: "warning", ms: 8000, undoLabel: c.releaseAndLock, undo: () => void setLock(true, true) });
-      } else {
-        toastError(failedText(locked ? c.fail.lock : c.fail.unlock, err, lang));
-      }
-    } finally {
-      setLockBusy(false);
-      refresh();
+    } else if (res.draft) {
+      // The couple has not seen the draft yet: the card says so and offers
+      // "Release and lock" until it is done (a state, not a passing toast).
+      setDraft(true);
+    } else {
+      toastError(failedText(locked ? c.fail.lock : c.fail.unlock, res.err, lang));
     }
+    setLockBusy(false);
+    refresh();
   }
 
   async function approve(r: ChangeRequest, opts: { applyAnyway?: boolean; asNew?: boolean } = {}) {
@@ -107,7 +108,7 @@ export default function PlannerRunsheet() {
     const prev = data;
     dropRequest(r.id);
     try {
-      await post(`/planner/runsheet/requests/${r.id}/approve`, { ...(opts.applyAnyway ? { apply_anyway: true } : {}), ...(opts.asNew ? { as_new: true } : {}) }, { headers: { "Idempotency-Key": newRequestKey() } });
+      await post(`/planner/runsheet/requests/${r.id}/approve`, { ...(opts.applyAnyway ? { apply_anyway: true } : {}), ...(opts.asNew ? { as_new: true } : {}) }, { headers: { "Idempotency-Key": approveKey(r, opts) } });
       setStale(null);
       toast(fmt(c.requestApproved, { title: r.title }));
     } catch (err) {
@@ -198,7 +199,7 @@ export default function PlannerRunsheet() {
           {c.pendingDb}
         </T>
       ) : null}
-      {lock && (lock.locked || resolver) ? <PlannerLockRow lock={online ? lock : { ...lock, can_resolve: false }} busy={lockBusy} onToggle={(v) => void setLock(v)} /> : null}
+      {lock && (lock.locked || resolver) ? <PlannerLockRow lock={online ? lock : { ...lock, can_resolve: false }} busy={lockBusy} draft={draft} onToggle={(v) => void setLock(v)} onRelease={() => void setLock(true, true)} /> : null}
       {data ? (
         <RequestList
           requests={requests}
