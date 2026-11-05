@@ -3,9 +3,13 @@
    in src/. Permitted symbols stay permitted: the diamond (U+2726), the
    checkmark (U+2713), the cross (U+2715) and ordinary typographic marks.
    Also lints the generated AI facts files (#48: llms.txt, llms-full.txt,
-   es/llms.txt) in dist/ and their published copies at the repo root, when
-   present, with the house rules in scripts/lib/copy-rules.mjs (dashes,
+   es/llms.txt) with the house rules in scripts/lib/copy-rules.mjs (dashes,
    emoji, exclamation, buzzwords, brand spelling).
+   With --dist <dir> (the build and test-llms) only the files in that dir
+   are linted: a run lints what it just generated, so a stale published
+   copy at the repo root can neither fail the build nor change the count.
+   With no --dist (CI and npm run lint:copy) it lints cinematic/dist and the
+   published copies at the repo root, when present.
    Usage: node scripts/lint-copy.mjs [--dist <dir>] */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -51,9 +55,10 @@ for (const file of walk(srcDir)) {
   });
 }
 
-/* Generated text files, in the build output and as published at the root. */
+/* Generated text files: the given --dist only, else dist and the root. */
+const generatedDirs = distArg > 0 ? [distDir] : [distDir, join(cinematicDir, '..')];
 let generated = 0;
-for (const dir of [distDir, join(cinematicDir, '..')]) {
+for (const dir of generatedDirs) {
   for (const name of GENERATED) {
     const file = join(dir, name);
     if (!existsSync(file)) continue;

@@ -269,7 +269,7 @@ if (real) {
   /* lint-copy on the generated files, then with a planted em dash. */
   const lint = (dir) => spawnSync(process.execPath, [join(CINEMATIC, 'scripts', 'lint-copy.mjs'), '--dist', dir], { encoding: 'utf8' });
   const clean = lint(outBefore);
-  check(clean.status === 0 && /3 generated text file/.test(clean.stdout), `lint-copy on the generated files: ${clean.stdout}${clean.stderr}`);
+  check(clean.status === 0 && /\b3 generated text file/.test(clean.stdout), `lint-copy on the generated files: ${clean.stdout}${clean.stderr}`);
   writeFileSync(join(outAfter, 'es', 'llms.txt'), readFileSync(join(outAfter, 'es', 'llms.txt'), 'utf8') + 'Planted — dash\n');
   check(lint(outAfter).status === 1, 'lint-copy passed a planted em dash in es/llms.txt');
 }
