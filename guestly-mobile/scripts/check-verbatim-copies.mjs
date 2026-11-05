@@ -12,8 +12,9 @@
 // The portal file is the reviewed source: change it there, then copy it here.
 // A one-character difference fails (exit 1) and prints the first differing line.
 // Paths: GL_APP_DIR (default: this app, the folder above scripts/) and
-// GL_PORTAL_DIR (default /Users/nicolas_z/gl-mw/l0, the Lane 0 worktree, until
-// Lane 0 merges into mw/integration). When the portal folder is missing (a
+// GL_PORTAL_DIR (default /Users/nicolas_z/gl-mw/integration, the reviewed and
+// merged portal; the same default as scripts/tests/token-parity.test.ts, a test
+// keeps the two equal). When the portal folder is missing (a
 // machine or CI without a portal checkout) every pair is skipped with a
 // warning; when one side of a pair is missing (a module not written yet) that
 // pair is skipped with a warning. Skips exit 0. `npm test` runs this first.
@@ -33,7 +34,7 @@ export const PAIRS = [
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(process.env.GL_APP_DIR || path.join(here, ".."));
-const portalDir = path.resolve(process.env.GL_PORTAL_DIR || "/Users/nicolas_z/gl-mw/l0");
+const portalDir = path.resolve(process.env.GL_PORTAL_DIR || "/Users/nicolas_z/gl-mw/integration");
 
 const isDir = (p) => existsSync(p) && statSync(p).isDirectory();
 const isFile = (p) => existsSync(p) && statSync(p).isFile();

@@ -7,7 +7,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -84,6 +84,19 @@ try {
   const appLine = /^app:\s+(.+)$/m.exec(r.stdout);
   assert.ok(appLine, r.stdout);
   assert.equal(appLine[1], path.resolve(fileURLToPath(new URL("../..", import.meta.url))));
+
+  // 7. Default portal: the integration worktree, the same one token-parity reads.
+  // A drift check against a lane worktree would compare with unmerged work.
+  const env = { ...process.env, GL_APP_DIR: app };
+  delete env.GL_PORTAL_DIR;
+  r = spawnSync(process.execPath, [checker], { env, encoding: "utf8" });
+  const portalLine = /^portal:\s+(.+)$/m.exec(r.stdout);
+  assert.ok(portalLine, r.stdout);
+  const paritySrc = readFileSync(fileURLToPath(new URL("./token-parity.test.ts", import.meta.url)), "utf8");
+  const parityDefault = /process\.env\.GL_PORTAL_DIR \|\| "([^"]+)"/.exec(paritySrc);
+  assert.ok(parityDefault, "token-parity.test.ts has a GL_PORTAL_DIR default");
+  assert.equal(portalLine[1], path.resolve(parityDefault[1]), "verbatim check and token parity use the same portal");
+  assert.equal(portalLine[1], "/Users/nicolas_z/gl-mw/integration");
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }
