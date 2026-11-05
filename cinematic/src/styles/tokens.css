@@ -26,9 +26,11 @@
   --glass-blur: 18px;
 
   /* Type */
-  --font-display: 'Playfair Display', serif;
-  --font-serif: 'EB Garamond', serif;
-  --font-ui: 'Inter', system-ui, sans-serif;
+  /* Faces in fonts.css (self-hosted, D4); the Fallback faces hold the
+     layout while they load. */
+  --font-display: 'Playfair Display', 'Playfair Display Fallback', serif;
+  --font-serif: 'EB Garamond', 'EB Garamond Fallback', serif;
+  --font-ui: 'Inter', 'Inter Fallback', system-ui, sans-serif;
 
   --text-hero: clamp(3rem, 9vw, 8.5rem);
   --text-h2: clamp(2rem, 5vw, 4.25rem);

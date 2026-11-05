@@ -4,8 +4,9 @@
    Covers every prerendered page at 390 and 1440, scrolled to the end so
    lazy chunks load.
    Usage: node scripts/check-origins.mjs <baseUrl> [--report-only]
-   Until the D4 font self-hosting lands, Google Fonts is the known miss:
-   --report-only prints the findings and exits 0. */
+   Since D4 (self-hosted fonts) the landing has no known miss: run it
+   without --report-only, which only prints findings and exits 0. The order
+   form's FormSubmit post is not on load and is not exercised here. */
 
 import { chromium } from 'playwright';
 

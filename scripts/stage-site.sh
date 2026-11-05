@@ -33,6 +33,9 @@ REQUIRED=(
 
 # Standard web-root files: published when present, skipped when absent.
 OPTIONAL=(
+  fonts                 # self-hosted woff2 and their OFL licenses (D4; cinematic/public/fonts).
+                        # Required by the check below as soon as the page uses them; optional
+                        # only so a push of source before its build still stages.
   .well-known           # apple-app-site-association and similar
   .nojekyll
   robots.txt            # crawler rules: allow all, points to the sitemap (cinematic/public).
@@ -80,6 +83,14 @@ done
 for p in "${OPTIONAL[@]}"; do
   [ -e "$p" ] && copy "$p"
 done
+
+# Every /fonts/ file the staged pages or CSS name must be staged too, so a
+# build that uses the self-hosted fonts never publishes without them.
+missing_fonts=no
+for f in $(grep -rhoE "/fonts/[A-Za-z0-9._-]+" "$OUT" --include='*.html' --include='*.css' | sort -u); do
+  [ -f "$OUT$f" ] || { echo "stage-site: $f is used by the site but not staged (build cinematic and copy it in)" >&2; missing_fonts=yes; }
+done
+[ "$missing_fonts" = no ] || exit 1
 
 find "$OUT" -name .DS_Store -delete
 echo "stage-site: $(find "$OUT" -type f | wc -l | tr -d ' ') files staged in $OUT"
