@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import { copy } from './src/copy.ts'
 import { JSON_LD_MARKER, jsonLdScripts } from './src/seo/jsonld.ts'
 import { resolveSwitches } from './src/switches.ts'
-import { loadGuideDestinations } from './scripts/lib/guide-destinations.mjs'
 
 /* Writes the JSON-LD blocks into index.html from the EN copy, so the
    offers and FAQ that search and AI engines read are the ones on the page. */
@@ -37,10 +36,9 @@ const LIVE_SCREENS_MODULE = process.env.GL_LIVE_SCREENS_MODULE ?? ''
 /* #22 DEMO BOOKING and #50 DESTINATION GUIDES: the switches live in
    src/switches.ts (both false today). They are written into the build as
    literals, so a switch that is off removes its components, its lazy chunk
-   and every request to the API. The guides list is read from the portal's
-   destinations dataset only while GUIDES_ENABLED is on. */
+   and every request to the API. The guides themselves are never in the
+   build: the section reads them from the API's catalogue (D24). */
 const SWITCHES = resolveSwitches(process.env)
-const GUIDE_DESTINATIONS = SWITCHES.guides ? loadGuideDestinations().list : []
 
 /* A switch that is off also drops its stylesheet: a CSS import is a side
    effect, so the bundler would keep it even after the component is gone.
@@ -74,6 +72,5 @@ export default defineConfig({
     'import.meta.env.VITE_BOOKING_ENABLED': JSON.stringify(SWITCHES.booking),
     'import.meta.env.VITE_GUIDES_ENABLED': JSON.stringify(SWITCHES.guides),
     'import.meta.env.VITE_GL_API_ORIGIN': JSON.stringify(SWITCHES.booking || SWITCHES.guides ? SWITCHES.apiOrigin : ''),
-    'import.meta.env.VITE_GUIDE_DESTINATIONS': JSON.stringify(GUIDE_DESTINATIONS),
   },
 })

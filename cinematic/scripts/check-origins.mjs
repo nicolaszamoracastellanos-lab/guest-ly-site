@@ -6,8 +6,9 @@
    The allowlist, by host and path:
    - the site itself: the server under test, guest-ly.com, www.guest-ly.com;
    - app.guest-ly.com (src/switches.ts API_ORIGIN), only on the paths the
-     landing calls: /api/public/booking/ (#22), /api/public/guides/ (#50)
-     and /api/site/t (#23 beacon). Any other path there fails;
+     landing calls: /api/public/booking/ (#22), /api/public/guides and what
+     is under it (#50, the catalogue and the request), and /api/site/t (#23
+     beacon). Any other path there fails;
    - alexnico.guest-ly.com/.netlify/functions/demo-chat, the hero's live
      demo chat (on typing only, never on load).
    Nothing else, so a new origin has to be added here, with its reason.
@@ -21,7 +22,7 @@
 
 import { chromium } from 'playwright';
 import { API_ORIGIN, API_PATHS } from '../src/switches.ts';
-import { bookedBody, slotsBody } from './lib/booking-stub.mjs';
+import { bookedBody, slotsBody, catalogueBody } from './lib/booking-stub.mjs';
 
 const args = process.argv.slice(2);
 const base = args.find((a) => !a.startsWith('--')) || 'http://localhost:4173';
@@ -47,7 +48,7 @@ export function allowed(url) {
   if (u.protocol === 'data:' || u.protocol === 'blob:') return true;
   if (SITE_HOSTS.has(u.host)) return true;
   const paths = ALLOWED_PATHS.get(u.host);
-  return Boolean(paths && u.protocol === 'https:' && paths.some((p) => u.pathname.startsWith(p)));
+  return Boolean(paths && u.protocol === 'https:' && paths.some((p) => (p.endsWith('/') ? u.pathname.startsWith(p) : u.pathname === p || u.pathname.startsWith(`${p}/`))));
 }
 
 const offOrigin = new Map();
@@ -65,7 +66,8 @@ async function answerApi(route) {
     const start = JSON.parse(req.postData() || '{}').start;
     return route.fulfill({ status: 201, headers, json: bookedBody(API_ORIGIN, start) });
   }
-  if (u.pathname === '/api/public/guides/request') return route.fulfill({ status: 202, headers, json: { v: 1, ok: true, status: 'sent' } });
+  if (u.pathname === '/api/public/guides') return route.fulfill({ status: 200, headers, json: catalogueBody('open') });
+  if (u.pathname === '/api/public/guides/request') return route.fulfill({ status: 200, headers, json: { v: 1, ok: true, status: 'sent' } });
   return route.fulfill({ status: 204, headers });
 }
 

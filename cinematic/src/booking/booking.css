@@ -1,6 +1,12 @@
 /* #22 booking dialog (lazy chunk). Builds on the order wizard's sheet
    (.wiz, .wiz__close, .wiz__title, .field) so both dialogs look alike. */
 
+/* Above the order wizard: "Questions before you pay?" opens this dialog on
+   top of the wizard's confirmation, which stays open underneath. */
+.wiz-backdrop.book-backdrop {
+  z-index: 60;
+}
+
 .book__title {
   margin-right: 3rem;
 }

@@ -11,9 +11,12 @@
 
    GUIDES_ENABLED (#50 destination guides). false: the guides section is not
    rendered and its code is not in the build. Going live: true here and
-   rebuild, once POST /api/public/guides/request is deployed and released.
-   The destinations come from the portal's destinations dataset at build
-   time (scripts/lib/guide-destinations.mjs).
+   rebuild, once the guides API (GET /api/public/guides and POST
+   /api/public/guides/request, L7P-LOG "Guides API for the landing") is
+   deployed and MW_GUIDES released. The guides and the tips sentence come
+   from that catalogue at run time; none of them is in the landing (D24).
+   Either switch on must still fit the 100 KB initial JS budget
+   (scripts/check-seo.mjs fails the build otherwise).
 
    vite.config.ts writes both into the build as literals
    (import.meta.env.VITE_BOOKING_ENABLED, VITE_GUIDES_ENABLED), so false
@@ -23,9 +26,11 @@ export const BOOKING_ENABLED: boolean = false;
 export const GUIDES_ENABLED: boolean = false;
 
 /* The one origin both features call. check-origins.mjs allows it, and only
-   its /api/public/booking/ and /api/public/guides/ paths. */
+   these paths: a path ending in "/" covers what is under it, one without
+   covers itself and what is under it (/api/public/guides is the guides
+   catalogue, /api/public/guides/request the request). */
 export const API_ORIGIN = 'https://app.guest-ly.com';
-export const API_PATHS = ['/api/public/booking/', '/api/public/guides/'] as const;
+export const API_PATHS = ['/api/public/booking/', '/api/public/guides'] as const;
 
 export type Switches = { booking: boolean; guides: boolean; apiOrigin: string };
 

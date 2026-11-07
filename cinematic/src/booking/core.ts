@@ -293,7 +293,16 @@ export function whenLabel(iso: string, tz: string, lang: Lang): string {
   return `${dayLong(dayOf(iso, tz), lang)}, ${timeLabel(iso, tz, lang)}`;
 }
 
+/* A random id. crypto.randomUUID is missing before Safari 15.4 and Chrome 92
+   and on plain http pages, so fall back to getRandomValues, then Math.random
+   (the beacon's pattern): a missing API must never throw inside a render. */
+export function randomId(c: Partial<Pick<Crypto, 'randomUUID' | 'getRandomValues'>> | null = globalThis.crypto ?? null): string {
+  if (typeof c?.randomUUID === 'function') return c.randomUUID();
+  if (typeof c?.getRandomValues === 'function') return Array.from(c.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+}
+
 /* One key per opening of the booking dialog (contract: 8 to 80 of A-Za-z0-9_-). */
-export function newKey(rand: () => string = () => crypto.randomUUID()): string {
+export function newKey(rand: () => string = randomId): string {
   return rand().replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80).padEnd(8, '0');
 }

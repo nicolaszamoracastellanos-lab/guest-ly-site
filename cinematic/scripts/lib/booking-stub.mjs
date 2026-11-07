@@ -1,6 +1,7 @@
 /* A local stand-in for the booking and guides API on app.guest-ly.com, shaped
-   exactly like L7P-LOG "Booking API for the landing" (v1) and L7-LOG "Guides
-   API for the landing" (v1, proposed). Used by scripts/test-booking.mjs and
+   exactly like L7P-LOG "Booking API for the landing" (v1) and "Guides API for
+   the landing" (v1, fixed Nov 5; parser src/lib/guides/core.ts
+   parseGuideRequest on mw/l7p-landing-server). Used by scripts/test-booking.mjs and
    scripts/booking-screens.mjs, and by check-origins.mjs --fixtures (which
    answers inside the browser and never reaches the real host). Fictional
    data only. Every answer: JSON, Cache-Control no-store, Vary Origin, the
@@ -93,13 +94,53 @@ export function bookedBody(origin, start, { replay = false } = {}) {
   };
 }
 
+/* The guides catalogue as L7p serves it (GET /api/public/guides), today's
+   seven fact-checked places in dataset order. A test fixture only: the
+   landing itself holds no guide data (D24). */
+export const GUIDES_CONSENT = {
+  version: 'guide-tips-2026-11-05',
+  text: { en: 'Send me wedding tips from Guest-ly', es: 'Quiero recibir consejos de boda de Guest-ly' },
+};
+const g = (code, country, en, es, placeEn, placeEs) => ({ code, country, name: { en, es }, place: { en: placeEn, es: placeEs }, langs: ['en', 'es'] });
+export const GUIDES = [
+  g('bo-santa-cruz-de-la-sierra', 'BO', 'Santa Cruz de la Sierra', 'Santa Cruz de la Sierra', 'Santa Cruz department, Bolivia', 'Departamento de Santa Cruz, Bolivia'),
+  g('bo-la-paz', 'BO', 'La Paz', 'La Paz', 'La Paz department, Bolivia', 'Departamento de La Paz, Bolivia'),
+  g('bo-sucre', 'BO', 'Sucre', 'Sucre', 'Chuquisaca department, Bolivia', 'Departamento de Chuquisaca, Bolivia'),
+  g('mx-cancun-riviera-maya', 'MX', 'Cancún and Riviera Maya', 'Cancún y Riviera Maya', 'Quintana Roo, Mexico', 'Quintana Roo, México'),
+  g('co-cartagena', 'CO', 'Cartagena', 'Cartagena', 'Bolívar department, Colombia', 'Departamento de Bolívar, Colombia'),
+  g('do-punta-cana', 'DO', 'Punta Cana', 'Punta Cana', 'La Altagracia province, Dominican Republic', 'Provincia La Altagracia, República Dominicana'),
+  g('us-miami', 'US', 'Miami', 'Miami', 'Florida, United States', 'Florida, Estados Unidos'),
+];
+
+export function catalogueBody(status = 'open') {
+  const open = status === 'open';
+  return { v: 1, status, version: open ? '2026-11-05.2' : null, guides: open ? GUIDES : [], consent: GUIDES_CONSENT };
+}
+
+/* L7p's parseGuideRequest, the same rules: email, then a catalogue code
+   (400 field "code" otherwise, so the old {destination} body fails); the box
+   counts only as tips === true with the current consent version. */
+export function parseGuideBody(raw) {
+  const clean = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const email = clean(raw?.email, 254).toLowerCase();
+  if (!/^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[a-z]{2,}$/i.test(email)) return { ok: false, field: 'email' };
+  const code = clean(raw?.code, 64);
+  if (!GUIDES.some((x) => x.code === code)) return { ok: false, field: 'code' };
+  const tips = raw.tips === true && raw.consentVersion === GUIDES_CONSENT.version;
+  const lang = String(raw.lang ?? '').toLowerCase().split(/[-_]/)[0] === 'es' ? 'es' : 'en';
+  return { ok: true, input: { email, code, lang, tips } };
+}
+
 /* The stub server. mode.slots: open | closed | unavailable | empty-next |
    limited | error | slow. mode.book: booked | replay | taken | invalid-<field>
-   | invalid-null | closed | unavailable | error | abort. mode.guide: sent |
-   invalid-email | invalid-destination | closed | error | abort.
-   hits: every request (method, url, headers, body). */
+   | invalid-null | closed | unavailable | error | abort. mode.catalogue:
+   open | closed | unavailable | limited | error. mode.guide: sent (after
+   L7p's parser: a body it refuses answers its 400) | invalid-email |
+   invalid-code | closed (409) | unavailable (503) | error | abort.
+   hits: every request (method, url, headers, body); guideInputs: what the
+   parser read from each accepted guide request. */
 export async function startStub({ port = 0 } = {}) {
-  const state = { hits: [], mode: { slots: 'open', book: 'booked', guide: 'sent' }, taken: [], holdSlots: null };
+  const state = { hits: [], mode: { slots: 'open', book: 'booked', catalogue: 'open', guide: 'sent' }, taken: [], holdSlots: null, holdCatalogue: null, guideInputs: [] };
   let origin = '';
   const server = createServer((req, res) => {
     const chunks = [];
@@ -160,13 +201,30 @@ export async function startStub({ port = 0 } = {}) {
         return send(201, bookedBody(origin, json?.start ?? new Date().toISOString(), { replay: m === 'replay' }));
       }
 
+      if (url.pathname === '/api/public/guides' && req.method === 'GET') {
+        if (state.holdCatalogue) await state.holdCatalogue;
+        const m = state.mode.catalogue ?? 'open';
+        if (m === 'limited') return send(429, { v: 1, status: 'limited' }, { 'Retry-After': '60' });
+        if (m === 'error') return send(500, { v: 1, status: 'error' });
+        return send(200, catalogueBody(m));
+      }
+
       if (url.pathname === '/api/public/guides/request' && req.method === 'POST') {
         const m = state.mode.guide;
         if (m === 'abort') return req.socket.destroy();
         if (m === 'error') return send(500, { v: 1, ok: false, status: 'error' });
-        if (m === 'closed') return send(503, { v: 1, ok: false, status: 'unavailable' });
+        if (m === 'closed') return send(409, { v: 1, ok: false, status: 'closed' });
+        if (m === 'unavailable') return send(503, { v: 1, ok: false, status: 'unavailable' });
         if (m.startsWith('invalid-')) return send(400, { v: 1, ok: false, status: 'invalid', field: m.slice(8) });
-        return send(202, { v: 1, ok: true, status: 'sent' });
+        let json = null;
+        try {
+          json = JSON.parse(body);
+        } catch {}
+        if (!json || typeof json !== 'object' || Buffer.byteLength(body) > 4096) return send(400, { v: 1, ok: false, status: 'invalid', field: null });
+        const parsed = parseGuideBody(json);
+        if (!parsed.ok) return send(400, { v: 1, ok: false, status: 'invalid', field: parsed.field });
+        state.guideInputs.push(parsed.input);
+        return send(200, { v: 1, ok: true, status: 'sent' });
       }
       send(404, { v: 1, status: 'not_found' });
     });

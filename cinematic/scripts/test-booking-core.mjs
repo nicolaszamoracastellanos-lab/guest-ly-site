@@ -1,19 +1,20 @@
 /* Pure tests for #22 and #50 (no browser): reading every API answer of the
    contract, days and labels across a DST change and in a zone without one,
-   the visitor checks, the guides answer, the destinations list from the
-   portal dataset, the switches, and the build guard for off features.
-   Usage: node scripts/test-booking-core.mjs */
+   the visitor checks and keys (with no crypto.randomUUID), the guides
+   catalogue and answers of L7p's v1 contract (and, when a portal checkout
+   with the guides API is found, that the stub's catalogue and parser match
+   L7p's source), ?guide=, the switches, and the build guard for off features.
+   Usage: [GL_L7P_DIR=<portal with #50>] node scripts/test-booking-core.mjs */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  addDays, dayLong, dayOf, dayParts, daysOf, draftProblems, newKey, readBook, readSlots, timeLabel, validZone, whenLabel, zoneChoices, zoneCity, zonePhrase,
+  addDays, dayLong, dayOf, dayParts, daysOf, draftProblems, newKey, randomId, readBook, readSlots, timeLabel, validZone, whenLabel, zoneChoices, zoneCity, zonePhrase,
 } from '../src/booking/core.ts';
-import { readGuide } from '../src/guides/core.ts';
+import { guideParam, readCatalogue, readGuide } from '../src/guides/core.ts';
 import { resolveSwitches, BOOKING_ENABLED, GUIDES_ENABLED, API_ORIGIN } from '../src/switches.ts';
-import { guideDestinations } from './lib/guide-destinations.mjs';
 import { featureClaimProblems } from './lib/feature-claims.mjs';
-import { slotsBody, bookedBody } from './lib/booking-stub.mjs';
+import { slotsBody, bookedBody, catalogueBody, parseGuideBody, GUIDES, GUIDES_CONSENT } from './lib/booking-stub.mjs';
 
 const errors = [];
 let checks = 0;
@@ -121,40 +122,92 @@ ok('key shape (8 to 80 of A-Za-z0-9_-)', /^[A-Za-z0-9_-]{8,80}$/.test(key));
 ok('keys differ', newKey() !== key);
 eq('short random padded', newKey(() => 'ab'), 'ab000000');
 
-/* ---------- guides answers ---------- */
-eq('202 sent', readGuide(202, { v: 1, ok: true, status: 'sent' }), { kind: 'sent' });
-eq('200 sent', readGuide(200, { v: 1, ok: true }), { kind: 'sent' });
+/* ---------- keys without crypto.randomUUID (Safari before 15.4, http) ---------- */
+const fixed = new Uint8Array(16).fill(171);
+ok('randomId with getRandomValues only', /^[0-9a-f]{32}$/.test(randomId({ getRandomValues: (a) => (a.set(fixed), a) })));
+ok('randomId with no crypto at all', /^[a-z0-9]{8,}$/.test(randomId(null)));
+ok('randomId with an empty crypto object', /^[a-z0-9]{8,}$/.test(randomId({})));
+{
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, value: { getRandomValues: (a) => globalThis.__c.getRandomValues(a) } });
+  globalThis.__c = saved.get ? saved.get.call(globalThis) : saved.value;
+  let k = '';
+  try {
+    k = newKey();
+  } catch (e) {
+    k = String(e);
+  }
+  Object.defineProperty(globalThis, 'crypto', saved);
+  delete globalThis.__c;
+  ok(`newKey without randomUUID does not throw (${k})`, /^[A-Za-z0-9_-]{8,80}$/.test(k));
+}
+
+/* ---------- guides catalogue (GET /api/public/guides, L7p v1) ---------- */
+const cat = readCatalogue(200, catalogueBody('open'));
+eq('catalogue open: every guide', cat.kind === 'open' ? cat.guides.map((x) => x.code) : [], GUIDES.map((x) => x.code));
+eq('catalogue open: consent from the server', cat.kind === 'open' ? cat.consent : null, GUIDES_CONSENT);
+eq('catalogue open: place line kept', cat.kind === 'open' ? cat.guides[3].place.es : null, 'Quintana Roo, México');
+for (const st of ['closed', 'unavailable']) eq(`catalogue ${st} hides`, readCatalogue(200, catalogueBody(st)).kind, 'hidden');
+eq('catalogue 429 hides', readCatalogue(429, { v: 1, status: 'limited' }).kind, 'hidden');
+eq('catalogue 404 hides', readCatalogue(404, null).kind, 'hidden');
+eq('catalogue 500 hides', readCatalogue(500, { v: 1 }).kind, 'hidden');
+eq('catalogue wrong version hides', readCatalogue(200, { ...catalogueBody('open'), v: 2 }).kind, 'hidden');
+eq('catalogue without consent text hides', readCatalogue(200, { ...catalogueBody('open'), consent: { version: 'x', text: { en: 'Send' } } }).kind, 'hidden');
+eq('catalogue with no guides hides', readCatalogue(200, { ...catalogueBody('open'), guides: [] }).kind, 'hidden');
+{
+  const junk = readCatalogue(200, { ...catalogueBody('open'), guides: [GUIDES[0], { code: 'Bad Code', name: GUIDES[1].name, place: GUIDES[1].place }, { code: 'x-1', name: { en: 'Only EN' }, place: GUIDES[1].place }, GUIDES[0], 'x'] });
+  eq('catalogue drops junk and repeats', junk.kind === 'open' ? junk.guides.map((x) => x.code) : [], [GUIDES[0].code]);
+}
+
+/* ---------- guides answers (POST /api/public/guides/request, L7p v1) ---------- */
+eq('200 sent', readGuide(200, { v: 1, ok: true, status: 'sent' }), { kind: 'sent' });
 eq('invalid email', readGuide(400, { v: 1, ok: false, status: 'invalid', field: 'email' }), { kind: 'invalid', field: 'email' });
-eq('invalid destination', readGuide(400, { v: 1, ok: false, status: 'invalid', field: 'destination' }), { kind: 'invalid', field: 'destination' });
+eq('invalid code', readGuide(400, { v: 1, ok: false, status: 'invalid', field: 'code' }), { kind: 'invalid', field: 'code' });
+eq('invalid unreadable body', readGuide(400, { v: 1, ok: false, status: 'invalid', field: null }), { kind: 'invalid', field: null });
 eq('invalid other', readGuide(400, { v: 1, ok: false, status: 'invalid', field: 'x' }), { kind: 'invalid', field: null });
-eq('503', readGuide(503, { v: 1, ok: false, status: 'unavailable' }).kind, 'closed');
+eq('409 closed', readGuide(409, { v: 1, ok: false, status: 'closed' }).kind, 'closed');
+eq('503 is retry, not closed', readGuide(503, { v: 1, ok: false, status: 'unavailable' }).kind, 'retry');
 eq('404 route missing', readGuide(404, null).kind, 'closed');
 eq('500', readGuide(500, { v: 1 }).kind, 'error');
+eq('unreadable 200', readGuide(200, null).kind, 'error');
 
-/* ---------- destinations from the portal dataset ---------- */
-const sample = {
-  countries: { CO: { name: { en: 'Colombia', es: 'Colombia' } }, MX: { name: { en: 'Mexico', es: 'México' } } },
-  destinations: [
-    { id: 'co-cartagena', country: 'CO', review_status: 'fact_checked', name: { en: 'Cartagena', es: 'Cartagena' }, guide: { sections: [{}] } },
-    { id: 'mx-draft', country: 'MX', review_status: 'draft', name: { en: 'Draft', es: 'Borrador' }, guide: { sections: [{}] } },
-    { id: 'mx-noguide', country: 'MX', review_status: 'fact_checked', name: { en: 'No guide', es: 'Sin guía' } },
-  ],
-};
-eq('only fact-checked places with a guide', guideDestinations(sample), [{ id: 'co-cartagena', name: { en: 'Cartagena', es: 'Cartagena' }, country: { en: 'Colombia', es: 'Colombia' } }]);
-let threw = false;
-try {
-  guideDestinations({ ...sample, destinations: [{ ...sample.destinations[0], id: 'Bad Id' }] });
-} catch {
-  threw = true;
-}
-ok('an id the beacon cannot carry fails', threw);
-const portal = process.env.GL_PORTAL_DIR;
-const real = portal && join(portal, 'src/lib/destinations/data/destinations.json');
-if (real && existsSync(real)) {
-  const list = guideDestinations(JSON.parse(readFileSync(real, 'utf8')));
-  ok(`real dataset gives places (${list.length})`, list.length >= 1);
-  ok('real ids fit the beacon guide id', list.every((d) => /^[a-z0-9][a-z0-9-]{0,39}$/.test(d.id)));
-}
+/* ---------- the stub parses like L7p ---------- */
+const body = { email: 'Ana@Example.com', code: 'co-cartagena', lang: 'es', visitorTz: 'America/Chicago', tips: false, consentVersion: GUIDES_CONSENT.version, fax_number: '' };
+eq('stub parser: the landing body', parseGuideBody(body), { ok: true, input: { email: 'ana@example.com', code: 'co-cartagena', lang: 'es', tips: false } });
+eq('stub parser: ticked', parseGuideBody({ ...body, tips: true }).input.tips, true);
+eq('stub parser: ticked, old version reads unticked', parseGuideBody({ ...body, tips: true, consentVersion: 'guides-tips-2026-11-05' }).input.tips, false);
+eq('stub parser: the old body {destination, consent} is refused on code', parseGuideBody({ email: 'ana@example.com', destination: 'co-cartagena', consent: true, consentVersion: 'guides-tips-2026-11-05' }), { ok: false, field: 'code' });
+eq('stub parser: unknown code', parseGuideBody({ ...body, code: 'xx-nowhere' }), { ok: false, field: 'code' });
+eq('stub parser: bad email first', parseGuideBody({ ...body, email: 'ana@' }), { ok: false, field: 'email' });
+
+/* ---------- ?guide= ---------- */
+eq('?guide=<code>', guideParam('?guide=co-cartagena'), 'co-cartagena');
+eq('?guide=all', guideParam('?x=1&guide=all'), 'all');
+eq('?guide=junk ignored', guideParam('?guide=%3Cscript%3E'), null);
+eq('no ?guide', guideParam('?book=demo'), null);
+
+/* ---------- the stub matches L7p's source, when a checkout with #50 is found ---------- */
+const l7p = [process.env.GL_L7P_DIR, process.env.GL_PORTAL_DIR].find((d) => d && existsSync(join(d, 'src/lib/guides/core.ts')));
+if (l7p) {
+  const i18n = readFileSync(join(l7p, 'src/lib/i18n/guides.ts'), 'utf8');
+  const core = readFileSync(join(l7p, 'src/lib/guides/core.ts'), 'utf8');
+  eq('L7p consent version', /TIPS_CONSENT_VERSION = "([^"]+)"/.exec(i18n)?.[1], GUIDES_CONSENT.version);
+  const textBlock = /TIPS_CONSENT_TEXT[^=]*=\s*\{([^}]+)\}/.exec(i18n)?.[1] ?? '';
+  eq('L7p consent text EN', /en:\s*"([^"]+)"/.exec(textBlock)?.[1], GUIDES_CONSENT.text.en);
+  eq('L7p consent text ES', /es:\s*"([^"]+)"/.exec(textBlock)?.[1], GUIDES_CONSENT.text.es);
+  const parser = core.slice(core.indexOf('export function parseGuideRequest'), core.indexOf('export function mintToken'));
+  const reads = [...new Set([...parser.matchAll(/raw\.(\w+)/g)].map((m) => m[1]))].sort();
+  const sends = Object.keys(body).filter((k) => k !== 'fax_number').sort();
+  eq('L7p parser reads exactly the fields the landing sends', reads, sends);
+  ok('L7p parser refuses a missing code on field "code"', /field:\s*"code"/.test(parser));
+  ok('L7p parser counts tips only as === true', /raw\.tips === true/.test(parser));
+  const data = join(l7p, 'src/lib/destinations/data/destinations.json');
+  if (existsSync(data)) {
+    const ds = JSON.parse(readFileSync(data, 'utf8'));
+    eq('stub catalogue codes = L7p fact-checked places', ds.destinations.filter((d) => d.review_status === 'fact_checked').map((d) => d.id), GUIDES.map((x) => x.code));
+  }
+  console.log(`test-booking-core: guides contract checked against ${l7p}`);
+} else console.log('test-booking-core: no portal checkout with the guides API (GL_L7P_DIR), L7p source check skipped');
 
 /* ---------- build guard for off features ---------- */
 const offSw = { booking: false, guides: false };
@@ -167,7 +220,7 @@ const planted = featureClaimProblems({
   ld: ['Book a demo with us', 'Free destination guides'],
   llms: [{ name: 'es/llms.txt', text: '# Guest-ly\n- Agenda una demo\n- Guías gratis de destino' }],
 });
-for (const want of ['home page shows it', 'privacy page discloses it', 'has its chunk BookingModal', 'calls /api/public/guides/', 'JSON-LD says: Book a demo', 'JSON-LD says: Free destination', 'es/llms.txt line 2', 'es/llms.txt line 3'])
+for (const want of ['home page shows it', 'privacy page discloses it', 'has its chunk BookingModal', 'calls /api/public/guides', 'JSON-LD says: Book a demo', 'JSON-LD says: Free destination', 'es/llms.txt line 2', 'es/llms.txt line 3'])
   ok(`planted off-feature caught: ${want}`, planted.some((p) => p.includes(want)));
 eq('on: the home page must show it', featureClaimProblems({ switches: { booking: true, guides: true }, home: '<main></main>' }).length, 2);
 
@@ -175,4 +228,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-booking-core: ${e}`);
   process.exit(1);
 }
-console.log(`test-booking-core clean: ${checks} checks (API answers, DST and zones, visitor checks, guides answers, destinations, switches ship off, off-feature guard)`);
+console.log(`test-booking-core clean: ${checks} checks (API answers, DST and zones, visitor checks, keys without randomUUID, guides catalogue and answers, stub parser, ?guide=, switches ship off, off-feature guard)`);

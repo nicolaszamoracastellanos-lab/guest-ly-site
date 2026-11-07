@@ -5,8 +5,10 @@
    another port of localhost: same site, other origin, like guest-ly.com and
    app.guest-ly.com), and both off (today's build). Proves:
    ON
-   A. load and scroll: no API request; the dialog is not in the prerendered
-      page; three booking buttons and the guides section are.
+   A. load: no API request; scroll: no booking request and exactly one guides
+      catalogue read (simple GET, no cookie, no referrer), no guide request;
+      the dialog is not in the prerendered page; three booking buttons and
+      the guides section are.
    B. pointer over a button prefetches the slot list once (visitor zone in
       the query); the press opens the dialog on that list with no second
       read; the title has focus; times show in the visitor's zone with the
@@ -25,16 +27,29 @@
       their calm state (contact links, retry, next open day).
    G. replay: "check your email", no links.
    H. ?book=demo opens the dialog in the stored language and leaves the URL.
-   I. guides: the form loads only near the section; empty and bad input
-      messages; the request names the destination, page language, zone,
-      consent false and no consent text; ticked: consent true with the exact
-      sentence; the confirmation; 503 shows the calm message.
+   I. guides, on L7p's v1 contract (the stub parses like L7p and refuses
+      the old {destination} body): the form loads only near the section and
+      takes its cards and tips sentence from the catalogue; empty input
+      messages; the body is exactly {email, code, lang, visitorTz, tips,
+      consentVersion, fax_number}, tips false; ticked: tips true and the
+      server reads it as ticked; 503: "try again in a minute", the input
+      kept, the retry sends; 409: the form is replaced by the calm message.
+      Catalogue closed, unavailable, 429 or 500: no section. ?guide=<code>
+      scrolls to the section with that guide picked and the email focused,
+      ?guide=all scrolls there, and the query is dropped.
    J. beacon events: booking opened, slot, booked and guide <id>.
    K. nothing on the device: no cookie, no sessionStorage, localStorage holds
       only the language the visitor picked.
    L. privacy page shows the demo-call and guides paragraphs (EN, ES).
    M. 390 phone: no sideways scroll, 44 px targets in the dialog and form.
    OFF
+   W. "Questions before you pay?" in the order wizard's confirmation opens
+      the booking dialog above the wizard: the summary and the Pay step stay
+      underneath, the page stays locked, Escape closes only the dialog and
+      focus returns to the button; the order notification is answered
+      locally (never formsubmit.co).
+   O. no crypto.randomUUID (Safari before 15.4): the dialog opens and books
+      with a valid key, the page stays up.
    N. no booking button, no guides section, no dialog on ?book=demo, no
       request to the API host after scrolling and hovering, no chunk, no
       privacy paragraph.
@@ -49,6 +64,7 @@ import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright';
 import { startStub } from './lib/booking-stub.mjs';
 import { buildSite, serveDir } from './lib/temp-site.mjs';
+import { INITIAL_JS_BUDGET, initialJs } from './lib/initial-js.mjs';
 
 const failures = [];
 let checks = 0;
@@ -77,6 +93,11 @@ const sizes = { modal: gz(onDir, /^BookingModal-.*\.js$/), guidesForm: gz(onDir,
 check(sizes.modal > 0 && sizes.modal <= 12000, `booking dialog chunk ${sizes.modal} B gzip (budget 12 KB)`);
 check(sizes.guidesForm > 0 && sizes.guidesForm <= 6000, `guides form chunk ${sizes.guidesForm} B gzip (budget 6 KB)`);
 check(readdirSync(join(offDir, 'assets')).every((f) => !/^(BookingModal|GuidesForm)-/.test(f)), 'off build still has a booking or guides chunk');
+/* Initial JS (STUDY-quality-bar 7.4). The off build must fit; the on build
+   is reported, and check-seo.mjs fails any real build over the budget, so a
+   switch cannot be turned on while it does not fit (L7-LOG, going live). */
+const initial = { off: initialJs(offDir).bytes, on: initialJs(onDir).bytes };
+check(initial.off > 0 && initial.off <= INITIAL_JS_BUDGET, `off build initial JS ${initial.off} B gzip (budget ${INITIAL_JS_BUDGET})`);
 const onHtml = readFileSync(join(onDir, 'index.html'), 'utf8');
 check((onHtml.match(/data-book=""/g) ?? []).length === 3, `on: expected 3 booking buttons in the prerendered page (pricing, FAQ, final), found ${(onHtml.match(/data-book=""/g) ?? []).length}`);
 check(!onHtml.includes('role="dialog"'), 'on: a dialog is in the prerendered page');
@@ -99,7 +120,7 @@ const parsed = (label) => {
 const browser = await chromium.launch();
 const apiHits = (from = 0) => S.hits.slice(from).filter((h) => h.path.startsWith('/api/public/'));
 const reset = (m = {}) => {
-  S.mode = { slots: 'open', book: 'booked', guide: 'sent', ...m };
+  S.mode = { slots: 'open', book: 'booked', catalogue: 'open', guide: 'sent', ...m };
   S.taken = [];
 };
 
@@ -157,6 +178,8 @@ const lastBook = () => [...S.hits].reverse().find((h) => h.path.endsWith('/book'
   const { page } = t;
   const mark = S.hits.length;
   await page.goto(on.url, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(300);
+  check(apiHits(mark).length === 0, `A: an API request on load: ${apiHits(mark).map((h) => h.path).join()}`);
   await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += 700) {
       window.scrollTo(0, y);
@@ -164,8 +187,13 @@ const lastBook = () => [...S.hits].reverse().find((h) => h.path.endsWith('/book'
     }
     window.scrollTo(0, 0);
   });
+  await page.locator('#guides .guides').waitFor();
+  await page.waitForTimeout(200);
   check(apiHits(mark).filter((h) => h.path.includes('/booking/')).length === 0, 'A: a booking API request before any intent');
-  check(apiHits(mark).filter((h) => h.path.includes('/guides/')).length === 0, 'A: a guides API request before any press');
+  const cats = apiHits(mark).filter((h) => h.path === '/api/public/guides');
+  check(cats.length === 1 && cats[0].method === 'GET', `A: expected one guides catalogue GET after scrolling, saw ${cats.map((h) => h.method).join()}`);
+  check(cats[0] && !cats[0].headers.cookie && !cats[0].headers.referer, 'A: the catalogue read carried a cookie or referrer');
+  check(apiHits(mark).filter((h) => h.path === '/api/public/guides/request').length === 0, 'A: a guide request before any press');
 
   const before = S.hits.length;
   await page.locator(finalCta).scrollIntoViewIfNeeded();
@@ -390,6 +418,8 @@ for (const [mode, expect] of [
 }
 
 /* ---------- I: guides ---------- */
+const guideBodies = (from) => S.hits.slice(from).filter((h) => h.path === '/api/public/guides/request');
+const pressGuide = (page) => page.locator('.guides__submit').click();
 {
   reset();
   const t = await context({ lang: 'es', tz: 'Europe/Madrid' });
@@ -399,48 +429,111 @@ for (const [mode, expect] of [
   check((await page.locator('.guides').count()) === 0, 'I: the guides form loaded before the section came near');
   await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('.guides').waitFor();
+  const names = await page.locator('.guides-place__name').allInnerTexts();
+  check(names.length === 7 && names[3] === 'Cancún y Riviera Maya', `I: cards not from the catalogue ${JSON.stringify(names)}`);
+  check((await page.locator('.guides__consent').innerText()).trim() === 'Quiero recibir consejos de boda de Guest-ly', 'I: the tips label is not the catalogue sentence word for word');
   await page.getByRole('button', { name: 'Enviarme la guía' }).click();
   check(await page.getByText('Primero elige un destino.').isVisible(), 'I: no destination message');
   check(await page.getByText('Escribe un correo, como ana@ejemplo.com.').isVisible(), 'I: no email message');
-  check(apiHits(mark).length === 0, 'I: a guides request with empty fields');
+  check(guideBodies(mark).length === 0, 'I: a guides request with empty fields');
   const consent = await page.locator('.guides__consent input');
   check(!(await consent.isChecked()), 'I: the tips box starts ticked');
   await page.locator('.guides-place').nth(4).click();
   await page.getByLabel('Tu correo').fill('ana@example.com');
   await page.getByRole('button', { name: 'Enviarme la guía' }).click();
   await page.locator('.guides-done').waitFor();
-  const g = [...S.hits].reverse().find((h) => h.path === '/api/public/guides/request');
+  const g = guideBodies(mark).at(-1);
   const body = JSON.parse(g.body);
-  const placeId = await page.evaluate(() => null);
-  check(/^[a-z0-9-]+$/.test(body.destination), `I: destination ${body.destination}`);
-  check(body.lang === 'es' && body.visitorTz === 'Europe/Madrid' && body.consent === false && !('consentText' in body), `I: body ${g.body}`);
-  check(body.consentVersion === 'guides-tips-2026-11-05' && /^[A-Za-z0-9_-]{8,80}$/.test(body.idempotencyKey) && body.fax_number === '', 'I: version, key or honeypot');
+  check(
+    JSON.stringify(Object.keys(body).sort()) === JSON.stringify(['code', 'consentVersion', 'email', 'fax_number', 'lang', 'tips', 'visitorTz']),
+    `I: body keys ${Object.keys(body).join()}`,
+  );
+  check(body.code === 'co-cartagena' && body.email === 'ana@example.com', `I: code or email ${g.body}`);
+  check(body.lang === 'es' && body.visitorTz === 'Europe/Madrid' && body.tips === false, `I: body ${g.body}`);
+  check(body.consentVersion === 'guide-tips-2026-11-05' && body.fax_number === '', 'I: consent version or honeypot');
+  check(S.guideInputs.at(-1)?.code === 'co-cartagena' && S.guideInputs.at(-1)?.tips === false, 'I: the L7p parser did not accept the body');
   check(/^text\/plain/.test(g.headers['content-type'] ?? '') && !g.headers.cookie && !g.headers.referer, 'I: content type, cookie or referrer');
-  check(!S.hits.some((h) => h.method === 'OPTIONS' && h.path.startsWith('/api/public/guides/')), 'I: a preflight for the guide request');
+  check(!S.hits.some((h) => h.method === 'OPTIONS' && h.path.startsWith('/api/public/guides')), 'I: a preflight for a guides call');
   check((await page.locator('.guides-done').innerText()).includes('ana@example.com'), 'I: confirmation without the address');
-  void placeId;
   await page.getByRole('button', { name: 'Pedir otra guía' }).click();
   await page.locator('.guides-place').first().click();
   await page.locator('.guides__consent').click();
   await page.getByLabel('Tu correo').fill('ana@example.com');
   await page.getByRole('button', { name: 'Enviarme la guía' }).click();
   await page.locator('.guides-done').waitFor();
-  const b2 = JSON.parse([...S.hits].reverse().find((h) => h.path === '/api/public/guides/request').body);
-  check(b2.consent === true && b2.consentText === 'Envíame también consejos de Guest-ly para organizar la boda', `I: ticked body ${JSON.stringify(b2)}`);
+  const b2 = JSON.parse(guideBodies(mark).at(-1).body);
+  check(b2.tips === true && b2.consentVersion === 'guide-tips-2026-11-05', `I: ticked body ${JSON.stringify(b2)}`);
+  check(S.guideInputs.at(-1)?.tips === true, 'I: the L7p parser read a ticked box as unticked');
+
+  /* 503: the email could not be sent; the input stays and a retry sends. */
+  reset({ guide: 'unavailable' });
+  await page.getByRole('button', { name: 'Pedir otra guía' }).click();
+  await page.locator('.guides-place').nth(2).click();
+  await page.getByLabel('Tu correo').fill('ana@example.com');
+  const m503 = S.hits.length;
+  await pressGuide(page);
+  await page.locator('.guides__error--form').waitFor();
+  check((await page.locator('.guides__error--form').innerText()) === 'No se pudo enviar la guía. Inténtalo de nuevo en un minuto.', 'I: 503 message');
+  check((await page.getByLabel('Tu correo').inputValue()) === 'ana@example.com' && (await page.locator('.guides-place input').nth(2).isChecked()), 'I: input lost after 503');
+  S.mode.guide = 'sent';
+  await pressGuide(page);
+  await page.locator('.guides-done').waitFor();
+  check(guideBodies(m503).length === 2, 'I: the retry after 503 did not send');
+
+  /* 409: switched off since the catalogue loaded; the form goes away. */
   reset({ guide: 'closed' });
   await page.getByRole('button', { name: 'Pedir otra guía' }).click();
   await page.locator('.guides-place').first().click();
   await page.getByLabel('Tu correo').fill('ana@example.com');
-  await page.getByRole('button', { name: 'Enviarme la guía' }).click();
-  await page.locator('.guides__error--form').waitFor();
-  check((await page.locator('.guides__error--form').innerText()).startsWith('Las guías no están disponibles ahora.'), 'I: closed message');
-  check((await page.getByLabel('Tu correo').inputValue()) === 'ana@example.com', 'I: input lost after closed');
+  await pressGuide(page);
+  await page.locator('.guides-done[role="status"]').waitFor();
+  check((await page.locator('.guides-done').innerText()).startsWith('Las guías no están disponibles ahora.'), 'I: closed message');
+  check((await page.locator('form.guides').count()) === 0, 'I: the form stayed after 409');
 
   /* K: nothing on the device. */
   const store = await page.evaluate(() => ({ local: Object.keys(localStorage), session: sessionStorage.length, cookie: document.cookie }));
   check(store.local.join() === 'guestly-lang' && store.session === 0, `K: storage ${JSON.stringify(store)}`);
   check(!(await t.ctx.cookies()).some((c) => c.name !== 'portal_session'), 'K: a cookie was set');
   await done(t, 'I');
+}
+
+/* ---------- I: catalogue not open hides the section ---------- */
+for (const catalogue of ['closed', 'unavailable', 'limited', 'error']) {
+  reset({ catalogue });
+  const t = await context();
+  const { page } = t;
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  const mark = S.hits.length;
+  await page.locator('#guides').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => !document.getElementById('guides'), null, { timeout: 8000 }).catch(() => {});
+  check((await page.locator('#guides').count()) === 0, `I: catalogue ${catalogue}: the section is still shown`);
+  check(apiHits(mark).filter((h) => h.path === '/api/public/guides').length === 1 && guideBodies(mark).length === 0, `I: catalogue ${catalogue}: requests`);
+  await done(t, `I catalogue ${catalogue}`);
+}
+
+/* ---------- I: ?guide=<code> and ?guide=all (the expired link's "Request a new link") ---------- */
+{
+  reset();
+  const t = await context();
+  const { page } = t;
+  await page.goto(`${on.url}/?guide=mx-cancun-riviera-maya#x`, { waitUntil: 'networkidle' });
+  await page.locator('.guides-place.on').waitFor();
+  check((await page.locator('.guides-place.on .guides-place__name').innerText()) === 'Cancún and Riviera Maya', 'I: ?guide= did not pick that guide');
+  check(await page.evaluate(() => document.activeElement?.matches('.guides input[type="email"]')), 'I: ?guide= did not focus the email');
+  check(await page.evaluate(() => { const r = document.getElementById('guides').getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }), 'I: ?guide= did not scroll to the section');
+  check(new URL(page.url()).search === '' && new URL(page.url()).hash === '#x', `I: ?guide= left in the URL ${page.url()}`);
+  await done(t, 'I ?guide=code');
+}
+{
+  reset();
+  const t = await context({ lang: 'es' });
+  const { page } = t;
+  await page.goto(`${on.url}/?guide=all`, { waitUntil: 'networkidle' });
+  await page.locator('.guides').waitFor();
+  check((await page.locator('.guides-place.on').count()) === 0, 'I: ?guide=all picked a guide');
+  check(await page.evaluate(() => { const r = document.getElementById('guides').getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }), 'I: ?guide=all did not scroll to the section');
+  check(!page.url().includes('guide='), 'I: ?guide=all left in the URL');
+  await done(t, 'I ?guide=all');
 }
 
 /* ---------- J for guides: the beacon names the place ---------- */
@@ -456,7 +549,7 @@ for (const [mode, expect] of [
   const mark = S.hits.length;
   await page.getByRole('button', { name: 'Email me the guide' }).click();
   await page.locator('.guides-done').waitFor();
-  const dest = JSON.parse(S.hits.slice(mark).find((h) => h.path === '/api/public/guides/request').body).destination;
+  const dest = JSON.parse(S.hits.slice(mark).find((h) => h.path === '/api/public/guides/request').body).code;
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
     document.dispatchEvent(new Event('visibilitychange'));
@@ -514,6 +607,72 @@ for (const lang of ['en', 'es']) {
   await done(t, 'M');
 }
 
+/* ---------- W: booking from the order wizard's confirmation ---------- */
+{
+  reset();
+  const t = await context();
+  const { page } = t;
+  const orders = [];
+  /* The order notification: answered here, never sent to formsubmit.co. */
+  await t.ctx.route('https://formsubmit.co/**', (route) => {
+    orders.push(route.request().url());
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":"true"}' });
+  });
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  await page.locator('[data-track="hero-start"]').click();
+  await page.locator('.wiz-range').first().click();
+  await page.locator('.wiz input[type="date"]').fill('2027-05-15');
+  await page.locator('.wiz__body label input:not([type])').first().fill('La Paz');
+  await page.locator('.wiz__continue').click();
+  await page.locator('.wiz button.btn--gold').click();
+  await page.locator('.wiz input[autocomplete="name"]').fill('Ana Pérez');
+  await page.locator('.wiz input[type="email"]').fill('ana@example.com');
+  await page.locator('.wiz button[type="submit"]').click();
+  await page.locator('.wiz-pay').waitFor();
+  check(orders.length === 1, `W: order notifications ${orders.length}`);
+  await page.locator('.book-line--wizard [data-book]').click();
+  await page.locator('.book').waitFor();
+  check((await page.locator('.wiz-pay').count()) === 1, 'W: the wizard and its Pay step closed under the booking dialog');
+  check(
+    await page.evaluate(() => {
+      const r = document.querySelector('.book').getBoundingClientRect();
+      return Boolean(document.elementFromPoint(r.left + r.width / 2, r.top + 20)?.closest('.book'));
+    }),
+    'W: the booking dialog is not above the wizard',
+  );
+  await page.keyboard.press('Escape');
+  await page.locator('.book').waitFor({ state: 'detached' });
+  check((await page.locator('.wiz-pay').count()) === 1, 'W: Escape in the booking dialog closed the wizard too');
+  check(await page.evaluate(() => document.documentElement.classList.contains('wizard-locked')), 'W: the page unlocked while the wizard is open');
+  check(await page.evaluate(() => document.activeElement?.getAttribute('data-track') === 'book-wizard'), 'W: focus did not return to the wizard button');
+  await page.keyboard.press('Escape');
+  await page.locator('.wiz').waitFor({ state: 'detached' });
+  check(!(await page.evaluate(() => document.documentElement.classList.contains('wizard-locked'))), 'W: the page stayed locked after the wizard closed');
+  check(orders.length === 1, 'W: the order was sent again');
+  await done(t, 'W');
+}
+
+/* ---------- O: no crypto.randomUUID ---------- */
+{
+  reset();
+  const t = await context();
+  const { page } = t;
+  await page.addInitScript(() => {
+    Object.defineProperty(Crypto.prototype, 'randomUUID', { configurable: true, value: undefined });
+  });
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  await openDialog(page);
+  await toDetails(page);
+  await page.locator('.book__fields input[autocomplete="name"]').fill('Ana Pérez');
+  await page.locator('.book__fields input[type="email"]').fill('ana@example.com');
+  await dialogSubmit(page);
+  await page.locator('.book__done').waitFor({ timeout: 8000 }).catch(() => {});
+  check((await page.locator('main#main').count()) === 1, 'O: the page went blank without crypto.randomUUID');
+  check(/^[A-Za-z0-9_-]{8,80}$/.test(JSON.parse(lastBook()?.body ?? '{}').idempotencyKey ?? ''), 'O: no valid key without crypto.randomUUID');
+  check((await page.locator('.book__done').count()) === 1, 'O: no confirmation without crypto.randomUUID');
+  await done(t, 'O');
+}
+
 /* ---------- N: off ---------- */
 {
   const t = await context();
@@ -551,5 +710,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  `${parseBeacon ? 'test-booking: every beacon batch passed the portal parser\n' : ''}test-booking clean: ${checks} checks (prefetch on intent, keyboard booking, no cookie or preflight, every API answer, guides form and consent, beacon events, nothing stored, privacy lines, 390 targets, off build silent); dialog chunk ${sizes.modal} B gzip, guides form ${sizes.guidesForm} B`,
+  `${parseBeacon ? 'test-booking: every beacon batch passed the portal parser\n' : ''}test-booking clean: ${checks} checks (prefetch on intent, keyboard booking, no cookie or preflight, every API answer, guides form and consent, beacon events, nothing stored, privacy lines, 390 targets, off build silent); dialog chunk ${sizes.modal} B gzip, guides form ${sizes.guidesForm} B; initial JS off ${initial.off} B, on ${initial.on} B (budget ${INITIAL_JS_BUDGET}${initial.on > INITIAL_JS_BUDGET ? ': a real build with both switches on fails check-seo until it fits' : ''})`,
 );

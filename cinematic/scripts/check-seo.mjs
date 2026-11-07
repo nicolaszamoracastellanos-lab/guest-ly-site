@@ -15,7 +15,9 @@
    - a switch in src/switches.ts is off and the build still shows, discloses,
      calls or chunks its feature (#22 booking, #50 guides), or JSON-LD or an
      AI facts file describes it (scripts/lib/feature-claims.mjs); or a switch
-     is on and the home page does not show its feature.
+     is on and the home page does not show its feature;
+   - the home page's initial JS is over 100 KB gzip (STUDY-quality-bar 7.4),
+     whichever switches are on (scripts/lib/initial-js.mjs).
    Usage: node scripts/check-seo.mjs [distDir]   (default: cinematic/dist) */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -26,6 +28,7 @@ import { CINEMATIC } from './lib/paths.mjs';
 import { SLOGAN } from '../src/site-facts.ts';
 import { resolveSwitches } from '../src/switches.ts';
 import { featureClaimProblems } from './lib/feature-claims.mjs';
+import { INITIAL_JS_BUDGET, initialJs } from './lib/initial-js.mjs';
 
 const dist = resolve(process.argv[2] || join(CINEMATIC, 'dist'));
 const SITE = 'https://guest-ly.com';
@@ -214,8 +217,18 @@ for (const p of featureClaimProblems({
   fail(p);
 const switchNote = `booking ${switches.booking ? 'on' : 'off'}, guides ${switches.guides ? 'on' : 'off'}`;
 
+/* Initial JS budget, the switches as built. */
+const js = homeHtml ? initialJs(dist, homeHtml) : { bytes: 0, files: [], missing: [] };
+if (js.files.length === 0) fail('initial JS: the home page loads no module script');
+for (const f of js.missing) fail(`initial JS: ${f} is linked from the home page but not in the build`);
+if (js.bytes > INITIAL_JS_BUDGET)
+  fail(
+    `initial JS is ${js.bytes} B gzip with ${switchNote}, over the ${INITIAL_JS_BUDGET} B budget (STUDY-quality-bar 7.4). ` +
+      'Move code out of the first load (the legal pages as their own chunk is the planned lever, L7-LOG) before turning a switch on.',
+  );
+
 if (errors.length) {
   for (const e of errors) console.error(`check-seo: ${e}`);
   process.exit(1);
 }
-console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok; footer slogan on ${sloganPages} page(s) with the site footer; ${switchNote}, nothing of an off feature in the build or claimed`);
+console.log(`check-seo clean: ${offers.length} offers and ${questions.length} FAQ answers match the page; robots.txt and sitemap.xml (${PAGES.length} pages) ok; ${LLMS.length} AI facts files ok; footer slogan on ${sloganPages} page(s) with the site footer; ${switchNote}, nothing of an off feature in the build or claimed; initial JS ${js.bytes} B gzip (budget ${INITIAL_JS_BUDGET})`);

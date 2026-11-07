@@ -57,11 +57,12 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
   const price = selected.price;
   const rangeLabel = w.step1.guestRanges.find((r) => r.id === range)?.label ?? selected.guests;
 
-  /* Scroll lock + ESC while the modal is mounted. */
+  /* Scroll lock + ESC while the modal is mounted. Escape closes the top
+     layer only: while the booking dialog is open above, it is that one's. */
   useEffect(() => {
     document.documentElement.classList.add('wizard-locked');
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !document.querySelector('.book-backdrop')) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => {
@@ -430,7 +431,9 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
               </ol>
             </div>
 
-            {import.meta.env.VITE_BOOKING_ENABLED && <BookLine id="wizard" line="wizardLine" onBefore={onClose} />}
+            {/* The booking dialog opens above the wizard, which stays open
+                underneath with this summary and the Pay button. */}
+            {import.meta.env.VITE_BOOKING_ENABLED && <BookLine id="wizard" line="wizardLine" />}
 
             <p className="wiz-mailfb">
               {w.step4.mailFallback} <a href={mailtoHref}>{w.step4.mailFallbackLink}</a>.

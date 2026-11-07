@@ -3,7 +3,7 @@
    with both switches on into a temp folder, prerenders it, serves it, and
    shoots night and day, EN and ES, 390x844 and 1440x900.
    Usage: node scripts/booking-screens.mjs <outDir> [--states=times,done] [--widths=390,1440]
-   Needs GL_PORTAL_DIR (or the nested portal checkout) for the guides list. */
+   The guides come from the stub's catalogue (the landing holds none). */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -28,7 +28,8 @@ buildSite(work, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_API_ORIGIN
 const site = await serveDir(work);
 
 const reset = (m = {}) => {
-  stub.state.mode = { slots: 'open', book: 'booked', guide: 'sent', ...m };
+  stub.state.mode = { slots: 'open', book: 'booked', catalogue: 'open', guide: 'sent', ...m };
+  stub.state.holdCatalogue = null;
   stub.state.taken = [];
 };
 
@@ -142,6 +143,19 @@ const STATES = {
     await page.locator('.nav__burger').click();
     await page.locator('.nav__menu-book [data-book]').waitFor();
   },
+  'guides-loading': async (page) => {
+    let release;
+    stub.state.holdCatalogue = new Promise((r) => (release = r));
+    await page.locator('#guides').scrollIntoViewIfNeeded();
+    await page.locator('.guides-skeleton').waitFor();
+    await page.locator('#guides').scrollIntoViewIfNeeded();
+    return () => release();
+  },
+  'guides-link': async (page) => {
+    await page.goto(`${site.url}/?guide=mx-cancun-riviera-maya`, { waitUntil: 'networkidle' });
+    await page.locator('.guides-place.on').waitFor();
+    await page.waitForTimeout(300);
+  },
   'guides-form': async (page) => {
     await page.locator('#guides').scrollIntoViewIfNeeded();
     await page.locator('.guides').waitFor();
@@ -170,8 +184,8 @@ const STATES = {
     await page.locator('.guides-done').waitFor();
     await page.locator('#guides').scrollIntoViewIfNeeded();
   },
-  'guides-closed': async (page) => {
-    reset({ guide: 'closed' });
+  'guides-retry': async (page) => {
+    reset({ guide: 'unavailable' });
     await page.locator('#guides').scrollIntoViewIfNeeded();
     await page.locator('.guides').waitFor();
     await page.locator('.guides-place').first().click();
@@ -179,6 +193,37 @@ const STATES = {
     await page.locator('.guides__submit').click();
     await page.locator('.guides__error--form').waitFor();
     await page.locator('.guides__side').scrollIntoViewIfNeeded();
+  },
+  'guides-closed': async (page) => {
+    reset({ guide: 'closed' });
+    await page.locator('#guides').scrollIntoViewIfNeeded();
+    await page.locator('.guides').waitFor();
+    await page.locator('.guides-place').first().click();
+    await page.locator('.guides input[type="email"]').fill('maria@example.com');
+    await page.locator('.guides__submit').click();
+    await page.locator('.guides-done').waitFor();
+    await page.locator('#guides').scrollIntoViewIfNeeded();
+  },
+  'guides-hidden': async (page) => {
+    reset({ catalogue: 'closed' });
+    await page.locator('#guides').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => !document.getElementById('guides'));
+    await page.locator('#faq').scrollIntoViewIfNeeded();
+  },
+  'wizard-book': async (page) => {
+    await page.route('https://formsubmit.co/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":"true"}' }));
+    await page.locator('[data-track="hero-start"]').click();
+    await page.locator('.wiz-range').first().click();
+    await page.locator('.wiz input[type="date"]').fill('2027-05-15');
+    await page.locator('.wiz__body label input:not([type])').first().fill('La Paz');
+    await page.locator('.wiz__continue').click();
+    await page.locator('.wiz button.btn--gold').click();
+    await page.locator('.wiz input[autocomplete="name"]').fill('María Fernanda');
+    await page.locator('.wiz input[type="email"]').fill('maria@example.com');
+    await page.locator('.wiz button[type="submit"]').click();
+    await page.locator('.wiz-pay').waitFor();
+    await page.locator('.book-line--wizard [data-book]').click();
+    await page.locator('label.book-time').first().waitFor();
   },
 };
 

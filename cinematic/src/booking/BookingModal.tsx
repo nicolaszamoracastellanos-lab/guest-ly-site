@@ -63,7 +63,8 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const reqId = useRef(0);
-  const key = useRef(newKey());
+  /* Made on the first press (not on every render), kept after no answer. */
+  const key = useRef<string | null>(null);
   const sentSlot = useRef(false);
 
   const [tz, setTz] = useState(visitorZone);
@@ -114,9 +115,13 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
 
   useEffect(() => {
     const before = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-    document.documentElement.classList.add('wizard-locked');
+    /* Opened from the order wizard's confirmation, the page is already
+       locked by the wizard, which stays open below: leave its lock alone. */
+    const html = document.documentElement;
+    const locked = html.classList.contains('wizard-locked');
+    html.classList.add('wizard-locked');
     return () => {
-      document.documentElement.classList.remove('wizard-locked');
+      if (!locked) html.classList.remove('wizard-locked');
       if (before && before.isConnected) before.focus();
     };
   }, [trigger]);
@@ -197,7 +202,7 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
       notes: draft.notes,
       lang,
       visitorTz: viewZone,
-      idempotencyKey: key.current,
+      idempotencyKey: (key.current ??= newKey()),
       fax_number: honeypot.current?.value ?? '',
     });
     setPending(false);
@@ -213,7 +218,7 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
       return;
     }
     /* A definite refusal: a new key for the next try. */
-    key.current = newKey();
+    key.current = null;
     if (res.kind === 'invalid') {
       if (res.field === 'start') return backToTimes(null);
       if (res.field) {

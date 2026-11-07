@@ -7,9 +7,27 @@
   min-height: 720px;
 }
 
-.guides {
+.guides,
+.guides-skeleton {
   display: grid;
   gap: 1.5rem;
+}
+
+/* While the catalogue loads: the cards and the side panel as still ghosts. */
+.guides-skeleton .guides__grid {
+  margin-top: 2rem;
+}
+
+.guides-ghost {
+  display: block;
+  min-height: 64px;
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius-card) - 8px);
+  background: var(--glass-bg);
+}
+
+.guides-ghost--side {
+  min-height: 260px;
 }
 
 .guides__places {
@@ -186,7 +204,8 @@
     min-height: 310px;
   }
 
-  .guides {
+  .guides,
+  .guides-skeleton {
     grid-template-columns: 1.5fr 1fr;
     align-items: start;
     gap: 2rem;

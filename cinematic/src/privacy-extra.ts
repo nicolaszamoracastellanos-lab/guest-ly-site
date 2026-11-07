@@ -2,7 +2,9 @@
    LegalPage renders each one only while its switch is on (src/switches.ts),
    so a disclosure goes live with its feature and never before. DRAFT
    wording: Nicolas approves it, with a new "Last updated" date, before either
-   switch is turned on (open issue in L7-LOG). */
+   switch is turned on (open issue in L7-LOG). The guides lines follow
+   L7p's #50 (address forgotten a day after the 14-day link dies; tips only
+   after the download confirms the ticked box). */
 
 type Block = { h: string; body: string[] };
 
@@ -29,16 +31,16 @@ export const guidesPrivacyCopy: Record<'en' | 'es', Block> = {
   en: {
     h: 'Destination guides',
     body: [
-      'When you ask for a guide, we receive your email address, the destination, the page language and your time zone, and we email you a link to the guide.',
-      'We send wedding planning tips only if you tick the box, and we keep the sentence you agreed to and when. Every tips email has a link to stop them.',
+      'When you ask for a guide, we receive your email address, the destination, the page language and your time zone, and we email you a link to the guide. The link works for 14 days, and we delete your address a day after it stops working.',
+      'We send wedding tips only if you tick the box and then download the guide from that email, and we keep the sentence you agreed to and when. Every tips email has a link to stop them.',
       'Requests are stored on our own server at app.guest-ly.com. We never sell your address or use it for ads.',
     ],
   },
   es: {
     h: 'Guías de destino',
     body: [
-      'Cuando pides una guía, recibimos tu correo, el destino, el idioma de la página y tu zona horaria, y te enviamos por correo un enlace a la guía.',
-      'Solo te enviamos consejos para organizar la boda si marcas la casilla, y guardamos la frase que aceptaste y cuándo. Cada correo de consejos tiene un enlace para dejarlos.',
+      'Cuando pides una guía, recibimos tu correo, el destino, el idioma de la página y tu zona horaria, y te enviamos por correo un enlace a la guía. El enlace funciona 14 días, y borramos tu correo un día después de que deja de funcionar.',
+      'Solo te enviamos consejos de boda si marcas la casilla y luego descargas la guía desde ese correo, y guardamos la frase que aceptaste y cuándo. Cada correo de consejos tiene un enlace para dejarlos.',
       'Las solicitudes se guardan en nuestro propio servidor en app.guest-ly.com. Nunca vendemos tu correo ni lo usamos para publicidad.',
     ],
   },

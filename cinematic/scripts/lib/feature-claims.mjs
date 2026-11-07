@@ -32,7 +32,7 @@ export function featureClaimProblems({ switches, home = '', privacy = '', assets
       key: 'guides',
       label: '#50 destination guides (GUIDES_ENABLED)',
       claim: GUIDE_CLAIM,
-      api: '/api/public/guides/',
+      api: '/api/public/guides',
       chunk: /^GuidesForm-/,
       inHome: /\bid="guides"/,
       inPrivacy: /<h2>(Destination guides|Guías de destino)<\/h2>/,
