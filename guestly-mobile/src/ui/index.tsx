@@ -888,15 +888,17 @@ export function Badge({ label, kind = "mute", dot }: { label: string; kind?: Bad
   );
 }
 
-export function Chip({ label, on, onPress, testID }: { label: string; on?: boolean; onPress?: () => void; testID?: string }) {
+export function Chip({ label, on, onPress, testID, hint, disabled }: { label: string; on?: boolean; onPress?: () => void; testID?: string; /** What the tap does, read after the label. */ hint?: string; disabled?: boolean }) {
   // 44 pt pressable, 36 pt visual pill centered inside it.
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected: !!on }}
+      accessibilityHint={hint}
+      accessibilityState={{ selected: !!on, disabled: !!disabled }}
       style={({ pressed }) => [styles.chipHit, pressed && { opacity: 0.8 }]}
     >
       <View style={[styles.chip, on && styles.chipOn]}>

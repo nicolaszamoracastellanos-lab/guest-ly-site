@@ -23,6 +23,8 @@ import { moveCard, setCard, showCard } from "./homeEdit";
 import { onlyServedKeys, readRoad, roadCardRoute, roadRows, type RoadCard, type RoadItem } from "./road";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
+import { readReviewCard, REVIEW_COPY } from "./reviewCard";
+import { ReviewCardBody } from "./ReviewCardBody";
 
 export type CardBody = (o: { size: CardSize; half: boolean }) => ReactNode;
 
@@ -49,7 +51,15 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
   // #6: the road card draws only with its data (MW_ROAD on, the read worked);
   // without it the card stays in the layout (and in edit mode) but not on Home.
   const road = useMemo(() => readRoad(cards?.road), [cards?.road]);
-  const visible = useMemo(() => list.filter((x) => !x.hidden && (editing || x.id !== "road" || !!road)), [list, editing, road]);
+  // #20: the review card draws only with cards.review (MW_REVIEW_ASK on, after
+  // the wedding, not sent, not "Not now"); "Not now" hides it here at once and
+  // Undo brings it back.
+  const review = useMemo(() => readReviewCard(cards?.review), [cards?.review]);
+  const [reviewOff, setReviewOff] = useState(false);
+  const visible = useMemo(
+    () => list.filter((x) => !x.hidden && (editing || ((x.id !== "road" || !!road) && (x.id !== "review" || (!!review && !reviewOff))))),
+    [list, editing, road, review, reviewOff],
+  );
   const hidden = useMemo(() => list.filter((x) => x.hidden), [list]);
   const rows = rowsOf(visible, rowSpans(visible, 2));
 
@@ -62,8 +72,8 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
     try {
       // The cards as shown (today's phase included) become the saved order,
       // and this phase stops reordering them (the portal's markPhaseHandled).
-      // Keys of cards this build was not served (the #20 review card) stay
-      // out, so the web keeps lifting them (onlyServedKeys).
+      // Keys of cards this build was not served (flag off, an older portal)
+      // stay out, so the web keeps lifting them (onlyServedKeys).
       await save.mutateAsync({ cards: draft.cards, dismissed: onlyServedKeys(markPhaseHandled(draft.dismissed, layout.answers, layout.phase), layout.served) });
       setEditing(false);
       setDraft(null);
@@ -124,6 +134,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
                   onSize={(size) => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { size }) }))}
                   onHide={() => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { hidden: true }) }))}
                   testID={`home-card-${item.id}`}
+                  link={item.id !== "review"}
                 >
                   {(bodies[item.id] ?? defaultBody(item.id))({ size: item.size, half: span === 1 })}
                 </CardShell>
@@ -300,6 +311,11 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
           if (!road) return <Quiet text={c.open} />;
           return <RoadBody road={road} size={size} half={half} copy={c} />;
         }
+        case "review": {
+          // In edit mode the card's own tools take the taps: the line only.
+          if (editing || !review) return <Sub text={REVIEW_COPY[lang].body} />;
+          return <ReviewCardBody card={review} weddingDate={data.wedding_date} onHide={() => setReviewOff(true)} onShow={() => setReviewOff(false)} />;
+        }
         case "planner": {
           const p = d.planner;
           const n = p?.open ?? data.needs_you_breakdown?.requests ?? 0;
@@ -332,6 +348,7 @@ function CardShell({
   children,
   testID,
   hint,
+  link = true,
 }: {
   card: HomeCard;
   title: string;
@@ -347,6 +364,8 @@ function CardShell({
   testID?: string;
   /** Where the card goes when it is not the card's own screen (the road's Now step). */
   hint?: string;
+  /** False for a card whose body holds its own actions (#20 review): no card-wide tap, no chevron. */
+  link?: boolean;
 }) {
   const body = (
     <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
@@ -365,13 +384,13 @@ function CardShell({
         <T v="body16" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
           {title}
         </T>
-        {editing ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
+        {editing || !link ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
       </Row>
       {children}
     </Card>
   );
   // While editing the card is not a link: its own tools take the taps.
-  return editing ? (
+  return editing || !link ? (
     <View style={{ flex: 1 }} testID={testID}>
       {body}
     </View>

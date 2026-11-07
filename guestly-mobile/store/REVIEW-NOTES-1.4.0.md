@@ -20,7 +20,10 @@ place. Re-read it against the build before pressing submit.
    Nothing done in the preview is saved or sent. Shown when the tenant is a demo
    (`tenant.is_demo` in /auth/me when the portal sends it, else the slugs demo-valentina-and-mateo
    and demo-review), never on a client wedding.
-3. The microphone purpose string is the 1.3.0 text, unchanged (app.config.ts, locales/en.json,
+3. In-app rating prompt (#20): after the wedding day the couple's "Your feedback" card opens our
+   feedback page; when it closes the app may ask once per install for Apple's own
+   SKStoreReviewController through expo-store-review. Never tied to the rating chosen.
+4. The microphone purpose string is the 1.3.0 text, unchanged (app.config.ts, locales/en.json,
    locales/es.json). It stays because the camera library links the audio capture API (an upload
    without it can be refused, ITMS-90683); the app never asks for the microphone:
 
@@ -69,7 +72,9 @@ ES: Tu boda en vivo: mira lo que está pasando ahora y lo que viene después. Fu
   - MW_KNOW_BEFORE: the know-before-you-go card.
   - MW_SEEN: "Seen" status.
   - MW_ROAD: the road-to-the-wedding card.
-  Leave MW_REVIEW_ASK as it is: the #20 review card is not built in this binary.
+  - MW_REVIEW_ASK: the "Your feedback" card after the wedding day (RATINGS). The review wedding is
+    before its date, so App Review cannot see the card; turning the flag on there is harmless. In
+    production it goes on with the rest only once Nicolas says so (ov-firstweddings).
 - MW_TRAVEL_WINDOWS stays off, for the review wedding and in production. It is blocked in the
   portal flag registry (F144 releaseBlocker): the app guest login still hands out guest ids, so a
   name and an invite code would show that guest's flight and times. /ops refuses to release it,
@@ -77,11 +82,9 @@ ES: Tu boda en vivo: mira lo que está pasando ahora y lo que viene después. Fu
   (mw_flag_release does not read the blocker). So the notes and What's new say nothing about
   guest travel. The words and this flag go back on the list above only in the commit that removes
   the F144 blocker (review-notes.test reads the registry and fails on a blocked flag's words).
-- expo-audio and expo-store-review are installed but nothing imports them (the #20 review card and
-  its rating prompt are not built, so the notes do not mention a rating prompt). Removing either
-  package changes the native module set: decide both before the Nov 15 cut and re-run
-  check-prebuilt-symbols after npm ci. If the #20 card ships in this binary, put a RATINGS line back
-  in review_notes_en (review-notes.test allows it only once a src file imports expo-store-review).
+- Native module set (batch 3): expo-audio is removed (package.json, lockfile, app.config.ts plugin);
+  expo-store-review stays and is now used by the #20 card. After npm ci,
+  check-prebuilt-symbols passes; the 1.4.0 binary is a new build anyway (nothing ships over the air).
 - Check the current text of guideline 5.1.2(i) the day of submission.
 
 ## review_notes_en (paste as is)
@@ -111,4 +114,5 @@ IPAD: iPhone-only app; it runs in the iPhone compatibility window on iPad.
 NEW IN 1.4
 WEDDING-DAY SCREENS: on the wedding day, Tools > Day-of shows Now and Next with the minutes left and Mark done, and the day's runsheet, guest list and door search are saved on the phone so they work without signal. A normal day shows the day's plan only. To see the wedding-day screens on any day, the demo wedding's Day-of screen has "Preview the day": pick a moment of the day and the screen runs as it would at that time, with a banner saying it is a preview. Nothing done in the preview is saved. This control exists only on demo weddings.
 COORDINATOR PLANS: one message can produce one card with several changes (for example add a task, a vendor and a budget line), shown as a checklist. Nothing changes until the person taps "Run N actions"; any line can be unticked first; a line the plan added can be undone for 30 minutes. Sends to guests are never part of a plan and keep their own typed confirmation.
+RATINGS: after the wedding day, the couple's Home can show a "Your feedback" card. Any of its five ratings opens our own feedback page in the in-app browser, the same page for every rating. When that page is closed, the app may ask iOS once per install for Apple's own rating prompt (SKStoreReviewController); iOS decides whether it shows. Nothing is offered for a rating. The demo wedding is before its date, so the card does not show there.
 Other 1.4 additions are wedding planning screens that show data the couple or planner already entered on the web (timeline lock and change requests, places with Apple Maps and Google Maps links that open those apps, final guest count, a know-before-you-go card, "Seen" status, a road-to-the-wedding card). None of them needs a new permission.

@@ -149,45 +149,43 @@ t("K8: what the app posts merges on the server without hiding the stored road", 
   assert.deepEqual(ids(merged).filter((id: string) => id !== "review"), ["rsvp", "countdown", "road"]);
 });
 
-t("#20 review card: served to 1.4.0 after the wedding, this build neither draws nor posts it", () => {
+t("#20 review card: served to 1.4.0 after the wedding, this build draws and posts it", () => {
+  assert.equal(road.NOT_DRAWN.size, 0, "batch 3: no introduced card is left undrawn");
   // What GET /couple/home sends a 1.4.0 couple with MW_REVIEW_ASK on after the day:
   // review lifted first, visible (lib/mobile/home-layout.ts).
   const raw = [{ id: "review", size: "m", hidden: false }, ...served(true)];
   const clean = core.sanitizeLayout({ answers: core.STANDARD_ANSWERS, cards: raw })!;
-  assert.ok(clean.cards.some((c: { id: string }) => c.id === "review"), "the verbatim core knows the card");
   const kept = road.keepServed(clean.cards, raw);
-  assert.ok(!kept.some((c) => c.id === "review"), "not drawn");
-  assert.ok(kept.some((c) => c.id === "road"), "other introduced cards still follow the served list");
-  assert.ok(!road.onlyServed(core.suggestedCards(core.STANDARD_ANSWERS), [...kept.map((c) => c.id), "review"]).some((c) => c.id === "review"), "never posted");
-  // The server keeps the stored card and the partner's "Not now" key through this build's save.
+  assert.ok(kept.some((c) => c.id === "review" && !c.hidden), "kept as served");
+  assert.ok(road.onlyServed(kept, kept.map((c) => c.id)).some((c) => c.id === "review"), "posted back as served");
+  // Flag off (or an older portal): not listed, so neither drawn nor posted, and the
+  // server keeps its stored card and the partner's key (mergeCards, mergeDismissed).
+  const off = served(true);
+  const keptOff = road.keepServed(core.sanitizeLayout({ answers: core.STANDARD_ANSWERS, cards: off })!.cards, off);
+  assert.ok(!keptOff.some((c) => c.id === "review"));
+  assert.ok(!road.onlyServed(core.suggestedCards(core.STANDARD_ANSWERS), keptOff.map((c) => c.id)).some((c) => c.id === "review"));
   const stored = core.sanitizeCards(raw.map((c) => (c.id === "review" ? { ...c, hidden: true } : c)));
-  const merged = core.mergeCards(kept, stored);
-  assert.deepEqual(merged.find((c: { id: string }) => c.id === "review"), { id: "review", size: "m", hidden: true });
-  assert.ok(core.mergeDismissed([], kept, ["after:review"]).includes("after:review"));
+  assert.deepEqual(core.mergeCards(keptOff, stored).find((c: { id: string }) => c.id === "review"), { id: "review", size: "m", hidden: true });
+  assert.ok(core.mergeDismissed([], keptOff, ["after:review"]).includes("after:review"));
   assert.equal(HOME_COPY.en.cards.review, "Your feedback", "the portal's card title");
   assert.equal(HOME_COPY.es.cards.review, "Tu opinión");
 });
 
-t("#20 review card: an Edit Home save after the wedding leaves the web's review lift alone", () => {
-  // Adapt on, after the wedding; the server served everything but the review card.
+t("#20 review card: Edit Home after the wedding posts after:review only when the card was served", () => {
   const a = { ...core.STANDARD_ANSWERS, adapt: true };
   const stored = core.suggestedCards(a);
-  const kept = road.keepServed(stored, stored.filter((c: { id: string }) => c.id !== "review"));
-  const served = kept.map((c) => c.id);
-  const before = core.effectiveCards(stored, a, "after", []);
-  assert.equal(before[1].id, "review", "the web lifts the review card second");
-  // What CustomHome.finish posts.
-  const posted = road.onlyServedKeys(core.markPhaseHandled([], a, "after"), served);
-  assert.ok(!posted.includes("after:review"), "no key for a card this build never showed");
-  assert.deepEqual(posted, ["after:album", "after:thankyou", "after:budget"]);
-  // The server's merge and the web after the save: review still second.
-  const merged = core.mergeDismissed(posted, kept, []);
-  const cards = core.mergeCards(kept, stored);
-  assert.equal(core.effectiveCards(cards, a, "after", merged)[1].id, "review");
-  // A key the couple stored on the web still stands through this build's save.
-  const keep = road.onlyServedKeys(core.markPhaseHandled(["after:review"], a, "after"), served);
-  assert.ok(!keep.includes("after:review"));
-  assert.ok(core.mergeDismissed(keep, kept, ["after:review"]).includes("after:review"));
+  assert.equal(core.effectiveCards(stored, a, "after", [])[1].id, "review", "the web lifts the review card second");
+  // Served (flag on): the couple arranged Home with the card in view, as on the web.
+  const keptOn = road.keepServed(stored, stored);
+  const postedOn = road.onlyServedKeys(core.markPhaseHandled([], a, "after"), keptOn.map((c) => c.id));
+  assert.ok(postedOn.includes("after:review"));
+  // Not served (flag off): no key for a card this phone never showed; the web keeps lifting it.
+  const keptOff = road.keepServed(stored, stored.filter((c: { id: string }) => c.id !== "review"));
+  const postedOff = road.onlyServedKeys(core.markPhaseHandled([], a, "after"), keptOff.map((c) => c.id));
+  assert.deepEqual(postedOff, ["after:album", "after:thankyou", "after:budget"]);
+  const merged = core.mergeDismissed(postedOff, keptOff, []);
+  assert.equal(core.effectiveCards(core.mergeCards(keptOff, stored), a, "after", merged)[1].id, "review");
+  assert.ok(core.mergeDismissed(postedOff, keptOff, ["after:review"]).includes("after:review"), "a key stored on the web stands");
   // No layout read yet: introduced keys are left to the server; others pass.
   assert.deepEqual(road.onlyServedKeys(["after:review", "after:album", "final:rsvp"], null), ["after:album", "final:rsvp"]);
   assert.ok(/onlyServedKeys\(markPhaseHandled\(draft\.dismissed, layout\.answers, layout\.phase\), layout\.served\)/.test(src("src/features/couple/CustomHome.tsx")), "Edit Home posts only served keys");

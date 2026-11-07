@@ -30,7 +30,7 @@ const en = {
     planner: "From your planner",
     activity: "Activity",
     road: "Road to the wedding",
-    // #20 (portal words, i18n/home-custom.ts); this build does not draw it yet (road.ts NOT_DRAWN).
+    // #20 (portal words, i18n/home-custom.ts); body and actions in reviewCard.ts.
     review: "Your feedback",
   } as Record<CardId, string>,
   // #6 Road to the wedding (the milestone words come from the portal, in this language)

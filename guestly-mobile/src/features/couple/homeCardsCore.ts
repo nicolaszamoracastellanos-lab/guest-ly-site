@@ -54,6 +54,8 @@ export type HomeCardsData = {
   planner?: PlannerCard | null;
   /** #6 (MW_ROAD, app 1.4.0+): the milestone line, read with readRoad (./road.ts). */
   road?: unknown;
+  /** #20 (MW_REVIEW_ASK, app 1.4.0+): { feedback_link, dismiss } or null, read with readReviewCard (./reviewCard.ts). */
+  review?: unknown;
 };
 
 export type CoupleHomeWithLayout = CoupleHome & { layout?: unknown; cards?: HomeCardsData | null };
@@ -80,7 +82,7 @@ export const CARD_ROUTES: Record<CardId, string> = {
   activity: "/couple/insights",
   // #6: the card opens its Now step (roadCardRoute); this is the fallback.
   road: "/couple/runsheet",
-  // #20: never drawn by this build (road.ts NOT_DRAWN); Home if it ever is.
+  // #20: the card is not a link (its ratings and Not now are); Home.
   review: "/couple",
 };
 
