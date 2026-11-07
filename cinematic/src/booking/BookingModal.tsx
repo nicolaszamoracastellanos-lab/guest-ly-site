@@ -34,7 +34,8 @@ import './booking.css';
    returns to the button that opened it. Every API answer has a calm state:
    closed or missing = write to us (email and WhatsApp), taken = fresh times,
    field refused = the field's own message with the input kept, no answer =
-   try again with the same key. */
+   try again with the same key (a new one once the time or email changes),
+   email limit = "you already booked today". */
 
 type Load = { s: 'loading' } | { s: 'ready'; data: OpenSlots } | { s: 'closed' } | { s: 'error' };
 type Step = 'times' | 'details' | 'done';
@@ -63,8 +64,11 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const reqId = useRef(0);
-  /* Made on the first press (not on every render), kept after no answer. */
-  const key = useRef<string | null>(null);
+  /* Made on the first press (not on every render), kept after no answer for
+     the same time and email only: a key sent again with another start or
+     address would get the first request's quiet replay, a "booked" for a
+     call that does not exist. */
+  const key = useRef<{ value: string; for: string } | null>(null);
   const sentSlot = useRef(false);
 
   const [tz, setTz] = useState(visitorZone);
@@ -77,7 +81,7 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
   const [zoneOpen, setZoneOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [role, setRole] = useState<Role | ''>('');
-  const [errors, setErrors] = useState<Partial<Record<BookField | 'form' | 'network', boolean>>>({});
+  const [errors, setErrors] = useState<Partial<Record<BookField | 'form' | 'network' | 'emailLimit', boolean>>>({});
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState<Booked | null>(null);
 
@@ -192,6 +196,8 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
     }
     setErrors({});
     setPending(true);
+    const keyFor = `${start}|${draft.email.trim().toLowerCase()}`;
+    if (key.current?.for !== keyFor) key.current = { value: newKey(), for: keyFor };
     const res = await book({
       start,
       name: draft.name.trim(),
@@ -202,7 +208,7 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
       notes: draft.notes,
       lang,
       visitorTz: viewZone,
-      idempotencyKey: (key.current ??= newKey()),
+      idempotencyKey: key.current.value,
       fax_number: honeypot.current?.value ?? '',
     });
     setPending(false);
@@ -228,6 +234,11 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
       return;
     }
     if (res.kind === 'taken') return backToTimes(res.slots);
+    if (res.kind === 'email_limit') {
+      /* The input stays; focus stays on the button, the message is an alert. */
+      setErrors({ emailLimit: true });
+      return;
+    }
     setLoad({ s: 'closed' });
     setStep('times');
   };
@@ -592,14 +603,17 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
               </label>
             </div>
 
-            {errors.network || errors.form ? (
+            {errors.network || errors.form || errors.emailLimit ? (
               <p className="book__error book__error--form" role="alert">
-                {errors.network ? c.errors.network : c.errors.form}
+                {errors.emailLimit ? c.errors.emailLimit : errors.network ? c.errors.network : c.errors.form}
               </p>
             ) : null}
 
             <div className="wiz__nav book__nav">
-              <button type="submit" className="btn btn--gold btn--lg" disabled={pending} aria-disabled={pending || undefined} data-track="book-submit">
+              {/* Never disabled: a focused button that turns disabled drops focus
+                  to the page, and Escape and the Tab trap stop working. The
+                  submit handler ignores a press while one is pending. */}
+              <button type="submit" className="btn btn--gold btn--lg" aria-disabled={pending || undefined} data-track="book-submit">
                 {pending ? c.sending : c.submit}
               </button>
             </div>

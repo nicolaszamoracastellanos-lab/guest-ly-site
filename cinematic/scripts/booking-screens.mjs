@@ -90,6 +90,14 @@ const STATES = {
     await submit(page);
     await page.locator('.book__error--form').waitFor();
   },
+  'booking-email-limit': async (page) => {
+    reset({ book: 'email_limit' });
+    await openBooking(page);
+    await toDetails(page);
+    await fill(page);
+    await submit(page);
+    await page.locator('.book__error--form').waitFor();
+  },
   'booking-done': async (page) => {
     await openBooking(page);
     await toDetails(page);
@@ -205,10 +213,32 @@ const STATES = {
     await page.locator('#guides').scrollIntoViewIfNeeded();
   },
   'guides-hidden': async (page) => {
+    /* Closed while the section is still below the viewport: it goes away. */
     reset({ catalogue: 'closed' });
-    await page.locator('#guides').scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      const top = document.getElementById('guides').getBoundingClientRect().top + scrollY;
+      window.scrollTo({ top: top - innerHeight - 300, behavior: 'instant' });
+    });
     await page.waitForFunction(() => !document.getElementById('guides'));
     await page.locator('#faq').scrollIntoViewIfNeeded();
+  },
+  'guides-unavailable-link': async (page) => {
+    /* ?guide=all (the expired guide page's link) while guides are closed. */
+    reset({ catalogue: 'closed' });
+    await page.goto(`${site.url}/?guide=all`, { waitUntil: 'networkidle' });
+    await page.locator('#guides .guides-done').waitFor();
+    await page.waitForTimeout(300);
+  },
+  'guides-unavailable-slow': async (page) => {
+    /* A slow "unavailable" after the visitor scrolled into the skeleton. */
+    reset({ catalogue: 'unavailable' });
+    let release;
+    stub.state.holdCatalogue = new Promise((r) => (release = r));
+    await page.evaluate(() => document.getElementById('guides').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await page.locator('#guides .guides-skeleton').waitFor();
+    release();
+    stub.state.holdCatalogue = null;
+    await page.locator('#guides .guides-done').waitFor();
   },
   'wizard-book': async (page) => {
     await page.route('https://formsubmit.co/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":"true"}' }));

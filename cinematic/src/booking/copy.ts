@@ -33,7 +33,7 @@ export type BookingCopy = {
   roles: { couple: string; planner: string; other: string };
   submit: string;
   sending: string;
-  errors: Record<BookField, string> & { form: string; network: string };
+  errors: Record<BookField, string> & { form: string; network: string; emailLimit: string };
   doneTitle: string;
   doneHost: string;
   doneSent: string;
@@ -90,6 +90,7 @@ export const bookingCopy: Record<'en' | 'es', BookingCopy> = {
       start: 'That time is no longer open. Pick another.',
       form: 'Could not read the form. Check it and try again.',
       network: 'Could not reach Guest-ly. Check your connection and try again.',
+      emailLimit: 'You already booked today. Check your email for the details.',
     },
     doneTitle: 'Your call is booked',
     doneHost: 'For Guest-ly: {time}, {host}.',
@@ -145,6 +146,7 @@ export const bookingCopy: Record<'en' | 'es', BookingCopy> = {
       start: 'Ese horario ya no está libre. Elige otro.',
       form: 'No pudimos leer el formulario. Revísalo e inténtalo de nuevo.',
       network: 'No pudimos conectar con Guest-ly. Revisa tu conexión e inténtalo de nuevo.',
+      emailLimit: 'Ya agendaste hoy. Revisa tu correo para ver los detalles.',
     },
     doneTitle: 'Tu llamada está agendada',
     doneHost: 'Para Guest-ly: {time}, {host}.',

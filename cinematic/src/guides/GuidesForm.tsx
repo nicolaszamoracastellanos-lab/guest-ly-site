@@ -11,7 +11,9 @@ import { guidesCopy } from './copy';
 /* #50 the guides form (lazy chunk, mounted by GuidesSection when the section
    comes near). It reads the catalogue from app.guest-ly.com first: the cards,
    the tips sentence and its version all come from there (no guide data in
-   the landing, D24), and anything but "open" hides the section. Then: pick a
+   the landing, D24), and anything but "open" hides the section, or, when
+   the section is already in view (or a ?guide= link brought the person
+   here), says so in place with the contact address. Then: pick a
    place, leave an email, tick tips only if wanted, and the guide arrives by
    email. No request before the press; the answer is the same for every
    accepted address (a repeat within the day included). Contract: L7P-LOG
@@ -21,8 +23,10 @@ type Open = Extract<Catalogue, { kind: 'open' }>;
 export type GuidesFormProps = {
   /* From ?guide=<code> or ?guide=all: preselect that guide. */
   initial: string | null;
-  /* The catalogue is not open: the section hides. */
-  onHidden: () => void;
+  /* The catalogue is not open. true: the section went away (it was still
+     below the viewport). false: it stays, and the form shows the calm
+     "not available, write to us" line in its place. */
+  onHidden: () => boolean;
 };
 
 function zone(): string {
@@ -49,6 +53,7 @@ export default function GuidesForm({ initial, onHidden }: GuidesFormProps) {
   const emailRef = useRef<HTMLInputElement>(null);
   const firstPlaceRef = useRef<HTMLInputElement>(null);
   const doneRef = useRef<HTMLHeadingElement>(null);
+  const closedRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const props = useRef({ initial, onHidden });
   const focusEmail = useRef(false);
@@ -59,7 +64,7 @@ export default function GuidesForm({ initial, onHidden }: GuidesFormProps) {
     started.current = true;
     void getCatalogue().then((r) => {
       if (r.kind !== 'open') {
-        props.current.onHidden();
+        if (!props.current.onHidden()) setClosed(true);
         return;
       }
       setCat(r);
@@ -78,6 +83,16 @@ export default function GuidesForm({ initial, onHidden }: GuidesFormProps) {
     focusEmail.current = false;
     emailRef.current?.focus();
   }, [cat]);
+
+  if (closed) {
+    return (
+      /* Its own node (key): React would otherwise reuse the skeleton's div and
+         the box would start without its padding for a frame. */
+      <div key="closed" className="glass guides-done" role="status" ref={closedRef} tabIndex={-1}>
+        <p className="card-body">{c.closed.replace('{email}', t.faq.human.email)}</p>
+      </div>
+    );
+  }
 
   if (!cat) {
     /* Skeleton in the form's shape while the catalogue loads. */
@@ -128,7 +143,9 @@ export default function GuidesForm({ initial, onHidden }: GuidesFormProps) {
         (res.field === 'code' ? firstPlaceRef.current : emailRef.current)?.focus();
       } else setErrors({ form: true });
     } else if (res.kind === 'closed') {
+      /* The form (and the focused button) goes away: focus moves to the line. */
       setClosed(true);
+      requestAnimationFrame(() => closedRef.current?.focus());
     } else {
       /* 503 or no answer: the input stays and the next press sends again. */
       setErrors(res.kind === 'retry' ? { retry: true } : { network: true });
@@ -144,14 +161,6 @@ export default function GuidesForm({ initial, onHidden }: GuidesFormProps) {
 
   const errId = (f: string) => `${uid}-${f}-err`;
   const formError = errors.retry ? c.errors.retry : errors.network ? c.errors.network : errors.form ? c.errors.form : null;
-
-  if (closed) {
-    return (
-      <div className="glass guides-done" role="status">
-        <p className="card-body">{c.closed.replace('{email}', t.faq.human.email)}</p>
-      </div>
-    );
-  }
 
   return sent ? (
     <div className="glass guides-done" role="status">
@@ -235,7 +244,9 @@ export default function GuidesForm({ initial, onHidden }: GuidesFormProps) {
             {formError}
           </p>
         ) : null}
-        <button type="submit" className="btn btn--gold-line btn--lg guides__submit" disabled={pending} data-track="guide-submit">
+        {/* Never disabled (a focused button that turns disabled drops focus to
+            the page); a press while one is pending is ignored. */}
+        <button type="submit" className="btn btn--gold-line btn--lg guides__submit" aria-disabled={pending || undefined} data-track="guide-submit">
           {pending ? c.sending : c.submit}
         </button>
       </div>

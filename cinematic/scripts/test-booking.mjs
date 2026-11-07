@@ -23,6 +23,10 @@
    E. empty fields: messages, focus on the first, no request; a field the
       server refuses keeps the input; no answer: retry reuses the key and
       books; taken: back to fresh times without that time and a new key.
+      After no answer (Space on the submit): focus stays on the button, Tab
+      stays inside, Escape closes; another email or another time gets a new
+      key, the same pair keeps it. 429 email_limit: "You already booked
+      today", the input kept, a new key next time.
    F. closed, unavailable, 429, 500 and empty-with-next answers each show
       their calm state (contact links, retry, next open day).
    G. replay: "check your email", no links.
@@ -34,7 +38,11 @@
       consentVersion, fax_number}, tips false; ticked: tips true and the
       server reads it as ticked; 503: "try again in a minute", the input
       kept, the retry sends; 409: the form is replaced by the calm message.
-      Catalogue closed, unavailable, 429 or 500: no section. ?guide=<code>
+      503 and 409 leave focus inside the form. Catalogue closed,
+      unavailable, 429 or 500 while the section is below the viewport: no
+      section and the FAQ is № 10 again; while it is in view (?guide=all, or
+      a slow answer after a scroll into the skeleton): the section stays
+      with the "not available" line, layout shift under 0.02. ?guide=<code>
       scrolls to the section with that guide picked and the email focused,
       ?guide=all scrolls there, and the query is dropped.
    J. beacon events: booking opened, slot, booked and guide <id>.
@@ -170,6 +178,12 @@ async function fillDetails(page) {
 }
 const dialogSubmit = (page) => page.locator('.book button[type="submit"]').click();
 const lastBook = () => [...S.hits].reverse().find((h) => h.path.endsWith('/book'));
+/* Press "Book the call" and wait until the stub saw that POST. */
+async function pressBook(page) {
+  const n = S.hits.filter((h) => h.path.endsWith('/book')).length;
+  await dialogSubmit(page);
+  for (let i = 0; i < 50 && S.hits.filter((h) => h.path.endsWith('/book')).length === n; i++) await page.waitForTimeout(50);
+}
 
 /* ---------- A, B, C, D, J ---------- */
 {
@@ -344,6 +358,63 @@ const lastBook = () => [...S.hits].reverse().find((h) => h.path.endsWith('/book'
   await done(t, 'E');
 }
 
+/* ---------- E: after no answer, focus, keys and the email limit ---------- */
+{
+  reset({ book: 'abort' });
+  const t = await context();
+  const { page } = t;
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  await openDialog(page);
+  await toDetails(page);
+  await fillDetails(page);
+  await page.locator('.book button[type="submit"]').focus();
+  await page.keyboard.press('Space');
+  await page.getByText('Could not reach Guest-ly. Check your connection and try again.').waitFor();
+  check(await page.evaluate(() => document.activeElement?.matches('.book button[type="submit"]')), `E: focus left the submit after no answer (${await page.evaluate(() => document.activeElement?.tagName)})`);
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Tab');
+  check(await page.evaluate(() => Boolean(document.activeElement?.closest('.book'))), 'E: Tab left the dialog after no answer');
+  const k1 = JSON.parse(lastBook().body).idempotencyKey;
+  await pressBook(page);
+  check(JSON.parse(lastBook().body).idempotencyKey === k1, 'E: the same time and email after no answer got a new key');
+  await page.getByLabel('Email').fill('ana@example.org');
+  await pressBook(page);
+  const k2 = JSON.parse(lastBook().body).idempotencyKey;
+  check(k2 !== k1, 'E: another email after no answer reused the key');
+  await page.locator('.book__chosen .book-link').click();
+  await page.locator('label.book-time').nth(1).click();
+  await page.getByRole('button', { name: 'Choose this time' }).click();
+  await page.locator('.book__fields').waitFor();
+  await pressBook(page);
+  const b3 = JSON.parse(lastBook().body);
+  check(b3.idempotencyKey !== k2 && b3.email === 'ana@example.org', 'E: another time after no answer reused the key');
+
+  S.mode.book = 'email_limit';
+  await dialogSubmit(page);
+  await page.getByText('You already booked today. Check your email for the details.').waitFor();
+  check((await page.getByText('Could not reach Guest-ly').count()) === 0, 'E: email_limit shown as a connection failure');
+  check((await page.getByLabel('Email').inputValue()) === 'ana@example.org' && (await page.getByLabel('Your name').inputValue()) === 'Ana Pérez', 'E: input lost after email_limit');
+  check(await page.evaluate(() => Boolean(document.activeElement?.closest('.book'))), 'E: focus left the dialog after email_limit');
+  const kLimit = JSON.parse(lastBook().body).idempotencyKey;
+  S.mode.book = 'booked';
+  await dialogSubmit(page);
+  await page.locator('.book__done').waitFor();
+  check(JSON.parse(lastBook().body).idempotencyKey !== kLimit, 'E: the key was kept after email_limit (a definite refusal)');
+  await page.getByRole('button', { name: 'Back to the site' }).click();
+
+  /* Escape still closes after no answer. */
+  reset({ book: 'abort' });
+  await openDialog(page);
+  await toDetails(page);
+  await fillDetails(page);
+  await page.locator('.book button[type="submit"]').focus();
+  await page.keyboard.press('Space');
+  await page.getByText('Could not reach Guest-ly. Check your connection and try again.').waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
+  check((await page.getByRole('dialog').count()) === 0, 'E: Escape did not close the dialog after no answer');
+  await done(t, 'E after no answer');
+}
+
 /* ---------- F, G: calm states ---------- */
 for (const [mode, expect] of [
   [{ slots: 'closed' }, 'No times open right now'],
@@ -475,6 +546,7 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   await page.locator('.guides__error--form').waitFor();
   check((await page.locator('.guides__error--form').innerText()) === 'No se pudo enviar la guía. Inténtalo de nuevo en un minuto.', 'I: 503 message');
   check((await page.getByLabel('Tu correo').inputValue()) === 'ana@example.com' && (await page.locator('.guides-place input').nth(2).isChecked()), 'I: input lost after 503');
+  check(await page.evaluate(() => document.activeElement?.matches('.guides__submit')), `I: focus left the button after 503 (${await page.evaluate(() => document.activeElement?.tagName)})`);
   S.mode.guide = 'sent';
   await pressGuide(page);
   await page.locator('.guides-done').waitFor();
@@ -489,6 +561,8 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   await page.locator('.guides-done[role="status"]').waitFor();
   check((await page.locator('.guides-done').innerText()).startsWith('Las guías no están disponibles ahora.'), 'I: closed message');
   check((await page.locator('form.guides').count()) === 0, 'I: the form stayed after 409');
+  await page.waitForTimeout(100);
+  check(await page.evaluate(() => Boolean(document.activeElement?.closest('#guides'))), 'I: focus fell to the page after 409');
 
   /* K: nothing on the device. */
   const store = await page.evaluate(() => ({ local: Object.keys(localStorage), session: sessionStorage.length, cookie: document.cookie }));
@@ -497,18 +571,76 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   await done(t, 'I');
 }
 
-/* ---------- I: catalogue not open hides the section ---------- */
+/* ---------- I: catalogue not open ---------- */
+const faqNo = (page) => page.evaluate(() => document.querySelector('#faq')?.innerText.match(/№ \d+/)?.[0]);
+/* Layout shifts not caused by input, summed from the moment this runs. */
+const watchShifts = (page) =>
+  page.evaluate(() => {
+    window.__cls = 0;
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+    }).observe({ type: 'layout-shift' });
+  });
+const shifts = (page) => page.evaluate(() => window.__cls);
 for (const catalogue of ['closed', 'unavailable', 'limited', 'error']) {
+  /* Below the viewport (the form loads 800 px early): the section goes away. */
   reset({ catalogue });
   const t = await context();
   const { page } = t;
   await page.goto(on.url, { waitUntil: 'networkidle' });
+  check((await faqNo(page)) === '№ 11', `I: catalogue ${catalogue}: FAQ number before ${await faqNo(page)}`);
   const mark = S.hits.length;
-  await page.locator('#guides').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const top = document.getElementById('guides').getBoundingClientRect().top + scrollY;
+    window.scrollTo({ top: top - innerHeight - 300, behavior: 'instant' });
+  });
   await page.waitForFunction(() => !document.getElementById('guides'), null, { timeout: 8000 }).catch(() => {});
-  check((await page.locator('#guides').count()) === 0, `I: catalogue ${catalogue}: the section is still shown`);
+  check((await page.locator('#guides').count()) === 0, `I: catalogue ${catalogue} below the viewport: the section is still shown`);
+  check((await faqNo(page)) === '№ 10', `I: catalogue ${catalogue}: the FAQ kept ${await faqNo(page)} after the section went away`);
   check(apiHits(mark).filter((h) => h.path === '/api/public/guides').length === 1 && guideBodies(mark).length === 0, `I: catalogue ${catalogue}: requests`);
   await done(t, `I catalogue ${catalogue}`);
+}
+for (const width of [390, 1440]) {
+  /* ?guide=all (the expired guide page's "Request a new link") with guides closed. */
+  reset({ catalogue: 'closed' });
+  const t = await context({ width });
+  const { page } = t;
+  await page.addInitScript(() => {
+    window.__cls = 0;
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await page.goto(`${on.url}/?guide=all`, { waitUntil: 'networkidle' });
+  await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  check((await page.locator('#guides').count()) === 1, `I: ?guide=all closed ${width}: the section went away under the visitor`);
+  const msg = (await page.locator('#guides .guides-done').innerText().catch(() => '')).trim();
+  check(msg.startsWith('Guides are not available right now.') && msg.includes('@guest-ly.com'), `I: ?guide=all closed ${width}: message ${JSON.stringify(msg)}`);
+  const cls = await shifts(page);
+  check(cls < 0.02, `I: ?guide=all closed ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
+  check((await faqNo(page)) === '№ 11', `I: ?guide=all closed ${width}: FAQ number ${await faqNo(page)}`);
+  await done(t, `I ?guide=all closed ${width}`);
+}
+{
+  /* A slow "unavailable" after a normal scroll into the skeleton. */
+  reset({ catalogue: 'unavailable' });
+  let release = () => {};
+  S.holdCatalogue = new Promise((r) => (release = r));
+  const t = await context({ width: 390 });
+  const { page } = t;
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  await page.evaluate(() => document.getElementById('guides').scrollIntoView({ block: 'start', behavior: 'instant' }));
+  await page.locator('#guides .guides-skeleton').waitFor();
+  await watchShifts(page);
+  release();
+  S.holdCatalogue = null;
+  await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  check((await page.locator('#guides .guides-done').count()) === 1, 'I: slow unavailable in view: no message in place');
+  const cls = await shifts(page);
+  check(cls < 0.02, `I: slow unavailable in view: layout shift ${cls.toFixed(3)} (budget 0.02)`);
+  await done(t, 'I slow unavailable');
 }
 
 /* ---------- I: ?guide=<code> and ?guide=all (the expired link's "Request a new link") ---------- */

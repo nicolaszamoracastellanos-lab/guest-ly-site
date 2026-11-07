@@ -133,7 +133,8 @@ export function parseGuideBody(raw) {
 
 /* The stub server. mode.slots: open | closed | unavailable | empty-next |
    limited | error | slow. mode.book: booked | replay | taken | invalid-<field>
-   | invalid-null | closed | unavailable | error | abort. mode.catalogue:
+   | invalid-null | closed | unavailable | email_limit (429, L7p review
+   round 1: this email booked 3 calls today) | error | abort. mode.catalogue:
    open | closed | unavailable | limited | error. mode.guide: sent (after
    L7p's parser: a body it refuses answers its 400) | invalid-email |
    invalid-code | closed (409) | unavailable (503) | error | abort.
@@ -191,6 +192,7 @@ export async function startStub({ port = 0 } = {}) {
         if (m === 'error') return send(500, { v: 1, ok: false, status: 'error' });
         if (m === 'closed') return send(409, { v: 1, ok: false, status: 'closed', slots: [] });
         if (m === 'unavailable') return send(503, { v: 1, ok: false, status: 'unavailable' });
+        if (m === 'email_limit') return send(429, { v: 1, ok: false, status: 'email_limit' });
         if (m === 'invalid-null') return send(400, { v: 1, ok: false, status: 'invalid', field: null });
         if (m.startsWith('invalid-')) return send(400, { v: 1, ok: false, status: 'invalid', field: m.slice(8) });
         if (m === 'taken') {

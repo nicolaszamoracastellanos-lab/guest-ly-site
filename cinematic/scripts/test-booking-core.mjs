@@ -79,6 +79,8 @@ eq('taken with fresh slots', readBook(409, { v: 1, ok: false, status: 'taken', s
 eq('409 closed', readBook(409, { v: 1, ok: false, status: 'closed', slots: [] }, ORIGIN).kind, 'closed');
 eq('404', readBook(404, { v: 1, ok: false, status: 'not_found' }, ORIGIN).kind, 'closed');
 eq('503', readBook(503, { v: 1, ok: false, status: 'unavailable' }, ORIGIN).kind, 'closed');
+eq('429 email_limit (L7p review round 1)', readBook(429, { v: 1, ok: false, status: 'email_limit' }, ORIGIN), { kind: 'email_limit' });
+eq('429 another status is no answer', readBook(429, { v: 1, ok: false, status: 'limited' }, ORIGIN).kind, 'error');
 eq('500', readBook(500, { v: 1 }, ORIGIN).kind, 'error');
 eq('no body', readBook(502, null, ORIGIN).kind, 'error');
 
@@ -185,6 +187,23 @@ eq('?guide=<code>', guideParam('?guide=co-cartagena'), 'co-cartagena');
 eq('?guide=all', guideParam('?x=1&guide=all'), 'all');
 eq('?guide=junk ignored', guideParam('?guide=%3Cscript%3E'), null);
 eq('no ?guide', guideParam('?book=demo'), null);
+
+/* ---------- every booking refusal L7p's handleBook sends has a landing state ---------- */
+const l7pBook = [process.env.GL_L7P_DIR, process.env.GL_PORTAL_DIR].find((d) => d && existsSync(join(d, 'src/lib/booking/public.ts')));
+if (l7pBook) {
+  const src = readFileSync(join(l7pBook, 'src/lib/booking/public.ts'), 'utf8');
+  const from = src.indexOf('export async function handleBook');
+  const fn = from < 0 ? '' : src.slice(from);
+  const pairs = [...new Set([...fn.matchAll(/ok: false, status: "(\w+)"[^}]*\}, (\d{3})\)/g)].map((m) => `${m[1]} ${m[2]}`))].sort();
+  ok(`L7p handleBook refusals found (${pairs.join(', ')})`, pairs.length >= 5);
+  for (const p of pairs) {
+    const [st, code] = p.split(' ');
+    const kind = readBook(Number(code), { v: 1, ok: false, status: st, field: null, slots: [] }, ORIGIN).kind;
+    ok(`L7p answers ${code} ${st}: the landing reads it (got ${kind}, not a connection failure)`, kind !== 'error');
+  }
+  ok('L7p answers 429 email_limit as the stub does', pairs.includes('email_limit 429'));
+  console.log(`test-booking-core: booking refusals checked against ${l7pBook}`);
+} else console.log('test-booking-core: no portal checkout with the booking API, L7p booking source check skipped');
 
 /* ---------- the stub matches L7p's source, when a checkout with #50 is found ---------- */
 const l7p = [process.env.GL_L7P_DIR, process.env.GL_PORTAL_DIR].find((d) => d && existsSync(join(d, 'src/lib/guides/core.ts')));

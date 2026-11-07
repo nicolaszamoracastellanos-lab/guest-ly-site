@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
 import { BookCta } from '../booking/BookingContext';
+import { useGuidesShown } from '../guides/shown';
 
 export function Faq() {
   const { t } = useLang();
   const f = t.faq;
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const guidesShown = useGuidesShown();
 
   return (
     <section id="faq" className="section">
       <div className="container">
-        {/* The guides section (#50) takes № 10 while it is on. */}
-        <SectionHeader no={import.meta.env.VITE_GUIDES_ENABLED ? f.noAfterGuides : f.no} kicker={f.kicker} title={f.title} />
+        {/* The guides section (#50) takes № 10 while it is on the page. */}
+        <SectionHeader no={import.meta.env.VITE_GUIDES_ENABLED && guidesShown ? f.noAfterGuides : f.no} kicker={f.kicker} title={f.title} />
         <div className="faq-layout">
           <div className="glass faq-human reveal">
             <h3 className="card-title card-title--sm">{f.human.title}</h3>

@@ -36,6 +36,9 @@ export type BookResult =
   | { kind: 'invalid'; field: BookField | null }
   | { kind: 'taken'; slots: string[] }
   | { kind: 'closed' }
+  /* 429 email_limit (L7P-LOG review round 1, "Contract changes for L7"):
+     this email already booked 3 calls today. A definite refusal. */
+  | { kind: 'email_limit' }
   | { kind: 'error' };
 
 export type Role = 'couple' | 'planner' | 'other';
@@ -127,6 +130,7 @@ export function readBook(status: number, body: unknown, origin: string): BookRes
     return { kind: 'invalid', field: typeof f === 'string' && (FIELDS as string[]).includes(f) ? (f as BookField) : null };
   }
   if (status === 409 && body.status === 'taken') return { kind: 'taken', slots: isoList(body.slots) };
+  if (status === 429 && body.status === 'email_limit') return { kind: 'email_limit' };
   if (status === 409 || status === 404 || status === 503) return { kind: 'closed' };
   return { kind: 'error' };
 }
