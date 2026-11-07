@@ -19,7 +19,7 @@ import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
 import { fullDate, dayMonth } from "@/features/couple/ui";
 import { CARD_IDS, rowSpans, markPhaseHandled, type CardId, type CardSize, type HomeCard } from "./homeLayout";
-import { moveCard, setCard, showCard } from "./homeEdit";
+import { absentCards, moveCard, setCard, shownCards, showCard } from "./homeEdit";
 import { onlyServedKeys, readRoad, roadCardRoute, roadRows, type RoadCard, type RoadItem } from "./road";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
@@ -56,10 +56,10 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
   // Undo brings it back.
   const review = useMemo(() => readReviewCard(cards?.review), [cards?.review]);
   const [reviewOff, setReviewOff] = useState(false);
-  const visible = useMemo(
-    () => list.filter((x) => !x.hidden && (editing || ((x.id !== "road" || !!road) && (x.id !== "review" || (!!review && !reviewOff))))),
-    [list, editing, road, review, reviewOff],
-  );
+  // Absent cards (the web's rule): review without its data in both modes, road
+  // without its data outside edit mode. Their entries stay in the draft.
+  const absent = useMemo(() => absentCards({ editing, road: !!road, review: !!review && !reviewOff }), [editing, road, review, reviewOff]);
+  const visible = useMemo(() => shownCards(list, absent), [list, absent]);
   const hidden = useMemo(() => list.filter((x) => x.hidden), [list]);
   const rows = rowsOf(visible, rowSpans(visible, 2));
 
@@ -130,7 +130,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
                   copy={c}
                   onOpen={() => router.push((item.id === "road" ? roadCardRoute(road) : CARD_ROUTES[item.id]) as never)}
                   hint={item.id === "road" ? road?.nextStep?.linkLabel || undefined : undefined}
-                  onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir) }))}
+                  onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir, absent) }))}
                   onSize={(size) => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { size }) }))}
                   onHide={() => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { hidden: true }) }))}
                   testID={`home-card-${item.id}`}

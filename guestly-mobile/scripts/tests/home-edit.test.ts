@@ -2,7 +2,7 @@
 // Edit mode helpers on the app's customizable Home, with the shared core.
 import assert from "node:assert/strict";
 import { suggestedCards, effectiveCards, markPhaseHandled, type HomeAnswers } from "../../src/features/couple/homeLayout.ts";
-import { moveCard, setCard, showCard } from "../../src/features/couple/homeEdit.ts";
+import { absentCards, moveCard, setCard, shownCards, showCard } from "../../src/features/couple/homeEdit.ts";
 
 const ids = (cs: { id: string; hidden: boolean }[]) => cs.filter((c) => !c.hidden).map((c) => c.id);
 const a: HomeAnswers = { focus: ["rsvp", "budget", "questions"], detail: "balanced", when: "weekly", team: "partner", adapt: true };
@@ -27,5 +27,26 @@ const edited = setCard(moveCard(shownFinal, "budget", -1), "seating", { hidden: 
 const dismissed = markPhaseHandled([], a, "final");
 assert.deepEqual(ids(effectiveCards(edited, a, "final", dismissed)), ids(edited));
 assert.equal(ids(effectiveCards(edited, a, "final", dismissed)).includes("seating"), false);
+
+// #20 (review round 1, b3): MW_REVIEW_ASK on, so the layout lists a visible
+// review entry, but cards.review is null (before the wedding, sent, Not now).
+// The card is absent in view AND edit mode, as on the web (home-board.tsx).
+const shownIds = (cs: { id: string }[]) => cs.map((c) => c.id);
+for (const editing of [false, true]) {
+  const off = absentCards({ editing, road: true, review: false });
+  assert.equal(shownIds(shownCards(s1, off)).includes("review"), false, `no review card (editing ${editing})`);
+  // The entry stays in the list, so a save posts it unchanged.
+  assert.equal(s1.some((c) => c.id === "review" && !c.hidden), true);
+  // A move swaps shown neighbours: rsvp up passes over the absent review card.
+  const moved = moveCard(s1, "rsvp", -1, off);
+  assert.deepEqual(shownIds(shownCards(moved, off)).slice(0, 3), ["countdown", "rsvp", "road"]);
+  assert.equal(moved.find((c) => c.id === "review")!.hidden, false);
+}
+// With its data the card shows in both modes.
+assert.equal(shownIds(shownCards(s1, absentCards({ editing: true, road: true, review: true }))).includes("review"), true);
+assert.equal(shownIds(shownCards(s1, absentCards({ editing: false, road: true, review: true }))).includes("review"), true);
+// Road keeps its Oct 31 rule: absent without data in view mode only.
+assert.equal(absentCards({ editing: false, road: false, review: true }).has("road"), true);
+assert.equal(absentCards({ editing: true, road: false, review: true }).has("road"), false);
 
 console.log("home-edit.test.ts: ok");

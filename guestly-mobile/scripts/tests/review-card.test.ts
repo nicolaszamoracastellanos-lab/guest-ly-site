@@ -102,7 +102,10 @@ t("static: the card opens the browser, then maybe the sheet; Not now has Undo; H
   assert.ok(sheet.indexOf("AsyncStorage.setItem(STORE_REVIEW_KEY") < sheet.indexOf("StoreReview.requestReview()"), "marked before asking");
   const home = src("src/features/couple/CustomHome.tsx");
   assert.match(home, /readReviewCard\(cards\?\.review\)/);
-  assert.match(home, /x\.id !== "review" \|\| \(!!review && !reviewOff\)/);
+  assert.match(home, /absentCards\(\{ editing, road: !!road, review: !!review && !reviewOff \}\)/, "review is absent without its data");
+  assert.match(home, /shownCards\(list, absent\)/, "view and edit mode both draw only shown cards");
+  assert.match(home, /moveCard\(d\.cards, item\.id, dir, absent\)/, "a move skips absent cards, as on the web");
+  assert.ok(!/editing \|\| \(\(x\.id/.test(home), "no edit-mode bypass of the review rule");
   assert.match(home, /link=\{item\.id !== "review"\}/, "the card itself is not a link: its ratings are");
   assert.equal(src("src/features/couple/road.ts").includes('new Set<CardId>(["review"])'), false, "NOT_DRAWN no longer holds review");
 });

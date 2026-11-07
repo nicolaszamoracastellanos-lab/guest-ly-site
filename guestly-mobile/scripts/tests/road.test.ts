@@ -224,7 +224,7 @@ t("static: layout read, saves, card, plain Home and portfolio use the rules", ()
   assert.ok(/onlyServed\(suggestedCards\(STANDARD_ANSWERS\), layout\?\.served \?\? null\)/.test(home), "Skip posts only served ids");
   assert.ok(/roadOnPlainHome/.test(home));
   const custom = src("src/features/couple/CustomHome.tsx");
-  assert.ok(/x\.id !== "road" \|\| !!road/.test(custom), "no data, no road card on Home");
+  assert.ok(/absentCards\(\{ editing, road: !!road,/.test(custom), "no data, no road card on Home");
   assert.ok(/roadCardRoute\(road\)/.test(custom));
   assert.ok(!/Pressable|Button/.test(custom.slice(custom.indexOf("export function RoadBody"), custom.indexOf("function Tool("))), "nothing inside the road card is a second button");
   assert.ok(/readStage\(w\.stage\)/.test(src("src/features/planner/Cockpit.tsx")));
