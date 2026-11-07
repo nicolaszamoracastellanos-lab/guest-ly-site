@@ -1,1 +1,1 @@
-{ "status": 404, "headers": {}, "body": { "ok": false, "error": { "code": "not_found", "message_en": "That block no longer exists.", "message_es": "Ese bloque ya no existe." } } }
+{ "status": 404, "headers": {}, "body": { "ok": false, "error": { "code": "not_found", "message_en": "That moment was deleted.", "message_es": "Ese momento fue eliminado." } } }

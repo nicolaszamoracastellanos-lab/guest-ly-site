@@ -10,9 +10,9 @@ import { fileURLToPath } from "node:url";
 import { classifyFailure, outcomeFor, replay, settle, type Outcome } from "../../src/lib/queueMath.ts";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures/dayof");
-type Rec = { status: number; body: { ok: boolean; data?: unknown; error?: { code: string } } | null };
+type Rec = { status: number; body: { ok: boolean; data?: unknown; error?: { code: string; message_en?: string; reason?: string } } | null };
 const rec = (name: string) => JSON.parse(fs.readFileSync(path.join(DIR, name), "utf8")) as Rec;
-const failure = (r: Rec) => ({ status: r.status, code: r.body?.error?.code ?? `http_${r.status}` });
+const failure = (r: Rec) => ({ status: r.status, code: r.body?.error?.code ?? `http_${r.status}`, reason: r.body?.error?.reason ?? null, message_en: r.body?.error?.message_en ?? null });
 
 // ---------------------------------------------------------------- classification
 
@@ -22,6 +22,13 @@ const workspace = failure(rec("workspace-423.json"));
 assert.equal(classifyFailure("block_status", locked), "locked", "runsheet_locked is final for a status tap (D28)");
 assert.equal(classifyFailure("checkin", locked), "refused");
 assert.equal(classifyFailure("block_status", gone), "gone", "a block deleted on the web");
+// The status route's dark 404 (MW_DAY_PACK off, or the portal's flag read
+// failed for a moment) has the same code: the tap is held, never named as deleted.
+const dark = { status: 404, code: "not_found", message_en: "Not found." };
+assert.equal(classifyFailure("block_status", dark), "held", "a dark status route keeps the tap");
+assert.equal(classifyFailure("block_status", { status: 404, code: "not_found" }), "held", "a bare not_found is not a deleted moment");
+assert.equal(classifyFailure("block_status", { status: 404, code: "not_found", reason: "block_gone", message_en: "Anything." }), "gone", "the reason code asked of Lane 1, once it lands");
+assert.deepEqual(outcomeFor("held"), { kind: "held" });
 assert.equal(classifyFailure("block_status", { status: 410, code: "gone" }), "gone");
 assert.equal(classifyFailure("block_status", { status: 404, code: "http_404" }), "refused", "the host's 404 page is a missing route, not a deleted block");
 assert.equal(classifyFailure("block_status", workspace), "refused", "an unpaid workspace is a refusal, not the D28 sentence");
@@ -39,19 +46,21 @@ assert.deepEqual(outcomeFor("refused"), { kind: "refused" });
 class Fail extends Error {
   status: number;
   code: string;
-  constructor(status: number, code: string) {
+  message_en: string | null;
+  constructor(status: number, code: string, messageEn: string | null = null) {
     super(code);
     this.status = status;
     this.code = code;
+    this.message_en = messageEn;
   }
 }
-const failureOf = (err: unknown) => (err instanceof Fail ? { status: err.status, code: err.code } : null);
+const failureOf = (err: unknown) => (err instanceof Fail ? { status: err.status, code: err.code, message_en: err.message_en } : null);
 
 type Checkin = { kind?: "checkin"; client_event_id: string; guest_id: string; seats: number; scanned_at: string; name: string };
 type Status = { kind: "block_status"; client_event_id: string; block_id: string; status: string; tapped_at: string; base_updated_at: string | null; name: string };
 type Item = Checkin | Status;
 
-function portal(opts: { locked?: boolean; deleted?: Set<string>; down?: boolean } = {}) {
+function portal(opts: { locked?: boolean; deleted?: Set<string>; down?: boolean; dark?: boolean } = {}) {
   const checkins = new Map<string, { guest_id: string; scanned_at: string }>(); // by client_event_id
   const stamped = new Map<string, string>(); // guests.checked_in_at, from scanned_at (D4.6)
   const statuses = new Map<string, { status: string; tapped_at: string }>();
@@ -61,7 +70,8 @@ function portal(opts: { locked?: boolean; deleted?: Set<string>; down?: boolean 
     if (opts.down) throw new Fail(0, "offline");
     log.push(item.client_event_id);
     if (item.kind === "block_status") {
-      if (opts.deleted?.has(item.block_id)) throw new Fail(404, "not_found");
+      if (opts.dark) throw new Fail(404, "not_found", "Not found.");
+      if (opts.deleted?.has(item.block_id)) throw new Fail(404, "not_found", "That moment was deleted.");
       if (opts.locked) throw new Fail(423, "runsheet_locked");
       if (seen.has(item.client_event_id)) return { replayed: true };
       seen.add(item.client_event_id);
@@ -160,6 +170,25 @@ assert.deepEqual(s.gone, ["First dance"]);
 assert.equal(s.sent, 1);
 assert.equal(deleted.statuses.get("b-arrive")?.status, "done");
 
+// A planner marked 4 moments offline; on reconnect the status route is dark
+// (flag off, or a failed flag read). Nothing is dropped, nothing is named as
+// deleted, and a door check-in queued behind the taps still goes.
+const darkPortal = portal({ dark: true });
+const fourTaps: Item[] = [tap("d1", "b-ceremony", "done", 10, "Ceremony"), tap("d2", "b-toast", "done", 11, "Toast"), tap("d3", "b-dinner", "done", 12, "Dinner"), tap("d4", "b-cake", "done", 13, "Cake"), scans[1]];
+outcomes = await replay(fourTaps, darkPortal.send, failureOf);
+s = settle(fourTaps, outcomes);
+assert.deepEqual(s.gone, [], "no moment is named as removed");
+assert.deepEqual(s.refused, []);
+assert.deepEqual([...s.done], [scans[1].client_event_id], "only the check-in leaves the outbox; the 4 taps stay");
+assert.equal(darkPortal.checkins.size, 1, "the check-in behind the held taps was sent");
+// The route is back: the same 4 taps go and land.
+darkPortal.opts.dark = false;
+const kept = fourTaps.filter((x) => !s.done.has(x.client_event_id));
+outcomes = await replay(kept, darkPortal.send, failureOf);
+s = settle(kept, outcomes);
+assert.equal(s.sent, 4);
+assert.equal(darkPortal.statuses.get("b-cake")?.status, "done");
+
 // Two phones: this one marks Ceremony done offline at 16:31, the other online at 16:33 sets it back. Last tap wins.
 const two = portal();
 await two.send(tap("online", "b-ceremony", "planned", 33, "Ceremony"));
@@ -188,4 +217,4 @@ const legacy = [{ client_event_id: "old", guest_id: "g-old", seats: 1, scanned_a
 outcomes = await replay(legacy, async () => ({ already: true, replayed: false }), failureOf);
 assert.deepEqual(outcomes, [{ kind: "sent", already: true }] as Outcome[]);
 
-console.log("outbox: ok (20 offline scans replayed in order, 0 duplicates, scan times kept; locked and deleted taps dropped and named)");
+console.log("outbox: ok (20 offline scans replayed in order, 0 duplicates, scan times kept; locked and deleted taps dropped and named, dark-route taps held)");

@@ -8,8 +8,8 @@
 //
 // It follows MW_DAY_PACK as /auth/me reports it for the local demo wedding:
 // off, every route answers 404 not_found (the app hides #30, and a planner's
-// queued tap is not reported as a deleted moment by mistake: see the note at
-// the planner status check); on, each pack parses with the app's own
+// queued tap is held, not reported as a deleted moment: see the planner
+// status check); on, each pack parses with the app's own
 // parsePack / parseGuestPack, the ETag is strong and If-None-Match gives 304
 // with no body, a status tap replayed with the same client_event_id is applied
 // once, a deleted moment answers 404 "That moment was deleted.", and under the
@@ -164,10 +164,12 @@ if (!ON) {
     const r = await call(planner, "1.4.0", "POST", `/planner/runsheet/${b.id}/status`, { status: b.status, client_event_id: randomUUID(), tapped_at: new Date().toISOString(), base_updated_at: null });
     assert.equal(r.status, 404);
     assert.equal(r.error?.code, "not_found");
-    // The outbox reads this as "gone" (the moment was deleted). Planner taps
-    // are only queued from a saved pack, which needs the flag on; noted in the
-    // lane log as a portal follow-up (a reason code on the dark 404).
-    assert.equal(classifyFailure("block_status", { status: r.status, code: String(r.error?.code) }), "gone");
+    record("status-404-dark", r);
+    // Same code as a deleted moment, but no "That moment was deleted.": the
+    // outbox holds the tap (a saved pack keeps the Done button through a
+    // dark day, and a failed flag read answers this too). Never "gone".
+    assert.notEqual(r.error?.message_en, "That moment was deleted.");
+    assert.equal(classifyFailure("block_status", { status: r.status, code: String(r.error?.code), reason: (r.error?.reason as string) ?? null, message_en: (r.error?.message_en as string) ?? null }), "held");
   });
 } else {
   let coupleEtag = "";
@@ -279,7 +281,7 @@ if (!ON) {
     assert.equal(r.error?.code, "not_found");
     assert.equal(r.error?.message_en, "That moment was deleted.");
     assert.equal(r.error?.message_es, "Ese momento fue eliminado.");
-    assert.equal(classifyFailure("block_status", { status: r.status, code: String(r.error?.code) }), "gone");
+    assert.equal(classifyFailure("block_status", { status: r.status, code: String(r.error?.code), reason: (r.error?.reason as string) ?? null, message_en: (r.error?.message_en as string) ?? null }), "gone");
   });
 
   if (F.MW_RUNSHEET_LOCK) {

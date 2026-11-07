@@ -24,7 +24,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { post, ApiFailure, getCredential } from "@/lib/api";
-import { classifyFailure, replay, settle } from "@/lib/queueMath";
+import { classifyFailure, replay, settle, type Failure } from "@/lib/queueMath";
 
 /** What a drain did. `already` and `refused` are guest names, for the door;
  *  `locked` and `gone` are block titles whose status taps were dropped. */
@@ -209,8 +209,8 @@ export function cancelQueued(clientEventId: string): Promise<boolean> {
   });
 }
 
-function failureOf(err: unknown): { status: number; code: string } | null {
-  return err instanceof ApiFailure ? { status: err.status, code: err.code } : null;
+function failureOf(err: unknown): Failure | null {
+  return err instanceof ApiFailure ? { status: err.status, code: err.code, reason: err.reason, message_en: err.messages.en } : null;
 }
 
 /** True when the entry should stay queued after this failure. */
@@ -231,7 +231,9 @@ export async function sendBlockStatus(raw: QueuedBlockStatus): Promise<StatusTap
     return { kind: "sent" };
   } catch (err) {
     const c = classifyFailure("block_status", failureOf(err));
-    if (c === "retry") {
+    // Held: the status route is dark for a moment (MW_DAY_PACK off or a
+    // failed flag read). The tap waits in the outbox like an offline one.
+    if (c === "retry" || c === "held") {
       await enqueue(item);
       return { kind: "queued" };
     }
