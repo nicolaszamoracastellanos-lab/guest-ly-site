@@ -309,6 +309,15 @@ body.js-ready .reveal.is-visible {
   gap: 0.5rem;
 }
 
+/* Open menu: a solid bar, so menu links scrolled up under it (a short
+   screen) never show through the logo row. The shadow carries it to both
+   screen edges past the 1180px cap; the clip keeps it to the bar's height. */
+.nav--open .nav__inner {
+  background: var(--bg);
+  box-shadow: 0 0 0 50vw var(--bg);
+  clip-path: inset(0 -50vw);
+}
+
 /* Desktop row starts at 1200px: below that the ES links + actions cannot
    share one line, so narrower screens keep the burger menu. The row is
    capped at the 1180px container, so it must fit 1140px of content at
@@ -429,7 +438,12 @@ body.js-ready .reveal.is-visible {
   z-index: -1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* Centred by the auto margins below while it fits; when it does not (a
+     short phone, a seventh link) it starts under the bar and scrolls, so no
+     link runs under the logo row and the order button stays reachable. */
+  justify-content: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   gap: 2.5rem;
   padding: 5.5rem 24px 3rem;
   background: var(--scrim-menu);
@@ -443,6 +457,14 @@ body.js-ready .reveal.is-visible {
 .nav__menu.is-open {
   opacity: 1;
   visibility: visible;
+}
+
+.nav__menu > :first-child {
+  margin-top: auto;
+}
+
+.nav__menu > :last-child {
+  margin-bottom: auto;
 }
 
 .nav__menu-links {
@@ -470,6 +492,22 @@ body.js-ready .reveal.is-visible {
   text-transform: none;
   color: var(--text-muted);
   margin-top: 0.8rem;
+}
+
+/* Short phone screens (iPhone Safari with its bars, 640 to 720 px tall): a
+   tighter menu so every link and the order button fit without scrolling;
+   links stay 44 px tall. */
+@media (max-height: 720px) {
+  .nav__menu {
+    gap: 1.5rem;
+    padding-top: 5rem;
+    padding-bottom: 1rem;
+  }
+
+  .nav__menu-links a {
+    font-size: 1.6rem;
+    padding-block: 0.35rem;
+  }
 }
 
 .nav__menu-foot {

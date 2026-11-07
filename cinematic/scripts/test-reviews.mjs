@@ -18,7 +18,10 @@
       layout shift 0.
    B. ES at 390 (touch): ES words and months, the menu's last link
       "Reseñas", 44 px tall, takes the visitor to the section; no sideways
-      scroll; switching language in place swaps every label.
+      scroll; switching language in place swaps every label. Short phones
+      (review round 2): with the seventh link the open menu at 390x664,
+      375x667, 360x640 and 375x548, EN and ES, has no item under the bar and
+      the order button on screen or reachable by scrolling the menu.
    C. one review: "based on 1 review", no note; two reviews: no note.
    D. zero, closed, unavailable, wrong version, 401 without CORS (today's
       proxy answer), 429, 500, unreadable: no section, no nav item, the
@@ -37,10 +40,14 @@
       (every link and the login link at the same x and size).
    K. deep link (review round 1): /#reviews opened at 390 ES and 1440 EN and
       ES puts the section header at the top of the screen; a reload after
-      the menu link (390) or after the deep link (1440, the browser puts
-      the old scroll back, the final CTA on screen) does too; a change of
-      the hash to #reviews before the answer does too; a wheel before the
-      answer cancels the jump (no script scroll, no shift).
+      the menu link (390) or right after the deep link (1440) does too; a
+      change of the hash to #reviews before the answer does too; a wheel
+      before the answer cancels the jump (no script scroll, no shift).
+      Review round 2: the address keeps #reviews after the visitor moved
+      on, so a reload after wheeling up to Pricing (390, 1440) leaves the
+      page where the browser put it back (within 1 px, Pricing on screen),
+      and Back from /privacy after the footer (1440) keeps the footer where
+      it was on screen, with a 1.5 s answer.
    OFF
    I. no section, nav item, chunk, CSS or read after scrolling the page.
    Layout shift: every shift but the hero demo chat's own bubbles (the same
@@ -57,6 +64,7 @@ import { chromium } from 'playwright';
 import { startReviewsStub, REVIEWS } from './lib/reviews-stub.mjs';
 import { buildSite, serveDir } from './lib/temp-site.mjs';
 import { INITIAL_JS_BUDGET, initialJs } from './lib/initial-js.mjs';
+import { MENU_VIEWS, menuProblems } from './lib/menu-fit.mjs';
 
 const failures = [];
 let checks = 0;
@@ -217,6 +225,17 @@ const productLd = (page) =>
   check(en[0] === 'Reviews' && en[1] === 'Wedding in November 2026', `B: language switch left ${en}`);
   await ctx.close();
 }
+for (const lang of ['en', 'es'])
+  for (const [width, height] of MENU_VIEWS) {
+    const { ctx, page } = await open(on.url, { width, height, lang, touch: true });
+    await page.waitForSelector('.nav__menu-links a[href="#reviews"]', { state: 'attached', timeout: 8000 }).catch(() => {});
+    check((await page.locator('.nav__menu-links a[href="#reviews"]').count()) === 1, `B menu ${lang} ${width}x${height}: no Reviews link`);
+    await page.locator('.nav__burger').click();
+    await page.waitForTimeout(400);
+    const p = await menuProblems(page);
+    check(p.length === 0, `B menu ${lang} ${width}x${height}: ${p.join('; ')}`);
+    await ctx.close();
+  }
 
 /* C. */
 for (const [mode, score, note] of [
@@ -367,18 +386,56 @@ for (const [width, lang] of [[390, 'es'], [1440, 'en'], [1440, 'es']]) {
   await ctx.close();
 }
 {
-  /* 1440: the old scroll comes back with the final CTA on screen. */
+  /* 1440: reload right after the deep link, the old scroll comes back. */
   const { ctx, page } = await open(on.url, { path: '/#reviews' });
   await settle(page);
-  await page.evaluate(() => {
-    const f = document.querySelector('[data-sec="final"]');
-    window.scrollTo(0, window.scrollY + f.getBoundingClientRect().top - 80);
-  });
-  await page.waitForTimeout(300);
   await page.reload({ waitUntil: 'load' });
   await settle(page);
   const top = await headerAtTop(page);
-  check(Math.abs(top - 80) < 40, `K reload with the final CTA on screen (1440): section at ${top}px`);
+  check(Math.abs(top - 80) < 40, `K reload right after the deep link (1440): section at ${top}px`);
+  await ctx.close();
+}
+/* Review round 2: the visitor moved on, the address still says #reviews. */
+const pricingTop = (page) => page.evaluate(() => Math.round(document.querySelector('#pricing').getBoundingClientRect().top));
+for (const width of [390, 1440]) {
+  const { ctx, page } = await open(on.url, { width, height: width < 500 ? 844 : 900, touch: width < 500, path: '/#reviews', hold: 1500 });
+  await settle(page);
+  /* Back up to Pricing the way a visitor does (wheel), no hash change. */
+  for (let i = 0; i < 80; i++) {
+    const t = await pricingTop(page);
+    if (t > 40 && t < 300) break;
+    await page.mouse.wheel(0, t <= 40 ? Math.max(t - 150, -800) : Math.min(t - 150, 800));
+    await page.waitForTimeout(60);
+  }
+  await page.waitForTimeout(400);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(300);
+  const y1 = await page.evaluate(() => scrollY);
+  await settle(page);
+  check((await shown(page)) === 1, `K reload at Pricing (${width}): the section never went in`);
+  const y2 = await page.evaluate(() => scrollY);
+  const pt = await pricingTop(page);
+  check(Math.abs(y2 - y1) <= 1, `K reload at Pricing (${width}): the page moved ${y1} to ${y2}`);
+  check(pt > -200 && pt < (width < 500 ? 844 : 900), `K reload at Pricing (${width}): Pricing at ${pt}px`);
+  await ctx.close();
+}
+{
+  /* 1440: footer, /privacy, Back. */
+  const { ctx, page } = await open(on.url, { path: '/#reviews', hold: 1500 });
+  await settle(page);
+  await page.mouse.wheel(0, 4000);
+  await page.waitForTimeout(600);
+  await page.goto(on.url + '/privacy', { waitUntil: 'load' });
+  await page.waitForTimeout(300);
+  await page.goBack({ waitUntil: 'load' });
+  const type = await page.evaluate(() => performance.getEntriesByType('navigation')[0]?.type);
+  await page.waitForTimeout(300);
+  const f1 = await page.evaluate(() => Math.round(document.querySelector('[data-sec="footer"]').getBoundingClientRect().top));
+  await settle(page);
+  const f2 = await page.evaluate(() => Math.round(document.querySelector('[data-sec="footer"]').getBoundingClientRect().top));
+  check(type === 'back_forward', `K Back from /privacy: navigation type ${type}`);
+  check((await shown(page)) === 1, 'K Back from /privacy: the section never went in');
+  check(Math.abs(f2 - f1) <= 1 && f2 < 900, `K Back from /privacy: the footer moved ${f1} to ${f2}`);
   await ctx.close();
 }
 {

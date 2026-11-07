@@ -17,10 +17,17 @@ import type { Reviews } from './core';
      then the page scrolls by exactly the section's height in the same frame.
      While its place is on screen, or the menu or the order form is open, it
      waits.
-   - Asked for by the address (/#reviews opened, shared or reloaded, or a
-     later change of the hash to it): it goes in as soon as the answer is
-     ready, wherever its place is, and the page scrolls to it. A wheel, touch
-     or key first means the visitor moved on: the rules above apply.
+   - Asked for by the address (/#reviews opened or shared, or a later change
+     of the hash to it): it goes in as soon as the answer is ready, wherever
+     its place is, and the page scrolls to it. A wheel, touch or key first
+     means the visitor moved on: the rules above apply.
+   - A reload or Back/Forward keeps the old address while the browser puts
+     the visitor's own scroll back, so the address alone does not ask then.
+     While the section is shown, the history entry notes whether it is what
+     the visitor is reading (its top under the bar); a reload or Back to an
+     entry that says so asks, any other (Pricing, the footer) does not, and
+     the rules above keep the visitor where they were. The note lives in
+     history.state only: no cookie, no storage.
    - Zero reviews or any failure: nothing is added, ever, for this view.
    - The nav item is in the phone menu only; the desktop row never changes. */
 
@@ -31,6 +38,10 @@ let ready: Shown | null = null;
 let started = false;
 /* The address asks for the section (see above). */
 let asked = false;
+/* history.state key: the section was what the visitor was reading. */
+const AT = 'glReviewsAt';
+/* Keeps that note once the section is shown (./where.ts, lazy chunk). */
+let noteWhere: ((key: string) => void) | null = null;
 const subs = /* @__PURE__ */ new Set<() => void>();
 
 const subscribe = (f: () => void) => {
@@ -54,6 +65,7 @@ function place(scrolling: boolean): boolean {
     });
     /* Asked for, so this scroll is the visitor's, not a shift. */
     document.getElementById('reviews')?.scrollIntoView({ block: 'start' });
+    noteWhere?.(AT);
     return true;
   }
   const top = at.getBoundingClientRect().top;
@@ -69,6 +81,7 @@ function place(scrolling: boolean): boolean {
   });
   if (!below) window.scrollBy(0, at.getBoundingClientRect().top - top);
   requestAnimationFrame(() => requestAnimationFrame(() => html.style.removeProperty('overflow-anchor')));
+  noteWhere?.(AT);
   return true;
 }
 
@@ -102,7 +115,9 @@ function watch() {
    section? A change to #reviews says yes; another hash, or the visitor's
    own wheel, touch or key, says no. */
 function listenAsked() {
-  asked = location.hash === '#reviews';
+  const nav = performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming | undefined;
+  const restored = nav?.type === 'reload' || nav?.type === 'back_forward';
+  asked = location.hash === '#reviews' && (!restored || history.state?.[AT] === true);
   const moved = () => {
     asked = false;
     stop();
@@ -127,6 +142,7 @@ export function startReviews() {
       .then(async (m) => {
         const data = await m.loadReviews();
         if (!data) return stopAsked();
+        noteWhere = m.noteWhere;
         ready = { Section: m.ReviewsSection, data };
         watch();
       })

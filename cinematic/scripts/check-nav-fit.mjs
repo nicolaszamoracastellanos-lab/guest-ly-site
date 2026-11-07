@@ -8,10 +8,16 @@
    API) and every view waits for the "Reviews" / "Reseñas" link (phone menu
    only since review round 1, Nov 7), then checks the desktop row holds no
    Reviews link.
+   Phone menu on short screens (review round 2 of the Reviews tab, Nov 7):
+   the menu opened at 390x664, 375x667, 360x640 and 375x548, EN and ES
+   (scripts/lib/menu-fit.mjs): no item under the bar, and the order button
+   inside the screen or reachable by scrolling the menu; with --reviews the
+   menu holds the seventh link.
    Usage: node scripts/check-nav-fit.mjs [baseUrl] [--reviews]   (default http://localhost:5199) */
 
 import { chromium } from 'playwright';
 import { reviewsBody } from './lib/reviews-stub.mjs';
+import { MENU_VIEWS, menuProblems } from './lib/menu-fit.mjs';
 
 const base = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://localhost:5199';
 const reviews = process.argv.includes('--reviews');
@@ -68,6 +74,28 @@ for (const lang of ['en', 'es']) {
     }
   }
 }
+let menus = 0;
+for (const lang of ['en', 'es']) {
+  for (const [width, height] of MENU_VIEWS) {
+    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce', isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    const page = await ctx.newPage();
+    await page.addInitScript((l) => localStorage.setItem('guestly-lang', l), lang);
+    if (reviews)
+      await ctx.route('**/api/public/reviews**', (route) =>
+        route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*' }, json: reviewsBody('open') }),
+      );
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.evaluate(() => document.fonts.ready);
+    const where = `menu ${lang} ${width}x${height}`;
+    if (reviews && !(await page.waitForSelector('.nav__menu-links a[href="#reviews"]', { state: 'attached', timeout: 8000 }).catch(() => null)))
+      problems.push(`${where}: the Reviews link never showed`);
+    await page.locator('.nav__burger').click();
+    await page.waitForTimeout(300);
+    for (const p of await menuProblems(page)) problems.push(`${where}: ${p}`);
+    menus++;
+    await ctx.close();
+  }
+}
 await browser.close();
 
 if (problems.length) {
@@ -75,4 +103,4 @@ if (problems.length) {
   console.error(`\ncheck-nav-fit FAILED: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-nav-fit clean${reviews ? ' with the Reviews link (menu only)' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row`);
+console.log(`check-nav-fit clean${reviews ? ' with the Reviews link (menu only)' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row; ${menus} phone menus (${MENU_VIEWS.map((v) => v.join('x')).join(', ')}, EN and ES) clear of the bar with the order button reachable`);
