@@ -160,8 +160,18 @@ export function listedIds(rawCards: unknown): Set<CardId> {
  */
 export function keepServed(cards: readonly HomeCard[], rawCards: unknown): HomeCard[] {
   const listed = listedIds(rawCards);
-  return cards.filter((c) => !isIntroduced(c.id) || listed.has(c.id));
+  return cards.filter((c) => !NOT_DRAWN.has(c.id) && (!isIntroduced(c.id) || listed.has(c.id)));
 }
+
+/**
+ * Introduced cards this build has no body for yet: read as never served, so
+ * they are neither drawn nor posted back and the server keeps what it stored
+ * for them (mergeCards, mergeDismissed), exactly as a 1.3 build would.
+ * "review" (#20, MW_REVIEW_ASK): the core lists it since the portal's #20
+ * change; the app's card (feedback link in expo-web-browser, Not now) is not
+ * built in this step.
+ */
+export const NOT_DRAWN: ReadonlySet<CardId> = new Set<CardId>(["review"]);
 
 /**
  * The card list to PUT: introduced ids the server did not serve are left
@@ -171,5 +181,5 @@ export function keepServed(cards: readonly HomeCard[], rawCards: unknown): HomeC
  */
 export function onlyServed(cards: readonly HomeCard[], served: ReadonlySet<CardId> | readonly CardId[] | null): HomeCard[] {
   const set = served ? new Set<CardId>(served as Iterable<CardId>) : new Set<CardId>();
-  return cards.filter((c) => !isIntroduced(c.id) || set.has(c.id));
+  return cards.filter((c) => !NOT_DRAWN.has(c.id) && (!isIntroduced(c.id) || set.has(c.id)));
 }

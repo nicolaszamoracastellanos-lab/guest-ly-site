@@ -7,11 +7,11 @@ import { moveCard, setCard, showCard } from "../../src/features/couple/homeEdit.
 const ids = (cs: { id: string; hidden: boolean }[]) => cs.filter((c) => !c.hidden).map((c) => c.id);
 const a: HomeAnswers = { focus: ["rsvp", "budget", "questions"], detail: "balanced", when: "weekly", team: "partner", adapt: true };
 const s1 = suggestedCards(a);
-// K8 (#6): the core introduces the road right after the countdown.
-assert.deepEqual(ids(s1), ["countdown", "road", "rsvp", "replies", "budget", "questions", "partner", "briefing", "activity"]);
+// K8 (#6, #20): the core introduces the road and the review ask right after the countdown.
+assert.deepEqual(ids(s1), ["countdown", "road", "review", "rsvp", "replies", "budget", "questions", "partner", "briefing", "activity"]);
 
 // Move swaps visible neighbours; the ends do nothing.
-assert.deepEqual(ids(moveCard(s1, "replies", -1)).slice(0, 4), ["countdown", "road", "replies", "rsvp"]);
+assert.deepEqual(ids(moveCard(s1, "replies", -1)).slice(0, 5), ["countdown", "road", "review", "replies", "rsvp"]);
 assert.equal(moveCard(s1, "countdown", -1), s1);
 assert.equal(moveCard(s1, "activity", 1), s1);
 // Size and hide.

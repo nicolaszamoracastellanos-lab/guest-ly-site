@@ -11,7 +11,8 @@
 // arranges or hides them in that phase themselves (the `dismissed` list).
 // Rows always end flush (rowSpans): the last card of a row widens to the edge.
 //
-// Cards added after the first release (INTRODUCED, Nov 2026: "road", #6) are
+// Cards added after the first release (INTRODUCED, Nov 2026: "road", #6; "review",
+// #20, the feedback ask after the wedding, which the after phase also lifts) are
 // shown once to layouts that have never mentioned them, right after the
 // countdown, instead of being appended hidden; and a client that posts a card
 // list without an id (an older app that does not know it) keeps the stored
@@ -37,6 +38,7 @@ export const CARD_IDS = [
   "planner",
   "activity",
   "road",
+  "review",
 ] as const;
 export type CardId = (typeof CARD_IDS)[number];
 export type CardSize = "s" | "m" | "l";
@@ -88,6 +90,7 @@ export const DEFAULT_SIZE: Record<CardId, CardSize> = {
   planner: "s",
   activity: "m",
   road: "l",
+  review: "m",
 };
 
 /**
@@ -96,6 +99,7 @@ export const DEFAULT_SIZE: Record<CardId, CardSize> = {
  */
 export const INTRODUCED: Partial<Record<CardId, CardId>> = {
   road: "countdown",
+  review: "countdown",
 };
 
 function isIntroduced(id: CardId): boolean {
@@ -104,7 +108,8 @@ function isIntroduced(id: CardId): boolean {
 
 /** Places every introduced card the list does not hold yet, visible, after its anchor. */
 function introduce(list: HomeCard[], size?: (id: CardId) => CardSize): HomeCard[] {
-  for (const id of CARD_IDS) {
+  // Last first: cards sharing an anchor end up in CARD_IDS order right after it.
+  for (const id of [...CARD_IDS].reverse()) {
     if (!isIntroduced(id) || list.some((c) => c.id === id)) continue;
     const after = INTRODUCED[id];
     const anchor = list.findIndex((c) => c.id === after && !c.hidden);
@@ -128,7 +133,7 @@ export const PHASE_CARDS: Record<Phase, CardId[]> = {
   planning: [],
   final: ["rsvp", "seating", "vendors", "budget"],
   week: ["runsheet", "checkin", "questions"],
-  after: ["album", "thankyou", "budget"],
+  after: ["review", "album", "thankyou", "budget"],
 };
 
 /** Cards that stay small even when the couple wants full detail. */
@@ -323,6 +328,25 @@ export function sanitizeDismissed(raw: unknown): string[] {
     if (typeof v !== "string") continue;
     const [phase, id] = v.split(":");
     if ((PHASES as readonly string[]).includes(phase) && isCardId(id) && PHASE_CARDS[phase as Phase].includes(id)) out.add(`${phase}:${id}`);
+  }
+  return [...out];
+}
+
+/**
+ * A posted `dismissed` list merged over the stored one (K8, like mergeCards).
+ * A client whose posted cards leave out an introduced card (an older app that
+ * does not know it, or a surface that hides it) cannot know that card's
+ * `<phase>:<id>` keys either, so the stored ones stay: a 1.3 app saving Home
+ * after the wedding never brings back a review card the couple put away.
+ * A client that posts the card speaks for its keys.
+ */
+export function mergeDismissed(raw: unknown, postedCards: unknown, stored: readonly string[] | null): string[] {
+  const out = new Set(sanitizeDismissed(raw));
+  if (!stored) return [...out];
+  const known = new Set(parseCards(postedCards).map((c) => c.id));
+  for (const key of sanitizeDismissed(stored)) {
+    const id = key.split(":")[1] as CardId;
+    if (isIntroduced(id) && !known.has(id)) out.add(key);
   }
   return [...out];
 }

@@ -80,6 +80,8 @@ export const CARD_ROUTES: Record<CardId, string> = {
   activity: "/couple/insights",
   // #6: the card opens its Now step (roadCardRoute); this is the fallback.
   road: "/couple/runsheet",
+  // #20: never drawn by this build (road.ts NOT_DRAWN); Home if it ever is.
+  review: "/couple",
 };
 
 /** Groups the visible cards into rows of two columns from rowSpans (each row sums to 2). */

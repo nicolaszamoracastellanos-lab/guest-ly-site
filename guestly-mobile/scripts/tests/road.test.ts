@@ -96,7 +96,7 @@ t("readStage: the portfolio's Stage, or nothing", () => {
 });
 
 // ---- K8 ---------------------------------------------------------------------------------
-const OLD = core.CARD_IDS.filter((id: string) => id !== "road");
+const OLD = core.CARD_IDS.filter((id: string) => id !== "road" && id !== "review");
 const served = (withRoad: boolean, roadHidden = false) => [
   { id: "countdown", size: "s", hidden: false },
   ...(withRoad ? [{ id: "road", size: "l", hidden: roadHidden }] : []),
@@ -106,7 +106,7 @@ const served = (withRoad: boolean, roadHidden = false) => [
 const ids = (cards: { id: string; hidden: boolean }[]) => cards.filter((c) => !c.hidden).map((c) => c.id);
 
 t("K8: the app's lists of introduced and milestone ids match the cores", () => {
-  assert.deepEqual(Object.keys(core.INTRODUCED), ["road"]);
+  assert.deepEqual(Object.keys(core.INTRODUCED), ["road", "review"]);
   assert.ok(src("src/features/couple/road.ts").includes('from "./homeLayout"'), "reads INTRODUCED from the verbatim core");
 });
 
@@ -144,7 +144,28 @@ t("K8: what the app posts merges on the server without hiding the stored road", 
   const moved = [kept[1], kept[0], ...kept.slice(2)];
   const merged = core.mergeCards(moved, stored);
   assert.deepEqual(merged.find((c: { id: string }) => c.id === "road"), { id: "road", size: "l", hidden: false });
-  assert.deepEqual(ids(merged), ["rsvp", "countdown", "road"]);
+  // The core also introduces "review" (#20) into a stored list without it; the server
+  // leaves it out of what it serves while MW_REVIEW_ASK is off (lib/mobile/home-layout.ts).
+  assert.deepEqual(ids(merged).filter((id: string) => id !== "review"), ["rsvp", "countdown", "road"]);
+});
+
+t("#20 review card: served to 1.4.0 after the wedding, this build neither draws nor posts it", () => {
+  // What GET /couple/home sends a 1.4.0 couple with MW_REVIEW_ASK on after the day:
+  // review lifted first, visible (lib/mobile/home-layout.ts).
+  const raw = [{ id: "review", size: "m", hidden: false }, ...served(true)];
+  const clean = core.sanitizeLayout({ answers: core.STANDARD_ANSWERS, cards: raw })!;
+  assert.ok(clean.cards.some((c: { id: string }) => c.id === "review"), "the verbatim core knows the card");
+  const kept = road.keepServed(clean.cards, raw);
+  assert.ok(!kept.some((c) => c.id === "review"), "not drawn");
+  assert.ok(kept.some((c) => c.id === "road"), "other introduced cards still follow the served list");
+  assert.ok(!road.onlyServed(core.suggestedCards(core.STANDARD_ANSWERS), [...kept.map((c) => c.id), "review"]).some((c) => c.id === "review"), "never posted");
+  // The server keeps the stored card and the partner's "Not now" key through this build's save.
+  const stored = core.sanitizeCards(raw.map((c) => (c.id === "review" ? { ...c, hidden: true } : c)));
+  const merged = core.mergeCards(kept, stored);
+  assert.deepEqual(merged.find((c: { id: string }) => c.id === "review"), { id: "review", size: "m", hidden: true });
+  assert.ok(core.mergeDismissed([], kept, ["after:review"]).includes("after:review"));
+  assert.equal(HOME_COPY.en.cards.review, "Your feedback", "the portal's card title");
+  assert.equal(HOME_COPY.es.cards.review, "Tu opinión");
 });
 
 t("listedIds: only ids the payload listed", () => {

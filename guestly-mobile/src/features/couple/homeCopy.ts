@@ -30,6 +30,8 @@ const en = {
     planner: "From your planner",
     activity: "Activity",
     road: "Road to the wedding",
+    // #20 (portal words, i18n/home-custom.ts); this build does not draw it yet (road.ts NOT_DRAWN).
+    review: "Your feedback",
   } as Record<CardId, string>,
   // #6 Road to the wedding (the milestone words come from the portal, in this language)
   roadNow: "Now",
@@ -169,6 +171,7 @@ const es: HomeCopy = {
     planner: "De tu planner",
     activity: "Actividad",
     road: "Camino a la boda",
+    review: "Tu opinión",
   },
   roadNow: "Ahora",
   roadNext: "Después",
