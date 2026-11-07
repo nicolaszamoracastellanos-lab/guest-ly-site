@@ -12,9 +12,10 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com";
 // and photographs a floor plan or a receipt; the photo library feeds the website
 // builder, the floor plan and budget receipts. The app never records audio
 // (the Coordinator mic, D5, is not in 1.4.0: Nicolas, Nov 6 2026), but the
-// camera library links the audio capture API, and so does expo-audio while it
-// stays installed, so a truthful microphone string stays (an upload without it
-// can be refused, ITMS-90683). It is the 1.3.0 text, unchanged.
+// camera library links the audio capture API, so a truthful microphone string
+// stays (an upload without it can be refused, ITMS-90683). It is the 1.3.0
+// text, unchanged. expo-audio was removed in batch 3 (Nov 7): unused once the
+// mic left 1.4.0.
 const CAMERA_PURPOSE = "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.";
 const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding album, the wedding website, the floor plan and budget receipts.";
 const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking you to sign in again.";
@@ -167,7 +168,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#0d1117",
     },
     permissions: ["CAMERA", "USE_BIOMETRIC", "POST_NOTIFICATIONS", "VIBRATE"],
-    // The app never records sound. expo-camera and expo-audio are told so below;
+    // The app never records sound. expo-camera is told so below;
     // expo-image-picker (an automatic plugin) would still add RECORD_AUDIO, so it
     // is blocked here, which writes tools:node="remove" into the manifest whoever
     // asks for it. Contacts stay blocked: the system picker needs no permission.
@@ -215,16 +216,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-camera",
       // recordAudioAndroid false drops RECORD_AUDIO from the Android manifest: the app never records sound.
       { cameraPermission: CAMERA_PURPOSE, microphonePermission: MICROPHONE_PURPOSE, recordAudioAndroid: false },
-    ],
-    [
-      // expo-audio is still installed (added Nov 5 for the Coordinator mic, D5)
-      // but no code imports it: the mic is not in 1.4.0. Whether to remove the
-      // package is open (a native module change, re-run check-prebuilt-symbols).
-      // While it stays, its plugin is configured so it adds nothing: both
-      // background switches default to on and would add UIBackgroundModes
-      // "audio" and Android foreground services; RECORD_AUDIO stays blocked.
-      "expo-audio",
-      { microphonePermission: MICROPHONE_PURPOSE, recordAudioAndroid: false, enableBackgroundRecording: false, enableBackgroundPlayback: false },
     ],
     [
       "expo-contacts",

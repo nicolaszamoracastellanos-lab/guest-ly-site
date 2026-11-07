@@ -1,15 +1,13 @@
 // Run: node --experimental-strip-types scripts/tests/native-config.test.ts
 // Native config guard (Master Wave L8 step 1, Nov 5 2026). The 1.4.0 binary is
 // the only native build this wave, so the native set it carries is pinned here:
-// expo-store-review stays installed for the #20 review card (not built in 1.4.0;
-// nothing imports it, the review notes do not mention a rating prompt, and its
-// removal is decided with expo-audio's before the Nov 15 cut), the build 36
-// crash pin stays exact, the
+// expo-store-review is installed and used by the #20 review card (Apple's
+// rating sheet once per install), the build 36 crash pin stays exact, the
 // microphone string is the same in the config and both locale files, and
 // nothing adds background audio. No mic in 1.4.0 (Nicolas, Nov 6, c-mic):
-// expo-audio is still installed (removing it is an open native decision) but no
+// expo-audio is removed (batch 3, Nov 7: package, lockfile and plugin), no
 // source file imports it, the microphone string says the app does not record,
-// and Android RECORD_AUDIO is blocked again.
+// and Android RECORD_AUDIO is blocked.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -21,9 +19,14 @@ const pkg = JSON.parse(read("package.json"));
 const deps: Record<string, string> = pkg.dependencies;
 
 // Modules for this wave.
-assert.ok(deps["expo-store-review"], "expo-store-review stays installed until the native decision before the cut (#20 card not built)");
-assert.ok(deps["expo-asset"], "expo-asset is installed directly (peer of expo-audio, and of expo itself)");
-assert.equal(deps["expo-av"], undefined, "expo-av left the SDK; expo-audio replaces it");
+assert.ok(deps["expo-store-review"], "expo-store-review is installed (#20 rating sheet)");
+assert.ok(deps["expo-asset"], "expo-asset is installed directly (also a dependency of expo itself)");
+assert.equal(deps["expo-av"], undefined, "expo-av left the SDK");
+// Batch 3: expo-audio is gone from the native set (unused since the mic left 1.4.0).
+assert.equal(deps["expo-audio"], undefined, "expo-audio is not a dependency");
+const lock = JSON.parse(read("package-lock.json"));
+assert.equal(lock.packages?.["node_modules/expo-audio"], undefined, "expo-audio is not in the lockfile");
+assert.equal(lock.packages?.[""]?.dependencies?.["expo-audio"], undefined, "nor in the lockfile's root dependencies");
 
 // Build 36 launch crash: expo-contacts ships a prebuilt xcframework tied to the
 // ExpoModulesCore it was built against. Exact pin only; move it together with
@@ -73,15 +76,13 @@ for (const [lang, strings] of [["en", en], ["es", es]] as const) {
   assert.deepEqual(Object.keys(strings).sort(), Object.keys(en).sort(), `${lang}: same keys as en`);
 }
 
-// No background audio: the expo-audio plugin turns it on by default, so while
-// the package stays installed its plugin is configured explicitly, all off.
+// No background audio, and no plugin for a package that is not installed.
 assert.equal(plist.UIBackgroundModes, undefined, "no UIBackgroundModes in Info.plist");
-const audio = (config.plugins ?? []).find((p) => Array.isArray(p) && p[0] === "expo-audio") as [string, Record<string, unknown>] | undefined;
-assert.ok(audio, "expo-audio plugin is configured explicitly");
-assert.equal(audio[1].enableBackgroundPlayback, false);
-assert.equal(audio[1].enableBackgroundRecording, false);
-assert.equal(audio[1].recordAudioAndroid, false);
-assert.equal(audio[1].microphonePermission, mic, "plugin uses the same microphone string");
+const audio = (config.plugins ?? []).find((p) => (Array.isArray(p) ? p[0] : p) === "expo-audio");
+assert.equal(audio, undefined, "no expo-audio plugin");
+// The #20 card really calls the rating module (so the review notes may name it).
+const reviewers = walk(path.join(root, "src")).filter((f) => /from\s+["']expo-store-review["']/.test(readFileSync(f, "utf8")));
+assert.deepEqual(reviewers.map((f) => path.relative(root, f)), ["src/features/couple/storeReview.ts"], "one place asks for Apple's rating sheet");
 
 // Android: the app never records, so RECORD_AUDIO is blocked; contacts stay blocked.
 const blocked = config.android?.blockedPermissions ?? [];

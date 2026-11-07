@@ -14,9 +14,8 @@ two should never disagree, and this section wins if they ever do.
   four permissions the app actually uses (`CAMERA`, `USE_BIOMETRIC`,
   `POST_NOTIFICATIONS`, `VIBRATE`). `RECORD_AUDIO` is blocked: the
   Coordinator mic (D5) is not in 1.4.0 (Nicolas, Nov 6 2026), so the app
-  never records and Play's Data safety form lists no Audio. `expo-audio` is
-  still installed but unused, with `recordAudioAndroid: false`; check the
-  merged manifest for `MODIFY_AUDIO_SETTINGS` on the first Android build. And
+  never records and Play's Data safety form lists no Audio. `expo-audio` was
+  removed on Nov 7 2026 (unused), so its `MODIFY_AUDIO_SETTINGS` is gone too. And
   an intent filter for `https://app.guest-ly.com/i/*` (App Links, guest
   invite deep links).
 - `eas.json`: `appVersionSource: "remote"`; Android `versionCode` is **4**
