@@ -98,6 +98,38 @@ t("notes mention a rating prompt only if the app calls expo-store-review", () =>
   }
 });
 
+// Each 1.4 feature the notes or What's new name, the words that name it, and
+// the flag the portal sends it behind. "Open before submit" must list every
+// flag, or App Review's wedding (an off row like any client) shows none of it.
+const FLAGGED: readonly [RegExp, string][] = [
+  [/Now and Next|wedding day, live/i, "MW_LIVE_DAY"],
+  [/no signal|without signal/i, "MW_DAY_PACK"],
+  [/Run N actions|COORDINATOR PLANS/, "MW_PLAN_CARD"],
+  [/timeline lock|Locked timeline/i, "MW_RUNSHEET_LOCK"],
+  [/places with/i, "MW_PLACES"],
+  [/hair and makeup/i, "MW_HMU"],
+  [/final guest count/i, "MW_FINAL_COUNT"],
+  [/travel times/i, "MW_TRAVEL_WINDOWS"],
+  [/know-before-you-go/i, "MW_KNOW_BEFORE"],
+  [/"Seen"/, "MW_SEEN"],
+  [/road[- ]to[- ]the[- ]wedding|road to the wedding/i, "MW_ROAD"],
+];
+
+t("Open before submit lists the flag of every feature the notes and What's new name", () => {
+  const open = md.slice(md.indexOf("## Open before submit"), md.indexOf("## review_notes_en"));
+  assert.ok(open.length > 0);
+  const said = `${notes}\n${meta.whats_new.en}`;
+  for (const [words, flag] of FLAGGED) {
+    if (!words.test(said)) continue;
+    assert.ok(new RegExp(`^\\s*- ${flag}:`, "m").test(open), `${flag} (for ${words}) missing from Open before submit`);
+  }
+  assert.ok(/review wedding/.test(open) && /production/.test(open), "on for the review wedding and in production");
+  // Every flag the app reads for a 1.4 screen is in the table above (MW_REVIEW_ASK: card not built).
+  const used = new Set(srcFiles(path.join(here, "../../src")).flatMap((f) => readFileSync(f, "utf8").match(/\bMW_[A-Z_]+\b/g) ?? []));
+  const known = new Set([...FLAGGED.map(([, f]) => f), "MW_REVIEW_ASK", "MW_KEY", "MW_LIVE_PREVIEW_LOCAL"]);
+  for (const f of used) assert.ok(known.has(f), `new flag ${f}: add it to FLAGGED and to Open before submit`);
+});
+
 t("copy rules: brand hyphenated, no dashes", () => {
   for (const [name, text] of [["notes", notes], ["md", md]] as const) {
     assert.ok(!/[–—]/.test(text), name);

@@ -54,8 +54,23 @@ ES: Tu boda en vivo: mira lo que está pasando ahora y lo que viene después. Fu
 - Confirm the App Review wedding's slug. The notes say "Camila & Andrés"; the app treats
   demo-review as a demo slug. If the review tenant has another slug, add it to
   PREVIEW_DEMO_SLUGS (src/features/dayof/previewClock.ts) or have /auth/me send tenant.is_demo.
-- MW_LIVE_DAY (and MW_DAY_PACK if wanted) must be on for the review wedding, or "Preview the day" has
-  nothing to show (it needs the server's live payload).
+- Feature flags. Every 1.4 screen the notes and What's new name shows only when the portal sends it,
+  and each sits behind its own flag. demo-review is a live, non-demo tenant, so a global release gives
+  it an off row like any client wedding: turn each flag on for the review wedding in /ops/flags
+  before submitting, and keep them on in production when 1.4.0 goes live. If one cannot be on, take
+  its words out of What's new and review_notes_en first.
+  - MW_LIVE_DAY: Now and Next, Mark done, Preview the day (needs the server's live payload).
+  - MW_DAY_PACK: the day saved on the phone, "works even with no signal at the venue".
+  - MW_PLAN_CARD: Coordinator plans ("Run N actions").
+  - MW_RUNSHEET_LOCK: locked timeline and change requests.
+  - MW_PLACES: places with directions (Apple Maps and Google Maps links).
+  - MW_HMU: hair and makeup schedule.
+  - MW_FINAL_COUNT: final guest count.
+  - MW_TRAVEL_WINDOWS: guest travel times.
+  - MW_KNOW_BEFORE: the know-before-you-go card.
+  - MW_SEEN: "Seen" status.
+  - MW_ROAD: the road-to-the-wedding card.
+  Leave MW_REVIEW_ASK as it is: the #20 review card is not built in this binary.
 - expo-audio and expo-store-review are installed but nothing imports them (the #20 review card and
   its rating prompt are not built, so the notes do not mention a rating prompt). Removing either
   package changes the native module set: decide both before the Nov 15 cut and re-run
