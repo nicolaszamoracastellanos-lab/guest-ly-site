@@ -54,6 +54,18 @@ t("label and manifest: Audio Data, linked, app functionality, no tracking", () =
   assert.ok(block.includes("NSPrivacyCollectedDataTypeLinked: true") && block.includes("NSPrivacyCollectedDataTypeTracking: false") && block.includes("PurposeAppFunctionality"));
 });
 
+t("label and manifest: Product Interaction for guest app opens (K21, #37), linked, no tracking", () => {
+  const pi = meta.app_privacy.collected.find((c) => c.type === "Usage Data: Product Interaction");
+  assert.ok(pi && pi.linked && pi.purpose === "App Functionality", "the label lists the guest app opens");
+  const i = cfg.indexOf('"NSPrivacyCollectedDataTypeProductInteraction"');
+  assert.ok(i > 0, "the privacy manifest lists Product Interaction");
+  const block = cfg.slice(i, i + 400);
+  assert.ok(block.includes("NSPrivacyCollectedDataTypeLinked: true") && block.includes("NSPrivacyCollectedDataTypeTracking: false") && block.includes("PurposeAppFunctionality"));
+  const notCollected = (meta.app_privacy as unknown as { not_collected: string[] }).not_collected.join(" | ");
+  assert.ok(!/^Analytics/m.test(notCollected.replace(/ \| /g, "\n")), "no 'Analytics' line that contradicts the opens");
+  assert.ok(/Product Interaction/.test(md), "the review file says to add it by hand");
+});
+
 t("the purpose string and the notes agree; the review file carries the notes word for word", () => {
   const purpose = /const MICROPHONE_PURPOSE = "([^"]+)"/.exec(cfg)![1];
   assert.ok(md.includes(purpose));

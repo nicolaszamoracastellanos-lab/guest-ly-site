@@ -72,6 +72,12 @@
                 "linked": true,
                 "purpose": "App Functionality",
                 "who": "couples and planners: a voice note recorded only after tapping the Coordinator's mic; sent to AssemblyAI for speech to text and deleted on both sides once the text is ready (still \"collected\" for the label because it leaves the device)"
+            },
+            {
+                "type": "Usage Data: Product Interaction",
+                "linked": true,
+                "purpose": "App Functionality",
+                "who": "guests: each time the guest opens the app, stored against the guest and shown to the couple as Seen (last open and number of visits)"
             }
         ],
         "not_collected": [
@@ -81,7 +87,7 @@
             "Browsing",
             "Search history",
             "Crash data",
-            "Analytics (only server-side counts)"
+            "Other Usage Data and Advertising Data (no analytics or ads SDK; the only usage data is the guest app opens listed above)"
         ]
     },
     "primary_locale": "en-US",

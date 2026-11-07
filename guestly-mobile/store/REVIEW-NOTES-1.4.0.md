@@ -32,9 +32,13 @@ Nicolas can read it in one place. Re-read it against the build before pressing s
 
 ## App Store Connect, App Privacy (to change by hand at submission)
 
-Add one data type:
+Add two data types:
 - Audio Data: collected, linked to the user, App Functionality, not used for tracking.
   Who: couples and planners recording a Coordinator voice note.
+- Product Interaction (Usage Data): collected, linked to the user, App Functionality, not used for
+  tracking. Who: guests. Each app open is stored against the guest and shown to the couple as Seen
+  (K21, #37). The portal already records opens from 1.3.0 (GET /guest/home), so the label on the
+  store is out of date today: this entry goes in with the next submission.
 
 Update the wording you keep for:
 - Other User Content: also couple and planner messages to the Coordinator (already collected, App
@@ -42,7 +46,7 @@ Update the wording you keep for:
 
 Unchanged: Name, Email Address, Phone Number, Device ID, Photos or Videos; no tracking; no ads.
 The privacy manifest (app.config.ts ios.privacyManifests) now lists NSPrivacyCollectedDataTypeAudioData
-(linked, not tracking, App Functionality). This is native config: it is in the 1.4.0 fingerprint.
+and NSPrivacyCollectedDataTypeProductInteraction (both linked, not tracking, App Functionality). This is native config: it is in the 1.4.0 fingerprint.
 
 Play Data safety (when Android ships): Audio, Voice or sound recordings, collected, App functionality.
 
