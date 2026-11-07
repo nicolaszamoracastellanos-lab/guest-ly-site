@@ -1,10 +1,24 @@
 /* #50 destination guides section (only in the build while GUIDES_ENABLED). */
 
-/* The form arrives as a lazy chunk 800px before the section is in view; its
-   box keeps about the form's height (measured EN and ES) so a jump to the
-   FAQ below never lands on moving content. */
+/* The form arrives as a lazy chunk 800px before the section is in view; the
+   box starts at the form's height with today's catalogue (7 guides, measured
+   EN and ES from 360 to 1440; within 4 px at 390 and 1440). Once something
+   is in it, GuidesSection sets the box to that thing's height without
+   moving anything on screen (./fit.ts), so a longer or shorter catalogue is
+   fine too. */
 .guides-slot {
-  min-height: 720px;
+  min-height: 750px;
+  /* Its height is set from script and read back in the same frame. The
+     reduced-motion rule in index.css gives every element a 0.01ms
+     transition of "all", which would hand that read the old height. */
+  transition-property: none;
+  /* The browser never anchors the scroll on what the box holds (it is
+     replaced as a whole); GuidesSection keeps what is below in place. */
+  overflow-anchor: none;
+}
+
+:lang(es) .guides-slot {
+  min-height: 770px;
 }
 
 .guides,
@@ -191,8 +205,9 @@
 }
 
 @media (min-width: 640px) {
-  .guides-slot {
-    min-height: 590px;
+  .guides-slot,
+  :lang(es) .guides-slot {
+    min-height: 630px;
   }
 
   .guides__grid {
@@ -202,7 +217,11 @@
 
 @media (min-width: 960px) {
   .guides-slot {
-    min-height: 310px;
+    min-height: 320px;
+  }
+
+  :lang(es) .guides-slot {
+    min-height: 360px;
   }
 
   .guides,
@@ -217,7 +236,28 @@
   }
 }
 
-/* After a request the short confirmation needs no reserved height. */
-.guides-slot:has(.guides-done) {
-  min-height: 0;
+@media (min-width: 1200px) {
+  .guides-slot,
+  :lang(es) .guides-slot {
+    min-height: 305px;
+  }
+}
+
+/* The confirmation or a 409's line in place of the side panel, at the
+   panel's height (set inline), centred so the box reads as one message. */
+.guides__side.guides-done {
+  max-width: none;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.4rem;
+}
+
+.guides__side.guides-done .card-body,
+.guides__side.guides-done .guides__again {
+  margin-top: 0;
+}
+
+/* After a 409 the cards stay in view but cannot be picked. */
+.guides__places:disabled .guides-place {
+  cursor: default;
 }

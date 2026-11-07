@@ -240,6 +240,28 @@ const STATES = {
     stub.state.holdCatalogue = null;
     await page.locator('#guides .guides-done').waitFor();
   },
+  'guides-unavailable-past': async (page) => {
+    /* A slow "unavailable" while the visitor reads the FAQ, then they scroll
+       back up: the line, then the FAQ, no hole. */
+    reset({ catalogue: 'unavailable' });
+    let release;
+    stub.state.holdCatalogue = new Promise((r) => (release = r));
+    await page.evaluate(() => document.getElementById('faq').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await page.locator('#guides .guides-skeleton').waitFor();
+    release();
+    stub.state.holdCatalogue = null;
+    await page.locator('#guides .guides-done').waitFor();
+    await page.waitForTimeout(300);
+    await page.evaluate(() => document.getElementById('guides').scrollIntoView({ block: 'start', behavior: 'instant' }));
+  },
+  'guides-faq-hash': async (page) => {
+    /* /#faq with a slow catalogue: the form loads above, the FAQ stays put. */
+    stub.state.holdCatalogue = new Promise((r) => setTimeout(r, 400));
+    await page.goto(`${site.url}/#faq`, { waitUntil: 'networkidle' });
+    await page.locator('form.guides').waitFor({ state: 'attached' });
+    stub.state.holdCatalogue = null;
+    await page.waitForTimeout(300);
+  },
   'wizard-book': async (page) => {
     await page.route('https://formsubmit.co/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":"true"}' }));
     await page.locator('[data-track="hero-start"]').click();

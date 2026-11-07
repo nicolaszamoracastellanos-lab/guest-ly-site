@@ -23,9 +23,12 @@ body {
   font-size: var(--text-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
 }
 
+/* Sideways overflow is clipped once, at the root (it becomes the viewport's).
+   Not on body or .overlay-page as well: Chrome then counts every scroll that
+   keeps content in place (the browser's own scroll anchoring, or a box that
+   fits its content above the viewport, #50) as a layout shift. */
 html {
   overflow-x: clip;
 }

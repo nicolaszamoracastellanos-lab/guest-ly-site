@@ -37,14 +37,20 @@
       messages; the body is exactly {email, code, lang, visitorTz, tips,
       consentVersion, fax_number}, tips false; ticked: tips true and the
       server reads it as ticked; 503: "try again in a minute", the input
-      kept, the retry sends; 409: the form is replaced by the calm message.
-      503 and 409 leave focus inside the form. Catalogue closed,
-      unavailable, 429 or 500 while the section is below the viewport: no
-      section and the FAQ is № 10 again; while it is in view (?guide=all, or
-      a slow answer after a scroll into the skeleton): the section stays
-      with the "not available" line, layout shift under 0.02. ?guide=<code>
-      scrolls to the section with that guide picked and the email focused,
-      ?guide=all scrolls there, and the query is dropped.
+      kept, the retry sends; 409: the side panel becomes the calm message
+      and the cards cannot be picked. 503 and 409 leave focus inside the
+      form. Catalogue closed, unavailable, 429 or 500 while the section is
+      below the viewport: no section and the FAQ is № 10 again; while it is
+      in view (?guide=all, or a slow answer after a scroll into the skeleton
+      or past the section): the section stays with the "not available"
+      line, layout shift under 0.02; the box fits the line at once for
+      ?guide=all and past the section, and once the visitor scrolls a held
+      part out of view otherwise. Landing on /#faq with a slow catalogue at
+      360, 390 and 640: layout shift under 0.02, the FAQ stays at the top.
+      A slow sent (200) and a slow 409 at 390 with the button at the bottom
+      of the screen: layout shift under 0.02, the box keeps its height.
+      ?guide=<code> scrolls to the section with that guide picked and the
+      email focused, ?guide=all scrolls there, and the query is dropped.
    J. beacon events: booking opened, slot, booked and guide <id>.
    K. nothing on the device: no cookie, no sessionStorage, localStorage holds
       only the language the visitor picked.
@@ -552,7 +558,7 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   await page.locator('.guides-done').waitFor();
   check(guideBodies(m503).length === 2, 'I: the retry after 503 did not send');
 
-  /* 409: switched off since the catalogue loaded; the form goes away. */
+  /* 409: switched off since the catalogue loaded; the panel becomes the line. */
   reset({ guide: 'closed' });
   await page.getByRole('button', { name: 'Pedir otra guía' }).click();
   await page.locator('.guides-place').first().click();
@@ -560,7 +566,8 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   await pressGuide(page);
   await page.locator('.guides-done[role="status"]').waitFor();
   check((await page.locator('.guides-done').innerText()).startsWith('Las guías no están disponibles ahora.'), 'I: closed message');
-  check((await page.locator('form.guides').count()) === 0, 'I: the form stayed after 409');
+  check((await page.locator('.guides__submit').count()) === 0, 'I: the send button stayed after 409');
+  check(await page.locator('.guides__places').evaluate((f) => f.disabled), 'I: the cards can still be picked after 409');
   await page.waitForTimeout(100);
   check(await page.evaluate(() => Boolean(document.activeElement?.closest('#guides'))), 'I: focus fell to the page after 409');
 
@@ -582,6 +589,15 @@ const watchShifts = (page) =>
     }).observe({ type: 'layout-shift' });
   });
 const shifts = (page) => page.evaluate(() => window.__cls);
+/* Blank height the guides box holds under what it shows (px). */
+const band = (page) =>
+  page.evaluate(() => {
+    const slot = document.querySelector('#guides .guides-slot');
+    const shown = slot?.firstElementChild?.firstElementChild;
+    return slot && shown ? Math.round(slot.getBoundingClientRect().height - shown.getBoundingClientRect().height) : -1;
+  });
+const faqTop = (page) => page.evaluate(() => Math.round(document.getElementById('faq').getBoundingClientRect().top));
+const slowly = (ms) => new Promise((r) => setTimeout(r, ms));
 for (const catalogue of ['closed', 'unavailable', 'limited', 'error']) {
   /* Below the viewport (the form loads 800 px early): the section goes away. */
   reset({ catalogue });
@@ -620,6 +636,9 @@ for (const width of [390, 1440]) {
   const cls = await shifts(page);
   check(cls < 0.02, `I: ?guide=all closed ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
   check((await faqNo(page)) === '№ 11', `I: ?guide=all closed ${width}: FAQ number ${await faqNo(page)}`);
+  /* The page scrolls there after the line is in place: no blank under it. */
+  const b = await band(page);
+  check(b >= 0 && b <= 1, `I: ?guide=all closed ${width}: ${b} px of blank under the line`);
   await done(t, `I ?guide=all closed ${width}`);
 }
 {
@@ -638,9 +657,106 @@ for (const width of [390, 1440]) {
   await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(300);
   check((await page.locator('#guides .guides-done').count()) === 1, 'I: slow unavailable in view: no message in place');
+  /* The visitor scrolls on past the section and back: the held part went
+     as it left the screen, with nothing moving on screen. */
+  await page.mouse.move(100, 400);
+  for (let i = 0; i < 12; i++) {
+    await page.mouse.wheel(0, 150);
+    await page.waitForTimeout(40);
+  }
+  await page.waitForTimeout(400);
+  for (let i = 0; i < 12; i++) {
+    await page.mouse.wheel(0, -150);
+    await page.waitForTimeout(40);
+  }
+  await page.waitForTimeout(400);
+  const b = await band(page);
+  check(b >= 0 && b <= 1, `I: slow unavailable in view: ${b} px of blank under the line after the visitor scrolled`);
   const cls = await shifts(page);
   check(cls < 0.02, `I: slow unavailable in view: layout shift ${cls.toFixed(3)} (budget 0.02)`);
   await done(t, 'I slow unavailable');
+}
+for (const width of [390, 1440]) {
+  /* A slow "unavailable" while the visitor already reads the FAQ. */
+  reset({ catalogue: 'unavailable' });
+  let release = () => {};
+  S.holdCatalogue = new Promise((r) => (release = r));
+  const t = await context({ width });
+  const { page } = t;
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  await page.evaluate(() => document.getElementById('faq').scrollIntoView({ block: 'start', behavior: 'instant' }));
+  await page.locator('#guides .guides-skeleton').waitFor();
+  const before = await faqTop(page);
+  await watchShifts(page);
+  release();
+  S.holdCatalogue = null;
+  await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(400);
+  const cls = await shifts(page);
+  check(cls < 0.02, `I: slow unavailable past the section ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
+  check(Math.abs((await faqTop(page)) - before) <= 1, `I: slow unavailable past the section ${width}: the FAQ moved ${before} to ${await faqTop(page)}`);
+  const b = await band(page);
+  check(b >= 0 && b <= 1, `I: slow unavailable past the section ${width}: ${b} px of blank left above`);
+  await done(t, `I slow unavailable past ${width}`);
+}
+for (const width of [360, 390, 640]) {
+  /* Landing on /#faq (or the FAQ link) with a slow catalogue: the form
+     arrives above the viewport and the FAQ stays where it is. */
+  reset();
+  S.holdCatalogue = slowly(400);
+  const t = await context({ width });
+  const { page } = t;
+  await page.addInitScript(() => {
+    window.__cls = 0;
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await page.goto(`${on.url}/#faq`, { waitUntil: 'networkidle' });
+  await page.locator('form.guides').waitFor({ state: 'attached', timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  S.holdCatalogue = null;
+  check((await page.locator('form.guides').count()) === 1, `I: /#faq ${width}: the form did not load above the viewport`);
+  const cls = await shifts(page);
+  check(cls < 0.02, `I: /#faq ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
+  check(Math.abs((await faqTop(page)) - 80) <= 2, `I: /#faq ${width}: the FAQ is at ${await faqTop(page)}, not 80`);
+  const b = await band(page);
+  check(b >= 0 && b <= 1, `I: /#faq ${width}: the box is ${b} px off the form`);
+  await done(t, `I /#faq ${width}`);
+}
+for (const guide of ['sent', 'closed']) {
+  /* A slow answer (L7p answers after sending the email) at 390 with the
+     button at the bottom of the screen: the answer takes the panel's place
+     and box, nothing below moves. */
+  reset({ guide });
+  const t = await context({ width: 390 });
+  const { page } = t;
+  await page.goto(on.url, { waitUntil: 'networkidle' });
+  await page.locator('#guides').scrollIntoViewIfNeeded();
+  await page.locator('form.guides').waitFor();
+  await page.locator('.guides-place').nth(2).click();
+  await page.getByLabel('Your email').fill('ana@example.com');
+  await page.evaluate(() => {
+    const r = document.querySelector('.guides__submit').getBoundingClientRect();
+    window.scrollBy({ top: r.bottom - innerHeight + 10, behavior: 'instant' });
+  });
+  await page.waitForTimeout(200);
+  let release = () => {};
+  S.holdGuide = new Promise((r) => (release = r));
+  const before = { faq: await faqTop(page), slot: await page.locator('#guides .guides-slot').evaluate((e) => Math.round(e.getBoundingClientRect().height)) };
+  await pressGuide(page);
+  await page.waitForTimeout(700);
+  await watchShifts(page);
+  release();
+  S.holdGuide = null;
+  await page.locator('.guides-done').waitFor();
+  await page.waitForTimeout(400);
+  const cls = await shifts(page);
+  check(cls < 0.02, `I: slow ${guide} at 390: layout shift ${cls.toFixed(3)} (budget 0.02)`);
+  const after = { faq: await faqTop(page), slot: await page.locator('#guides .guides-slot').evaluate((e) => Math.round(e.getBoundingClientRect().height)) };
+  check(Math.abs(after.faq - before.faq) <= 1 && Math.abs(after.slot - before.slot) <= 1, `I: slow ${guide} at 390: ${JSON.stringify(before)} became ${JSON.stringify(after)}`);
+  check(await page.evaluate(() => Boolean(document.activeElement?.closest('#guides .guides-done'))), `I: slow ${guide} at 390: focus is not on the answer`);
+  await done(t, `I slow ${guide}`);
 }
 
 /* ---------- I: ?guide=<code> and ?guide=all (the expired link's "Request a new link") ---------- */
@@ -651,7 +767,10 @@ for (const width of [390, 1440]) {
   await page.goto(`${on.url}/?guide=mx-cancun-riviera-maya#x`, { waitUntil: 'networkidle' });
   await page.locator('.guides-place.on').waitFor();
   check((await page.locator('.guides-place.on .guides-place__name').innerText()) === 'Cancún and Riviera Maya', 'I: ?guide= did not pick that guide');
-  check(await page.evaluate(() => document.activeElement?.matches('.guides input[type="email"]')), 'I: ?guide= did not focus the email');
+  const focused = await page
+    .waitForFunction(() => document.activeElement?.matches('.guides input[type="email"]'), null, { timeout: 3000 })
+    .then(() => true, () => false);
+  check(focused, 'I: ?guide= did not focus the email');
   check(await page.evaluate(() => { const r = document.getElementById('guides').getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }), 'I: ?guide= did not scroll to the section');
   check(new URL(page.url()).search === '' && new URL(page.url()).hash === '#x', `I: ?guide= left in the URL ${page.url()}`);
   await done(t, 'I ?guide=code');

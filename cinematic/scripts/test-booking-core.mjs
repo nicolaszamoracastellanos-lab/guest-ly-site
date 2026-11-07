@@ -12,6 +12,7 @@ import {
   addDays, dayLong, dayOf, dayParts, daysOf, draftProblems, newKey, randomId, readBook, readSlots, timeLabel, validZone, whenLabel, zoneChoices, zoneCity, zonePhrase,
 } from '../src/booking/core.ts';
 import { guideParam, readCatalogue, readGuide } from '../src/guides/core.ts';
+import { fitSlot } from '../src/guides/fit.ts';
 import { resolveSwitches, BOOKING_ENABLED, GUIDES_ENABLED, API_ORIGIN } from '../src/switches.ts';
 import { featureClaimProblems } from './lib/feature-claims.mjs';
 import { slotsBody, bookedBody, catalogueBody, parseGuideBody, GUIDES, GUIDES_CONSENT } from './lib/booking-stub.mjs';
@@ -188,6 +189,50 @@ eq('?guide=all', guideParam('?x=1&guide=all'), 'all');
 eq('?guide=junk ignored', guideParam('?guide=%3Cscript%3E'), null);
 eq('no ?guide', guideParam('?book=demo'), null);
 
+/* ---------- the guides box fits its content without moving what is seen (fit.ts) ---------- */
+{
+  const vh = 844;
+  const F = (o) => fitSlot({ vh, fresh: true, move: true, ...o });
+  /* Below the viewport: just the content's height. */
+  eq('fit: below the viewport, shorter', F({ top: 2000, prevH: 750, want: 136 }), { h: 136, c: 0 });
+  eq('fit: below the viewport, taller', F({ top: 2000, prevH: 750, want: 829 }), { h: 829, c: 0 });
+  /* Above (landed on #faq): the page scrolls with the change, FAQ stays. */
+  eq('fit: above, form taller than the reserve', F({ top: -900, prevH: 750, want: 829 }), { h: 829, c: 79 });
+  eq('fit: above, closed line', F({ top: -1000, prevH: 750, want: 136 }), { h: 136, c: -614 });
+  /* Straddling the top with the FAQ in view: only the part above goes. */
+  eq('fit: top above, bottom in view', F({ top: -100, prevH: 750, want: 136 }), { h: 650, c: -100 });
+  /* In view with the FAQ below the viewport: the FAQ stays below. */
+  eq('fit: in view, FAQ below', F({ top: 351, prevH: 750, want: 136 }), { h: 493, c: 0 });
+  /* In view with the FAQ in view: nothing moves, the box is held. */
+  eq('fit: in view, FAQ in view', F({ top: 100, prevH: 400, want: 136 }), { h: 400, c: 0 });
+  /* Held, later: a part that left the bottom goes; a part above goes only
+     when the content is above too and the page may scroll. */
+  eq('fit: held, visitor scrolled up', F({ fresh: false, top: 600, prevH: 493, want: 136 }), { h: 244, c: 0 });
+  eq('fit: held, message still in view', F({ fresh: false, top: -50, prevH: 493, want: 136 }), { h: 493, c: 0 });
+  eq('fit: held, message above, fling', F({ fresh: false, move: false, top: -300, prevH: 493, want: 136 }), { h: 493, c: 0 });
+  eq('fit: held, message above, scroll stopped', F({ fresh: false, top: -300, prevH: 493, want: 136 }), { h: 329, c: -164 });
+  eq('fit: held, all above', F({ fresh: false, top: -900, prevH: 493, want: 136 }), { h: 136, c: -357 });
+  /* Grew in view with no room: the one case that pushes. */
+  eq('fit: grew in view, FAQ in view', F({ fresh: false, top: 100, prevH: 400, want: 420 }), { h: 420, c: 0 });
+  /* Never shorter than the content, never a scroll while the top is in view. */
+  for (const top of [-2000, -400, -1, 0, 1, 300, 843, 844, 3000])
+    for (const prevH of [100, 493, 750])
+      for (const want of [80, 136, 746, 900])
+        for (const fresh of [true, false]) {
+          const r = fitSlot({ top, prevH, want, vh, fresh, move: true });
+          ok(`fit: h >= content (${top},${prevH},${want},${fresh})`, r.h >= want - 0.01);
+          ok(`fit: no scroll with the top in view (${top},${prevH},${want},${fresh})`, top <= 0 || r.c === 0);
+          /* A scroll never brings what is above the box into view, nor moves
+             content the visitor already sees. */
+          ok(`fit: above stays above (${top},${prevH},${want},${fresh})`, r.c === 0 || top - r.c <= 0.01);
+          ok(`fit: seen content not moved (${top},${prevH},${want},${fresh})`, r.c === 0 || fresh || (top + want <= 0.01 && top - r.c + want <= 0.01));
+          /* What is below either stays put or is below the viewport before
+             and after, unless the content grew in view with no room. */
+          const pushed = prevH < want && top + prevH < vh && !(top <= 0 && (fresh || top + want <= 0));
+          ok(`fit: below stays or stays hidden (${top},${prevH},${want},${fresh})`, pushed || Math.abs(r.h - r.c - prevH) < 0.01 || (top + prevH >= vh && top + r.h - r.c >= vh - 0.01));
+        }
+}
+
 /* ---------- every booking refusal L7p's handleBook sends has a landing state ---------- */
 const l7pBook = [process.env.GL_L7P_DIR, process.env.GL_PORTAL_DIR].find((d) => d && existsSync(join(d, 'src/lib/booking/public.ts')));
 if (l7pBook) {
@@ -247,4 +292,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-booking-core: ${e}`);
   process.exit(1);
 }
-console.log(`test-booking-core clean: ${checks} checks (API answers, DST and zones, visitor checks, keys without randomUUID, guides catalogue and answers, stub parser, ?guide=, switches ship off, off-feature guard)`);
+console.log(`test-booking-core clean: ${checks} checks (API answers, DST and zones, visitor checks, keys without randomUUID, guides catalogue and answers, stub parser, ?guide=, the guides box fit, switches ship off, off-feature guard)`);

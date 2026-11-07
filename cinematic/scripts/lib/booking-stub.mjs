@@ -139,9 +139,10 @@ export function parseGuideBody(raw) {
    L7p's parser: a body it refuses answers its 400) | invalid-email |
    invalid-code | closed (409) | unavailable (503) | error | abort.
    hits: every request (method, url, headers, body); guideInputs: what the
-   parser read from each accepted guide request. */
+   parser read from each accepted guide request. holdSlots, holdCatalogue,
+   holdGuide: a promise the matching answer waits for (a slow network). */
 export async function startStub({ port = 0 } = {}) {
-  const state = { hits: [], mode: { slots: 'open', book: 'booked', catalogue: 'open', guide: 'sent' }, taken: [], holdSlots: null, holdCatalogue: null, guideInputs: [] };
+  const state = { hits: [], mode: { slots: 'open', book: 'booked', catalogue: 'open', guide: 'sent' }, taken: [], holdSlots: null, holdCatalogue: null, holdGuide: null, guideInputs: [] };
   let origin = '';
   const server = createServer((req, res) => {
     const chunks = [];
@@ -212,6 +213,7 @@ export async function startStub({ port = 0 } = {}) {
       }
 
       if (url.pathname === '/api/public/guides/request' && req.method === 'POST') {
+        if (state.holdGuide) await state.holdGuide;
         const m = state.mode.guide;
         if (m === 'abort') return req.socket.destroy();
         if (m === 'error') return send(500, { v: 1, ok: false, status: 'error' });
