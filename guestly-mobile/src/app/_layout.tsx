@@ -27,7 +27,7 @@ import { QueryProvider } from "@/lib/query";
 import { SessionProvider, can, useSession } from "@/lib/session";
 import { biometricPrompt } from "@/lib/biometric";
 import { routeFor, tenantOf } from "@/lib/push";
-import { drainQueue } from "@/lib/queue";
+import { drainQueue, timedDrainNeeded } from "@/lib/queue";
 import { setLockHandlers } from "@/lib/lock";
 import { flushPendingReports, installGlobalErrorHandlers, setTelemetryRoute } from "@/lib/telemetry";
 import { colors } from "@/ui/tokens";
@@ -285,23 +285,36 @@ function Gate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  // Replay queued door check-ins while a couple session is open: at once,
-  // when the app comes back to the foreground, and when the connection returns.
-  const coupleOpen = state.status === "user" && state.me.surface === "couple";
+  // Replay the outbox (door check-ins and #30 status taps) while a couple or
+  // planner session is open: at once, when the app comes back to the
+  // foreground, when the connection returns, and once a minute in the
+  // foreground while status taps wait (a tap held while the status route was
+  // dark lands once it is back). A planner's Mark done goes through the same
+  // outbox, so the drain is never couple only.
+  const userOpen = state.status === "user";
   useEffect(() => {
-    if (!coupleOpen) return;
-    void drainQueue().catch(() => {});
+    if (!userOpen) return;
+    const drain = () => void drainQueue().catch(() => {});
+    drain();
     const app = AppState.addEventListener("change", (s) => {
-      if (s === "active") void drainQueue().catch(() => {});
+      if (s === "active") drain();
     });
     const net = onlineManager.subscribe((online) => {
-      if (online) void drainQueue().catch(() => {});
+      if (online) drain();
     });
+    const timer = setInterval(() => {
+      void timedDrainNeeded(onlineManager.isOnline(), AppState.currentState === "active")
+        .then((due) => {
+          if (due) drain();
+        })
+        .catch(() => {});
+    }, 60_000);
     return () => {
       app.remove();
       net();
+      clearInterval(timer);
     };
-  }, [coupleOpen]);
+  }, [userOpen]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>

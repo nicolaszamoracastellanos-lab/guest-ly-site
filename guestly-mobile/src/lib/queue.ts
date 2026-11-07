@@ -13,8 +13,10 @@
 //
 // Persistence (HH Oct 30 2026, checked): AsyncStorage 2.2 writes to the app's
 // Application Support directory on iOS and to SQLite on Android, so the queue
-// survives a crash, a force quit and a reboot; the root layout drains it at
-// launch, on foreground and when the network returns. No MMKV or SQLite
+// survives a crash, a force quit and a reboot; the root layout drains it for
+// every signed-in couple or planner at launch, on foreground, when the network
+// returns and, while status taps wait, once a minute in the foreground
+// (timedDrainDue). No MMKV or SQLite
 // module is needed for a list this small.
 //
 // Conflicts: every entry carries a client_event_id, so a replay is a no-op on
@@ -24,11 +26,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { post, ApiFailure, getCredential } from "@/lib/api";
-import { classifyFailure, replay, settle, type Failure } from "@/lib/queueMath";
+import { classifyFailure, replay, settle, timedDrainDue, type Failure } from "@/lib/queueMath";
 
 /** What a drain did. `already` and `refused` are guest names, for the door;
- *  `locked` and `gone` are block titles whose status taps were dropped. */
-export type DrainResult = { sent: number; remaining: number; already: string[]; refused: string[]; locked: string[]; gone: string[] };
+ *  `locked`, `gone` and `expired` are block titles whose status taps were
+ *  dropped (`expired`: held past HELD_TTL_MS while the route stayed dark). */
+export type DrainResult = { sent: number; remaining: number; already: string[]; refused: string[]; locked: string[]; gone: string[]; expired: string[] };
 
 // Everyone who wants to hear how a drain ended (the day-of notices), whoever
 // started it (the root layout on launch, foreground and reconnect, or a screen).
@@ -218,8 +221,9 @@ export function retryable(err: unknown): boolean {
   return classifyFailure("checkin", failureOf(err)) === "retry";
 }
 
-/** How a status tap ended: sent, queued for later, or dropped for good. */
-export type StatusTapResult = { kind: "sent" } | { kind: "queued" } | { kind: "locked" } | { kind: "gone" };
+/** How a status tap ended: sent, queued for later (`queued`: no connection;
+ *  `held`: online, but the status route is dark), or dropped for good. */
+export type StatusTapResult = { kind: "sent" } | { kind: "queued" } | { kind: "held" } | { kind: "locked" } | { kind: "gone" };
 
 /** Sends one status tap; when it cannot reach the server, queues it. A
  *  locked timeline or a deleted block is final (never queued); any other
@@ -235,7 +239,7 @@ export async function sendBlockStatus(raw: QueuedBlockStatus): Promise<StatusTap
     // failed flag read). The tap waits in the outbox like an offline one.
     if (c === "retry" || c === "held") {
       await enqueue(item);
-      return { kind: "queued" };
+      return { kind: c === "held" ? "held" : "queued" };
     }
     if (c === "locked" || c === "gone") return { kind: c };
     throw err;
@@ -264,6 +268,12 @@ export function isDraining(): boolean {
   return draining !== null;
 }
 
+/** True when the one-minute foreground check should drain (status taps wait). */
+export async function timedDrainNeeded(online: boolean, active: boolean): Promise<boolean> {
+  if (!online || !active || draining) return false;
+  return timedDrainDue((await readQueue()).filter(isForOpenWedding), online, active);
+}
+
 /** Replays the queue in order. Stops at the first failure that can be
  *  retried; drops only entries the server refused for good. One drain at a
  *  time: a second caller gets the running one. The storage lock is held only
@@ -280,7 +290,7 @@ export function drainQueue(): Promise<DrainResult> {
     // Offline, timeout, 5xx: the replay stops and keeps the order for next
     // time. Guest removed, timeline locked, block deleted: a retry cannot fix it.
     const outcomes = await replay(eligible, send, failureOf);
-    const { done, sent, already, refused, locked, gone } = settle(eligible, outcomes);
+    const { done, sent, already, refused, locked, gone, expired } = settle(eligible, outcomes, Date.now());
     // Re-read under the lock and remove only what this drain settled, so
     // anything enqueued meanwhile survives.
     const remaining = await serial(async () => {
@@ -289,7 +299,7 @@ export function drainQueue(): Promise<DrainResult> {
       if (done.size) await write(left);
       return left.filter((i) => isCheckin(i) && isForOpenWedding(i)).length;
     });
-    const result = { sent, remaining, already, refused, locked, gone };
+    const result = { sent, remaining, already, refused, locked, gone, expired };
     drainListeners.forEach((fn) => {
       try {
         fn(result);

@@ -243,8 +243,9 @@ export function GuestDayPackSync() {
 
 /**
  * What the outbox dropped for good, said once per drain: a locked timeline in
- * D28's one sentence (however many taps it dropped), and the blocks that were
- * deleted on the web by name.
+ * D28's one sentence (however many taps it dropped), the blocks that were
+ * deleted on the web by name, and taps held too long while the status route
+ * stayed dark (HELD_TTL_MS) by name.
  */
 export function OutboxNotices() {
   const { lang } = useLang();
@@ -254,6 +255,8 @@ export function OutboxNotices() {
         const c = DAYOF_COPY[lang];
         if (r.locked.length) toast(c.locked, { icon: "info", ms: 6000 });
         else if (r.gone.length) toastError(fmt(r.gone.length === 1 ? c.gone : c.goneMany, { names: r.gone.join(", ") }));
+        // Held past 12 hours while the status route stayed dark: dropped, named once.
+        else if (r.expired.length) toastError(fmt(r.expired.length === 1 ? c.expired : c.expiredMany, { names: r.expired.join(", ") }));
       }),
     [lang]
   );

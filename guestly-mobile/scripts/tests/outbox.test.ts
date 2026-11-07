@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifyFailure, outcomeFor, replay, settle, type Outcome } from "../../src/lib/queueMath.ts";
+import { classifyFailure, HELD_TTL_MS, heldExpired, outcomeFor, replay, settle, timedDrainDue, type Outcome } from "../../src/lib/queueMath.ts";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures/dayof");
 type Rec = { status: number; body: { ok: boolean; data?: unknown; error?: { code: string; message_en?: string; reason?: string } } | null };
@@ -189,6 +189,34 @@ s = settle(kept, outcomes);
 assert.equal(s.sent, 4);
 assert.equal(darkPortal.statuses.get("b-cake")?.status, "done");
 
+// The route stays dark (MW_DAY_PACK rolled back for the day): a held tap
+// lives 12 hours from its tap, then it is dropped and named once, never
+// replayed days later over a newer status.
+const stillDark = portal({ dark: true });
+const lateTaps: Item[] = [tap("e1", "b-ceremony", "done", 10, "Ceremony"), tap("e2", "b-toast", "done", 11, "Toast")];
+const tapAt = Date.parse(lateTaps[0].tapped_at);
+outcomes = await replay(lateTaps, stillDark.send, failureOf);
+s = settle(lateTaps, outcomes, tapAt + 60 * 60 * 1000);
+assert.equal(s.done.size, 0, "an hour later both taps are still held");
+assert.deepEqual(s.expired, []);
+s = settle(lateTaps, outcomes, tapAt + HELD_TTL_MS + 60_000);
+assert.deepEqual(s.expired, ["Ceremony"], "Ceremony (tapped first) is past 12 hours");
+assert.ok(s.done.has("e1") && !s.done.has("e2"), "the expired tap leaves the outbox, the newer one stays");
+assert.deepEqual(s.gone, [], "an expired tap is not named as deleted");
+assert.equal(settle(lateTaps, outcomes).expired.length, 0, "without a clock nothing expires");
+assert.equal(heldExpired({}, Date.now()), false, "no tapped_at: never expires here");
+// A retry (offline) never expires: only a held answer does.
+s = settle([lateTaps[0]], [{ kind: "retry" }], tapAt + 3 * HELD_TTL_MS);
+assert.deepEqual(s.expired, []);
+assert.equal(s.done.size, 0);
+
+// The one-minute foreground check drains only when status taps wait, online and active.
+assert.equal(timedDrainDue(lateTaps, true, true), true);
+assert.equal(timedDrainDue(lateTaps, false, true), false, "offline: the reconnect drains");
+assert.equal(timedDrainDue(lateTaps, true, false), false, "in the background: the foreground drains");
+assert.equal(timedDrainDue([scans[0]], true, true), false, "check-ins alone: the door has its own drain");
+assert.equal(timedDrainDue([], true, true), false);
+
 // Two phones: this one marks Ceremony done offline at 16:31, the other online at 16:33 sets it back. Last tap wins.
 const two = portal();
 await two.send(tap("online", "b-ceremony", "planned", 33, "Ceremony"));
@@ -217,4 +245,4 @@ const legacy = [{ client_event_id: "old", guest_id: "g-old", seats: 1, scanned_a
 outcomes = await replay(legacy, async () => ({ already: true, replayed: false }), failureOf);
 assert.deepEqual(outcomes, [{ kind: "sent", already: true }] as Outcome[]);
 
-console.log("outbox: ok (20 offline scans replayed in order, 0 duplicates, scan times kept; locked and deleted taps dropped and named, dark-route taps held)");
+console.log("outbox: ok (20 offline scans replayed in order, 0 duplicates, scan times kept; locked and deleted taps dropped and named, dark-route taps held, expired after 12 hours and named)");

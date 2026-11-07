@@ -143,7 +143,7 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
         await patchBlockStatus(owner, slug, b.id, status);
         rollback();
         void refresh();
-      } else if (r.kind === "queued") {
+      } else if (r.kind === "queued" || r.kind === "held") {
         rollback(); // the outbox overlay shows it from now on
       } else if (r.kind === "locked") {
         rollback();
@@ -156,12 +156,14 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
         return;
       }
       if (!undoable) return;
-      const message = fmt(r.kind === "queued" ? c.markedDoneQueued : c.markedDone, { title: b.title });
+      // Held: the phone is online but the status route is dark (the day pack
+      // switched off, or a failed flag read). The connection is not to blame.
+      const message = fmt(r.kind === "queued" ? c.markedDoneQueued : r.kind === "held" ? c.markedDoneHeld : c.markedDone, { title: b.title });
       toast(message, {
         undo: () => {
           void (async () => {
             // Still waiting in the outbox: take it back without a request.
-            if (r.kind === "queued" && (await cancelQueued(item.client_event_id))) return;
+            if ((r.kind === "queued" || r.kind === "held") && (await cancelQueued(item.client_event_id))) return;
             await setStatus(b, previous as "planned" | "confirmed" | "done", status, false);
           })();
         },

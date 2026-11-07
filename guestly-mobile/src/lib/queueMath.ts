@@ -78,24 +78,45 @@ export function outcomeFor(c: FailureClass): Outcome {
   return { kind: "refused", reason: c };
 }
 
+/** How long a status tap may stay held (the route dark) before it is dropped
+ *  and named: 12 hours after the tap, the wedding day is over, and a tap
+ *  replayed much later could overwrite a newer status (the portal stamps a
+ *  very old tapped_at with its own clock). */
+export const HELD_TTL_MS = 12 * 60 * 60 * 1000;
+
+/** True when a held tap is too old to send (see HELD_TTL_MS). An entry with
+ *  no readable tapped_at never expires here. */
+export function heldExpired(item: { tapped_at?: string }, now: number): boolean {
+  const t = item.tapped_at ? Date.parse(item.tapped_at) : NaN;
+  return Number.isFinite(t) && now - t > HELD_TTL_MS;
+}
+
 /** What a drain settled: ids to remove from storage, and the names to tell
  *  the door about. Stops at the first `retry` (order matters: a later scan of
  *  the same party must not overtake an earlier one). A `held` status tap stays
  *  stored and unnamed; the ones after it settle (the server applies a tap only
  *  when it is newer than the moment's last status change, so a later tap
- *  going first changes nothing). */
-export function settle<T extends { client_event_id: string; name: string }>(items: readonly T[], outcomes: readonly Outcome[]): { done: Set<string>; sent: number; already: string[]; refused: string[]; locked: string[]; gone: string[] } {
+ *  going first changes nothing). A held tap older than HELD_TTL_MS (given
+ *  `now`) is dropped and named in `expired`. */
+export function settle<T extends { client_event_id: string; name: string; tapped_at?: string }>(items: readonly T[], outcomes: readonly Outcome[], now?: number): { done: Set<string>; sent: number; already: string[]; refused: string[]; locked: string[]; gone: string[]; expired: string[] } {
   const done = new Set<string>();
   const already: string[] = [];
   const refused: string[] = [];
   const locked: string[] = [];
   const gone: string[] = [];
+  const expired: string[] = [];
   let sent = 0;
   for (let i = 0; i < items.length && i < outcomes.length; i++) {
     const o = outcomes[i];
     const item = items[i];
     if (o.kind === "retry") break;
-    if (o.kind === "held") continue;
+    if (o.kind === "held") {
+      if (now !== undefined && heldExpired(item, now)) {
+        done.add(item.client_event_id);
+        expired.push(item.name);
+      }
+      continue;
+    }
     done.add(item.client_event_id);
     if (o.kind === "refused") {
       if (o.reason === "locked") locked.push(item.name);
@@ -106,7 +127,15 @@ export function settle<T extends { client_event_id: string; name: string }>(item
       if (o.already) already.push(item.name);
     }
   }
-  return { done, sent, already, refused, locked, gone };
+  return { done, sent, already, refused, locked, gone, expired };
+}
+
+/** The one-minute check in the foreground sends waiting status taps: a tap
+ *  held while the route was dark lands once it is back, without waiting for a
+ *  reconnect or a trip to the background. Only when online and active, and
+ *  only for status taps (the door has its own drain). */
+export function timedDrainDue(items: readonly { kind?: OutboxKind }[], online: boolean, active: boolean): boolean {
+  return online && active && items.some((i) => i.kind === "block_status");
 }
 
 /** True when the server's answer says the party was already in before this
