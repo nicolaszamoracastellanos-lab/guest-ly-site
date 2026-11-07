@@ -168,6 +168,31 @@ t("#20 review card: served to 1.4.0 after the wedding, this build neither draws 
   assert.equal(HOME_COPY.es.cards.review, "Tu opinión");
 });
 
+t("#20 review card: an Edit Home save after the wedding leaves the web's review lift alone", () => {
+  // Adapt on, after the wedding; the server served everything but the review card.
+  const a = { ...core.STANDARD_ANSWERS, adapt: true };
+  const stored = core.suggestedCards(a);
+  const kept = road.keepServed(stored, stored.filter((c: { id: string }) => c.id !== "review"));
+  const served = kept.map((c) => c.id);
+  const before = core.effectiveCards(stored, a, "after", []);
+  assert.equal(before[1].id, "review", "the web lifts the review card second");
+  // What CustomHome.finish posts.
+  const posted = road.onlyServedKeys(core.markPhaseHandled([], a, "after"), served);
+  assert.ok(!posted.includes("after:review"), "no key for a card this build never showed");
+  assert.deepEqual(posted, ["after:album", "after:thankyou", "after:budget"]);
+  // The server's merge and the web after the save: review still second.
+  const merged = core.mergeDismissed(posted, kept, []);
+  const cards = core.mergeCards(kept, stored);
+  assert.equal(core.effectiveCards(cards, a, "after", merged)[1].id, "review");
+  // A key the couple stored on the web still stands through this build's save.
+  const keep = road.onlyServedKeys(core.markPhaseHandled(["after:review"], a, "after"), served);
+  assert.ok(!keep.includes("after:review"));
+  assert.ok(core.mergeDismissed(keep, kept, ["after:review"]).includes("after:review"));
+  // No layout read yet: introduced keys are left to the server; others pass.
+  assert.deepEqual(road.onlyServedKeys(["after:review", "after:album", "final:rsvp"], null), ["after:album", "final:rsvp"]);
+  assert.ok(/onlyServedKeys\(markPhaseHandled\(draft\.dismissed, layout\.answers, layout\.phase\), layout\.served\)/.test(src("src/features/couple/CustomHome.tsx")), "Edit Home posts only served keys");
+});
+
 t("listedIds: only ids the payload listed", () => {
   assert.deepEqual([...road.listedIds([{ id: "road" }, { id: "nope" }, null, "x", { id: "rsvp" }])], ["road", "rsvp"]);
   assert.equal(road.listedIds("x").size, 0);

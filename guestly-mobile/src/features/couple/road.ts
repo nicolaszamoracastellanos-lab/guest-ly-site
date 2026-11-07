@@ -183,3 +183,19 @@ export function onlyServed(cards: readonly HomeCard[], served: ReadonlySet<CardI
   const set = served ? new Set<CardId>(served as Iterable<CardId>) : new Set<CardId>();
   return cards.filter((c) => !NOT_DRAWN.has(c.id) && (!isIntroduced(c.id) || set.has(c.id)));
 }
+
+/**
+ * The `dismissed` keys to PUT: `<phase>:<id>` keys of cards this build did
+ * not serve (NOT_DRAWN, or introduced and not served) are left out, like the
+ * cards in onlyServed. markPhaseHandled marks every card of the phase, the
+ * review card (#20) included; posting "after:review" from a build that never
+ * showed that card would stop the web lifting it. The server keeps any stored
+ * key for a card the post leaves out (mergeDismissed), as with a 1.3 build.
+ */
+export function onlyServedKeys(keys: readonly string[], served: ReadonlySet<CardId> | readonly CardId[] | null): string[] {
+  const set = served ? new Set<CardId>(served as Iterable<CardId>) : new Set<CardId>();
+  return keys.filter((k) => {
+    const id = k.split(":")[1] as CardId;
+    return !NOT_DRAWN.has(id) && (!isIntroduced(id) || set.has(id));
+  });
+}

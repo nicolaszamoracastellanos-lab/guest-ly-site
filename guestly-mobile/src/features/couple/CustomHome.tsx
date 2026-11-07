@@ -20,7 +20,7 @@ import type { CoupleHome } from "@/lib/hooks";
 import { fullDate, dayMonth } from "@/features/couple/ui";
 import { CARD_IDS, rowSpans, markPhaseHandled, type CardId, type CardSize, type HomeCard } from "./homeLayout";
 import { moveCard, setCard, showCard } from "./homeEdit";
-import { readRoad, roadCardRoute, roadRows, type RoadCard, type RoadItem } from "./road";
+import { onlyServedKeys, readRoad, roadCardRoute, roadRows, type RoadCard, type RoadItem } from "./road";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
 
@@ -62,7 +62,9 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
     try {
       // The cards as shown (today's phase included) become the saved order,
       // and this phase stops reordering them (the portal's markPhaseHandled).
-      await save.mutateAsync({ cards: draft.cards, dismissed: markPhaseHandled(draft.dismissed, layout.answers, layout.phase) });
+      // Keys of cards this build was not served (the #20 review card) stay
+      // out, so the web keeps lifting them (onlyServedKeys).
+      await save.mutateAsync({ cards: draft.cards, dismissed: onlyServedKeys(markPhaseHandled(draft.dismissed, layout.answers, layout.phase), layout.served) });
       setEditing(false);
       setDraft(null);
     } catch {
