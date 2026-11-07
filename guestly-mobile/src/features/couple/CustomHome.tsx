@@ -57,8 +57,11 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
   const review = useMemo(() => readReviewCard(cards?.review), [cards?.review]);
   const [reviewOff, setReviewOff] = useState(false);
   // Absent cards (the web's rule): review without its data in both modes, road
-  // without its data outside edit mode. Their entries stay in the draft.
-  const absent = useMemo(() => absentCards({ editing, road: !!road, review: !!review && !reviewOff }), [editing, road, review, reviewOff]);
+  // without its data outside edit mode. Their entries stay in the draft. A
+  // review card hidden in the saved layout comes with no data because it is
+  // hidden, so in edit mode it can be added back and drawn at once.
+  const reviewSavedHidden = layout.cards.some((x) => x.id === "review" && x.hidden);
+  const absent = useMemo(() => absentCards({ editing, road: !!road, review: !!review && !reviewOff, reviewSavedHidden }), [editing, road, review, reviewOff, reviewSavedHidden]);
   const visible = useMemo(() => shownCards(list, absent), [list, absent]);
   const hidden = useMemo(() => list.filter((x) => x.hidden), [list]);
   const rows = rowsOf(visible, rowSpans(visible, 2));

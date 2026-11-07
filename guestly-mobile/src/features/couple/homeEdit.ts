@@ -12,12 +12,16 @@ import type { CardId, HomeCard } from "./homeLayout";
  * `absent`, dashboard/page.tsx and home-board.tsx). #20 review: absent without
  * cards.review (flag off, before the wedding, sent, "Not now") in view AND edit
  * mode, so Edit Home never shows a feedback card the server said not to show.
- * Its layout entry stays in the list, so a save posts it unchanged. #6 road:
+ * Its layout entry stays in the list, so a save posts it unchanged. One
+ * exception: when the saved layout (the server's copy, not the draft) has the
+ * card hidden, the portal sends no cards.review because it is hidden, not
+ * because there is nothing to ask; so in edit mode the card stays drawable and
+ * "+ Your feedback" puts it back on the grid at once, as on the web. #6 road:
  * absent in view mode only (kept in edit mode on purpose, Oct 31).
  */
-export function absentCards(o: { editing: boolean; road: boolean; review: boolean }): Set<CardId> {
+export function absentCards(o: { editing: boolean; road: boolean; review: boolean; reviewSavedHidden?: boolean }): Set<CardId> {
   const out = new Set<CardId>();
-  if (!o.review) out.add("review");
+  if (!o.review && !(o.editing && o.reviewSavedHidden)) out.add("review");
   if (!o.editing && !o.road) out.add("road");
   return out;
 }
