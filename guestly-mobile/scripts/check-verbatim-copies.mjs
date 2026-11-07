@@ -2,12 +2,13 @@
 // Verbatim copies between the iOS app and the portal (Master Wave, Lane 8; the
 // portal carries the same script, Lane 0 gate 4).
 //
-// Three pure modules live in both repos and must stay byte for byte equal, so
+// Four pure modules live in both repos and must stay byte for byte equal, so
 // the web, the app and the app offline compute the same answer:
 //
 //   portal src/lib/runsheet-live.ts     = app src/features/dayof/live.ts        (#3 Now engine, #30 offline)
 //   portal src/lib/home-layout-core.ts  = app src/features/couple/homeLayout.ts (customizable Home, K8)
 //   portal src/lib/milestones.ts        = app src/features/couple/milestones.ts (#6 milestone line)
+//   portal src/lib/table-shapes.ts      = app src/features/seating/tableShapes.ts (#55 table shapes)
 //
 // The portal file is the reviewed source: change it there, then copy it here.
 // A one-character difference fails (exit 1) and prints the first differing line.
@@ -30,6 +31,7 @@ export const PAIRS = [
   { portal: "src/lib/runsheet-live.ts", app: "src/features/dayof/live.ts" },
   { portal: "src/lib/home-layout-core.ts", app: "src/features/couple/homeLayout.ts" },
   { portal: "src/lib/milestones.ts", app: "src/features/couple/milestones.ts" },
+  { portal: "src/lib/table-shapes.ts", app: "src/features/seating/tableShapes.ts" },
 ];
 
 const here = path.dirname(fileURLToPath(import.meta.url));

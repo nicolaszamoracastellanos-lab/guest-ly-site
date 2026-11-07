@@ -27,7 +27,9 @@ import { DAYOF_COPY } from "./copy";
 import { PreviewBanner, PreviewDayControl, usePreviewActive } from "./PreviewDay";
 import { useDayPack, useNow, usePackOwner, usePendingStatus, useQueuedGuestIds, useSettledOnline } from "./hooks";
 import { patchBlockStatus, type PackKind } from "./packStore";
-import { doorCounts, formatSize, isPackDay, packBanner, withPendingStatus, type DayPack, type PackBlock } from "./packCore";
+import { doorCounts, formatSize, isPackDay, packBanner, packPlanTables, withPendingStatus, type DayPack, type PackBlock } from "./packCore";
+import { SeatingPlanMap } from "@/features/seating/TableShape";
+import { COPY as SEATING_COPY } from "@/features/seating/copy";
 import { liveState, sortByServiceOrder, usableTimeZone, wallClockAt, zoneOffsetMinutes, type LiveItem } from "./live";
 
 type Role = "couple" | "planner";
@@ -230,6 +232,7 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
   const gapBefore = new Map(live.gaps.map((g) => [g.beforeId, g]));
   const counts = doorCounts({ serverIn: server?.parties_in ?? null, total: server?.parties_total ?? null, roster: pack.roster, queuedGuestIds: queuedIds });
   const showDoor = role === "couple" || can(me, "checkin", "view");
+  const planTables = packPlanTables(pack.seating);
 
   const meta = (i: { block: PackBlock; endMs: number; endEstimated: boolean }) =>
     [i.block.location, i.endEstimated ? null : fmt(c.until, { time: instantLabel(i.endMs, tz, lang) }), i.block.owner].filter(Boolean).join(" · ");
@@ -348,6 +351,14 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
             {counts.waiting ? <T v="meta13" color={colors.amber} style={styles.tnum}>{fmt(c.doorWaiting, { n: counts.waiting })}</T> : null}
           </Row>
           <Button label={c.checkIn} icon="qr" kind="glass" onPress={() => router.push(`/${role}/checkin` as never)} style={{ marginTop: 12 }} />
+        </View>
+      ) : null}
+
+      {planTables.length ? (
+        // #55: the plan saved on the phone, every table in its own shape where it stands.
+        <View style={styles.door}>
+          <T v="body16" color={colors.ivory70} style={{ marginBottom: 10 }}>{SEATING_COPY[lang].planTitle}</T>
+          <SeatingPlanMap tables={planTables} lang={lang} testID="dayof-seating-plan" />
         </View>
       ) : null}
 

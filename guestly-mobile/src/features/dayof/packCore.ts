@@ -60,8 +60,25 @@ export type PackGuest = {
   meal: string | null;
 };
 export type PackContact = { name: string; role: string; phone: string | null };
+/** One pack table. #55: shape (any word the server knows), shape_fallback (round or rect,
+ *  drawn for a shape this build does not know), where it stands (fractions of the plan) and
+ *  its drawing options; all absent from packs recorded before the shapes. */
+export type PackTable = {
+  id: string;
+  name: string;
+  number: number | null;
+  seats: number | null;
+  shape?: string;
+  shape_fallback?: "round" | "rect";
+  x?: number;
+  y?: number;
+  rotation?: number;
+  ends?: boolean;
+  one_side?: boolean;
+  segments?: number;
+};
 export type PackSeating = {
-  tables: { id: string; name: string; number: number | null; seats: number | null }[];
+  tables: PackTable[];
   assignments: { guest_id: string; table_id: string; seat: number | null }[];
   floor_plan_url: string | null;
 };
@@ -184,7 +201,7 @@ export function parsePack(raw: unknown): DayPack | null {
   const seatRaw = p.seating && typeof p.seating === "object" ? (p.seating as Record<string, unknown>) : null;
   const seating: PackSeating | null = seatRaw
     ? {
-        tables: list(seatRaw.tables).map((t) => ({ id: str(t.id), name: str(t.name), number: numOrNull(t.number), seats: numOrNull(t.seats) })),
+        tables: list(seatRaw.tables).map(parsePackTable),
         assignments: list(seatRaw.assignments).map((a) => ({ guest_id: str(a.guest_id), table_id: str(a.table_id), seat: numOrNull(a.seat) })),
         floor_plan_url: strOrNull(seatRaw.floor_plan_url),
       }
@@ -205,6 +222,37 @@ export function parsePack(raw: unknown): DayPack | null {
     contacts: list(p.contacts).map((c) => ({ name: str(c.name), role: str(c.role), phone: strOrNull(c.phone) })).filter((c) => c.name),
     reserved,
   };
+}
+
+function parsePackTable(t: Record<string, unknown>): PackTable {
+  const out: PackTable = { id: str(t.id), name: str(t.name), number: numOrNull(t.number), seats: numOrNull(t.seats) };
+  if (typeof t.shape === "string" && t.shape) out.shape = t.shape;
+  if (t.shape_fallback === "round" || t.shape_fallback === "rect") out.shape_fallback = t.shape_fallback;
+  for (const k of ["x", "y", "rotation", "segments"] as const) {
+    const v = t[k];
+    if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
+  }
+  if (t.ends === true) out.ends = true;
+  if (t.one_side === true) out.one_side = true;
+  return out;
+}
+
+/**
+ * #55: the pack's tables as the plan draws them: name, seats, shape fields,
+ * place, and how many people the pack seats there (its assignments).
+ * Tables with no seats count or no id are left out.
+ */
+export function packPlanTables(seating: PackSeating | null | undefined): { id: string; label: string; capacity: number; seated: number; over: boolean; shape?: string; shape_fallback?: "round" | "rect"; x?: number; y?: number; rotation?: number; ends?: boolean; one_side?: boolean; segments?: number }[] {
+  if (!seating) return [];
+  const seated = new Map<string, number>();
+  for (const a of seating.assignments) seated.set(a.table_id, (seated.get(a.table_id) ?? 0) + 1);
+  return seating.tables
+    .filter((t) => t.id && typeof t.seats === "number" && t.seats > 0)
+    .map(({ id, name, number, seats, ...shape }) => {
+      const n = seated.get(id) ?? 0;
+      const label = name || (number !== null ? String(number) : "");
+      return { ...shape, id, label, capacity: seats as number, seated: n, over: n > (seats as number) };
+    });
 }
 
 const GUEST_KEYS = new Set(["meta", "schedule", "places", "dress_code", "table", "pass_qr", "couple_names"]);

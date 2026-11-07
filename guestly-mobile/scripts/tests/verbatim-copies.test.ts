@@ -18,6 +18,7 @@ const PAIRS = [
   ["src/lib/runsheet-live.ts", "src/features/dayof/live.ts"],
   ["src/lib/home-layout-core.ts", "src/features/couple/homeLayout.ts"],
   ["src/lib/milestones.ts", "src/features/couple/milestones.ts"],
+  ["src/lib/table-shapes.ts", "src/features/seating/tableShapes.ts"],
 ];
 
 const tmp = mkdtempSync(path.join(os.tmpdir(), "gl verbatim app "));
@@ -33,7 +34,7 @@ const okCount = (out: string) => (out.match(/^OK /gm) ?? []).length;
 try {
   const body = "export const A = 1;\nexport function f(x: number): number {\n  return x + 1;\n}\n";
 
-  // 1. All three pairs identical (paths with spaces on purpose).
+  // 1. All four pairs identical (paths with spaces on purpose).
   const portal = path.join(tmp, "portal dir");
   const app = path.join(tmp, "app dir");
   for (const [p, a] of PAIRS) {
@@ -42,7 +43,7 @@ try {
   }
   let r = run({ GL_PORTAL_DIR: portal, GL_APP_DIR: app });
   assert.equal(r.status, 0, r.stdout + r.stderr);
-  assert.equal(okCount(r.stdout), 3, r.stdout);
+  assert.equal(okCount(r.stdout), 4, r.stdout);
 
   // 2. One character differs in one pair: exit 1, first differing line and column.
   write(app, PAIRS[0][1], body.replace("x + 1", "x + 2"));
@@ -65,7 +66,7 @@ try {
   r = run({ GL_PORTAL_DIR: portal, GL_APP_DIR: app });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stderr + r.stdout, /SKIP\s+src\/lib\/milestones\.ts .*missing: app src\/features\/couple\/milestones\.ts/);
-  assert.equal(okCount(r.stdout), 2, r.stdout);
+  assert.equal(okCount(r.stdout), 3, r.stdout);
   write(app, PAIRS[2][1], body);
   rmSync(path.join(portal, PAIRS[2][0]));
   r = run({ GL_PORTAL_DIR: portal, GL_APP_DIR: app });
@@ -75,7 +76,7 @@ try {
   // 5. No portal checkout at all: every pair skipped with a warning, exit 0.
   r = run({ GL_PORTAL_DIR: path.join(tmp, "nowhere"), GL_APP_DIR: app });
   assert.equal(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stderr + r.stdout, /portal checkout not found, 3 pair\(s\) skipped/);
+  assert.match(r.stderr + r.stdout, /portal checkout not found, 4 pair\(s\) skipped/);
   assert.equal(okCount(r.stdout), 0);
 
   // 6. Defaults: the app is the folder above scripts/ (this app), never another checkout.

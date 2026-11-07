@@ -103,6 +103,7 @@ t("notes mention a rating prompt only if the app calls expo-store-review", () =>
 // flag, or App Review's wedding (an off row like any client) shows none of it.
 const FLAGGED: readonly [RegExp, string][] = [
   [/Now and Next|wedding day, live/i, "MW_LIVE_DAY"],
+  [/RATINGS:|Your feedback/, "MW_REVIEW_ASK"],
   [/no signal|without signal/i, "MW_DAY_PACK"],
   [/Run N actions|COORDINATOR PLANS/, "MW_PLAN_CARD"],
   [/timeline lock|Locked timeline/i, "MW_RUNSHEET_LOCK"],
@@ -163,9 +164,11 @@ t("Open before submit lists the flag of every feature the notes and What's new n
     assert.ok(new RegExp(`^\\s*- ${flag}:`, "m").test(open), `${flag} (for ${words}) missing from Open before submit`);
   }
   assert.ok(/review wedding/.test(open) && /production/.test(open), "on for the review wedding and in production");
-  // Every flag the app reads for a 1.4 screen is in the table above (MW_REVIEW_ASK: card not built).
+  // Every flag the app reads for a 1.4 screen is in the table above. MW_TABLE_SHAPES is named
+  // only in a comment of the verbatim geometry: the app draws whatever shapes the payload carries
+  // (the portal sends them by app version), the flag only gates the web pickers.
   const used = new Set(srcFiles(path.join(here, "../../src")).flatMap((f) => readFileSync(f, "utf8").match(/\bMW_[A-Z_]+\b/g) ?? []));
-  const known = new Set([...FLAGGED.map(([, f]) => f), "MW_REVIEW_ASK", "MW_KEY", "MW_LIVE_PREVIEW_LOCAL"]);
+  const known = new Set([...FLAGGED.map(([, f]) => f), "MW_TABLE_SHAPES", "MW_KEY", "MW_LIVE_PREVIEW_LOCAL"]);
   for (const f of used) assert.ok(known.has(f), `new flag ${f}: add it to FLAGGED and to Open before submit`);
 });
 

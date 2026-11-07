@@ -42,6 +42,8 @@ import {
   seatLabel,
 } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { TableMark } from "@/features/seating/TableShape";
+import { SHAPE_NAMES, readShape, tableA11y } from "@/features/seating/shapeView";
 
 // Keyed by table id: the typed name, seat count and search of one table are
 // never shown on, or committed to, another table.
@@ -221,12 +223,25 @@ function SeatingTableScreen({ id }: { id: string }) {
               />
             </View>
           </Row>
+          {/* #55: the table as drawn on the plan, its chairs filled as people sit. */}
+          <View
+            style={{ alignItems: "center", marginTop: 16 }}
+            accessible
+            accessibilityLabel={tableA11y(lang, { label: table.label, shape: readShape(table).shape, capacity: table.capacity, seated: table.seated, over: table.over_capacity })}
+            testID="seating-table-figure"
+          >
+            <TableMark table={table} capacity={table.capacity} seated={table.seated} over={table.over_capacity} size={150} />
+          </View>
           <View style={{ marginTop: 12 }}>
-            <Segmented<"round" | "rect">
+            <Segmented<string>
               value={table.shape}
               options={[
                 { value: "round", label: c.round },
                 { value: "rect", label: c.rect },
+                // A shape set on the web (or a later one) stays a choice here, so a save keeps it.
+                ...(table.shape !== "round" && table.shape !== "rect"
+                  ? [{ value: table.shape, label: SHAPE_NAMES[lang][readShape(table).shape] }]
+                  : []),
               ]}
               onChange={(v) => canEdit && draftActions.updateTable(table.id, { shape: v })}
             />

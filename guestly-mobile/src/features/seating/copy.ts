@@ -12,6 +12,7 @@ export const COPY = {
       tables: "tables",
     },
     tables: "Tables",
+    planTitle: "Table plan",
     noTables:
       "No tables yet. Add them one by one, or let the concierge suggest a layout from your numbers.",
     addTable: "Add a table",
@@ -103,6 +104,7 @@ export const COPY = {
       tables: "mesas",
     },
     tables: "Mesas",
+    planTitle: "Plano de mesas",
     noTables:
       "Aún no hay mesas. Agrégalas una por una, o deja que el concierge sugiera una distribución según tus números.",
     addTable: "Agregar una mesa",
