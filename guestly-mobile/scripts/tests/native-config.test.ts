@@ -1,7 +1,10 @@
 // Run: node --experimental-strip-types scripts/tests/native-config.test.ts
 // Native config guard (Master Wave L8 step 1, Nov 5 2026). The 1.4.0 binary is
 // the only native build this wave, so the native set it carries is pinned here:
-// the rating module (#20) is present, the build 36 crash pin stays exact, the
+// expo-store-review stays installed for the #20 review card (not built in 1.4.0;
+// nothing imports it, the review notes do not mention a rating prompt, and its
+// removal is decided with expo-audio's before the Nov 15 cut), the build 36
+// crash pin stays exact, the
 // microphone string is the same in the config and both locale files, and
 // nothing adds background audio. No mic in 1.4.0 (Nicolas, Nov 6, c-mic):
 // expo-audio is still installed (removing it is an open native decision) but no
@@ -18,7 +21,7 @@ const pkg = JSON.parse(read("package.json"));
 const deps: Record<string, string> = pkg.dependencies;
 
 // Modules for this wave.
-assert.ok(deps["expo-store-review"], "expo-store-review (#20 rating prompt) is a dependency");
+assert.ok(deps["expo-store-review"], "expo-store-review stays installed until the native decision before the cut (#20 card not built)");
 assert.ok(deps["expo-asset"], "expo-asset is installed directly (peer of expo-audio, and of expo itself)");
 assert.equal(deps["expo-av"], undefined, "expo-av left the SDK; expo-audio replaces it");
 

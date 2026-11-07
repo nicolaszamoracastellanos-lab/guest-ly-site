@@ -20,8 +20,7 @@ place. Re-read it against the build before pressing submit.
    Nothing done in the preview is saved or sent. Shown when the tenant is a demo
    (`tenant.is_demo` in /auth/me when the portal sends it, else the slugs demo-valentina-and-mateo
    and demo-review), never on a client wedding.
-3. In-app rating prompt (#20): Apple's own SKStoreReviewController through expo-store-review.
-4. The microphone purpose string is the 1.3.0 text, unchanged (app.config.ts, locales/en.json,
+3. The microphone purpose string is the 1.3.0 text, unchanged (app.config.ts, locales/en.json,
    locales/es.json). It stays because the camera library links the audio capture API (an upload
    without it can be refused, ITMS-90683); the app never asks for the microphone:
 
@@ -57,8 +56,11 @@ ES: Tu boda en vivo: mira lo que está pasando ahora y lo que viene después. Fu
   PREVIEW_DEMO_SLUGS (src/features/dayof/previewClock.ts) or have /auth/me send tenant.is_demo.
 - MW_LIVE_DAY (and MW_DAY_PACK if wanted) must be on for the review wedding, or "Preview the day" has
   nothing to show (it needs the server's live payload).
-- expo-audio is still installed but nothing imports it. Removing the package changes the native
-  module set: decide before the Nov 15 cut and re-run check-prebuilt-symbols after npm ci.
+- expo-audio and expo-store-review are installed but nothing imports them (the #20 review card and
+  its rating prompt are not built, so the notes do not mention a rating prompt). Removing either
+  package changes the native module set: decide both before the Nov 15 cut and re-run
+  check-prebuilt-symbols after npm ci. If the #20 card ships in this binary, put a RATINGS line back
+  in review_notes_en (review-notes.test allows it only once a src file imports expo-store-review).
 - Check the current text of guideline 5.1.2(i) the day of submission.
 
 ## review_notes_en (paste as is)
@@ -88,5 +90,4 @@ IPAD: iPhone-only app; it runs in the iPhone compatibility window on iPad.
 NEW IN 1.4
 WEDDING-DAY SCREENS: on the wedding day, Tools > Day-of shows Now and Next with the minutes left and Mark done, and the day's runsheet, guest list and door search are saved on the phone so they work without signal. A normal day shows the day's plan only. To see the wedding-day screens on any day, the demo wedding's Day-of screen has "Preview the day": pick a moment of the day and the screen runs as it would at that time, with a banner saying it is a preview. Nothing done in the preview is saved. This control exists only on demo weddings.
 COORDINATOR PLANS: one message can produce one card with several changes (for example add a task, a vendor and a budget line), shown as a checklist. Nothing changes until the person taps "Run N actions"; any line can be unticked first; a line the plan added can be undone for 30 minutes. Sends to guests are never part of a plan and keep their own typed confirmation.
-RATINGS: after a wedding the app may show Apple's own rating prompt (SKStoreReviewController), at most as often as iOS allows.
 Other 1.4 additions are wedding planning screens that show data the couple or planner already entered on the web (timeline lock and change requests, places with Apple Maps and Google Maps links that open those apps, final guest count, guest travel times, a know-before-you-go card, "Seen" status, a road-to-the-wedding card). None of them needs a new permission.

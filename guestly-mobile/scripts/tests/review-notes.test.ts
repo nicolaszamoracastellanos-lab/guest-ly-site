@@ -1,14 +1,15 @@
 // Run: node --experimental-strip-types scripts/tests/review-notes.test.ts
 // 1.4.0 App Review notes and privacy (store/metadata.json, store/REVIEW-NOTES-1.4.0.md,
 // app.config.ts privacyManifests): the notes say what the binary does (the
-// 5.1.2(i) permission screen, Preview the day only on demo weddings). No mic in
+// 5.1.2(i) permission screen, Preview the day only on demo weddings, no rating
+// prompt while nothing imports expo-store-review). No mic in
 // 1.4.0 (Nicolas, Nov 6, c-mic): the notes, the What's new text and the label
 // say nothing about a mic, voice or AssemblyAI, the 1.3 "No audio" line is
 // back, no Audio Data anywhere, and the review file carries the notes word for
 // word.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -76,6 +77,25 @@ t("the purpose string and the notes agree; the review file carries the notes wor
   const purpose = /const MICROPHONE_PURPOSE = "([^"]+)"/.exec(cfg)![1];
   assert.ok(md.includes(purpose));
   assert.ok(md.includes(notes), "REVIEW-NOTES-1.4.0.md repeats review_notes_en exactly");
+});
+
+// The notes may describe Apple's rating prompt only when the binary can show it:
+// some file under src imports expo-store-review (#20 card, not built in 1.4.0).
+const srcFiles = (dir: string): string[] =>
+  readdirSync(dir).flatMap((f) => {
+    const p = path.join(dir, f);
+    return statSync(p).isDirectory() ? srcFiles(p) : /\.(ts|tsx)$/.test(f) ? [p] : [];
+  });
+const RATING_WORDS = /SKStoreReviewController|StoreReview|rating prompt|RATINGS:|requestReview/i;
+
+t("notes mention a rating prompt only if the app calls expo-store-review", () => {
+  const ships = srcFiles(path.join(here, "../../src")).some((f) => /from\s+["']expo-store-review["']|require\(\s*["']expo-store-review["']\s*\)/.test(readFileSync(f, "utf8")));
+  const reviewPart = md.slice(0, md.indexOf("## Open before submit"));
+  assert.ok(reviewPart.length > 0 && md.includes("## Open before submit"), "the review file keeps its Open before submit section");
+  if (!ships) {
+    assert.ok(!RATING_WORDS.test(notes), `review notes describe a rating prompt the build lacks: ${RATING_WORDS.exec(notes)?.[0]}`);
+    assert.ok(!RATING_WORDS.test(reviewPart), `review file describes a rating prompt the build lacks: ${RATING_WORDS.exec(reviewPart)?.[0]}`);
+  }
 });
 
 t("copy rules: brand hyphenated, no dashes", () => {
