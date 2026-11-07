@@ -25,30 +25,32 @@ const t = (name: string, fn: () => void) => {
   }
 };
 
-t("a new person is asked for each scope; the mic needs the chat too", () => {
+t("a new person is asked for each scope; no mic scope in 1.4.0", () => {
   const empty = C.parseConsent(null);
   assert.deepEqual(C.missingScopes(empty, "coordinator"), ["coordinator"]);
   assert.deepEqual(C.missingScopes(empty, "brief"), ["brief"]);
-  assert.deepEqual(C.missingScopes(empty, "voice"), ["coordinator", "voice"]);
+  assert.deepEqual([...C.CONSENT_SCOPES], ["coordinator", "brief"], "Coordinator and brief only (c-mic: no mic this wave)");
   const chat = C.withConsent(empty, ["coordinator"], "2026-11-05T15:00:00Z");
   assert.deepEqual(C.missingScopes(chat, "coordinator"), []);
-  assert.deepEqual(C.missingScopes(chat, "voice"), ["voice"]);
   assert.deepEqual(C.missingScopes(chat, "brief"), ["brief"], "the chat's yes is not the brief's");
 });
 
 t("stored answers survive a round trip; junk and older versions ask again", () => {
-  const rec = C.withConsent(C.parseConsent(null), ["coordinator", "voice"], "2026-11-05T15:00:00Z");
+  const rec = C.withConsent(C.parseConsent(null), ["coordinator", "brief"], "2026-11-05T15:00:00Z");
   const back = C.parseConsent(JSON.stringify(rec));
-  assert.deepEqual(C.missingScopes(back, "voice"), []);
+  assert.deepEqual(C.missingScopes(back, "brief"), []);
+  // A record written by an earlier 1.4.0 dev build with a "voice" answer reads without it.
+  const old = C.parseConsent(JSON.stringify({ v: C.CONSENT_VERSION, given: { coordinator: "t", voice: "t" } }));
+  assert.deepEqual(Object.keys(old.given), ["coordinator"]);
   assert.deepEqual(C.missingScopes(C.parseConsent("{nope"), "coordinator"), ["coordinator"]);
   assert.deepEqual(C.missingScopes(C.parseConsent(JSON.stringify({ v: 0, given: { coordinator: "x" } })), "coordinator"), ["coordinator"]);
   assert.deepEqual(C.missingScopes(C.parseConsent(JSON.stringify({ v: C.CONSENT_VERSION, given: { coordinator: 1 } })), "coordinator"), ["coordinator"]);
 });
 
-t("taking the chat back takes the mic back", () => {
-  const rec = C.withConsent(C.parseConsent(null), ["coordinator", "voice", "brief"], "t");
+t("taking the chat back keeps the brief", () => {
+  const rec = C.withConsent(C.parseConsent(null), ["coordinator", "brief"], "t");
   const off = C.withoutConsent(rec, "coordinator");
-  assert.deepEqual(C.missingScopes(off, "voice"), ["coordinator", "voice"]);
+  assert.deepEqual(C.missingScopes(off, "coordinator"), ["coordinator"]);
   assert.deepEqual(C.missingScopes(off, "brief"), []);
 });
 
@@ -73,11 +75,12 @@ t("copy names the company, what is sent and why, with a plain no, EN and ES", ()
     const all = JSON.stringify(c);
     assert.ok(!/[–—!]/.test(all), `${lang}: no dashes, no '!'`);
     assert.ok(!/seamless|effortless|magic|mágic|successfully|con éxito/i.test(all));
-    assert.ok(/Claude/.test(c.coordinator.who) && /AssemblyAI/.test(c.voice.who));
+    assert.ok(/Claude/.test(c.coordinator.who) && /Claude/.test(c.brief.who));
+    // No mic in 1.4.0: the sheet never speaks of audio, voice or a recording.
+    assert.ok(!/\bmic\b|microphone|micr[oó]fono|voice|\bvoz\b|audio|AssemblyAI|speech|record|grab/i.test(all), `${lang}: no audio words`);
   }
   assert.deepEqual(Object.keys(CONSENT_COPY.en).sort(), Object.keys(CONSENT_COPY.es).sort());
-  // The voice text promises deletion: it must match the portal's rule (and the review notes).
-  assert.ok(/deleted once the text is ready/.test(CONSENT_COPY.en.voice.why));
+  assert.ok(!("voice" in CONSENT_COPY.en), "no voice sheet");
 });
 
 t("static: every send to the AI asks first; a no sends nothing", () => {
@@ -86,11 +89,8 @@ t("static: every send to the AI asks first; a no sends nothing", () => {
   assert.ok(/onClose=\{\(\) => finish\(false\)\}/.test(gate), "closing the sheet is a no");
   const view = src("src/features/assistant/AssistantView.tsx");
   assert.ok(/if \(!\(await consent\.ask\("coordinator"\)\)\) return;\n\s+void Haptics/.test(view), "send asks before the draft is cleared or anything is posted");
-  assert.ok(view.includes('askMic={() => consent.ask("voice")}'));
   assert.ok(view.includes("{consent.sheet}"));
-  const voice = src("src/features/assistant/voice.tsx");
-  const start = voice.slice(voice.indexOf("const start = async"), voice.indexOf("const discardFile"));
-  assert.ok(start.indexOf("opts.ask()") < start.indexOf("requestRecordingPermissionsAsync"), "consent before the OS permission and before recording");
+  assert.ok(!/askMic|voiceReceipt|from "\.\/voice/.test(view), "the Coordinator has no mic path");
 });
 
 console.log(`ai-consent: ${n} checks passed`);

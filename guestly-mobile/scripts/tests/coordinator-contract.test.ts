@@ -1,5 +1,6 @@
-// Contract of the routes the 1.4.0 Coordinator reads for #5 (plan card), the
-// D5 mic and #32 (brief consent), against a LOCAL portal only. Skips (exit 0)
+// Contract of the routes the 1.4.0 Coordinator reads for #5 (plan card) and
+// #32 (brief consent), against a LOCAL portal only (no mic in 1.4.0: the app
+// never reads MW_MIC or the voice route). Skips (exit 0)
 // unless GL_CONTRACT_BASE is set, so `npm test` needs no server.
 //
 //   GL_CONTRACT_BASE=http://localhost:3200 GL_PORTAL_DIR=/Users/nicolas_z/gl-mw/integration \
@@ -7,11 +8,10 @@
 //
 // Never sends a chat message (no model call) and writes nothing: GETs, and one
 // POST that the 1.3.0 route must refuse before any work (an Undo from a build
-// that does not draw plans). Checks: /auth/me carries MW_PLAN_CARD and MW_MIC
+// that does not draw plans). Checks: /auth/me carries MW_PLAN_CARD and MW_BRIEF
 // as booleans for 1.4.0; the sessions list keeps its shape on 1.3.0 and 1.4.0;
-// 1.3.0 cannot reach the plan Undo; the voice route is absent or dark (the app
-// hides the mic on 404) or answers the contract; the brief route is dark (404)
-// while MW_BRIEF is off.
+// 1.3.0 cannot reach the plan Undo; the brief route is dark (404) while
+// MW_BRIEF is off.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -27,7 +27,6 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) {
   console.error("refused: GL_CONTRACT_BASE must be a local portal");
   process.exit(2);
 }
-const { readAvailability, micVisible } = await import("../../src/features/assistant/voiceCore.ts");
 
 const PORTAL = process.env.GL_PORTAL_DIR ?? "/Users/nicolas_z/gl-mw/integration";
 const env = Object.fromEntries(
@@ -76,11 +75,11 @@ async function test(name: string, fn: () => Promise<void>) {
 const couple = `Bearer ${await login("couple@hh.local")}`;
 const planner = `Bearer ${await login("planner@hh.local")}`;
 
-await test("1.4.0 /auth/me: MW_PLAN_CARD, MW_MIC and MW_BRIEF are booleans", async () => {
+await test("1.4.0 /auth/me: MW_PLAN_CARD and MW_BRIEF are booleans", async () => {
   const me = await call(couple, "1.4.0", "GET", "/auth/me");
   const F = (me.data?.features ?? {}) as Record<string, unknown>;
-  for (const k of ["MW_PLAN_CARD", "MW_MIC", "MW_BRIEF"]) assert.equal(typeof F[k], "boolean", k);
-  console.log(`     flags (${SLUG}): plan card ${F.MW_PLAN_CARD}, mic ${F.MW_MIC}`);
+  for (const k of ["MW_PLAN_CARD", "MW_BRIEF"]) assert.equal(typeof F[k], "boolean", k);
+  console.log(`     flags (${SLUG}): plan card ${F.MW_PLAN_CARD}, brief ${F.MW_BRIEF}`);
 });
 
 await test("sessions list: same shape on 1.3.0 and 1.4.0", async () => {
@@ -99,18 +98,6 @@ await test("1.3.0 cannot reach a plan Undo (refused before any work, no new payl
   assert.equal(r.code, "bad_request");
 });
 
-await test("voice route: absent or dark answers 404 (mic hidden); a live one answers the contract", async () => {
-  const r = await call(couple, "1.4.0", "GET", "/couple/coordinator/voice");
-  if (r.status === 404) {
-    assert.equal(micVisible(true, null, true), false);
-    console.log("     voice route: 404 (not built or MW_MIC off): mic hidden");
-    return;
-  }
-  assert.equal(r.status, 200);
-  assert.equal(typeof r.data?.enabled, "boolean");
-  readAvailability(r.data);
-});
-
 await test("brief route is dark (404 not_found) while MW_BRIEF is off", async () => {
   const me = await call(planner, "1.4.0", "GET", "/auth/me");
   const on = ((me.data?.features ?? {}) as Record<string, boolean>).MW_BRIEF === true;
@@ -122,4 +109,4 @@ await test("brief route is dark (404 not_found) while MW_BRIEF is off", async ()
   }
 });
 
-console.log(`coordinator-contract: ${passed}/5 passed against ${BASE}`);
+console.log(`coordinator-contract: ${passed}/4 passed against ${BASE}`);

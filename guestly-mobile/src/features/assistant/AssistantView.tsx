@@ -24,8 +24,6 @@ import { CoordinatorShowcase } from "./Showcase";
 import { PlanCard } from "./PlanCard";
 import { lineUndone, readPlan, type PlanStep } from "./plan";
 import { PLAN_COPY } from "./planCopy";
-import { CoordinatorComposer, useMicAvailable } from "./voice";
-import { mergeDraft, receiptToSend } from "./voiceCore";
 
 /** `tab`: the couple's Coordinator tab (no back control, the tab bar is on
  *  screen). Without it this is the pushed /assistant screen the planner uses. */
@@ -63,9 +61,6 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
   const [undoBusy, setUndoBusy] = useState<string | null>(null);
   // Apple 5.1.2(i): nothing reaches the AI provider before this person allows it.
   const consent = useAiConsentGate();
-  // D5 mic (dark until MW_MIC and the voice route): the receipt of the text it put in the box.
-  const mic = useMicAvailable(base, canSend);
-  const [voiceReceipt, setVoiceReceipt] = useState<string | null>(null);
 
   // Card expiry is judged against the clock at the last change, not per render.
   const [now, setNow] = useState(() => Date.now());
@@ -165,8 +160,6 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
     }
     if (!(await consent.ask("coordinator"))) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const receipt = receiptToSend(message, voiceReceipt);
-    setVoiceReceipt(null);
     setError(null);
     setDraft("");
     setBusy(true);
@@ -179,7 +172,7 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
       ),
       { kind: "user", text: message },
     ]);
-    let outcome = await run({ sessionId: sessionIdRef.current, message, ...(receipt ? { voiceReceipt: receipt } : {}) }, applyEvent);
+    let outcome = await run({ sessionId: sessionIdRef.current, message }, applyEvent);
     while (outcome.ok && outcome.continueTurn) {
       outcome = await run({ sessionId: sessionIdRef.current, continueTurn: true, turn: outcome.continueTurn }, applyEvent);
     }
@@ -321,7 +314,7 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
   const chat = (
     <Screen
       // The pushed /assistant (planner) is a native modal: its toasts (an Undo
-      // result, the consent and mic notices) need the modal's own host.
+      // result, the consent notice) need the modal's own host.
       modal={!tab}
       scroll={false}
       padded={false}
@@ -425,20 +418,9 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
             ) : null}
           </ChatList>
           {canSend ? (
-            <CoordinatorComposer
-              mic={mic}
-              base={base}
-              lang={lang}
-              askMic={() => consent.ask("voice")}
-              onText={(text, receipt) => {
-                setDraft((d) => mergeDraft(d, text));
-                setVoiceReceipt(receipt);
-              }}
+            <ChatComposer
               value={draft}
-              onChangeText={(t) => {
-                setDraft(t);
-                if (!t.trim()) setVoiceReceipt(null);
-              }}
+              onChangeText={setDraft}
               onSend={() => void send(draft)}
               placeholder={copy.placeholder}
               sendLabel={copy.send}

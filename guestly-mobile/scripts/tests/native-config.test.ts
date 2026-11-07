@@ -1,11 +1,16 @@
 // Run: node --experimental-strip-types scripts/tests/native-config.test.ts
 // Native config guard (Master Wave L8 step 1, Nov 5 2026). The 1.4.0 binary is
 // the only native build this wave, so the native set it carries is pinned here:
-// the rating module (#20) and the recording module (D5 mic) are present, the
-// build 36 crash pin stays exact, the microphone string is the same in the
-// config and both locale files, and nothing adds background audio.
+// the rating module (#20) is present, the build 36 crash pin stays exact, the
+// microphone string is the same in the config and both locale files, and
+// nothing adds background audio. No mic in 1.4.0 (Nicolas, Nov 6, c-mic):
+// expo-audio is still installed (removing it is an open native decision) but no
+// source file imports it, the microphone string says the app does not record,
+// and Android RECORD_AUDIO is blocked again.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import makeConfig from "../../app.config.ts";
 
 const read = (p: string) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
@@ -14,8 +19,7 @@ const deps: Record<string, string> = pkg.dependencies;
 
 // Modules for this wave.
 assert.ok(deps["expo-store-review"], "expo-store-review (#20 rating prompt) is a dependency");
-assert.ok(deps["expo-audio"], "expo-audio (D5 mic) is a dependency");
-assert.ok(deps["expo-asset"], "expo-asset is installed directly (peer of expo-audio)");
+assert.ok(deps["expo-asset"], "expo-asset is installed directly (peer of expo-audio, and of expo itself)");
 assert.equal(deps["expo-av"], undefined, "expo-av left the SDK; expo-audio replaces it");
 
 // Build 36 launch crash: expo-contacts ships a prebuilt xcframework tied to the
@@ -36,11 +40,27 @@ const mic = plist.NSMicrophoneUsageDescription as string;
 const en = JSON.parse(read("locales/en.json")).ios;
 const es = JSON.parse(read("locales/es.json")).ios;
 
-// The microphone string tells the truth about the mic button, in both languages.
+// No mic button in 1.4.0: the string stays only because the camera library
+// links the audio capture API (ITMS-90683), and it says the app does not record.
 assert.equal(en.NSMicrophoneUsageDescription, mic, "en.json matches app.config.ts");
-assert.match(mic, /Coordinator/);
-assert.match(es.NSMicrophoneUsageDescription, /Coordinador/);
-assert.doesNotMatch(mic, /does not record/, "old 'does not record' text is gone");
+assert.match(mic, /^Guest-ly does not record audio\./);
+assert.match(es.NSMicrophoneUsageDescription, /^Guest-ly no graba audio\./);
+assert.doesNotMatch(`${mic} ${es.NSMicrophoneUsageDescription}`, /Coordinat|Coordinador|mic button|botón del micrófono/, "no mic button is claimed");
+
+// No recording code reachable: nothing under src/ or app/ imports expo-audio.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const walk = (dir: string): string[] =>
+  readdirSync(dir).flatMap((f) => {
+    const p = path.join(dir, f);
+    return statSync(p).isDirectory() ? walk(p) : /\.(t|j)sx?$/.test(f) ? [p] : [];
+  });
+const importers = walk(path.join(root, "src")).filter((f) => /["']expo-audio(\/[^"']*)?["']/.test(readFileSync(f, "utf8")));
+assert.deepEqual(importers, [], "no source file imports expo-audio");
+for (const gone of ["src/features/assistant/voice.tsx", "src/features/assistant/voiceCore.ts"]) {
+  assert.throws(() => statSync(path.join(root, gone)), `${gone} is removed`);
+}
+const manifest = JSON.stringify(config.ios?.privacyManifests ?? {});
+assert.doesNotMatch(manifest, /AudioData/, "no Audio Data in the privacy manifest");
 for (const [lang, strings] of [["en", en], ["es", es]] as const) {
   for (const [key, text] of Object.entries(strings as Record<string, string>)) {
     assert.doesNotMatch(text, /[–—!]/, `${lang} ${key}: no dashes or exclamation marks`);
@@ -50,17 +70,19 @@ for (const [lang, strings] of [["en", en], ["es", es]] as const) {
   assert.deepEqual(Object.keys(strings).sort(), Object.keys(en).sort(), `${lang}: same keys as en`);
 }
 
-// No background audio: the expo-audio plugin turns it on by default.
+// No background audio: the expo-audio plugin turns it on by default, so while
+// the package stays installed its plugin is configured explicitly, all off.
 assert.equal(plist.UIBackgroundModes, undefined, "no UIBackgroundModes in Info.plist");
 const audio = (config.plugins ?? []).find((p) => Array.isArray(p) && p[0] === "expo-audio") as [string, Record<string, unknown>] | undefined;
 assert.ok(audio, "expo-audio plugin is configured explicitly");
 assert.equal(audio[1].enableBackgroundPlayback, false);
 assert.equal(audio[1].enableBackgroundRecording, false);
+assert.equal(audio[1].recordAudioAndroid, false);
 assert.equal(audio[1].microphonePermission, mic, "plugin uses the same microphone string");
 
-// Android: the mic needs RECORD_AUDIO; contacts stay blocked.
+// Android: the app never records, so RECORD_AUDIO is blocked; contacts stay blocked.
 const blocked = config.android?.blockedPermissions ?? [];
-assert.ok(!blocked.includes("android.permission.RECORD_AUDIO"), "RECORD_AUDIO not blocked");
+assert.ok(blocked.includes("android.permission.RECORD_AUDIO"), "RECORD_AUDIO blocked");
 assert.ok(blocked.includes("android.permission.READ_CONTACTS"));
 
 console.log("native-config: ok");

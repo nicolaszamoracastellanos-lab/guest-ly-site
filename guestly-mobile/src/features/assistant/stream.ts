@@ -54,8 +54,6 @@ export type ChatBody = {
   /** #5: Undo of one line a plan created. */
   undoActionId?: string;
   undoStepId?: string;
-  /** D5 mic: the server's receipt for a dictated message (voice route). */
-  voiceReceipt?: string;
 };
 
 

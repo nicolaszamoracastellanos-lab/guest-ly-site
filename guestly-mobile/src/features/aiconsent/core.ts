@@ -9,9 +9,9 @@
 //   brief        the planner's pre-meeting brief (#32): the recap is written by
 //                Anthropic from the wedding's figures. Reading the brief itself
 //                calls no model, so only "Write the recap" asks.
-//   voice        the Coordinator's mic (D5): the recording goes to AssemblyAI
-//                to become text; the text then goes to the chat like typed
-//                words (so the coordinator answer is needed as well).
+//
+// The Coordinator has no mic in 1.4.0 (Nicolas, Nov 6: not in this wave), so
+// there is no speech scope; the sheet names text and wedding details only.
 //
 // Answers are per person (the signed-in user id), under the gl.scoped. prefix:
 // sign-out deletes them through resetUserScopedState, so the next person on
@@ -21,20 +21,19 @@
 //
 // PURE: no imports. Tests: scripts/tests/ai-consent.test.ts.
 
-export type ConsentScope = "coordinator" | "brief" | "voice";
-export const CONSENT_SCOPES: readonly ConsentScope[] = ["coordinator", "brief", "voice"];
+export type ConsentScope = "coordinator" | "brief";
+export const CONSENT_SCOPES: readonly ConsentScope[] = ["coordinator", "brief"];
 export const CONSENT_VERSION = 1;
 
 /** Who receives the data, named as Apple asks (the company and its service). */
 export const CONSENT_PROVIDER: Record<ConsentScope, string> = {
   coordinator: "Anthropic (Claude)",
   brief: "Anthropic (Claude)",
-  voice: "AssemblyAI",
 };
 
-/** Scopes that must be answered yes before `scope` may run (the mic feeds the chat). */
+/** Scopes that must be answered yes before `scope` may run. */
 export function requiredScopes(scope: ConsentScope): ConsentScope[] {
-  return scope === "voice" ? ["coordinator", "voice"] : [scope];
+  return [scope];
 }
 
 export type ConsentRecord = { v: number; given: Partial<Record<ConsentScope, string>> };
@@ -74,7 +73,5 @@ export function withConsent(record: ConsentRecord, scopes: readonly ConsentScope
 export function withoutConsent(record: ConsentRecord, scope: ConsentScope): ConsentRecord {
   const given = { ...record.given };
   delete given[scope];
-  // The mic feeds the chat: taking the chat back takes the mic back too.
-  if (scope === "coordinator") delete given.voice;
   return { v: CONSENT_VERSION, given };
 }

@@ -1,8 +1,7 @@
 // Apple 5.1.2(i) consent sheet, EN and neutral LatAm ES (tú). Each kind of
 // sharing names the company that receives the data, what is sent and why,
-// before the first use, with a plain way to say no. Keep it true: the voice
-// text matches the portal's voice path (recording and the provider's copy are
-// deleted once the text is read, lib/meeting-audio-server.ts pollTranscription).
+// before the first use, with a plain way to say no. Keep it true: the app
+// sends typed text and wedding details only (no mic in 1.4.0).
 
 const en = {
   sentTo: "Sent to",
@@ -25,13 +24,6 @@ const en = {
     who: "Anthropic, the company behind the Claude AI model.",
     what: "The figures in this brief: the wedding's status, replies, open decisions, payments due and vendors.",
     why: "To write a short recap around those figures. Every figure in the brief comes from the wedding's data, never from the AI.",
-  },
-  voice: {
-    title: "Before you use the microphone",
-    intro: "Your voice note becomes text through a speech service run by another company. Your permission is needed before a recording is sent to it.",
-    who: "AssemblyAI, a speech-to-text service.",
-    what: "The recording you make after tapping the mic. Nothing records at any other time.",
-    why: "To turn it into text in your message box. You read the text and decide whether to send it. The recording and the service's copy are deleted once the text is ready.",
   },
 };
 
@@ -56,13 +48,6 @@ const es: typeof en = {
     who: "Anthropic, la empresa del modelo de IA Claude.",
     what: "Las cifras de este resumen: el estado de la boda, las respuestas, las decisiones pendientes, los pagos por vencer y los proveedores.",
     why: "Para escribir una síntesis breve con esas cifras. Cada cifra del resumen sale de los datos de la boda, nunca de la IA.",
-  },
-  voice: {
-    title: "Antes de usar el micrófono",
-    intro: "Tu nota de voz se convierte en texto con un servicio de otra empresa. Necesitamos tu permiso antes de enviarle una grabación.",
-    who: "AssemblyAI, un servicio que convierte voz en texto.",
-    what: "La grabación que haces después de tocar el micrófono. Nunca graba en otro momento.",
-    why: "Para convertirla en texto en tu cuadro de mensaje. Tú lees el texto y decides si lo envías. La grabación y la copia del servicio se borran en cuanto el texto está listo.",
   },
 };
 

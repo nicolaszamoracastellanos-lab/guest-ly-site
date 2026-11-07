@@ -375,14 +375,12 @@ export type ComposerProps = {
   autoFocus?: boolean;
   testID?: string;
   sendTestID?: string;
-  /** Before the text box, inside the composer (the Coordinator's mic). */
-  leading?: ReactNode;
 };
 
 /** The one message box: grows with the text up to 5 lines, gold arrow-up send
  *  button that lights up when there is something to send. Used by
  *  ChatComposer; usable alone in any docked surface. */
-export function Composer({ value, onChangeText, onSend, placeholder, sendLabel, busy, canSend, editable = true, maxLines = 5, submitOnReturn = true, sendIcon = "arrow-up", inputRef, autoFocus, testID, sendTestID, leading }: ComposerProps) {
+export function Composer({ value, onChangeText, onSend, placeholder, sendLabel, busy, canSend, editable = true, maxLines = 5, submitOnReturn = true, sendIcon = "arrow-up", inputRef, autoFocus, testID, sendTestID }: ComposerProps) {
   const c = useCopy().common;
   const on = !busy && editable && (canSend ?? value.trim().length > 0);
   const submit = () => {
@@ -392,7 +390,6 @@ export function Composer({ value, onChangeText, onSend, placeholder, sendLabel, 
   const maxHeight = maxLines * COMPOSER_LINE + COMPOSER_PAD_V * 2;
   return (
     <View style={[styles.composer, !editable && { opacity: 0.6 }]}>
-      {leading}
       <TextInput
         ref={inputRef}
         testID={testID}

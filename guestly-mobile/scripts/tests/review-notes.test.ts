@@ -1,9 +1,11 @@
 // Run: node --experimental-strip-types scripts/tests/review-notes.test.ts
 // 1.4.0 App Review notes and privacy (store/metadata.json, store/REVIEW-NOTES-1.4.0.md,
-// app.config.ts privacyManifests): the notes say what the binary does (mic,
-// AssemblyAI, the 5.1.2(i) permission screen, Preview the day only on demo
-// weddings), the old "No audio" claim is gone, Audio Data is on the label and
-// in the manifest, and the review file carries the notes word for word.
+// app.config.ts privacyManifests): the notes say what the binary does (the
+// 5.1.2(i) permission screen, Preview the day only on demo weddings). No mic in
+// 1.4.0 (Nicolas, Nov 6, c-mic): the notes, the What's new text and the label
+// say nothing about a mic, voice or AssemblyAI, the 1.3 "No audio" line is
+// back, no Audio Data anywhere, and the review file carries the notes word for
+// word.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -12,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const src = (p: string) => readFileSync(path.join(here, "../..", p), "utf8");
-const meta = JSON.parse(src("store/metadata.json")) as { review_notes_en: string; app_privacy: { collected: { type: string; linked: boolean; purpose: string }[] } };
+const meta = JSON.parse(src("store/metadata.json")) as { review_notes_en: string; whats_new: { en: string; es: string }; app_privacy: { collected: { type: string; linked: boolean; purpose: string; who: string }[] } };
 const notes = meta.review_notes_en;
 const md = src("store/REVIEW-NOTES-1.4.0.md");
 const cfg = src("app.config.ts");
@@ -28,11 +30,22 @@ const t = (name: string, fn: () => void) => {
   }
 };
 
-t("notes describe the mic truthfully", () => {
-  assert.ok(!/No audio or video is recorded/.test(notes), "the 1.3 claim is false with the mic");
-  assert.ok(/MICROPHONE: only when a couple or planner taps the mic button in the Coordinator/.test(notes));
-  assert.ok(/AssemblyAI/.test(notes) && /deleted as soon as the text is ready/.test(notes));
-  assert.ok(/no background audio/.test(notes));
+// Words that would describe a mic or voice feature, EN and ES.
+const MIC_WORDS = /\bmic\b|microphone|micr[oó]fono|voice|\bvoz\b|AssemblyAI|speech|recording|grabaci[oó]n|dictat|audio data/i;
+
+t("no mic in 1.4.0: notes, What's new and the label say nothing about one", () => {
+  assert.ok(!MIC_WORDS.test(notes), `review notes: ${MIC_WORDS.exec(notes)?.[0]}`);
+  assert.ok(/CAMERA: [^\n]*No audio or video is recorded\./.test(notes), "the 1.3 camera line is back");
+  for (const lang of ["en", "es"] as const) {
+    const w = meta.whats_new[lang];
+    assert.ok(w.length > 80, `whats_new ${lang}`);
+    assert.ok(!MIC_WORDS.test(w), `whats_new ${lang}: ${MIC_WORDS.exec(w)?.[0]}`);
+    assert.ok(!/!/.test(w), `whats_new ${lang}: no '!'`);
+  }
+  assert.ok(/^Your wedding day, live:/.test(meta.whats_new.en), "the launch kit draft Nicolas approved (a-notes)");
+  for (const c of meta.app_privacy.collected) assert.ok(!MIC_WORDS.test(`${c.type} ${c.who}`), `label: ${c.type}`);
+  assert.ok(!/AudioData/.test(cfg), "no NSPrivacyCollectedDataTypeAudioData in the manifest");
+  assert.ok(md.includes(meta.whats_new.en) && md.includes(meta.whats_new.es), "the review file repeats What's new");
 });
 
 t("notes name the AI providers and the 5.1.2(i) permission screen", () => {
@@ -45,13 +58,6 @@ t("notes point reviewers at Preview the day, demo weddings only", () => {
   assert.ok(/Preview the day/.test(notes));
   assert.ok(/only on demo weddings/.test(notes));
   assert.ok(/Nothing done in the preview is saved/.test(notes));
-});
-
-t("label and manifest: Audio Data, linked, app functionality, no tracking", () => {
-  const audio = meta.app_privacy.collected.find((c) => c.type === "User Content: Audio Data");
-  assert.ok(audio && audio.linked && audio.purpose === "App Functionality");
-  const block = cfg.slice(cfg.indexOf('"NSPrivacyCollectedDataTypeAudioData"'), cfg.indexOf('"NSPrivacyCollectedDataTypeAudioData"') + 400);
-  assert.ok(block.includes("NSPrivacyCollectedDataTypeLinked: true") && block.includes("NSPrivacyCollectedDataTypeTracking: false") && block.includes("PurposeAppFunctionality"));
 });
 
 t("label and manifest: Product Interaction for guest app opens (K21, #37), linked, no tracking", () => {
