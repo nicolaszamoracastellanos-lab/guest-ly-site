@@ -1,0 +1,9 @@
+{
+  "status": 304,
+  "headers": {
+    "cache-control": "private, no-cache",
+    "etag": "\"449e9ebfdb44f69bb1e5231b\"",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Authorization, x-gl-tenant"
+  },
+  "body": null
+}

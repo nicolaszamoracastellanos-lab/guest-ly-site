@@ -1,0 +1,607 @@
+{
+  "status": 200,
+  "headers": {
+    "cache-control": "private, no-cache",
+    "content-type": "application/json",
+    "etag": "\"449e9ebfdb44f69bb1e5231b\"",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Authorization, x-gl-tenant"
+  },
+  "body": {
+    "ok": true,
+    "data": {
+      "meta": {
+        "version": "449e9ebfdb44f69bb1e5231b",
+        "generated_at": "2026-11-07T06:44:15.617Z",
+        "tz": "America/La_Paz",
+        "wedding_date": "2027-05-22",
+        "valid_until": "2027-05-23",
+        "server_now": "2026-11-07T06:44:15.617Z",
+        "slug": "valentina-y-mateo",
+        "couple_names": "Valentina & Mateo",
+        "can_mark_status": true
+      },
+      "runsheet": [
+        {
+          "id": "de5b26bb-9217-4adb-8aa6-5717d0a4eb9d",
+          "day": "2027-05-22",
+          "starts_at": "15:45",
+          "ends_at": "16:15",
+          "title": "Shuttles to Villa Arenisca",
+          "detail": "",
+          "location": "Hotel Mirador Lumen and Plaza Faro",
+          "place_id": null,
+          "owner": "Lumen Shuttle",
+          "vendor_id": null,
+          "vendor_name": null,
+          "status": "confirmed",
+          "updated_at": "2026-11-07T06:42:14.01+00:00",
+          "sort_order": 0,
+          "kind": "block"
+        },
+        {
+          "id": "4f365b7a-b1af-4dc4-b081-cb025d242b9c",
+          "day": "2027-05-22",
+          "starts_at": "16:45",
+          "ends_at": "17:30",
+          "title": "Ceremony",
+          "detail": "",
+          "location": "Garden terrace",
+          "place_id": null,
+          "owner": "Officiant",
+          "vendor_id": null,
+          "vendor_name": null,
+          "status": "confirmed",
+          "updated_at": "2026-11-07T06:27:49.894+00:00",
+          "sort_order": 1,
+          "kind": "block"
+        },
+        {
+          "id": "d2fa7fcb-4025-4df8-986d-1114ad9bd27e",
+          "day": "2027-05-22",
+          "starts_at": "17:00",
+          "ends_at": "18:30",
+          "title": "Cocktail hour and photos",
+          "detail": "",
+          "location": "Lower garden",
+          "place_id": null,
+          "owner": "Estudio Faro",
+          "vendor_id": null,
+          "vendor_name": null,
+          "status": "planned",
+          "updated_at": "2026-11-07T06:28:58.025+00:00",
+          "sort_order": 2,
+          "kind": "block"
+        },
+        {
+          "id": "41a5f3f4-86a7-4fe3-9623-40859cdabcbc",
+          "day": "2027-05-22",
+          "starts_at": "18:30",
+          "ends_at": "20:30",
+          "title": "Dinner and toasts",
+          "detail": "",
+          "location": "Courtyard",
+          "place_id": null,
+          "owner": "Mesa Lumen Catering",
+          "vendor_id": null,
+          "vendor_name": null,
+          "status": "planned",
+          "updated_at": "2026-11-05T16:04:41.648+00:00",
+          "sort_order": 3,
+          "kind": "block"
+        },
+        {
+          "id": "31b74a2f-79cc-48af-8c5d-fae3bb0d06e6",
+          "day": "2027-05-22",
+          "starts_at": "20:30",
+          "ends_at": "23:30",
+          "title": "Dancing",
+          "detail": "",
+          "location": "Courtyard",
+          "place_id": null,
+          "owner": "Trío Brisa",
+          "vendor_id": null,
+          "vendor_name": null,
+          "status": "planned",
+          "updated_at": "2026-11-05T15:13:02.212+00:00",
+          "sort_order": 4,
+          "kind": "block"
+        },
+        {
+          "id": "4069a1d6-2aa1-4a42-89f1-a1cb35d5b109",
+          "day": "2027-05-22",
+          "starts_at": "23:00",
+          "ends_at": null,
+          "title": "Return shuttles start",
+          "detail": "",
+          "location": "Main gate",
+          "place_id": null,
+          "owner": "Lumen Shuttle",
+          "vendor_id": null,
+          "vendor_name": null,
+          "status": "planned",
+          "updated_at": "2026-11-05T16:04:41.661+00:00",
+          "sort_order": 5,
+          "kind": "block"
+        }
+      ],
+      "places": [],
+      "slots": [],
+      "vendors": [
+        {
+          "id": "22d04a58-6edd-4540-92e9-051e5e410e60",
+          "name": "Estudio Faro",
+          "category": "photo",
+          "contact": "Marco Vidal",
+          "phone": "+1 202 555 0162",
+          "whatsapp": "12025550162",
+          "arrival": null,
+          "status": "quoted"
+        },
+        {
+          "id": "33e91b51-533a-4ea2-83c5-a3ecd4008d2b",
+          "name": "Flor de Sal",
+          "category": "flowers",
+          "contact": "Alba Mar",
+          "phone": "+1 202 555 0164",
+          "whatsapp": "12025550164",
+          "arrival": null,
+          "status": "booked"
+        },
+        {
+          "id": "c6b2c600-fa10-4e8d-97a0-05bfd473033a",
+          "name": "Mesa Lumen Catering",
+          "category": "catering",
+          "contact": "Irene Sol",
+          "phone": "+1 202 555 0161",
+          "whatsapp": "12025550161",
+          "arrival": null,
+          "status": "booked"
+        },
+        {
+          "id": "8b4a7d16-7d80-463f-8f30-2280a8a760d1",
+          "name": "Trío Brisa",
+          "category": "music",
+          "contact": "Nora Pell",
+          "phone": null,
+          "whatsapp": null,
+          "arrival": null,
+          "status": "contacted"
+        },
+        {
+          "id": "fd30fc4d-94f0-404e-a622-4416aa7d613b",
+          "name": "Villa Arenisca",
+          "category": "venue",
+          "contact": "Front desk",
+          "phone": "+1 202 555 0160",
+          "whatsapp": "12025550160",
+          "arrival": null,
+          "status": "booked"
+        }
+      ],
+      "seating": {
+        "tables": [],
+        "assignments": [],
+        "floor_plan_url": null
+      },
+      "roster": [
+        {
+          "id": "1e3e853b-621f-4955-8b67-cf680deb9dd5",
+          "name": "Ana Souza",
+          "members": [
+            "Pedro Souza"
+          ],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "amigos",
+            "portugues"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "25e50f56-6bac-4b95-9960-139a41d582fb",
+          "name": "Beatriz Costa",
+          "members": [],
+          "party_size": 1,
+          "table": null,
+          "tags": [
+            "amigos",
+            "portugues"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "declined",
+          "meal": null
+        },
+        {
+          "id": "0f3ca3bb-c77b-4815-b47e-b7d6d517736e",
+          "name": "Camille Laurent",
+          "members": [
+            "Julien Laurent",
+            "Inès Laurent",
+            "Louis Laurent"
+          ],
+          "party_size": 4,
+          "table": null,
+          "tags": [
+            "familia",
+            "novio",
+            "francais"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "c2f6293e-4ff0-4bf6-b867-2cd0e17e69f2",
+          "name": "Charlotte Moreau",
+          "members": [
+            "Antoine Moreau"
+          ],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "familia",
+            "novio",
+            "francais"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "pending",
+          "meal": null
+        },
+        {
+          "id": "5c524e60-49bd-4d4d-9d78-563d80e19a37",
+          "name": "Daniel Kim",
+          "members": [
+            "Sarah Kim"
+          ],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "trabajo"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "declined",
+          "meal": null
+        },
+        {
+          "id": "f33ab49e-a1fe-4422-aac3-536a1a947296",
+          "name": "Emily Carter",
+          "members": [
+            "James Carter",
+            "Ruby Carter"
+          ],
+          "party_size": 3,
+          "table": null,
+          "tags": [
+            "amigos",
+            "universidad"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "168388bb-c2e9-4226-864e-64769355a4e5",
+          "name": "Ethan Brooks",
+          "members": [
+            "Mia Brooks",
+            "Lily Brooks",
+            "Jack Brooks"
+          ],
+          "party_size": 4,
+          "table": null,
+          "tags": [
+            "amigos"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "1f10e577-4ad4-4c5b-b59e-adf99e93252b",
+          "name": "Grace Thompson",
+          "members": [],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "universidad",
+            "plus-one"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "f2bc46b8-e566-4168-87e2-44119aa440cf",
+          "name": "Hugo Martin",
+          "members": [
+            "Chloé Martin",
+            "Arthur Martin"
+          ],
+          "party_size": 3,
+          "table": null,
+          "tags": [
+            "familia",
+            "novio",
+            "francais"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "ab9b9717-0833-4b2a-8a93-9697d76dfd1f",
+          "name": "Isabel Moreno",
+          "members": [
+            "Carlos Moreno",
+            "Elena Moreno",
+            "Pablo Moreno",
+            "Lucas Moreno"
+          ],
+          "party_size": 5,
+          "table": null,
+          "tags": [
+            "familia",
+            "novia"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "15f8d310-8d8a-4ccb-b22a-ef757affdcac",
+          "name": "Jorge Herrera",
+          "members": [
+            "Carmen Herrera",
+            "Rosa Herrera"
+          ],
+          "party_size": 3,
+          "table": null,
+          "tags": [
+            "familia",
+            "novio"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "4778ebac-4c48-4fe2-b179-44a38f89a422",
+          "name": "Léa Bernard",
+          "members": [],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "amigos",
+            "francais",
+            "plus-one"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "pending",
+          "meal": null
+        },
+        {
+          "id": "b342e73f-4d34-4e65-adc4-89cf708e6fd4",
+          "name": "Lucía Romero",
+          "members": [
+            "Daniel Romero"
+          ],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "familia",
+            "novia"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "4256bdde-68ab-4383-8077-5e3d50090e31",
+          "name": "Marc Dubois",
+          "members": [],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "amigos",
+            "francais",
+            "plus-one"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "pending",
+          "meal": null
+        },
+        {
+          "id": "ec474ec6-9041-4457-9f2b-4859b8f8d497",
+          "name": "Margaux Petit",
+          "members": [
+            "Paul Girard"
+          ],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "amigos",
+            "francais"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "pending",
+          "meal": null
+        },
+        {
+          "id": "461dc190-611c-4919-9bc0-ae10d58d4bdf",
+          "name": "Mariana Alves",
+          "members": [],
+          "party_size": 1,
+          "table": null,
+          "tags": [
+            "amigos",
+            "portugues"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "pending",
+          "meal": null
+        },
+        {
+          "id": "b84ff409-e871-4e8d-9886-407a42a17fdf",
+          "name": "Martina Gómez",
+          "members": [
+            "Andrés Gómez",
+            "Sara Gómez",
+            "Diego Gómez"
+          ],
+          "party_size": 4,
+          "table": null,
+          "tags": [
+            "familia",
+            "novia"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "c86a118a-5aba-494e-a1ea-f6b454a135cb",
+          "name": "Nicolás Vega",
+          "members": [
+            "Laura Vega",
+            "Tomás Vega"
+          ],
+          "party_size": 3,
+          "table": null,
+          "tags": [
+            "amigos",
+            "universidad"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "04bd93c3-271f-42f8-b104-7d64bc8d3d53",
+          "name": "Noah Fischer",
+          "members": [
+            "Lena Fischer"
+          ],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "trabajo"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "02aa8592-ec25-48fb-8904-eda2c2df6cd7",
+          "name": "Olivia Bennett",
+          "members": [],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "trabajo",
+            "plus-one"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "pending",
+          "meal": null
+        },
+        {
+          "id": "c56fd957-08fb-41db-8430-0f5412816a02",
+          "name": "Paula Navarro",
+          "members": [],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "amigos",
+            "cortejo",
+            "plus-one",
+            "Mesa principal"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "c77d10fa-773b-462b-965d-336b8214f068",
+          "name": "Rafael Lima",
+          "members": [
+            "Joana Lima",
+            "Tiago Lima"
+          ],
+          "party_size": 3,
+          "table": null,
+          "tags": [
+            "trabajo",
+            "portugues"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "29fac0df-0fdc-4184-9588-9f63655046ee",
+          "name": "Sofía Ruiz",
+          "members": [
+            "Antonio Ruiz",
+            "Carmen Ruiz"
+          ],
+          "party_size": 3,
+          "table": null,
+          "tags": [
+            "familia",
+            "novia",
+            "padres",
+            "Mesa principal"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "e32843f9-0e56-4e5a-8fd9-e35080121f77",
+          "name": "Thomas Reed",
+          "members": [
+            "Hannah Reed",
+            "Ava Reed",
+            "Leo Reed"
+          ],
+          "party_size": 4,
+          "table": null,
+          "tags": [
+            "amigos",
+            "novio"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "attending",
+          "meal": null
+        },
+        {
+          "id": "65930317-10a6-4518-9ed2-cd24de03dc71",
+          "name": "Valeria Ortiz",
+          "members": [],
+          "party_size": 2,
+          "table": null,
+          "tags": [
+            "amigos",
+            "plus-one"
+          ],
+          "checked_in_at": null,
+          "rsvp_status": "declined",
+          "meal": null
+        }
+      ],
+      "counts": null,
+      "contacts": [
+        {
+          "name": "Lucía Ferrer, wedding planner (fictional)",
+          "role": "planner",
+          "phone": "+1 202 555 0199"
+        }
+      ],
+      "ceremony": null,
+      "know_before_you_go": null
+    }
+  }
+}

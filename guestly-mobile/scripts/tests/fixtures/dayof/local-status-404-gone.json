@@ -1,0 +1,15 @@
+{
+  "status": 404,
+  "headers": {
+    "content-type": "application/json",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+  },
+  "body": {
+    "ok": false,
+    "error": {
+      "code": "not_found",
+      "message_en": "That moment was deleted.",
+      "message_es": "Ese momento fue eliminado."
+    }
+  }
+}
