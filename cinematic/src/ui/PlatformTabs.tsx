@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
 import { LiveScreen } from './LiveScreen';
-import { MockPane, MockWindowBar } from './MockScreens';
+import { MockPane, MockWindowBar, identity } from './MockScreens';
+import type { Tr } from './MockScreens';
 import { useHashParam } from './useHashParam';
 
 /* № 04 "Inside the platform": the portal rebuilt in miniature. A proper
@@ -10,8 +11,22 @@ import { useHashParam } from './useHashParam';
    with real product facts and one micro-interaction. Deep links like
    #platform=seating preselect a pane. A pane with a real screenshot in
    src/live-screens.data.ts shows it instead (#24, LiveScreen); none yet. */
+
+/* The vignette text is English in MockScreens.tsx; the Spanish dictionary loads
+   as its own small chunk when the page is in Spanish (a few ms after load, long
+   before the tour is on screen). */
+function useMockTr(): Tr {
+  const { lang } = useLang();
+  const [es, setEs] = useState<Record<string, string>>();
+  useEffect(() => {
+    if (lang === 'es') void import('../platform-mock.es').then((m) => setEs(m.default), () => {});
+  }, [lang]);
+  return lang === 'es' && es ? (s) => es[s] ?? s : identity;
+}
+
 export function PlatformTabs() {
   const { t } = useLang();
+  const tr = useMockTr();
   const p = t.platform;
   const deepLink = useHashParam('platform');
   const [active, setActive] = useState(p.items[0].id);
@@ -72,7 +87,7 @@ export function PlatformTabs() {
                   {/* key remounts the micro state when re-entering a pane */}
                   {active === item.id && (
                     <LiveScreen key={item.id} id={item.id} alt={item.title}>
-                      <MockPane id={item.id} cta={item.microCta} done={item.microDone} />
+                      <MockPane id={item.id} cta={item.microCta} done={item.microDone} tr={tr} />
                     </LiveScreen>
                   )}
                 </div>

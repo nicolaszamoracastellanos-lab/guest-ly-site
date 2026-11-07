@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
+/* Translator for the vignette text: the strings below are English; the Spanish
+   page passes a dictionary keyed by the exact English string
+   (platform-mock.es.ts, loaded on demand). A string with no entry stays
+   English, which scripts/test-platform-mock-i18n.mjs fails on. */
+export type Tr = (s: string) => string;
+export const identity: Tr = (s) => s;
+
 /* Stylized CSS mock-UI vignettes for the platform tour: pure HTML/CSS built
    from a small shared primitive family, no images. Each vignette exposes ONE
    two-state micro-interaction driven by the pane's microCta/microDone copy. */
@@ -64,15 +71,15 @@ export function MicroButton({
 }
 
 /* One mock vignette per platform pane id. `flipped` is the micro state. */
-export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
+export function MockScreen({ id, flipped, tr }: { id: string; flipped: boolean; tr: Tr }) {
   switch (id) {
     case 'dashboard':
       return (
         <div className="mock">
           <div className="mock__statrow">
-            <MockStat v="132" l="questions" />
-            <MockStat v="87%" l="answered" />
-            <MockStat v="4" l="topics rising" />
+            <MockStat v="132" l={tr('questions')} />
+            <MockStat v="87%" l={tr('answered')} />
+            <MockStat v="4" l={tr('topics rising')} />
           </div>
           <div className="mock__bars" aria-hidden="true">
             {[82, 64, 51, 38, 22].map((w, i) => (
@@ -81,39 +88,41 @@ export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
               </div>
             ))}
           </div>
-          <MockRow chip={flipped ? '✓' : 'gap'} dim={flipped}>
-            Is there parking at the venue?
+          <MockRow chip={flipped ? '✓' : tr('gap')} dim={flipped}>
+            {tr('Is there parking at the venue?')}
           </MockRow>
         </div>
       );
-    case 'guests':
+    case 'guests': {
+      const party = (n: number) => tr('party of {n}').replace('{n}', String(n));
       return (
         <div className={flipped ? 'mock mock--drawer' : 'mock'}>
-          <MockRow chip="✓✓">Ana Torres · party of 2</MockRow>
-          <MockRow chip="✓">Marco Rossi · party of 3</MockRow>
-          <MockRow chip="…">Sofia Vidal · party of 1</MockRow>
-          <MockRow chip="✓✓">Luis Ortega · party of 4</MockRow>
+          <MockRow chip="✓✓">Ana Torres · {party(2)}</MockRow>
+          <MockRow chip="✓">Marco Rossi · {party(3)}</MockRow>
+          <MockRow chip="…">Sofia Vidal · {party(1)}</MockRow>
+          <MockRow chip="✓✓">Luis Ortega · {party(4)}</MockRow>
           {flipped && (
             <div className="mock__drawer">
               <b>Ana Torres</b>
-              <span>Party: Luis · RSVP: both events</span>
-              <span>History: 3 questions answered</span>
+              <span>{tr('Party: Luis · RSVP: both events')}</span>
+              <span>{tr('History: 3 questions answered')}</span>
             </div>
           )}
         </div>
       );
+    }
     case 'broadcasts':
       return (
         <div className="mock">
           <div className="mock__chips-row">
-            <span className={flipped ? 'mock__chip mock__chip--on' : 'mock__chip'}>no reply yet</span>
-            <span className="mock__chip">has phone</span>
+            <span className={flipped ? 'mock__chip mock__chip--on' : 'mock__chip'}>{tr('no reply yet')}</span>
+            <span className="mock__chip">{tr('has phone')}</span>
             <span className="mock__chip">EN + ES</span>
           </div>
           <div className="mock__composer">
-            <span>Friendly reminder: RSVP closes May 12…</span>
+            <span>{tr('Friendly reminder: RSVP closes May 12…')}</span>
           </div>
-          <MockStat v={flipped ? '37' : '142'} l="recipients" />
+          <MockStat v={flipped ? '37' : '142'} l={tr('recipients')} />
         </div>
       );
     case 'seating':
@@ -133,17 +142,17 @@ export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
     case 'budget':
       return (
         <div className="mock">
-          <MockRow chip="paid">Venue deposit · 12,000.00</MockRow>
-          <MockRow chip="due Sep">Catering, per plate · 89.50</MockRow>
-          <MockRow chip="reimb.">Florals, arch · 1,450.00</MockRow>
+          <MockRow chip={tr('paid')}>{tr('Venue deposit · 12,000.00')}</MockRow>
+          <MockRow chip={tr('due Sep')}>{tr('Catering, per plate · 89.50')}</MockRow>
+          <MockRow chip={tr('reimb.')}>{tr('Florals, arch · 1,450.00')}</MockRow>
           {flipped ? (
             <div className="mock__drawer">
-              <b>Import review</b>
-              <span>109 items found · total 285,545.06</span>
-              <span>Nothing is written until you approve</span>
+              <b>{tr('Import review')}</b>
+              <span>{tr('109 items found · total 285,545.06')}</span>
+              <span>{tr('Nothing is written until you approve')}</span>
             </div>
           ) : (
-            <MockStat v="285,545.06" l="grand total" />
+            <MockStat v="285,545.06" l={tr('grand total')} />
           )}
         </div>
       );
@@ -151,11 +160,11 @@ export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
       return (
         <div className="mock">
           <div className="mock__composer mock__composer--tall">
-            <span>Shuttle: leaves Hotel Grand at 3:15 PM, free for guests…</span>
+            <span>{tr('Shuttle: leaves Hotel Grand at 3:15 PM, free for guests…')}</span>
           </div>
           <div className="mock__chips-row">
             <span className="mock__chip">v11</span>
-            <span className={flipped ? 'mock__chip mock__chip--on' : 'mock__chip'}>{flipped ? 'v12 · live' : 'v12 · draft'}</span>
+            <span className={flipped ? 'mock__chip mock__chip--on' : 'mock__chip'}>{tr(flipped ? 'v12 · live' : 'v12 · draft')}</span>
           </div>
         </div>
       );
@@ -164,16 +173,16 @@ export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
         <div className="mock">
           {flipped ? (
             <div className="mock__drawer">
-              <b>Change request · 3 edits</b>
-              <span>Rosa Delgado: table 7 → 4</span>
-              <span>Diego Morales: vegetarian</span>
-              <span>Awaiting the couple’s approval</span>
+              <b>{tr('Change request · 3 edits')}</b>
+              <span>{tr('Rosa Delgado: table 7 → 4')}</span>
+              <span>{tr('Diego Morales: vegetarian')}</span>
+              <span>{tr('Awaiting the couple’s approval')}</span>
             </div>
           ) : (
             <>
-              <MockRow chip="edit">Rosa Delgado · table 7 → 4</MockRow>
-              <MockRow chip="edit">Diego Morales · vegetarian</MockRow>
-              <MockRow dim>Phones and emails hidden</MockRow>
+              <MockRow chip={tr('edit')}>{tr('Rosa Delgado · table 7 → 4')}</MockRow>
+              <MockRow chip={tr('edit')}>{tr('Diego Morales · vegetarian')}</MockRow>
+              <MockRow dim>{tr('Phones and emails hidden')}</MockRow>
             </>
           )}
         </div>
@@ -184,7 +193,7 @@ export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
           <div className="mock__scan" aria-hidden="true">
             <i className="mock__scanline" />
           </div>
-          <MockStat v={flipped ? '87' : '86'} l="checked in" />
+          <MockStat v={flipped ? '87' : '86'} l={tr('checked in')} />
         </div>
       );
     default:
@@ -193,11 +202,11 @@ export function MockScreen({ id, flipped }: { id: string; flipped: boolean }) {
 }
 
 /* Convenience wrapper: vignette + its micro interaction state. */
-export function MockPane({ id, cta, done }: { id: string; cta: string; done: string }) {
+export function MockPane({ id, cta, done, tr }: { id: string; cta: string; done: string; tr: Tr }) {
   const [flipped, setFlipped] = useState(false);
   return (
     <>
-      <MockScreen id={id} flipped={flipped} />
+      <MockScreen id={id} flipped={flipped} tr={tr} />
       <MicroButton cta={cta} done={done} flipped={flipped} onFlip={() => setFlipped(true)} />
     </>
   );
