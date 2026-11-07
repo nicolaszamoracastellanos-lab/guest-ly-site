@@ -19,7 +19,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiFailure, get, isMissingEndpoint } from "@/lib/api";
 import { registerScopedReset } from "@/lib/scope";
-import { clockOffset, packExpired, parseGuestPack, parsePack, rosterIndex, timelineChanges, utf8Bytes, type DayPack, type GuestPack, type RosterIndex } from "./packCore";
+import { clockOffset, keepOnMissing, lastCheckAt, nextMiss, packExpired, parseGuestPack, parsePack, rosterIndex, timelineChanges, utf8Bytes, PACK_REFRESH_MS, type DayPack, type GuestPack, type PackMiss, type RosterIndex } from "./packCore";
 import { serviceDayOf, wallClockAt } from "./live";
 
 export type PackKind = "couple" | "planner" | "guest";
@@ -59,7 +59,7 @@ export type PackStatus = {
   loading: boolean;
   /** The last fetch failed (offline, timeout, 5xx). */
   failed: boolean;
-  /** The portal answered 404: no route yet, or MW_DAY_PACK is off for this wedding. Hide everything. */
+  /** The portal answered 404 and nothing is saved (no route yet, or MW_DAY_PACK is off for this wedding). Hide everything. */
   missing: boolean;
   /** Storage was read (an absent pack is then really absent). */
   ready: boolean;
@@ -68,6 +68,26 @@ export type PackStatus = {
 const PREFIX = "gl.scoped.daypack.v1:";
 export function packKey(owner: string, slug: string): string {
   return `${PREFIX}${owner}:${slug}`;
+}
+
+// The 404s since the last good answer, on their own key (PackMiss). Under
+// "gl.scoped." too, so sign out removes them with the packs.
+const MISS_PREFIX = "gl.scoped.daypack.miss.v1:";
+function missKey(owner: string, slug: string): string {
+  return `${MISS_PREFIX}${owner}:${slug}`;
+}
+async function readMiss(owner: string, slug: string): Promise<PackMiss | null> {
+  try {
+    const raw = await AsyncStorage.getItem(missKey(owner, slug));
+    if (!raw) return null;
+    const m = JSON.parse(raw) as PackMiss;
+    return m && typeof m.firstAt === "number" && typeof m.lastAt === "number" ? m : null;
+  } catch {
+    return null;
+  }
+}
+async function clearMiss(owner: string, slug: string) {
+  await AsyncStorage.removeItem(missKey(owner, slug)).catch(() => {});
 }
 
 export function packPath(kind: PackKind, slug: string): string {
@@ -174,11 +194,16 @@ export async function loadPack(owner: string, kind: PackKind, slug: string): Pro
     entry = null;
   }
   if (entry && !entries.has(key)) entries.set(key, entry);
-  if (!packStatus(key).ready || entry) setStatus(key, { ready: true });
+  if (!packStatus(key).ready || entry) {
+    // Nothing saved and the route answered 404 in the last 15 minutes: still
+    // missing after a restart, until the next check.
+    const miss = entry || packStatus(key).ready ? null : await readMiss(owner, slug);
+    setStatus(key, miss && Date.now() - miss.lastAt < PACK_REFRESH_MS ? { ready: true, missing: true } : { ready: true });
+  }
   return entries.get(key) ?? null;
 }
 
-/** Deletes one saved pack (the feature was switched off for this wedding). */
+/** Deletes one saved pack (the feature stayed off for this wedding, see keepOnMissing). */
 async function dropPack(key: string) {
   entries.delete(key);
   await AsyncStorage.removeItem(key).catch(() => {});
@@ -195,9 +220,13 @@ const inflight = new Map<string, Promise<FetchResult>>();
 /**
  * Asks the portal for the pack with If-None-Match. 304: only the "checked"
  * time moves. 200: the record is replaced in one write (a reader sees the old
- * pack or the new one, never half). 404 (no route yet, or the flag is off):
- * the saved pack is deleted and the store says `missing`, so every screen
- * hides the offline parts. One fetch per pack at a time.
+ * pack or the new one, never half). 404 (no route yet, the flag is off, or
+ * the portal could not read its flags for a moment): the 404 is remembered
+ * (PackMiss) so the next automatic check waits 15 minutes. A saved pack stays
+ * on the wedding day and through the first 15 minutes of 404s, read as a
+ * failed check (keepOnMissing); after that it is deleted and the store says
+ * `missing`, so every screen hides the offline parts. One fetch per pack at a
+ * time.
  */
 export function fetchPack(owner: string, kind: PackKind, slug: string): Promise<FetchResult> {
   const key = packKey(owner, slug);
@@ -239,6 +268,7 @@ export function fetchPack(owner: string, kind: PackKind, slug: string): Promise<
         raw: data,
       };
       await AsyncStorage.setItem(key, JSON.stringify(next));
+      await clearMiss(owner, slug);
       const entry = toEntry(key, next);
       if (entry) entries.set(key, entry);
       const changes = before && entry && "runsheet" in before.pack && "runsheet" in entry.pack && before.pack.meta.version !== entry.pack.meta.version ? timelineChanges(before.pack.runsheet, entry.pack.runsheet) : null;
@@ -249,12 +279,22 @@ export function fetchPack(owner: string, kind: PackKind, slug: string): Promise<
         const receivedAt = Date.now();
         const touched: Record_ = { ...rec, checkedAt: receivedAt, offsetMs: dateHeader ? clockOffset(new Date(dateHeader as string).toISOString(), sentAt, receivedAt) || rec.offsetMs : rec.offsetMs };
         await AsyncStorage.setItem(key, JSON.stringify(touched)).catch(() => {});
+        await clearMiss(owner, slug);
         const mem = entries.get(key);
         if (mem) entries.set(key, { ...mem, checkedAt: receivedAt, offsetMs: touched.offsetMs });
         setStatus(key, { loading: false, failed: false, missing: false, ready: true });
         return { kind: "unchanged" };
       }
       if (isMissingEndpoint(err)) {
+        const now = Date.now();
+        const miss = nextMiss(await readMiss(owner, slug), now);
+        await AsyncStorage.setItem(missKey(owner, slug), JSON.stringify(miss)).catch(() => {});
+        const saved = entries.get(key) ?? null;
+        const today = saved ? todayIn(saved.pack.meta.tz, now + saved.offsetMs) : "";
+        if (saved && keepOnMissing({ saved: saved.pack, today, miss, now })) {
+          setStatus(key, { loading: false, failed: true, missing: false, ready: true });
+          return { kind: "failed", error: err };
+        }
         await dropPack(key);
         setStatus(key, { loading: false, failed: false, missing: true, ready: true });
         return { kind: "missing" };
@@ -267,12 +307,11 @@ export function fetchPack(owner: string, kind: PackKind, slug: string): Promise<
   return run;
 }
 
-/** The last time this pack was checked against the server (for the 15 minute rule), from storage. */
+/** The last time this pack was checked against the server (for the 15 minute rule): a good answer or a 404, from storage. */
 export async function lastChecked(owner: string, slug: string): Promise<number | null> {
   const mem = entries.get(packKey(owner, slug));
-  if (mem) return mem.checkedAt;
-  const rec = await readRecord(packKey(owner, slug));
-  return rec ? rec.checkedAt : null;
+  const checkedAt = mem ? mem.checkedAt : ((await readRecord(packKey(owner, slug)))?.checkedAt ?? null);
+  return lastCheckAt(checkedAt, await readMiss(owner, slug));
 }
 
 /**

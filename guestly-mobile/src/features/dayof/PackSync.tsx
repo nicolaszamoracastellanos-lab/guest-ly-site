@@ -179,7 +179,8 @@ export function PlannerDayPackSync() {
   const on = !!s && featureOn(s.me, DAY_PACK_FLAG);
   const targets: Target[] = (home.data?.weddings ?? []).map((w) => ({ kind: "planner" as const, slug: w.slug, weddingDate: w.wedding_date, names: w.couple_names }));
   // The open wedding's flag gates the loop. Other weddings answer 404 while
-  // their flag is off, and the store then keeps nothing for them.
+  // their flag is off: the store keeps nothing for them and remembers the 404,
+  // so each is asked again only after 15 minutes.
   useRefreshLoop(targets, on);
   return <OutboxNotices />;
 }
@@ -187,7 +188,8 @@ export function PlannerDayPackSync() {
 export function GuestDayPackSync() {
   const g = useGuestSession();
   const targets: Target[] = g ? [{ kind: "guest", slug: g.tenant.slug, weddingDate: g.tenant.wedding_date, names: g.tenant.couple_names }] : [];
-  // Guests have no features map: the 404 of a dark /guest/pack hides it.
+  // Guests have no features map: the 404 of a dark /guest/pack hides it (asked
+  // again after 15 minutes, not on every one-minute check).
   useRefreshLoop(targets, !!g);
   // The schedule screen reads its query first. The query cache drops what is
   // older than 24 hours; the guest pack lasts to the end of the wedding, so a

@@ -26,10 +26,15 @@ import {
   doorCounts,
   PACK_REFRESH_MS,
   STALE_AFTER_MS,
+  nextMiss,
+  lastCheckAt,
+  keepOnMissing,
+  type PackMiss,
 } from "../../src/features/dayof/packCore.ts";
 import { liveState, wallClockAt, serviceDayOf } from "../../src/features/dayof/live.ts";
 import { DAYOF_COPY } from "../../src/features/dayof/copy.ts";
 import { bigPack } from "./fixtures/dayof/big-pack.ts";
+import { classifyFailure } from "../../src/lib/queueMath.ts";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures/dayof");
 const rec = (name: string) => JSON.parse(fs.readFileSync(path.join(DIR, name), "utf8")) as { status: number; headers: Record<string, string>; body: { ok: boolean; data?: unknown } | null };
@@ -81,6 +86,27 @@ assert.equal(thin.seating, null);
 assert.equal(rec("couple-pack-304.json").status, 304);
 assert.equal(rec("couple-pack-304.json").body, null);
 assert.equal(rec("pack-404-dark.json").status, 404);
+
+// Answers recorded from Lane 1's routes on the local stack (Nov 7 2026,
+// day-pack-contract.test.ts with GL_RECORD=1): the real shapes parse.
+{
+  const local = (name: string) => (fs.existsSync(path.join(DIR, `local-${name}.json`)) ? rec(`local-${name}.json`) : null);
+  const lc = local("couple-pack-200");
+  assert.ok(lc, "recorded couple pack present");
+  const lcp = parsePack(lc!.body!.data)!;
+  assert.ok(lcp && lcp.runsheet.length > 0 && Array.isArray(lcp.roster), "recorded couple pack parses, with moments and a roster");
+  assert.equal(lc!.headers.etag, `"${lcp.meta.version}"`, "recorded ETag is the quoted version");
+  assert.equal(typeof lcp.meta.can_mark_status, "boolean");
+  const lp = parsePack(local("planner-pack-200")!.body!.data);
+  assert.ok(lp && !("pack" in (local("planner-pack-200")!.body!.data as object)), "recorded planner pack is bare and parses");
+  const lg = parseGuestPack(local("guest-pack-200")!.body!.data);
+  assert.ok(lg && lg.pass_qr, "recorded guest pack parses");
+  const l304 = local("couple-pack-304")!;
+  assert.equal(l304.status, 304);
+  assert.equal(l304.body, null, "304 has no body");
+  const gone = local("status-404-gone")!;
+  assert.equal(classifyFailure("block_status", { status: gone.status, code: String((gone.body as { error?: { code?: string } }).error?.code) }), "gone");
+}
 
 // ---------------------------------------------------------------- Now and Next from the pack, offline
 
@@ -218,6 +244,67 @@ for (const [lang, dict] of [["en", en], ["es", es]] as const) {
   }
 }
 
+// ---------------------------------------------------------------- 404 answers (review round 1)
+
+// The portal answers 404 when MW_DAY_PACK is off, and also when it cannot read
+// its flags for a moment (flagSnapshot returns null on a read error). This is
+// packStore.fetchPack's 404/200/304 path over the pure rules, on one pack.
+{
+  type Disk = { pack: typeof couple | null; checkedAt: number | null; miss: PackMiss | null };
+  const answer = (d: Disk, status: 200 | 304 | 404, at: number, today: string): Disk => {
+    if (status !== 404) return { pack: status === 200 ? couple : d.pack, checkedAt: at, miss: null };
+    const miss = nextMiss(d.miss, at);
+    if (d.pack && keepOnMissing({ saved: d.pack, today, miss, now: at })) return { ...d, miss };
+    return { pack: null, checkedAt: null, miss };
+  };
+  const due = (d: Disk, at: number, today: string) => refreshDue({ today, weddingDate: "2027-05-22", lastCheckedAt: lastCheckAt(d.checkedAt, d.miss), now: at });
+  const t0 = Date.parse("2027-05-22T18:00:00Z");
+  const MIN = 60_000;
+
+  // On the wedding day: one 404 keeps the saved pack, the next 200 restores the normal state.
+  let d: Disk = { pack: couple, checkedAt: t0 - 20 * MIN, miss: null };
+  d = answer(d, 404, t0, "2027-05-22");
+  assert.ok(d.pack, "a 404 on the wedding day keeps the saved pack");
+  assert.equal(due(d, t0 + MIN, "2027-05-22"), false, "after a 404 the one-minute check does not ask again");
+  assert.equal(due(d, t0 + PACK_REFRESH_MS, "2027-05-22"), true, "15 minutes later it asks again");
+  d = answer(d, 404, t0 + PACK_REFRESH_MS, "2027-05-22");
+  d = answer(d, 404, t0 + 2 * PACK_REFRESH_MS, "2027-05-22");
+  assert.ok(d.pack, "on the wedding day repeated 404s never delete it (only expiry does)");
+  d = answer(d, 200, t0 + 3 * PACK_REFRESH_MS, "2027-05-22");
+  assert.ok(d.pack && d.miss === null, "a 200 clears the 404 record");
+  assert.equal(packExpired(couple.meta, "2027-05-24"), true, "expiry still removes it");
+
+  // In the week before: one blip keeps it; 404s for 15 minutes mean the flag is really off.
+  let w: Disk = { pack: couple, checkedAt: t0, miss: null };
+  w = answer(w, 404, t0, "2027-05-18");
+  assert.ok(w.pack, "one 404 the week before keeps the pack");
+  w = answer(w, 404, t0 + 5 * MIN, "2027-05-18");
+  assert.ok(w.pack, "a forced retry 5 minutes later keeps it too");
+  w = answer(w, 304, t0 + 6 * MIN, "2027-05-18");
+  assert.ok(w.pack && w.miss === null, "a 304 clears the 404 record");
+  w = answer(w, 404, t0 + 20 * MIN, "2027-05-18");
+  w = answer(w, 404, t0 + 20 * MIN + PACK_REFRESH_MS, "2027-05-18");
+  assert.equal(w.pack, null, "404s 15 minutes apart the week before: deleted");
+
+  // Nothing saved (a guest, or a planner's other wedding with the flag off): once per 15 minutes, not every minute.
+  let g: Disk = { pack: null, checkedAt: null, miss: null };
+  let asked = 0;
+  for (let m = 0; m < 60; m++) {
+    const at = t0 + m * MIN;
+    if (due(g, at, "2027-05-18")) {
+      asked++;
+      g = answer(g, 404, at, "2027-05-18");
+    }
+  }
+  assert.equal(asked, 4, "a dark route is asked 4 times in an hour of one-minute checks");
+  assert.equal(lastCheckAt(null, null), null);
+  assert.equal(lastCheckAt(5, { firstAt: 1, lastAt: 9 }), 9);
+  assert.equal(lastCheckAt(9, { firstAt: 1, lastAt: 5 }), 9);
+  assert.equal(keepOnMissing({ saved: null, today: "2027-05-22", miss: nextMiss(null, t0), now: t0 }), false);
+  // The guest pack (no runsheet) is kept on the wedding day too.
+  assert.equal(keepOnMissing({ saved: { meta: couple.meta }, today: "2027-05-22", miss: { firstAt: t0 - 3_600_000, lastAt: t0 }, now: t0 }), true);
+}
+
 // ---------------------------------------------------------------- sign out removes the packs (D4.8)
 
 // The store needs React Native, so this reads its source: the pack and the
@@ -227,6 +314,11 @@ const storeSrc = fs.readFileSync(path.join(SRC, "features/dayof/packStore.ts"), 
 const syncSrc = fs.readFileSync(path.join(SRC, "features/dayof/PackSync.tsx"), "utf8");
 const scopeSrc = fs.readFileSync(path.join(SRC, "lib/scope.ts"), "utf8");
 assert.match(storeSrc, /const PREFIX = "gl\.scoped\.daypack\.v1:"/);
+assert.match(storeSrc, /const MISS_PREFIX = "gl\.scoped\.daypack\.miss\.v1:"/, "the 404 record goes on sign out too");
+// The store wires the pure rules: a 404 drops the pack only when keepOnMissing says so; 200 and 304 clear the 404 record; the 15 minute rule counts 404s.
+assert.match(storeSrc, /if \(saved && keepOnMissing\(\{[^}]*\}\)\) \{[\s\S]{0,160}?return \{ kind: "failed"[\s\S]{0,80}?await dropPack\(key\)/);
+assert.equal((storeSrc.match(/await clearMiss\(owner, slug\)/g) ?? []).length, 2, "200 and 304 clear the 404 record");
+assert.match(storeSrc, /return lastCheckAt\(checkedAt, await readMiss\(owner, slug\)\)/);
 assert.match(syncSrc, /`gl\.scoped\.dayprompt:/);
 assert.match(scopeSrc, /PREFIXES = \[[^\]]*"gl\.scoped\."/, "resetUserScopedState removes gl.scoped.* on sign out");
 

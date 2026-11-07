@@ -317,6 +317,45 @@ export function packExpired(meta: Pick<PackMeta, "valid_until" | "wedding_date">
   return d !== null && d > 0;
 }
 
+// ---------------------------------------------------------------- 404 answers
+
+/**
+ * What the phone remembers about 404 answers from one pack route since its
+ * last good answer (a 200 or a 304): the first and the last. Stored on its own
+ * key next to the pack, so a pack that was never saved still backs off.
+ */
+export type PackMiss = { firstAt: number; lastAt: number };
+
+/** The miss record after one more 404 at `now`. */
+export function nextMiss(miss: PackMiss | null, now: number): PackMiss {
+  return { firstAt: miss?.firstAt ?? now, lastAt: now };
+}
+
+/**
+ * The time the 15 minute rule counts from: the last good answer or the last
+ * 404, whichever is later. A route that answers 404 (flag off for that
+ * wedding, guests and a planner's other weddings) is then asked once per
+ * 15 minutes, not on every one-minute check.
+ */
+export function lastCheckAt(savedCheckedAt: number | null, miss: PackMiss | null): number | null {
+  if (savedCheckedAt === null) return miss ? miss.lastAt : null;
+  return miss ? Math.max(savedCheckedAt, miss.lastAt) : savedCheckedAt;
+}
+
+/**
+ * A 404 from a pack route is ambiguous: MW_DAY_PACK was switched off, or the
+ * portal could not read its flags for a moment (it then answers 404 too).
+ * True when the saved copy stays:
+ * - on a day the pack covers (the wedding day), always: only expiry removes it;
+ * - otherwise until the 404s have lasted 15 minutes (two answers at least
+ *   15 minutes apart), so one blip never deletes it.
+ */
+export function keepOnMissing(a: { saved: { meta: PackMeta; runsheet?: { day: string }[] } | null; today: string; miss: PackMiss; now: number }): boolean {
+  if (!a.saved) return false;
+  if (isPackDay({ meta: a.saved.meta, runsheet: (a.saved.runsheet ?? []) as DayPack["runsheet"] }, a.today)) return true;
+  return a.now - a.miss.firstAt < PACK_REFRESH_MS;
+}
+
 /** True on a day the pack covers: a day with blocks, the wedding day, or a day before valid_until. */
 export function isPackDay(pack: Pick<DayPack, "meta" | "runsheet">, serviceDay: string): boolean {
   const { wedding_date, valid_until } = pack.meta;
