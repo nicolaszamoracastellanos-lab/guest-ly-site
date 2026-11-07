@@ -5,7 +5,7 @@
 // Duo table pose keeps its own layout.
 
 import React from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useIsFocused, useRouter } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { clockLabel } from "@/features/guest/format";
@@ -181,7 +181,19 @@ function ServerDayOf() {
 
       <Row style={{ justifyContent: "space-between", marginTop: 28 }}>
         <SectionLabel>{copy.coupleDayOf.runsheet}</SectionLabel>
-        <Button label={copy.coupleDayOf.open} kind="text" small full={false} haptic={false} onPress={() => router.push("/couple/runsheet")} />
+        {liveView ? (
+          // #3: with the live panel the Now diamond is the screen's one gold, so this link is ivory (as the road card's).
+          <Pressable accessibilityRole="button" accessibilityLabel={copy.coupleDayOf.open} hitSlop={8} onPress={() => router.push("/couple/runsheet")} style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8 }}>
+            <Row gap={4}>
+              <T v="meta13" color={colors.ivory70}>
+                {copy.coupleDayOf.open}
+              </T>
+              <Icon name="chev" size={14} color={colors.ivory55} />
+            </Row>
+          </Pressable>
+        ) : (
+          <Button label={copy.coupleDayOf.open} kind="text" small full={false} haptic={false} onPress={() => router.push("/couple/runsheet")} />
+        )}
       </Row>
       <Card kind="solid" padding={2} style={{ marginTop: 8, paddingHorizontal: 18 }}>
         {isLoading && !data ? (

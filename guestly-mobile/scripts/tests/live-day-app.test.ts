@@ -191,6 +191,10 @@ t("static: screens read live through the core and hide without it", () => {
   assert.ok(!/Alert\./.test(panel));
   const day = src("src/app/couple/(tools)/dayof.tsx");
   assert.ok(/liveView \? <ServerLivePanel/.test(day), "no live: the screen as before");
+  // One gold on the live screen: the Now diamond. Check-in glass, the bar ivory, the label and the runsheet link plain.
+  assert.ok(/kind=\{liveView \? "glass" : "primary"\}/.test(day), "Check-in is glass with the live panel");
+  assert.ok(/SectionLabel color=\{liveView \? undefined : colors\.goldLight\}/.test(day), "parties label loses its gold");
+  assert.ok(/\{liveView \? \(\s*\/\/[^\n]*\n\s*<Pressable accessibilityRole="button" accessibilityLabel=\{copy\.coupleDayOf\.open\}[^\n]*\n\s*<Row gap=\{4\}>\s*<T v="meta13" color=\{colors\.ivory70\}>/.test(day), "runsheet Open link is ivory with the live panel");
   const today = src("src/features/planner/LiveToday.tsx");
   assert.ok(/if \(!list \|\| !list\.length\) return null/.test(today), "no key or none live: nothing");
   assert.ok(!/<Gem/.test(today), "no diamond on the multi-wedding list");
