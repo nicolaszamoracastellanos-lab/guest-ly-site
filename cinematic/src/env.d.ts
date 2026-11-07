@@ -6,6 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_BOOKING_ENABLED: boolean;
   /** #50 switch (src/switches.ts). */
   readonly VITE_GUIDES_ENABLED: boolean;
-  /** Origin of the booking and guides API (https://app.guest-ly.com). */
+  /** Reviews tab switch (src/switches.ts). */
+  readonly VITE_REVIEWS_ENABLED: boolean;
+  /** Origin of the booking, guides and reviews API (https://app.guest-ly.com). */
   readonly VITE_GL_API_ORIGIN: string;
 }

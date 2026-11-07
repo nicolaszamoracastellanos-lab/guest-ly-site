@@ -65,7 +65,7 @@ export function copyClaimProblems({ copy, ld = [], blockedTerms = [] }) {
   return out;
 }
 
-/* The #22 and #50 dictionaries (src/booking, src/guides, src/privacy-extra.ts)
+/* The #22, #50 and Reviews dictionaries (src/booking, src/guides, src/reviews, src/privacy-extra.ts)
    are our own chrome with no demo chat in them, so every house rule applies
    (dashes, emoji, exclamation, buzzwords, brand spelling), plus the claim and
    button checks. dicts: { name: { en, es } }. */
@@ -94,7 +94,9 @@ export async function featureDicts() {
   const { guidesCopy } = await import('../src/guides/copy.ts');
   const { guidesHeadCopy } = await import('../src/guides/head-copy.ts');
   const { bookingPrivacyCopy, guidesPrivacyCopy } = await import('../src/privacy-extra.ts');
-  return { bookingCopy, bookCtaCopy, guidesCopy, guidesHeadCopy, bookingPrivacyCopy, guidesPrivacyCopy };
+  const { reviewsCopy } = await import('../src/reviews/copy.ts');
+  const { reviewsNavCopy } = await import('../src/reviews/head-copy.ts');
+  return { bookingCopy, bookCtaCopy, guidesCopy, guidesHeadCopy, bookingPrivacyCopy, guidesPrivacyCopy, reviewsCopy, reviewsNavCopy };
 }
 
 /* Glyph arrows the TSX writes itself, e.g. {`${label} →`}. files: [relPath, text]. */
@@ -164,6 +166,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exit(1);
   }
   console.log(
-    `check-copy-claims clean: EN and ES copy and ${ld.length} JSON-LD blocks, ${blockedTerms.length} blocked terms, no roadmap promise, no Zola sync claim, no generic button, no glyph arrow on a button or link (copy, TSX, ${pages.length} built pages); ${Object.keys(dicts).length} booking and guides dictionaries under every house rule`,
+    `check-copy-claims clean: EN and ES copy and ${ld.length} JSON-LD blocks, ${blockedTerms.length} blocked terms, no roadmap promise, no Zola sync claim, no generic button, no glyph arrow on a button or link (copy, TSX, ${pages.length} built pages); ${Object.keys(dicts).length} dictionaries (booking, guides, reviews) under every house rule`,
   );
 }

@@ -59,3 +59,42 @@ export function featureClaimProblems({ switches, home = '', privacy = '', assets
   }
   return out;
 }
+
+/* The Reviews tab (REVIEWS_ENABLED): reviews exist only at run time, read
+   from the API. Whatever the switch, the build itself may never carry a
+   review: no Reviews section or nav item in the prerendered pages, no
+   Review, AggregateRating or Rating in the JSON-LD, no rating claim in an AI
+   facts file, and no asset holding a test fixture's words. Off: no chunk,
+   no CSS and no asset calling the API. On: the chunk and the one read are
+   in the build. fixtures: strings from scripts/lib/reviews-stub.mjs. */
+export const REVIEW_CLAIM =
+  /\b\d(?:[.,]\d)? (?:out )?of 5\b|\b\d(?:[.,]\d)? (?:de 5|stars?|estrellas?)\b|\baggregate ?rating\b|\bratingValue\b|\b(?:customer|couple) reviews\b|\btestimonials?\b|\btestimonios?\b|\brese[ñn]as de (?:parejas|clientes)\b/iu;
+
+export function reviewsClaimProblems({ switches, home = '', pages = [], assets = [], css = [], ld = [], llms = [], fixtures = [] }) {
+  const out = [];
+  const label = 'Reviews tab (REVIEWS_ENABLED)';
+  for (const [name, html] of [['home page', home], ...pages]) {
+    if (/\bid="reviews"/.test(html)) out.push(`${label}: the prerendered ${name} holds the Reviews section (run time only)`);
+    if (/href="#reviews"/.test(html)) out.push(`${label}: the prerendered ${name} holds the Reviews nav item (run time only)`);
+  }
+  for (const s of ld) if (/^(Review|AggregateRating|Rating)$/.test(s) || REVIEW_CLAIM.test(s)) out.push(`${label}: the built JSON-LD holds a review or rating: ${s.slice(0, 90)}`);
+  for (const file of llms) {
+    file.text.split('\n').forEach((line, i) => {
+      if (REVIEW_CLAIM.test(line)) out.push(`${label}: ${file.name} line ${i + 1} claims reviews or a rating: ${line.trim().slice(0, 90)}`);
+    });
+  }
+  for (const a of [...assets, ...css]) {
+    for (const f of fixtures) if (f && a.text.includes(f)) out.push(`${label}: ${a.name} holds test fixture text "${f.slice(0, 40)}"`);
+  }
+  const chunk = assets.find((a) => /^ReviewsTab-/.test(a.name));
+  const reads = assets.some((a) => a.text.includes('/api/public/reviews'));
+  if (switches.reviews) {
+    if (!chunk) out.push(`${label} is on, but the build has no ReviewsTab chunk`);
+    if (!reads) out.push(`${label} is on, but no asset reads /api/public/reviews`);
+  } else {
+    if (chunk) out.push(`${label} is off, but the build has its chunk ${chunk.name}`);
+    if (reads) out.push(`${label} is off, but an asset calls /api/public/reviews`);
+    for (const c of css) if (/\.reviews-(score|stars|list)\b/.test(c.text)) out.push(`${label} is off, but ${c.name} holds its CSS`);
+  }
+  return out;
+}

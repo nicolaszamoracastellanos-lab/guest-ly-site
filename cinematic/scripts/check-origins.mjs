@@ -7,8 +7,9 @@
    - the site itself: the server under test, guest-ly.com, www.guest-ly.com;
    - app.guest-ly.com (src/switches.ts API_ORIGIN), only on the paths the
      landing calls: /api/public/booking/ (#22), /api/public/guides and what
-     is under it (#50, the catalogue and the request), and /api/site/t (#23
-     beacon). Any other path there fails;
+     is under it (#50, the catalogue and the request), /api/public/reviews
+     (the Reviews tab, one read per page view while REVIEWS_ENABLED) and
+     /api/site/t (#23 beacon). Any other path there fails;
    - alexnico.guest-ly.com/.netlify/functions/demo-chat, the hero's live
      demo chat (on typing only, never on load).
    Nothing else, so a new origin has to be added here, with its reason.
@@ -16,13 +17,15 @@
    --interact: on the home page, also opens the booking dialog (when the
    build has booking buttons), books the first time, and requests a guide
    (when it has the guides section). --fixtures answers the API inside the
-   browser from scripts/lib/booking-stub.mjs, so an interact run never
+   browser from scripts/lib/booking-stub.mjs and reviews-stub.mjs (so a
+   Reviews build shows its section), so an interact run never
    reaches the real host; the requests still count against the allowlist.
    Usage: node scripts/check-origins.mjs <baseUrl> [--interact [--fixtures]] [--report-only] */
 
 import { chromium } from 'playwright';
 import { API_ORIGIN, API_PATHS } from '../src/switches.ts';
 import { bookedBody, slotsBody, catalogueBody } from './lib/booking-stub.mjs';
+import { reviewsBody } from './lib/reviews-stub.mjs';
 
 const args = process.argv.slice(2);
 const base = args.find((a) => !a.startsWith('--')) || 'http://localhost:4173';
@@ -68,6 +71,7 @@ async function answerApi(route) {
   }
   if (u.pathname === '/api/public/guides') return route.fulfill({ status: 200, headers, json: catalogueBody('open') });
   if (u.pathname === '/api/public/guides/request') return route.fulfill({ status: 200, headers, json: { v: 1, ok: true, status: 'sent' } });
+  if (u.pathname === '/api/public/reviews') return route.fulfill({ status: 200, headers, json: reviewsBody('open', { limit: Number(u.searchParams.get('limit')) || 20 }) });
   return route.fulfill({ status: 204, headers });
 }
 

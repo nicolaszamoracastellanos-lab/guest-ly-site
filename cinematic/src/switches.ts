@@ -1,5 +1,5 @@
-/* Build-time switches for the two landing features whose server half lives on
-   app.guest-ly.com (Lane 7p). Plain constants with no browser or Vite
+/* Build-time switches for the landing features whose server half lives on
+   app.guest-ly.com (Lane 7p; the reviews API is Lane 6's). Plain constants with no browser or Vite
    globals, so vite.config.ts and the Node checks read the same values.
 
    BOOKING_ENABLED (#22 demo booking). false: the page keeps today's contact
@@ -25,16 +25,31 @@
 export const BOOKING_ENABLED: boolean = false;
 export const GUIDES_ENABLED: boolean = false;
 
-/* The one origin both features call. check-origins.mjs allows it, and only
+/* REVIEWS_ENABLED (the Reviews tab: reviews kept in Guest-ly, ANSWERS-NOV6
+   c-google; server half L6-LOG "Reviews API for the landing"). false: no
+   section, nav item, chunk, CSS or request in the build. true: after
+   hydration, at idle, the page reads GET /api/public/reviews once; only an
+   "open" answer with at least one review adds the section (before the final
+   call to action) and its nav item, plus the Review and AggregateRating
+   JSON-LD built from that answer. Zero reviews, "closed", "unavailable",
+   429, a network error or anything unreadable: nothing shows, nothing is
+   left behind. Nothing about reviews is ever prerendered (scripts/check-seo.mjs).
+   Going live: true here and rebuild, once the API is deployed with its
+   PUBLIC_PATHS proxy line and MW_PUBLIC_REVIEWS is released. */
+export const REVIEWS_ENABLED: boolean = false;
+
+/* The one origin these features call. check-origins.mjs allows it, and only
    these paths: a path ending in "/" covers what is under it, one without
    covers itself and what is under it (/api/public/guides is the guides
-   catalogue, /api/public/guides/request the request). */
+   catalogue, /api/public/guides/request the request, /api/public/reviews the
+   published reviews). */
 export const API_ORIGIN = 'https://app.guest-ly.com';
-export const API_PATHS = ['/api/public/booking/', '/api/public/guides'] as const;
+export const API_PATHS = ['/api/public/booking/', '/api/public/guides', '/api/public/reviews'] as const;
 
-export type Switches = { booking: boolean; guides: boolean; apiOrigin: string };
+export type Switches = { booking: boolean; guides: boolean; reviews: boolean; apiOrigin: string };
 
-/* Test builds may turn a switch on (GL_BOOKING_ENABLED=1, GL_GUIDES_ENABLED=1)
+/* Test builds may turn a switch on (GL_BOOKING_ENABLED=1, GL_GUIDES_ENABLED=1,
+   GL_REVIEWS_ENABLED=1)
    and point the API at a local stub (GL_API_ORIGIN=http://127.0.0.1:port).
    Any other origin is refused, so no build can send these requests to a
    third party. */
@@ -44,5 +59,10 @@ export function resolveSwitches(env: Record<string, string | undefined>): Switch
   if (apiOrigin !== API_ORIGIN && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(apiOrigin)) {
     throw new Error(`GL_API_ORIGIN must be ${API_ORIGIN} or a local http origin, not ${apiOrigin}`);
   }
-  return { booking: on(env.GL_BOOKING_ENABLED, BOOKING_ENABLED), guides: on(env.GL_GUIDES_ENABLED, GUIDES_ENABLED), apiOrigin };
+  return {
+    booking: on(env.GL_BOOKING_ENABLED, BOOKING_ENABLED),
+    guides: on(env.GL_GUIDES_ENABLED, GUIDES_ENABLED),
+    reviews: on(env.GL_REVIEWS_ENABLED, REVIEWS_ENABLED),
+    apiOrigin,
+  };
 }

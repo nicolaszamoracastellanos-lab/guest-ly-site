@@ -20,6 +20,7 @@ import { Footer } from './Footer';
 import { Wizard } from './Wizard';
 import { BookingProvider } from '../booking/BookingContext';
 import { GuidesSection } from '../guides/GuidesSection';
+import { ReviewsSlot } from '../reviews/ReviewsSlot';
 import './overlay.css';
 
 interface WizardRequest {
@@ -81,7 +82,9 @@ export function Overlay() {
           <Nav />
           {/* Wave 5.1 order: hero + marquee, scenarios, pillars, channels,
               platform tour, coordinator spotlight, how stepper, compare,
-              pricing, founding, guides (#50, while GUIDES_ENABLED), faq, final CTA. */}
+              pricing, founding, guides (#50, while GUIDES_ENABLED), faq,
+              reviews (while REVIEWS_ENABLED, added at run time only when
+              there are published reviews), final CTA. */}
           <main id="main">
             <Hero />
             <Scenarios />
@@ -95,6 +98,7 @@ export function Overlay() {
             <Founding />
             {import.meta.env.VITE_GUIDES_ENABLED && <GuidesSection />}
             <Faq />
+            {import.meta.env.VITE_REVIEWS_ENABLED && <ReviewsSlot />}
             <FinalCta />
           </main>
           <Footer />

@@ -3,11 +3,17 @@
    "Empezar mi pedido") must fit at every desktop width. Fails when any nav
    child's right edge passes the row's content box, the primary button leaves
    the viewport, or the page scrolls sideways. Also checks 390 (burger row).
-   Usage: node scripts/check-nav-fit.mjs [baseUrl]   (default http://localhost:5199) */
+   --reviews: for a build with REVIEWS_ENABLED on. The reviews read is
+   answered inside the browser (scripts/lib/reviews-stub.mjs, never the real
+   API) and every view waits for the "Reviews" / "Reseñas" link, so the row
+   is measured with its seventh link.
+   Usage: node scripts/check-nav-fit.mjs [baseUrl] [--reviews]   (default http://localhost:5199) */
 
 import { chromium } from 'playwright';
+import { reviewsBody } from './lib/reviews-stub.mjs';
 
-const base = process.argv[2] || 'http://localhost:5199';
+const base = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://localhost:5199';
+const reviews = process.argv.includes('--reviews');
 const WIDTHS = [390, 1200, 1240, 1280, 1366, 1440];
 const browser = await chromium.launch();
 const problems = [];
@@ -25,8 +31,16 @@ for (const lang of ['en', 'es']) {
         },
         [theme, lang],
       );
+      if (reviews)
+        await ctx.route('**/api/public/reviews**', (route) =>
+          route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*' }, json: reviewsBody('open') }),
+        );
       await page.goto(base, { waitUntil: 'networkidle' });
       await page.evaluate(() => document.fonts.ready);
+      if (reviews) {
+        const link = await page.waitForFunction(() => document.querySelector('a[href="#reviews"]'), null, { timeout: 8000 }).catch(() => null);
+        if (!link) problems.push(`${lang} ${theme} ${width}: the Reviews link never showed`);
+      }
       const r = await page.evaluate(() => {
         const inner = document.querySelector('.nav__inner');
         const box = inner.getBoundingClientRect();
@@ -59,4 +73,4 @@ if (problems.length) {
   console.error(`\ncheck-nav-fit FAILED: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-nav-fit clean: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row`);
+console.log(`check-nav-fit clean${reviews ? ' with the Reviews link' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row`);

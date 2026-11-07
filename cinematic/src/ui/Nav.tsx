@@ -4,6 +4,8 @@ import { useWizard } from './WizardContext';
 import { useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
 import { BookCta } from '../booking/BookingContext';
+import { useReviewsShown } from '../reviews/state';
+import { reviewsNavCopy } from '../reviews/head-copy';
 
 function SunIcon() {
   return (
@@ -71,8 +73,12 @@ function LangToggle({ className }: { className?: string }) {
 }
 
 export function Nav() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { open } = useWizard();
+  /* The Reviews tab: last in both link lists, only once the section is on
+     the page (src/reviews/state.tsx adds them together). */
+  const reviewsShown = useReviewsShown();
+  const reviews = import.meta.env.VITE_REVIEWS_ENABLED && reviewsShown ? reviewsNavCopy[lang].label : null;
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -112,6 +118,7 @@ export function Nav() {
               {l.label}
             </a>
           ))}
+          {reviews ? <a href="#reviews">{reviews}</a> : null}
         </nav>
 
         <div className="nav__actions">
@@ -150,6 +157,11 @@ export function Nav() {
               {l.label}
             </a>
           ))}
+          {reviews ? (
+            <a href="#reviews" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>
+              {reviews}
+            </a>
+          ) : null}
           <a href={t.nav.login.href} className="nav__menu-login" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>
             {t.nav.login.label}
           </a>

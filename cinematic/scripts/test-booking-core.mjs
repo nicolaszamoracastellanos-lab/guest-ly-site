@@ -32,7 +32,7 @@ const ORIGIN = 'https://app.guest-ly.com';
 eq('BOOKING_ENABLED ships false', BOOKING_ENABLED, false);
 eq('GUIDES_ENABLED ships false', GUIDES_ENABLED, false);
 eq('API origin', API_ORIGIN, ORIGIN);
-eq('no env: both off', resolveSwitches({}), { booking: false, guides: false, apiOrigin: ORIGIN });
+eq('no env: all off', resolveSwitches({}), { booking: false, guides: false, reviews: false, apiOrigin: ORIGIN });
 eq('test env turns them on', resolveSwitches({ GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: 'true' }).booking, true);
 eq('local stub origin allowed', resolveSwitches({ GL_API_ORIGIN: 'http://localhost:5310' }).apiOrigin, 'http://localhost:5310');
 let refused = false;

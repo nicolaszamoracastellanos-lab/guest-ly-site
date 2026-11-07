@@ -51,6 +51,14 @@ const port = server.address().port;
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ colorScheme: 'dark', reducedMotion: 'reduce' });
+/* The Reviews tab is run time only: the snapshot must never hold a review,
+   a rating or its JSON-LD (scripts/check-seo.mjs fails the build if it
+   does). The page skips the read when it sees this flag, and the read is
+   refused here as well. */
+await ctx.addInitScript(() => {
+  window.__glPrerender = true;
+});
+await ctx.route('**/api/public/reviews**', (route) => route.abort());
 
 /* GitHub Pages answers /privacy with a 301 to /privacy/, so the canonical
    address of every page but the home page ends in a slash. */

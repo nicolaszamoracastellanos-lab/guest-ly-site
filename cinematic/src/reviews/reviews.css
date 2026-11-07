@@ -1,0 +1,92 @@
+/* The Reviews section (lazy chunk, with ReviewsSection.tsx). The cards reuse
+   the origin story's proof cards (overlay.css .proof-grid, .proof__*). */
+
+.reviews-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2rem);
+}
+
+.reviews-score__num {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: clamp(1.9rem, 3.6vw, 2.4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviews-score__text {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviews-stars {
+  display: inline-flex;
+  gap: 0.15rem;
+  color: var(--accent-text);
+}
+
+.reviews-stars svg {
+  display: block;
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.review .reviews-stars svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.reviews-star__line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.reviews-star__fill {
+  fill: currentColor;
+}
+
+/* .proof-grid is a div grid; here it is a list. Each card is as tall as
+   its own words (a short review leaves no empty band). */
+.reviews-list {
+  list-style: none;
+  margin-top: 0;
+  padding: 0;
+  align-items: start;
+}
+
+.review__figure {
+  margin: 0;
+}
+
+.review__rating {
+  display: inline-flex;
+  width: max-content;
+  margin-bottom: 0.9rem;
+}
+
+.review__text {
+  margin: 0 0 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+
+.review .proof__who {
+  margin-top: 0;
+}
+
+.review .proof__names {
+  overflow-wrap: anywhere;
+}
+
+.reviews-note {
+  margin-top: 1.2rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}

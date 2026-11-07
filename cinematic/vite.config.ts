@@ -33,8 +33,8 @@ const SITE_BEACON_URL = process.env.VITE_SITE_BEACON_URL ?? ''
    builds the page with fixture shots in a temp folder this way). */
 const LIVE_SCREENS_MODULE = process.env.GL_LIVE_SCREENS_MODULE ?? ''
 
-/* #22 DEMO BOOKING and #50 DESTINATION GUIDES: the switches live in
-   src/switches.ts (both false today). They are written into the build as
+/* #22 DEMO BOOKING, #50 DESTINATION GUIDES and the REVIEWS tab: the switches
+   live in src/switches.ts (all false today). They are written into the build as
    literals, so a switch that is off removes its components, its lazy chunk
    and every request to the API. The guides themselves are never in the
    build: the section reads them from the API's catalogue (D24). */
@@ -42,12 +42,14 @@ const SWITCHES = resolveSwitches(process.env)
 
 /* A switch that is off also drops its stylesheet: a CSS import is a side
    effect, so the bundler would keep it even after the component is gone.
-   CSS imported from src/booking/ or src/guides/ resolves to an empty module
+   CSS imported from src/booking/, src/guides/ or src/reviews/ resolves to an empty module
    while that feature's switch is off. */
 function featureCss(): Plugin {
   const EMPTY = '\0gl-feature-off.css'
   const off = (importer: string) =>
-    (!SWITCHES.booking && /[\\/]src[\\/]booking[\\/]/.test(importer)) || (!SWITCHES.guides && /[\\/]src[\\/]guides[\\/]/.test(importer))
+    (!SWITCHES.booking && /[\\/]src[\\/]booking[\\/]/.test(importer)) ||
+    (!SWITCHES.guides && /[\\/]src[\\/]guides[\\/]/.test(importer)) ||
+    (!SWITCHES.reviews && /[\\/]src[\\/]reviews[\\/]/.test(importer))
   return {
     name: 'guestly-feature-css',
     enforce: 'pre',
@@ -71,6 +73,7 @@ export default defineConfig({
     'import.meta.env.VITE_SITE_BEACON_URL': JSON.stringify(SITE_BEACON_URL),
     'import.meta.env.VITE_BOOKING_ENABLED': JSON.stringify(SWITCHES.booking),
     'import.meta.env.VITE_GUIDES_ENABLED': JSON.stringify(SWITCHES.guides),
-    'import.meta.env.VITE_GL_API_ORIGIN': JSON.stringify(SWITCHES.booking || SWITCHES.guides ? SWITCHES.apiOrigin : ''),
+    'import.meta.env.VITE_REVIEWS_ENABLED': JSON.stringify(SWITCHES.reviews),
+    'import.meta.env.VITE_GL_API_ORIGIN': JSON.stringify(SWITCHES.booking || SWITCHES.guides || SWITCHES.reviews ? SWITCHES.apiOrigin : ''),
   },
 })
