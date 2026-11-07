@@ -85,6 +85,21 @@ export function mealLine(m: MealTotals, noChoice: string): string {
   return parts.join(", ");
 }
 
+/** "6 November" / "6 de noviembre" for `locked_at`, an instant (timestamptz),
+ *  in the phone's zone like the web's LocalTime. Never the first 10 characters
+ *  of the ISO string: a lock at 20:30 in La Paz is already the next day in UTC.
+ *  `timeZone` is for tests; the app passes none. */
+export function lockedDay(at: string | null, lang: "en" | "es", timeZone?: string): string {
+  if (!at) return "";
+  const d = new Date(at);
+  if (Number.isNaN(d.getTime())) return "";
+  try {
+    return d.toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { day: "numeric", month: "long", ...(timeZone ? { timeZone } : {}) });
+  } catch {
+    return "";
+  }
+}
+
 /** The count as it shows the moment the person taps Lock or Unlock. Unlocking
  *  cannot know the due state the server will compute, so it keeps the one
  *  from before the lock when there is one. */

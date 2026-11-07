@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { countBadge, mealLine, optimisticCount, readFinalCount, runCountLock, type FinalCount } from "../../src/features/finalcount/core.ts";
+import { countBadge, lockedDay, mealLine, optimisticCount, readFinalCount, runCountLock, type FinalCount } from "../../src/features/finalcount/core.ts";
 import { FINAL_COUNT_COPY } from "../../src/features/finalcount/copy.ts";
 import { attendsFor, missingPerPerson, perPersonOn, personAnswersToSend, type Question } from "../../src/features/guest/rsvp.ts";
 import { guestSeenAt, listNames, readGuestSeen, readRunsheetSeen, seenWhen, shouldStamp, viewerLabel, whenText } from "../../src/features/seen/core.ts";
@@ -73,6 +73,21 @@ await test("#1 the badge is an icon and a word for every state (never color alon
 
 await test("#1 menu line: counts above zero, then no choice yet", () => {
   assert.equal(mealLine(readFinalCount({ final_count: FC_WIRE })!.meals[0], "No choice yet"), "Beef 40, Fish 12, No choice yet 3");
+});
+
+await test("#1 'Locked {date}' is the day of the instant in the viewer's zone, not the UTC date", () => {
+  // Locked at 20:30 in La Paz on Nov 5 = 00:30 UTC on Nov 6 (what the portal sends).
+  const at = "2026-11-06T00:30:00+00:00";
+  assert.equal(lockedDay(at, "en", "America/La_Paz"), "5 November");
+  assert.equal(lockedDay(at, "es", "America/La_Paz"), "5 de noviembre");
+  assert.equal(lockedDay(at, "en", "UTC"), "6 November");
+  assert.equal(lockedDay("2026-11-05T13:00:00Z", "es", "America/La_Paz"), "5 de noviembre");
+  assert.equal(lockedDay(null, "en"), "");
+  assert.equal(lockedDay("not a date", "en"), "");
+  // The card formats locked_at through it, never by slicing the ISO string.
+  const card = src("src/features/finalcount/FinalCountCard.tsx");
+  assert.match(card, /lockedDayOf\(fc\.locked_at, lang\)/);
+  assert.doesNotMatch(card, /locked_at\.slice\(/);
 });
 
 await test("#1 optimistic lock and unlock", () => {

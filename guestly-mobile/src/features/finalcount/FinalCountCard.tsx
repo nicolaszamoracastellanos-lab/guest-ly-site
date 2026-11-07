@@ -16,7 +16,7 @@ import { dayMonth } from "@/features/guest/format";
 import { Button, Card, Icon, Row, Stack, T, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { FINAL_COUNT_COPY } from "./copy";
-import { countBadge, mealLine, readFinalCount, runCountLock, type FinalCount } from "./core";
+import { countBadge, lockedDay as lockedDayOf, mealLine, readFinalCount, runCountLock, type FinalCount } from "./core";
 
 const TONE = { green: colors.greenText, red: colors.red, amber: colors.amber, mute: colors.ivory55 } as const;
 
@@ -35,7 +35,8 @@ export function FinalCountCard({ data, online }: { data: unknown; online: boolea
       : b.key === "upcoming"
         ? fmt(c.badges.upcoming, { n: b.days ?? 0 })
         : c.badges[b.key];
-  const lockedDay = fc.locked_at ? dayMonth(fc.locked_at.slice(0, 10), lang) : "";
+  // locked_at is an instant: the day it was in this phone's zone, as on the web.
+  const lockedDay = lockedDayOf(fc.locked_at, lang);
   const line = fc.state === "locked" ? (lockedDay ? (fc.locked_by ? fmt(c.lockedOnBy, { date: lockedDay, name: fc.locked_by }) : fmt(c.lockedOn, { date: lockedDay })) : null) : fc.due ? fmt(c.dueOn, { date: dayMonth(fc.due, lang) }) : null;
   const meals = fc.meals.map((m) => ({ id: m.id, label: m.label, line: mealLine(m, c.noChoice) })).filter((m) => m.line);
 
