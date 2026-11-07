@@ -19,7 +19,8 @@ import type { Reviews } from './core';
      waits.
    - Asked for by the address (/#reviews opened or shared, or a later change
      of the hash to it): it goes in as soon as the answer is ready, wherever
-     its place is, and the page scrolls to it. A wheel, touch or key first
+     its place is (moving nothing, as above), and two frames later the page
+     scrolls to it. A wheel, touch or key first
      means the visitor moved on: the rules above apply.
    - A reload or Back/Forward keeps the old address while the browser puts
      the visitor's own scroll back, so the address alone does not ask then.
@@ -57,20 +58,9 @@ function place(scrolling: boolean): boolean {
   const at = document.querySelector('[data-sec="final"]');
   if (!ready || !at || html.classList.contains('menu-locked') || html.classList.contains('wizard-locked')) return false;
   const next = ready;
-  if (asked) {
-    ready = null;
-    flushSync(() => {
-      shown = next;
-      subs.forEach((f) => f());
-    });
-    /* Asked for, so this scroll is the visitor's, not a shift. */
-    document.getElementById('reviews')?.scrollIntoView({ block: 'start' });
-    noteWhere?.(AT);
-    return true;
-  }
   const top = at.getBoundingClientRect().top;
   const below = top >= innerHeight;
-  if (!below && (top > 0 || scrolling)) return false;
+  if (!asked && !below && (top > 0 || scrolling)) return false;
   ready = null;
   /* The browser's own scroll anchoring stays out of it for a moment, so the
      one correction below is the only one. */
@@ -79,9 +69,20 @@ function place(scrolling: boolean): boolean {
     shown = next;
     subs.forEach((f) => f());
   });
+  /* Below the screen nothing seen moves; otherwise the page scrolls by the
+     section's height in the same frame, so what follows stays put. */
   if (!below) window.scrollBy(0, at.getBoundingClientRect().top - top);
-  requestAnimationFrame(() => requestAnimationFrame(() => html.style.removeProperty('overflow-anchor')));
-  noteWhere?.(AT);
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      /* Asked for: the jump to the section comes two frames after it went
+         in, as a plain scroll with nothing moving inside the page. In the
+         same task as the insert, the browser scores the final call to
+         action and the footer as shifted (CLS 0.8 at 1440). */
+      if (asked) document.getElementById('reviews')?.scrollIntoView({ block: 'start' });
+      html.style.removeProperty('overflow-anchor');
+      noteWhere?.(AT);
+    }),
+  );
   return true;
 }
 

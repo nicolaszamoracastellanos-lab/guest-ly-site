@@ -17,7 +17,7 @@
 
 import { chromium } from 'playwright';
 import { reviewsBody } from './lib/reviews-stub.mjs';
-import { MENU_VIEWS, menuProblems } from './lib/menu-fit.mjs';
+import { FOCUS_VIEWS, MENU_VIEWS, menuFocusProblems, menuProblems } from './lib/menu-fit.mjs';
 
 const base = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'http://localhost:5199';
 const reviews = process.argv.includes('--reviews');
@@ -75,6 +75,7 @@ for (const lang of ['en', 'es']) {
   }
 }
 let menus = 0;
+let keys = 0;
 for (const lang of ['en', 'es']) {
   for (const [width, height] of MENU_VIEWS) {
     const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce', isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
@@ -95,6 +96,28 @@ for (const lang of ['en', 'es']) {
     menus++;
     await ctx.close();
   }
+  /* Keyboard through a menu that scrolls: every focused item clear of the bar. */
+  for (const [width, height] of FOCUS_VIEWS) {
+    const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await page.addInitScript((l) => localStorage.setItem('guestly-lang', l), lang);
+    if (reviews)
+      await ctx.route('**/api/public/reviews**', (route) =>
+        route.fulfill({ status: 200, headers: { 'Access-Control-Allow-Origin': '*' }, json: reviewsBody('open') }),
+      );
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.evaluate(() => document.fonts.ready);
+    const where = `menu keys ${lang} ${width}x${height}`;
+    if (reviews && !(await page.waitForSelector('.nav__menu-links a[href="#reviews"]', { state: 'attached', timeout: 8000 }).catch(() => null)))
+      problems.push(`${where}: the Reviews link never showed`);
+    await page.locator('.nav__burger').click();
+    await page.waitForTimeout(300);
+    const f = await menuFocusProblems(page);
+    if (!f.scrolled) problems.push(`${where}: the menu does not scroll here, so the check proves nothing`);
+    for (const p of f.problems) problems.push(`${where}: ${p}`);
+    keys++;
+    await ctx.close();
+  }
 }
 await browser.close();
 
@@ -103,4 +126,4 @@ if (problems.length) {
   console.error(`\ncheck-nav-fit FAILED: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-nav-fit clean${reviews ? ' with the Reviews link (menu only)' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row; ${menus} phone menus (${MENU_VIEWS.map((v) => v.join('x')).join(', ')}, EN and ES) clear of the bar with the order button reachable`);
+console.log(`check-nav-fit clean${reviews ? ' with the Reviews link (menu only)' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row; ${menus} phone menus (${MENU_VIEWS.map((v) => v.join('x')).join(', ')}, EN and ES) clear of the bar with the order button reachable; ${keys} keyboard walks (Tab down, Shift+Tab back) at ${FOCUS_VIEWS.map((v) => v.join('x')).join(', ')}, EN and ES, every focused item clear of the bar`);

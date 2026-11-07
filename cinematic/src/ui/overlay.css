@@ -444,6 +444,10 @@ body.js-ready .reveal.is-visible {
   justify-content: flex-start;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* A link focused while scrolled out of view (Shift+Tab on a landscape
+     phone or a zoomed laptop) is brought in below the solid bar (65px),
+     never under it. */
+  scroll-padding-block: 5rem 1rem;
   gap: 2.5rem;
   padding: 5.5rem 24px 3rem;
   background: var(--scrim-menu);

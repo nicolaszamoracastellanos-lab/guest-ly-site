@@ -64,7 +64,7 @@ import { chromium } from 'playwright';
 import { startReviewsStub, REVIEWS } from './lib/reviews-stub.mjs';
 import { buildSite, serveDir } from './lib/temp-site.mjs';
 import { INITIAL_JS_BUDGET, initialJs } from './lib/initial-js.mjs';
-import { MENU_VIEWS, menuProblems } from './lib/menu-fit.mjs';
+import { FOCUS_VIEWS, MENU_VIEWS, menuFocusProblems, menuProblems } from './lib/menu-fit.mjs';
 
 const failures = [];
 let checks = 0;
@@ -236,6 +236,20 @@ for (const lang of ['en', 'es'])
     check(p.length === 0, `B menu ${lang} ${width}x${height}: ${p.join('; ')}`);
     await ctx.close();
   }
+/* Review round 3: Tab down and Shift+Tab back up a menu that scrolls; no
+   focused item under the solid bar (WCAG 2.4.11). */
+for (const lang of ['en', 'es'])
+  for (const [width, height] of FOCUS_VIEWS) {
+    const { ctx, page } = await open(on.url, { width, height, lang });
+    await page.waitForSelector('.nav__menu-links a[href="#reviews"]', { state: 'attached', timeout: 8000 }).catch(() => {});
+    await page.locator('.nav__burger').click();
+    await page.waitForTimeout(400);
+    const f = await menuFocusProblems(page);
+    check(f.scrolled, `B keys ${lang} ${width}x${height}: the menu does not scroll, the check proves nothing`);
+    check(f.steps >= 14, `B keys ${lang} ${width}x${height}: only ${f.steps} focus steps in the menu`);
+    check(f.problems.length === 0, `B keys ${lang} ${width}x${height}: ${f.problems.join('; ')}`);
+    await ctx.close();
+  }
 
 /* C. */
 for (const [mode, score, note] of [
@@ -370,6 +384,25 @@ for (const [width, lang] of [[390, 'es'], [1440, 'en'], [1440, 'es']]) {
   await settle(page);
   const top = await headerAtTop(page);
   check(Math.abs(top - 80) < 40, `K ${lang} ${width}: /#reviews left the section at ${top}px`);
+  const c = await cls(page);
+  await ctx.close();
+  /* The same address on the off build: what the page shifts without the
+     tab (ES at 1440 shifts 0.0311 as the Spanish words replace the English
+     snapshot at start, before any review; carried, not this tab's). */
+  const o = await open(off.url, { width, height: width < 500 ? 844 : 900, touch: width < 500, lang, path: '/#reviews' });
+  await o.page.waitForTimeout(1200);
+  const base = await cls(o.page);
+  await o.ctx.close();
+  check(c - base < 0.001, `K ${lang} ${width}: /#reviews layout shift ${c} (off build ${base})`);
+}
+/* Review round 3: the deep link at the widths where the final CTA and the
+   footer were scored as moved (CLS 0.9 and 0.8958). */
+for (const [width, height] of [[1200, 800], [1024, 768]]) {
+  const { ctx, page } = await open(on.url, { width, height, path: '/#reviews' });
+  await settle(page);
+  const top = await headerAtTop(page);
+  const c = await cls(page);
+  check(Math.abs(top - 80) < 40 && c < 0.001, `K ${width}x${height}: /#reviews section at ${top}px, layout shift ${c}`);
   await ctx.close();
 }
 {
@@ -383,6 +416,8 @@ for (const [width, lang] of [[390, 'es'], [1440, 'en'], [1440, 'es']]) {
   await settle(page);
   const top = await headerAtTop(page);
   check(Math.abs(top - 80) < 40, `K reload after the menu link (390): section at ${top}px`);
+  const c = await cls(page);
+  check(c < 0.001, `K reload after the menu link (390): layout shift ${c}`);
   await ctx.close();
 }
 {
@@ -393,6 +428,8 @@ for (const [width, lang] of [[390, 'es'], [1440, 'en'], [1440, 'es']]) {
   await settle(page);
   const top = await headerAtTop(page);
   check(Math.abs(top - 80) < 40, `K reload right after the deep link (1440): section at ${top}px`);
+  const c = await cls(page);
+  check(c < 0.001, `K reload right after the deep link (1440): layout shift ${c}`);
   await ctx.close();
 }
 /* Review round 2: the visitor moved on, the address still says #reviews. */
@@ -447,6 +484,8 @@ for (const width of [390, 1440]) {
   await settle(page);
   const top = await headerAtTop(page);
   check(Math.abs(top - 80) < 40, `K hashchange before the answer: section at ${top}px`);
+  const c = await cls(page);
+  check(c < 0.001, `K hashchange before the answer: layout shift ${c}`);
   await ctx.close();
 }
 {
