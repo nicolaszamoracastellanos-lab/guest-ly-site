@@ -99,6 +99,9 @@ t("static: live screens pass their slug; preview marks send nothing; copy EN/ES"
     assert.ok(DAYOF_COPY.en[k] && DAYOF_COPY.es[k], k);
     for (const l of ["en", "es"] as const) assert.ok(!/[–—!]/.test(DAYOF_COPY[l][k]), `${l}.${k}`);
   }
+  // In a preview the banner gives the time: no real "Updated" time beside it on either live screen.
+  assert.ok(/\{preview \? null : \(\s*<T[^>]*>\s*\{fmt\(c\.updated/.test(sl), "ServerLive: Updated hidden in a preview");
+  assert.ok(ld.includes("previewOn ? null : fmt(c.updated"), "LiveDay: Updated hidden in a preview");
   // Never persisted: the store has no storage import.
   assert.ok(!/AsyncStorage|SecureStore/.test(src("src/features/dayof/previewClock.ts")));
 });

@@ -236,7 +236,7 @@ export function LiveDay({ role, slug }: { role: Role; slug: string }) {
     <Screen header={header} refresh={() => refresh()}>
       <T v="screen" accessibilityRole="header">{c.title}</T>
       <T v="meta13" color={colors.ivory55} style={{ marginTop: 6 }}>
-        {[dayLabel(showDay, lang), fmt(c.updated, { time: savedTime })].join(" · ")}
+        {[dayLabel(showDay, lang), previewOn ? null : fmt(c.updated, { time: savedTime })].filter(Boolean).join(" · ")}
       </T>
       {bannerNode ? <View style={{ marginTop: 14 }}>{bannerNode}</View> : null}
       <PreviewBanner slug={slug} now={now} timeZone={tz} />

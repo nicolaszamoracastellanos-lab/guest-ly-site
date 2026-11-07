@@ -110,10 +110,13 @@ export function ServerLivePanel({ view, canEdit, onOverlay, preview = false }: {
 
   return (
     <View style={{ marginTop: 16 }} testID="dayof-live">
-      <T v="meta13" color={colors.ivory55} style={styles.tnum}>
-        {fmt(c.updated, { time: venue(instantLabel(view.receivedAt, tz, lang)) })}
-      </T>
-      <Row gap={10} style={{ marginTop: 14 }}>
+      {/* In a preview the banner gives the time; a real "Updated" time beside it reads as a contradiction. */}
+      {preview ? null : (
+        <T v="meta13" color={colors.ivory55} style={styles.tnum}>
+          {fmt(c.updated, { time: venue(instantLabel(view.receivedAt, tz, lang)) })}
+        </T>
+      )}
+      <Row gap={10} style={{ marginTop: preview ? 0 : 14 }}>
         <Gem size={9} />
         <T v="body16" color={colors.ivory}>{c.now}</T>
       </Row>
