@@ -3,10 +3,14 @@
 // its own, like the widget sync.
 //
 // When: on mount, whenever the app comes to the foreground, when the network
-// comes back (D5: a silent refresh, then one toast only if the timeline
-// changed) and on a one-minute check while in the foreground; refreshDue keeps
-// it to one request per 15 minutes per wedding, inside the 7 days before the
-// wedding. The pack never downloads in the background (no background modes).
+// comes back (D5: held 3 s so a flap is not a reconnect; a silent refresh,
+// then one toast only if the open wedding's timeline changed) and on a
+// one-minute check while in the foreground; refreshDue keeps it to one
+// request per 15 minutes per wedding, inside the 7 days before the wedding.
+// A reconnect skips the 15 minutes after a good answer only: the 7 days and
+// the wait after a 404 still hold. The open wedding goes first. The pack
+// never downloads in the background (no background modes). Packs of weddings
+// the person no longer holds are deleted (D4.8, sweepPacks).
 
 import { useCallback, useEffect, useRef } from "react";
 import { AppState } from "react-native";
@@ -14,19 +18,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { onlineManager, useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang } from "@/i18n";
-import { useOnline } from "@/lib/query";
 import { featureOn, useGuestSession, useUserSession } from "@/lib/session";
 import { usePlannerHome } from "@/lib/hooks";
 import { registerScopedReset } from "@/lib/scope";
 import { subscribeDrain } from "@/lib/queue";
 import { toast, toastError } from "@/ui";
 import { DAYOF_COPY } from "./copy";
-import { DAY_PACK_FLAG, useDayPack, usePackOwner } from "./hooks";
-import { fetchPack, lastChecked, loadPack, type PackKind } from "./packStore";
+import { DAY_PACK_FLAG, useDayPack, usePackOwner, useSettledOnline } from "./hooks";
+import { fetchPack, lastChecked, lastMissAt, loadPack, sweepPacks, type PackKind } from "./packStore";
 import { dayBeforePrompt, lastUsefulDay, refreshDue, type GuestPack } from "./packCore";
 import { instantOf, serviceDayOf, usableTimeZone, wallClockAt } from "./live";
 
-type Target = { kind: PackKind; slug: string; weddingDate: string | null; names: string };
+type Target = { kind: PackKind; slug: string; weddingDate: string | null; names: string; open: boolean };
+
+/** Why the loop runs: the regular check (mount, foreground, every minute) or the network coming back. */
+type Trigger = "check" | "reconnect";
 
 function deviceZone(): string {
   try {
@@ -37,7 +43,7 @@ function deviceZone(): string {
 }
 
 /** One wedding: fetch its pack when D2 says so. Returns the timeline changes of a fresh save (null otherwise). */
-async function maybeRefresh(owner: string, t: Target, force: boolean): Promise<number | null> {
+async function maybeRefresh(owner: string, t: Target, trigger: Trigger): Promise<number | null> {
   const saved = await loadPack(owner, t.kind, t.slug);
   const meta = saved?.pack.meta ?? null;
   const tz = usableTimeZone(meta?.tz ?? deviceZone());
@@ -49,8 +55,9 @@ async function maybeRefresh(owner: string, t: Target, force: boolean): Promise<n
     weddingDate: meta?.wedding_date ?? t.weddingDate,
     lastUseful: meta ? lastUsefulDay(meta) : null,
     lastCheckedAt: await lastChecked(owner, t.slug),
+    lastMissAt: await lastMissAt(owner, t.slug),
     now: Date.now(),
-    force,
+    reconnect: trigger === "reconnect",
   });
   if (!due || !onlineManager.isOnline()) return null;
   const r = await fetchPack(owner, t.kind, t.slug);
@@ -114,28 +121,50 @@ registerScopedReset(async () => {
 
 // ---------------------------------------------------------------- the loop
 
-function useRefreshLoop(targets: Target[], enabled: boolean) {
+/** The scheduled evening-before reminder of a wedding whose pack was swept goes too (it names the couple). */
+async function cancelPrompts(owner: string, slugs: string[]) {
+  for (const slug of slugs) {
+    await Notifications.cancelScheduledNotificationAsync(`${PROMPT_PREFIX}${slug}`).catch(() => {});
+    await AsyncStorage.removeItem(promptKey(owner, slug)).catch(() => {});
+  }
+}
+
+/**
+ * `held`: every wedding the person holds now, or null while that list is not
+ * known yet (a planner's home still loading). Only a known list sweeps.
+ */
+function useRefreshLoop(targets: Target[], enabled: boolean, held: readonly string[] | null) {
   const owner = usePackOwner();
   const { lang } = useLang();
   useEffect(() => {
     promptLang = lang;
   }, [lang]);
-  const online = useOnline();
+  const online = useSettledOnline();
   const wasOnline = useRef(online);
-  const key = targets.map((t) => `${t.kind}:${t.slug}:${t.weddingDate ?? ""}`).join("|");
+  const key = targets.map((t) => `${t.kind}:${t.slug}:${t.weddingDate ?? ""}:${t.open ? 1 : 0}`).join("|");
   const latest = useRef(targets);
+  const heldRef = useRef(held);
   useEffect(() => {
-    latest.current = targets;
+    // The open wedding first: its refresh never waits behind the others.
+    latest.current = [...targets].sort((a, b) => Number(b.open) - Number(a.open));
+    heldRef.current = held;
   });
   const run = useCallback(
-    async (force: boolean, announce: boolean) => {
-      if (!enabled || !owner) return;
+    async (trigger: Trigger) => {
+      if (!owner) return;
+      const keep = heldRef.current;
+      if (keep) {
+        const swept = await sweepPacks(owner, new Set(keep));
+        if (swept.length) void cancelPrompts(owner, swept);
+      }
+      if (!enabled) return;
       let changes = 0;
       for (const t of latest.current) {
-        const n = await maybeRefresh(owner, t, force).catch(() => null);
-        changes += n ?? 0;
+        const n = await maybeRefresh(owner, t, trigger).catch(() => null);
+        // Only the open wedding's changes are told: a count across weddings names none of them.
+        if (t.open) changes += n ?? 0;
       }
-      if (announce && changes > 0) {
+      if (trigger === "reconnect" && changes > 0) {
         const c = DAYOF_COPY[lang];
         toast(changes === 1 ? c.updatedChange : fmt(c.updatedChanges, { n: changes }), { icon: "info" });
       }
@@ -143,12 +172,12 @@ function useRefreshLoop(targets: Target[], enabled: boolean) {
     [enabled, owner, lang]
   );
   useEffect(() => {
-    void run(false, false);
+    void run("check");
     const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") void run(false, false);
+      if (s === "active") void run("check");
     });
     const timer = setInterval(() => {
-      if (AppState.currentState === "active") void run(false, false);
+      if (AppState.currentState === "active") void run("check");
     }, 60_000);
     return () => {
       sub.remove();
@@ -156,8 +185,8 @@ function useRefreshLoop(targets: Target[], enabled: boolean) {
     };
   }, [run, key]);
   useEffect(() => {
-    // Back online: refresh now and say what changed, once.
-    if (online && !wasOnline.current) void run(true, true);
+    // Back online (held 3 s): refresh what is due and say what changed, once.
+    if (online && !wasOnline.current) void run("reconnect");
     wasOnline.current = online;
   }, [online, run]);
 }
@@ -167,8 +196,10 @@ function useRefreshLoop(targets: Target[], enabled: boolean) {
 export function CoupleDayPackSync() {
   const s = useUserSession();
   const on = !!s && featureOn(s.me, DAY_PACK_FLAG);
-  const targets: Target[] = s ? [{ kind: "couple", slug: s.me.tenant.slug, weddingDate: s.me.tenant.wedding_date, names: s.me.tenant.couple_names }] : [];
-  useRefreshLoop(targets, on);
+  const targets: Target[] = s ? [{ kind: "couple", slug: s.me.tenant.slug, weddingDate: s.me.tenant.wedding_date, names: s.me.tenant.couple_names, open: true }] : [];
+  // A couple can hold more than one wedding: a switch keeps the other's pack.
+  const held = s ? [s.me.tenant.slug, ...s.me.tenants.map((t) => t.slug)] : null;
+  useRefreshLoop(targets, on, held);
   return <OutboxNotices />;
 }
 
@@ -177,20 +208,25 @@ export function PlannerDayPackSync() {
   const s = useUserSession();
   const home = usePlannerHome();
   const on = !!s && featureOn(s.me, DAY_PACK_FLAG);
-  const targets: Target[] = (home.data?.weddings ?? []).map((w) => ({ kind: "planner" as const, slug: w.slug, weddingDate: w.wedding_date, names: w.couple_names }));
+  const open = s?.me.tenant.slug ?? null;
+  const targets: Target[] = (home.data?.weddings ?? []).map((w) => ({ kind: "planner" as const, slug: w.slug, weddingDate: w.wedding_date, names: w.couple_names, open: w.slug === open }));
   // The open wedding's flag gates the loop. Other weddings answer 404 while
   // their flag is off: the store keeps nothing for them and remembers the 404,
-  // so each is asked again only after 15 minutes.
-  useRefreshLoop(targets, on);
+  // so each is asked again only after 15 minutes. Weddings further than 7 days
+  // out are never fetched on their own (refreshDue).
+  // A wedding the planner was taken off leaves /planner/home: its pack is
+  // swept. Only a loaded list sweeps (never while home is loading).
+  const held = s && home.data ? [...home.data.weddings.map((w) => w.slug), ...s.me.tenants.map((t) => t.slug)] : null;
+  useRefreshLoop(targets, on, held);
   return <OutboxNotices />;
 }
 
 export function GuestDayPackSync() {
   const g = useGuestSession();
-  const targets: Target[] = g ? [{ kind: "guest", slug: g.tenant.slug, weddingDate: g.tenant.wedding_date, names: g.tenant.couple_names }] : [];
+  const targets: Target[] = g ? [{ kind: "guest", slug: g.tenant.slug, weddingDate: g.tenant.wedding_date, names: g.tenant.couple_names, open: true }] : [];
   // Guests have no features map: the 404 of a dark /guest/pack hides it (asked
   // again after 15 minutes, not on every one-minute check).
-  useRefreshLoop(targets, !!g);
+  useRefreshLoop(targets, !!g, g ? [g.tenant.slug] : null);
   // The schedule screen reads its query first. The query cache drops what is
   // older than 24 hours; the guest pack lasts to the end of the wedding, so a
   // guest who last opened the app three days before still has the schedule

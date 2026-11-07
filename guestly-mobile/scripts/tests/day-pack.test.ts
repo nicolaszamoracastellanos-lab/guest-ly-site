@@ -29,6 +29,7 @@ import {
   nextMiss,
   lastCheckAt,
   keepOnMissing,
+  packKeysToSweep,
   type PackMiss,
 } from "../../src/features/dayof/packCore.ts";
 import { liveState, wallClockAt, serviceDayOf } from "../../src/features/dayof/live.ts";
@@ -104,8 +105,13 @@ assert.equal(rec("pack-404-dark.json").status, 404);
   const l304 = local("couple-pack-304")!;
   assert.equal(l304.status, 304);
   assert.equal(l304.body, null, "304 has no body");
-  const gone = local("status-404-gone")!;
-  assert.equal(classifyFailure("block_status", { status: gone.status, code: String((gone.body as { error?: { code?: string } }).error?.code) }), "gone");
+  const asFailure = (r: { status: number; body: unknown }) => {
+    const e = (r.body as { error?: { code?: string; reason?: string; message_en?: string } }).error;
+    return { status: r.status, code: String(e?.code), reason: e?.reason ?? null, message_en: e?.message_en ?? null };
+  };
+  assert.equal(classifyFailure("block_status", asFailure(local("status-404-gone")!)), "gone", "recorded deleted moment");
+  const dark = local("status-404-dark");
+  if (dark) assert.equal(classifyFailure("block_status", asFailure(dark)), "held", "recorded dark planner status route: held, not a deleted moment");
 }
 
 // ---------------------------------------------------------------- Now and Next from the pack, offline
@@ -154,6 +160,48 @@ assert.equal(refreshDue({ today: "2027-05-10", weddingDate: "2027-05-22", lastCh
 assert.equal(refreshDue({ today: "2027-05-24", weddingDate: "2027-05-22", lastUseful: "2027-05-23", lastCheckedAt: null, now }), false, "after the last useful day");
 assert.equal(refreshDue({ today: "2027-05-23", weddingDate: "2027-05-22", lastUseful: "2027-05-23", lastCheckedAt: null, now }), true, "the morning after still refreshes");
 assert.equal(refreshDue({ today: "2027-05-20", weddingDate: null, lastCheckedAt: null, now }), false, "no date, no automatic fetch");
+
+// The network comes back (D5): the 7 day window and the wait after a 404 still hold.
+assert.equal(refreshDue({ today: "2027-03-23", weddingDate: "2027-05-22", lastCheckedAt: null, now, reconnect: true }), false, "a reconnect never fetches a wedding 60 days out");
+assert.equal(refreshDue({ today: "2027-05-14", weddingDate: "2027-05-22", lastCheckedAt: null, now, reconnect: true }), false, "nor 8 days out");
+assert.equal(refreshDue({ today: "2027-05-19", weddingDate: "2027-05-22", lastCheckedAt: now - 2 * 60_000, now, reconnect: true }), true, "3 days out, checked 2 min ago with a good answer: a reconnect asks again");
+assert.equal(refreshDue({ today: "2027-05-19", weddingDate: "2027-05-22", lastCheckedAt: now - 2 * 60_000, lastMissAt: now - 2 * 60_000, now, reconnect: true }), false, "a 404 2 min ago: a reconnect waits");
+assert.equal(refreshDue({ today: "2027-05-19", weddingDate: "2027-05-22", lastCheckedAt: now - PACK_REFRESH_MS, lastMissAt: now - PACK_REFRESH_MS, now, reconnect: true }), true, "a 404 15 min ago: asked again");
+
+// A planner with 3 weddings reconnects at a venue: one 3 days out, one 60 days
+// out, one 2 days out whose route answered 404 five minutes ago. Exactly 1
+// request, and the flap after it (back online 3 more times) asks nothing far
+// or dark.
+{
+  const today = "2027-05-19";
+  const weddings = [
+    { slug: "near", weddingDate: "2027-05-22", lastCheckedAt: now - 20 * 60_000, lastMissAt: null as number | null },
+    { slug: "far", weddingDate: "2027-07-18", lastCheckedAt: null, lastMissAt: null as number | null },
+    { slug: "dark", weddingDate: "2027-05-21", lastCheckedAt: now - 5 * 60_000, lastMissAt: now - 5 * 60_000 },
+  ];
+  const asked: string[] = [];
+  for (const w of weddings) if (refreshDue({ today, weddingDate: w.weddingDate, lastCheckedAt: w.lastCheckedAt, lastMissAt: w.lastMissAt, now, reconnect: true })) asked.push(w.slug);
+  assert.deepEqual(asked, ["near"], "a reconnect asks only the wedding in the window that did not just answer 404");
+}
+
+// Weddings the person no longer holds (D4.8): their pack and 404 record keys go; other people's keys stay.
+{
+  const P = ["gl.scoped.daypack.v1:", "gl.scoped.daypack.miss.v1:"];
+  const keys = [
+    "gl.scoped.daypack.v1:user:u1:kept",
+    "gl.scoped.daypack.v1:user:u1:lost",
+    "gl.scoped.daypack.miss.v1:user:u1:lost",
+    "gl.scoped.daypack.v1:user:u2:lost",
+    "gl.scoped.daypack.v1:user:u10:other",
+    "gl.scoped.dayprompt:user:u1:lost",
+    "gl.checkin.queue",
+  ];
+  assert.deepEqual(packKeysToSweep(keys, P, "user:u1", new Set(["kept"])), [
+    { key: "gl.scoped.daypack.v1:user:u1:lost", slug: "lost" },
+    { key: "gl.scoped.daypack.miss.v1:user:u1:lost", slug: "lost" },
+  ]);
+  assert.deepEqual(packKeysToSweep(keys, P, "user:u1", new Set(["kept", "lost"])), [], "a wedding still held keeps its pack");
+}
 assert.equal(inPackWindow("2027-05-23", "2027-05-22", null), true, "default last day is the wedding day plus one");
 assert.equal(inPackWindow("2027-05-24", "2027-05-22", null), false);
 
@@ -320,6 +368,18 @@ assert.match(storeSrc, /if \(saved && keepOnMissing\(\{[^}]*\}\)\) \{[\s\S]{0,16
 assert.equal((storeSrc.match(/await clearMiss\(owner, slug\)/g) ?? []).length, 2, "200 and 304 clear the 404 record");
 assert.match(storeSrc, /return lastCheckAt\(checkedAt, await readMiss\(owner, slug\)\)/);
 assert.match(syncSrc, /`gl\.scoped\.dayprompt:/);
+// Reconnect wiring: the settled online state (3 s), never force, the open
+// wedding first, only its changes told, and a sweep only with a known list.
+assert.match(syncSrc, /const online = useSettledOnline\(\)/, "a flap is not a reconnect");
+assert.doesNotMatch(syncSrc, /\bforce\b/, "the loop never forces a fetch; Save for offline and pull to refresh are the screen's");
+assert.match(syncSrc, /if \(online && !wasOnline\.current\) void run\("reconnect"\)/);
+assert.match(syncSrc, /reconnect: trigger === "reconnect"/);
+assert.match(syncSrc, /lastMissAt: await lastMissAt\(owner, t\.slug\)/);
+assert.match(syncSrc, /sort\(\(a, b\) => Number\(b\.open\) - Number\(a\.open\)\)/, "the open wedding first");
+assert.match(syncSrc, /if \(t\.open\) changes \+= n \?\? 0/, "the toast counts the open wedding only");
+assert.match(syncSrc, /const held = s && home\.data \? /, "a planner's list sweeps only once loaded");
+assert.match(syncSrc, /if \(keep\) \{\s*const swept = await sweepPacks\(owner, new Set\(keep\)\)/);
+assert.match(storeSrc, /packKeysToSweep\(keys, \[PREFIX, MISS_PREFIX\], owner, keep\)/);
 assert.match(scopeSrc, /PREFIXES = \[[^\]]*"gl\.scoped\."/, "resetUserScopedState removes gl.scoped.* on sign out");
 
 // ---------------------------------------------------------------- the 300 ms open (STUDY-quality-bar 7.5)

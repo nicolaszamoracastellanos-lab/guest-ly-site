@@ -7,7 +7,9 @@
 // removed by resetUserScopedState (lib/scope) on sign out, a new guest
 // identity and a session that ended, so the next person never sees it (D4.8).
 // A wedding switch keeps the files (a planner keeps every wedding of the week)
-// and only empties the memory copy.
+// and only empties the memory copy. A wedding the person no longer holds (a
+// planner taken off it, D4.8) has its files deleted by sweepPacks, which
+// PackSync runs with the complete list of the person's weddings.
 //
 // Size: 500 parties are about 150 KB, well under AsyncStorage's per-row limit
 // on Android (2 MB) and nothing for iOS (one file in Application Support).
@@ -19,7 +21,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiFailure, get, isMissingEndpoint } from "@/lib/api";
 import { registerScopedReset } from "@/lib/scope";
-import { clockOffset, keepOnMissing, lastCheckAt, nextMiss, packExpired, parseGuestPack, parsePack, rosterIndex, timelineChanges, utf8Bytes, PACK_REFRESH_MS, type DayPack, type GuestPack, type PackMiss, type RosterIndex } from "./packCore";
+import { clockOffset, keepOnMissing, lastCheckAt, nextMiss, packExpired, packKeysToSweep, parseGuestPack, parsePack, rosterIndex, timelineChanges, utf8Bytes, PACK_REFRESH_MS, type DayPack, type GuestPack, type PackMiss, type RosterIndex } from "./packCore";
 import { serviceDayOf, wallClockAt } from "./live";
 
 export type PackKind = "couple" | "planner" | "guest";
@@ -305,6 +307,34 @@ export function fetchPack(owner: string, kind: PackKind, slug: string): Promise<
   })().finally(() => inflight.delete(key));
   inflight.set(key, run);
   return run;
+}
+
+/** The last 404 from this pack route since its last good answer, or null. */
+export async function lastMissAt(owner: string, slug: string): Promise<number | null> {
+  return (await readMiss(owner, slug))?.lastAt ?? null;
+}
+
+/**
+ * Deletes the saved packs and 404 records of weddings this person no longer
+ * holds (D4.8): a planner taken off a wedding, a couple's wedding removed.
+ * `keep` must be the complete list. Returns the slugs it removed.
+ */
+export async function sweepPacks(owner: string, keep: ReadonlySet<string>): Promise<string[]> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const gone = packKeysToSweep(keys, [PREFIX, MISS_PREFIX], owner, keep);
+    if (!gone.length) return [];
+    await AsyncStorage.multiRemove(gone.map((g) => g.key));
+    for (const g of gone) {
+      const key = packKey(owner, g.slug);
+      entries.delete(key);
+      statuses.delete(key);
+    }
+    emit();
+    return [...new Set(gone.map((g) => g.slug))];
+  } catch {
+    return [];
+  }
 }
 
 /** The last time this pack was checked against the server (for the 15 minute rule): a good answer or a 404, from storage. */

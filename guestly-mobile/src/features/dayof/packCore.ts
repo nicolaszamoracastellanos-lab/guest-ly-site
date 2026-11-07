@@ -291,12 +291,38 @@ export const PACK_REFRESH_MS = 15 * 60_000;
  * the wedding's zone. Automatic fetches run only from 7 days before the
  * wedding to its last useful day, at most every 15 minutes (a 304 costs almost
  * nothing, but a foreground every minute must not become a request every
- * minute). `force` (pull to refresh, "Save for offline") always fetches.
+ * minute). `force` (pull to refresh, "Save for offline": a person asked for
+ * this one wedding) always fetches. `reconnect` (the network came back, D5)
+ * skips the 15 minute wait after a good answer but keeps the 7 day window and
+ * the wait after a 404 (`lastMissAt`: the last 404 since the last good
+ * answer), so a flapping venue network never fetches far weddings or asks a
+ * dark route again and again.
  */
-export function refreshDue(a: { today: string; weddingDate: string | null; lastUseful?: string | null; lastCheckedAt: number | null; now: number; force?: boolean }): boolean {
+export function refreshDue(a: { today: string; weddingDate: string | null; lastUseful?: string | null; lastCheckedAt: number | null; now: number; force?: boolean; reconnect?: boolean; lastMissAt?: number | null }): boolean {
   if (a.force) return true;
   if (!inPackWindow(a.today, a.weddingDate, a.lastUseful ?? null)) return false;
+  if (a.reconnect) return a.lastMissAt == null || a.now - a.lastMissAt >= PACK_REFRESH_MS;
   return a.lastCheckedAt === null || a.now - a.lastCheckedAt >= PACK_REFRESH_MS;
+}
+
+/**
+ * The stored keys of one person's packs (and their 404 records) whose wedding
+ * is no longer theirs (D4.8, "wedding removed: delete that scope's pack
+ * files"). `keep` is the complete list of weddings the person holds now; keys
+ * of other people (another owner) are left alone.
+ */
+export function packKeysToSweep(keys: readonly string[], prefixes: readonly string[], owner: string, keep: ReadonlySet<string>): { key: string; slug: string }[] {
+  const out: { key: string; slug: string }[] = [];
+  for (const key of keys) {
+    for (const prefix of prefixes) {
+      const head = `${prefix}${owner}:`;
+      if (!key.startsWith(head)) continue;
+      const slug = key.slice(head.length);
+      if (slug && !keep.has(slug)) out.push({ key, slug });
+      break;
+    }
+  }
+  return out;
 }
 
 /** From 7 days before the wedding to its last useful day (the wedding day plus one when not known). */
