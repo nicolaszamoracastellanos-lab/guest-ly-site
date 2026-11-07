@@ -6,8 +6,11 @@
      a 2-star review, a 60-character name, a 385-character text, no month);
    - reviews-filled-full: the whole section (nav hidden for this shot only);
    - reviews-one: a single review (no "most recent" note);
-   - reviews-nav: the nav row at 1440 with "Reviews" / "Reseñas" last, or
-     the open menu at 390;
+   - reviews-nav: the nav row at 1440 with the reviews shown (the same row
+     as with the switch off: the item is in the phone menu only), or the
+     open menu at 390 with "Reviews" / "Reseñas" last;
+   - reviews-deeplink: the first screen after opening /#reviews (review
+     round 1: the section goes in and the page scrolls to it);
    - reviews-none: zero reviews (the FAQ runs straight into the final call
      to action, nothing reserved; the same for closed, unavailable or a
      failed read).
@@ -35,7 +38,7 @@ const VPS = [
   { tag: '1440', width: 1440, height: 900 },
 ];
 
-async function page(vp, theme, lang, mode) {
+async function page(vp, theme, lang, mode, path = '/') {
   stub.reset();
   stub.state.mode = mode;
   const { tag, width, height, ...rest } = vp;
@@ -47,7 +50,7 @@ async function page(vp, theme, lang, mode) {
     localStorage.setItem('gl-theme', t);
     localStorage.setItem('guestly-lang', l);
   }, [theme, lang]);
-  await p.goto(site.url, { waitUntil: 'networkidle' });
+  await p.goto(site.url + path, { waitUntil: 'networkidle' });
   await p.evaluate(() => document.fonts.ready);
   return { ctx, p, errors, tag };
 }
@@ -84,6 +87,13 @@ for (const vp of VPS) {
           await p.waitForTimeout(300);
           await shot(p, `reviews-nav-${suffix}`, errors, (path) => p.screenshot({ path }));
         }
+        await ctx.close();
+      }
+      {
+        const { ctx, p, errors } = await page(vp, theme, lang, 'open', '/#reviews');
+        await p.waitForSelector('#reviews', { timeout: 8000 });
+        await p.waitForTimeout(600);
+        await shot(p, `reviews-deeplink-${suffix}`, errors, (path) => p.screenshot({ path }));
         await ctx.close();
       }
       {

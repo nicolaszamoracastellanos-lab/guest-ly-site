@@ -12,7 +12,8 @@
       order (low rating included), names translate="no", months through
       Intl, no month line for a review without one, the "most recent" note;
       stars carry a role="img" label and differ in shape (filled vs outline);
-      the nav item is last in the desktop row; the Product JSON-LD gains
+      the nav item is last in the phone menu, right after "FAQ", and the
+      desktop row has none; the Product JSON-LD gains
       aggregateRating and the six Reviews; the stub's Set-Cookie is not kept;
       layout shift 0.
    B. ES at 390 (touch): ES words and months, the menu's last link
@@ -29,8 +30,17 @@
       while it is in view; it goes in once the place is below the screen,
       with no shift.
    G. menu open at 390 when the answer arrives: nothing until it closes.
-   H. keyboard: Tab reaches "Reviews" in the desktop row right after "FAQ";
-      Enter moves to #reviews.
+   H. keyboard at 1000 (burger): Enter opens the menu, Tab reaches "Reviews"
+      right after "FAQ", Enter moves to #reviews.
+   J. desktop row (review round 1): at 1440 and 1200, EN and ES, the row
+      with reviews shown and with today's 401 equals the off build's row
+      (every link and the login link at the same x and size).
+   K. deep link (review round 1): /#reviews opened at 390 ES and 1440 EN and
+      ES puts the section header at the top of the screen; a reload after
+      the menu link (390) or after the deep link (1440, the browser puts
+      the old scroll back, the final CTA on screen) does too; a change of
+      the hash to #reviews before the answer does too; a wheel before the
+      answer cancels the jump (no script scroll, no shift).
    OFF
    I. no section, nav item, chunk, CSS or read after scrolling the page.
    Layout shift: every shift but the hero demo chat's own bubbles (the same
@@ -149,6 +159,7 @@ const productLd = (page) =>
       hidden: [...sec.querySelectorAll('.reviews-stars')].every((s) => s.getAttribute('aria-hidden') === 'true'),
       note: sec.querySelector('.reviews-note')?.textContent,
       nav: [...document.querySelectorAll('.nav__links a')].map((a) => a.textContent),
+      menu: [...document.querySelectorAll('.nav__menu-links a')].map((a) => a.textContent),
       afterFaq: sec.previousElementSibling?.id,
       beforeFinal: sec.nextElementSibling?.dataset.sec,
       visible: getComputedStyle(sec.querySelector('.sec-head')).opacity,
@@ -164,7 +175,9 @@ const productLd = (page) =>
   check(JSON.stringify(r.fills) === JSON.stringify(REVIEWS.map((x) => x.rating)) && r.lines.every((n) => n === 5), `A: star shapes ${r.fills} / ${r.lines}`);
   check(r.hidden, 'A: a star row is not aria-hidden');
   check(r.note === 'The 6 most recent of 12 reviews.', `A: note "${r.note}"`);
-  check(r.nav.at(-1) === 'Reviews' && r.nav.at(-2) === 'FAQ', `A: nav ${r.nav}`);
+  check(!r.nav.includes('Reviews') && r.nav.at(-1) === 'FAQ', `A: desktop row ${r.nav}`);
+  const at = r.menu.indexOf('Reviews');
+  check(at > 0 && r.menu[at - 1] === 'FAQ', `A: menu ${r.menu}`);
   check(r.afterFaq === 'faq' && r.beforeFinal === 'final', `A: place ${r.afterFaq} / ${r.beforeFinal}`);
   check(r.visible === '1', `A: header opacity ${r.visible}`);
   const ld = await productLd(page);
@@ -280,10 +293,13 @@ for (const width of [390, 1440]) {
   await ctx.close();
 }
 
-/* H. Keyboard. */
+/* H. Keyboard (burger width). */
 {
-  const { ctx, page } = await open(on.url);
-  await page.waitForSelector('#reviews', { timeout: 8000 }).catch(() => {});
+  const { ctx, page } = await open(on.url, { width: 1000, height: 800 });
+  await page.waitForSelector('#reviews', { state: 'attached', timeout: 8000 }).catch(() => {});
+  await page.locator('.nav__burger').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
   let label = '';
   for (let i = 0; i < 20 && label !== 'FAQ'; i++) {
     await page.keyboard.press('Tab');
@@ -295,6 +311,100 @@ for (const width of [390, 1440]) {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
   check((await page.evaluate(() => location.hash)) === '#reviews', 'H: Enter did not go to #reviews');
+  await ctx.close();
+}
+
+/* J. The desktop row is the same with the reviews shown, refused or off. */
+{
+  const row = async (url, { width, lang, mode, wait }) => {
+    const { ctx, page } = await open(url, { width, lang, mode });
+    await page.evaluate(() => document.fonts.ready);
+    if (wait) await page.waitForSelector('#reviews', { state: 'attached', timeout: 8000 }).catch(() => {});
+    else await page.waitForTimeout(1200);
+    const r = await page.evaluate(() =>
+      [...document.querySelectorAll('.nav__links a, .nav__login')].map((a) => {
+        const b = a.getBoundingClientRect();
+        return [a.textContent, Math.round(b.left * 2) / 2, Math.round(b.width * 2) / 2, getComputedStyle(a).fontSize].join(':');
+      }),
+    );
+    await ctx.close();
+    return r.join(' ');
+  };
+  for (const width of [1440, 1200])
+    for (const lang of ['en', 'es']) {
+      const offRow = await row(off.url, { width, lang, mode: 'open' });
+      const shownRow = await row(on.url, { width, lang, mode: 'open', wait: true });
+      const refusedRow = await row(on.url, { width, lang, mode: 'unauthorized' });
+      check(shownRow === offRow, `J ${lang} ${width}: row with reviews\n  ${shownRow}\n  off: ${offRow}`);
+      check(refusedRow === offRow, `J ${lang} ${width}: row with 401\n  ${refusedRow}\n  off: ${offRow}`);
+    }
+}
+
+/* K. Deep links to #reviews. */
+const headerAtTop = (page) => page.evaluate(() => Math.round(document.querySelector('#reviews')?.getBoundingClientRect().top ?? -9999));
+const settle = async (page) => {
+  await page.waitForSelector('#reviews', { state: 'attached', timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(600);
+};
+for (const [width, lang] of [[390, 'es'], [1440, 'en'], [1440, 'es']]) {
+  const { ctx, page } = await open(on.url, { width, height: width < 500 ? 844 : 900, touch: width < 500, lang, path: '/#reviews' });
+  await settle(page);
+  const top = await headerAtTop(page);
+  check(Math.abs(top - 80) < 40, `K ${lang} ${width}: /#reviews left the section at ${top}px`);
+  await ctx.close();
+}
+{
+  /* 390: menu link, then reload. */
+  const { ctx, page } = await open(on.url, { width: 390, height: 844, touch: true, lang: 'es' });
+  await settle(page);
+  await page.locator('.nav__burger').click();
+  await page.locator('.nav__menu-links a[href="#reviews"]').click();
+  await page.waitForTimeout(400);
+  await page.reload({ waitUntil: 'load' });
+  await settle(page);
+  const top = await headerAtTop(page);
+  check(Math.abs(top - 80) < 40, `K reload after the menu link (390): section at ${top}px`);
+  await ctx.close();
+}
+{
+  /* 1440: the old scroll comes back with the final CTA on screen. */
+  const { ctx, page } = await open(on.url, { path: '/#reviews' });
+  await settle(page);
+  await page.evaluate(() => {
+    const f = document.querySelector('[data-sec="final"]');
+    window.scrollTo(0, window.scrollY + f.getBoundingClientRect().top - 80);
+  });
+  await page.waitForTimeout(300);
+  await page.reload({ waitUntil: 'load' });
+  await settle(page);
+  const top = await headerAtTop(page);
+  check(Math.abs(top - 80) < 40, `K reload with the final CTA on screen (1440): section at ${top}px`);
+  await ctx.close();
+}
+{
+  /* The hash changes to #reviews before the answer. */
+  const { ctx, page } = await open(on.url, { hold: 1500 });
+  await page.evaluate(() => {
+    location.hash = '#reviews';
+  });
+  await settle(page);
+  const top = await headerAtTop(page);
+  check(Math.abs(top - 80) < 40, `K hashchange before the answer: section at ${top}px`);
+  await ctx.close();
+}
+{
+  /* A wheel before the answer: the visitor moved on, no jump. */
+  const { ctx, page } = await open(on.url, { path: '/#reviews', hold: 1500 });
+  await page.waitForTimeout(300);
+  await page.mouse.wheel(0, 600);
+  await page.waitForTimeout(400);
+  const y = await page.evaluate(() => scrollY);
+  await settle(page);
+  check((await shown(page)) === 1, 'K wheel: the section never went in');
+  const y2 = await page.evaluate(() => scrollY);
+  check(Math.abs(y2 - y) <= 1, `K wheel: the page jumped ${y} to ${y2}`);
+  const c = await cls(page);
+  check(c < 0.001, `K wheel: layout shift ${c}`);
   await ctx.close();
 }
 

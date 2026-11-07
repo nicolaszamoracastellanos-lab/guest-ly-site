@@ -75,8 +75,10 @@ function LangToggle({ className }: { className?: string }) {
 export function Nav() {
   const { t, lang } = useLang();
   const { open } = useWizard();
-  /* The Reviews tab: last in both link lists, only once the section is on
-     the page (src/reviews/state.tsx adds them together). */
+  /* The Reviews tab: last in the phone menu, only once the section is on
+     the page (src/reviews/state.ts adds them together). Not in the desktop
+     row: a seventh link there would move the row or crowd "Acceso
+     clientes", and the row must look the same with no reviews. */
   const reviewsShown = useReviewsShown();
   const reviews = import.meta.env.VITE_REVIEWS_ENABLED && reviewsShown ? reviewsNavCopy[lang].label : null;
   const [scrolled, setScrolled] = useState(false);
@@ -118,7 +120,6 @@ export function Nav() {
               {l.label}
             </a>
           ))}
-          {reviews ? <a href="#reviews">{reviews}</a> : null}
         </nav>
 
         <div className="nav__actions">

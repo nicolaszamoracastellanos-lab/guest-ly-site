@@ -5,8 +5,9 @@
    the viewport, or the page scrolls sideways. Also checks 390 (burger row).
    --reviews: for a build with REVIEWS_ENABLED on. The reviews read is
    answered inside the browser (scripts/lib/reviews-stub.mjs, never the real
-   API) and every view waits for the "Reviews" / "Reseñas" link, so the row
-   is measured with its seventh link.
+   API) and every view waits for the "Reviews" / "Reseñas" link (phone menu
+   only since review round 1, Nov 7), then checks the desktop row holds no
+   Reviews link.
    Usage: node scripts/check-nav-fit.mjs [baseUrl] [--reviews]   (default http://localhost:5199) */
 
 import { chromium } from 'playwright';
@@ -40,6 +41,7 @@ for (const lang of ['en', 'es']) {
       if (reviews) {
         const link = await page.waitForFunction(() => document.querySelector('a[href="#reviews"]'), null, { timeout: 8000 }).catch(() => null);
         if (!link) problems.push(`${lang} ${theme} ${width}: the Reviews link never showed`);
+        if (await page.locator('.nav__links a[href="#reviews"]').count()) problems.push(`${lang} ${theme} ${width}: a Reviews link in the desktop row`);
       }
       const r = await page.evaluate(() => {
         const inner = document.querySelector('.nav__inner');
@@ -73,4 +75,4 @@ if (problems.length) {
   console.error(`\ncheck-nav-fit FAILED: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-nav-fit clean${reviews ? ' with the Reviews link' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row`);
+console.log(`check-nav-fit clean${reviews ? ' with the Reviews link (menu only)' : ''}: ${checked} views (EN, ES; night, day; ${WIDTHS.join(', ')}), every nav item inside its row`);
