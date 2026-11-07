@@ -109,18 +109,57 @@ const FLAGGED: readonly [RegExp, string][] = [
   [/places with/i, "MW_PLACES"],
   [/hair and makeup/i, "MW_HMU"],
   [/final guest count/i, "MW_FINAL_COUNT"],
-  [/travel times/i, "MW_TRAVEL_WINDOWS"],
+  [/travel times|travel windows|arrivals and departures|guest travel|llegadas y salidas|viaje/i, "MW_TRAVEL_WINDOWS"],
   [/know-before-you-go/i, "MW_KNOW_BEFORE"],
   [/"Seen"/, "MW_SEEN"],
   [/road[- ]to[- ]the[- ]wedding|road to the wedding/i, "MW_ROAD"],
 ];
+
+// Flags the portal registry refuses to release (releaseBlocker). Read from the
+// portal checkout (GL_PORTAL_DIR, default the reviewed integration worktree);
+// without one, the blockers known on Nov 7 2026 (F144: MW_TRAVEL_WINDOWS).
+const KNOWN_BLOCKED = ["MW_TRAVEL_WINDOWS"];
+const blockedFlags = (registry: string | null): Set<string> => {
+  if (registry === null) return new Set(KNOWN_BLOCKED);
+  const start = registry.indexOf("FLAG_REGISTRY");
+  const out = new Set<string>();
+  const parts = registry.slice(start).split(/\bkey:\s*"(MW_[A-Z0-9_]+)"/);
+  for (let i = 1; i < parts.length; i += 2) if (/\breleaseBlocker:\s*\{/.test(parts[i + 1] ?? "")) out.add(parts[i]);
+  return out;
+};
+const registryPath = path.join(process.env.GL_PORTAL_DIR || "/Users/nicolas_z/gl-mw/integration", "src/lib/flags/registry.ts");
+let registryText: string | null = null;
+try {
+  registryText = readFileSync(registryPath, "utf8");
+} catch {
+  console.warn(`review-notes: ${registryPath} not found, using the known blocked flags (${KNOWN_BLOCKED.join(", ")})`);
+}
+const BLOCKED = blockedFlags(registryText);
+
+t("blocked flags are read from the registry (fixture)", () => {
+  const fixture = `export const FLAG_REGISTRY = [\n { key: "MW_A", tables: [] },\n { key: "MW_B", releaseBlocker: { en: "x", es: "y" } },\n { key: "MW_C" },\n];`;
+  assert.deepEqual([...blockedFlags(fixture)], ["MW_B"]);
+  assert.deepEqual([...blockedFlags(null)], KNOWN_BLOCKED);
+  if (registryText !== null) assert.ok(/key:\s*"MW_LIVE_DAY"/.test(registryText), "the registry still names its flags as key: \"MW_...\"");
+});
+
+t("notes and What's new name no feature whose flag the portal blocks; a blocked flag is never on the turn-on list", () => {
+  const open = md.slice(md.indexOf("## Open before submit"), md.indexOf("## review_notes_en"));
+  const said = `${notes}\n${meta.whats_new.en}\n${meta.whats_new.es}`;
+  for (const [words, flag] of FLAGGED) {
+    if (!BLOCKED.has(flag)) continue;
+    assert.ok(!words.test(said), `${flag} is blocked in the portal registry: take "${words.exec(said)?.[0]}" out of the notes and What's new`);
+    assert.ok(!new RegExp(`^\\s*- ${flag}:`, "m").test(open), `${flag} is blocked: it must not be on the turn-on list`);
+    assert.ok(new RegExp(`${flag} stays off`).test(open), `Open before submit says ${flag} stays off`);
+  }
+});
 
 t("Open before submit lists the flag of every feature the notes and What's new name", () => {
   const open = md.slice(md.indexOf("## Open before submit"), md.indexOf("## review_notes_en"));
   assert.ok(open.length > 0);
   const said = `${notes}\n${meta.whats_new.en}`;
   for (const [words, flag] of FLAGGED) {
-    if (!words.test(said)) continue;
+    if (BLOCKED.has(flag) || !words.test(said)) continue;
     assert.ok(new RegExp(`^\\s*- ${flag}:`, "m").test(open), `${flag} (for ${words}) missing from Open before submit`);
   }
   assert.ok(/review wedding/.test(open) && /production/.test(open), "on for the review wedding and in production");
