@@ -90,6 +90,60 @@ export const SHAPE_NAMES: Record<Lang, Record<TableShape, string>> = {
   },
 };
 
+/** The shape fields a draft table carries (hooks.ts TableShapeFields). */
+export type DraftShape = {
+  shape: string;
+  shape_fallback?: "round" | "rect";
+  rotation?: number;
+  ends?: boolean;
+  one_side?: boolean;
+  segments?: number;
+};
+
+/**
+ * The table screen's shape choices: round, rect, and the table's own web shape
+ * when it has one. The third choice comes from the server's copy of the table
+ * (`saved`), not the draft, so a tap on Round never takes it away. A shape this
+ * build does not know is named "As set on the web", never the fallback's name
+ * (which would repeat Round or Rectangular).
+ */
+export function shapeChoices(
+  lang: Lang,
+  draft: { shape: string },
+  saved: ShapeFields | null | undefined,
+  words: { round: string; rect: string; asOnWeb: string },
+): { value: string; label: string }[] {
+  const out = [
+    { value: "round", label: words.round },
+    { value: "rect", label: words.rect },
+  ];
+  const own = saved && typeof saved.shape === "string" && saved.shape !== "round" && saved.shape !== "rect" ? saved : draft.shape !== "round" && draft.shape !== "rect" ? draft : null;
+  if (own) {
+    const r = readShape(own);
+    out.push({ value: r.sent, label: r.known ? SHAPE_NAMES[lang][r.shape] : words.asOnWeb });
+  }
+  return out;
+}
+
+/**
+ * The draft change for a tap on a shape. Picking the table's saved shape again
+ * brings back its turn and options from the server's copy, so the save body
+ * equals the original; any other shape starts without options.
+ */
+export function shapePatch(value: string, saved: ShapeFields | null | undefined): DraftShape {
+  if (saved && saved.shape === value) {
+    return {
+      shape: value,
+      shape_fallback: saved.shape_fallback === "round" || saved.shape_fallback === "rect" ? saved.shape_fallback : undefined,
+      rotation: typeof saved.rotation === "number" ? saved.rotation : undefined,
+      ends: typeof saved.ends === "boolean" ? saved.ends : undefined,
+      one_side: typeof saved.one_side === "boolean" ? saved.one_side : undefined,
+      segments: typeof saved.segments === "number" ? saved.segments : undefined,
+    };
+  }
+  return { shape: value };
+}
+
 /**
  * What VoiceOver reads for one table: its name, the shape and the seats, then
  * how many sit there when known. "Mesa 4, Imperial, 20 lugares, 12 ocupados".

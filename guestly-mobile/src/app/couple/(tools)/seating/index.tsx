@@ -298,8 +298,11 @@ export default function SeatingIndex() {
                   key={t.id}
                   leading={<TableMark table={t} capacity={t.capacity} seated={t.seated} over={t.over_capacity} />}
                   title={t.label}
-                  sub={`${SHAPE_NAMES[lang][readShape(t).shape]} · ${fmt(c.seatedOf, { seated: t.seated, capacity: t.capacity })}${t.source === "ai" && t.confidence !== undefined && t.confidence < 1 ? ` · ${c.draft}` : ""}`}
-                  trailing={
+                  // The count first, so a long line cuts the shape name, never
+                  // the number; the Over capacity badge sits on its own line
+                  // (the planner card's pattern), not beside the text.
+                  sub={`${fmt(c.seatedOf, { seated: t.seated, capacity: t.capacity })} · ${SHAPE_NAMES[lang][readShape(t).shape]}${t.source === "ai" && t.confidence !== undefined && t.confidence < 1 ? ` · ${c.draft}` : ""}`}
+                  below={
                     t.over_capacity ? (
                       <Badge label={c.overCapacity} kind="amber" />
                     ) : undefined

@@ -43,7 +43,7 @@ import {
 } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
 import { TableMark } from "@/features/seating/TableShape";
-import { SHAPE_NAMES, readShape, tableA11y } from "@/features/seating/shapeView";
+import { readShape, shapeChoices, shapePatch, tableA11y } from "@/features/seating/shapeView";
 
 // Keyed by table id: the typed name, seat count and search of one table are
 // never shown on, or committed to, another table.
@@ -76,6 +76,8 @@ function SeatingTableScreen({ id }: { id: string }) {
     [data, draft],
   );
   const table = view?.tables.find((t) => t.id === id) ?? null;
+  // The server's copy of this table (the shape the web set, with its options).
+  const saved = data?.tables.find((t) => t.id === id) ?? null;
   const [label, setLabel] = useState<string | null>(null);
   const [seats, setSeats] = useState<string | null>(null);
   const labelValue = label ?? table?.label ?? "";
@@ -235,15 +237,11 @@ function SeatingTableScreen({ id }: { id: string }) {
           <View style={{ marginTop: 12 }}>
             <Segmented<string>
               value={table.shape}
-              options={[
-                { value: "round", label: c.round },
-                { value: "rect", label: c.rect },
-                // A shape set on the web (or a later one) stays a choice here, so a save keeps it.
-                ...(table.shape !== "round" && table.shape !== "rect"
-                  ? [{ value: table.shape, label: SHAPE_NAMES[lang][readShape(table).shape] }]
-                  : []),
-              ]}
-              onChange={(v) => canEdit && draftActions.updateTable(table.id, { shape: v })}
+              // A shape set on the web (or a later one) stays a choice here,
+              // read from the saved table, so a tap on Round never removes it
+              // and picking it again restores its options (the save keeps it).
+              options={shapeChoices(lang, table, saved, c)}
+              onChange={(v) => canEdit && draftActions.updateTable(table.id, shapePatch(v, saved))}
             />
           </View>
           {table.source === "ai" &&

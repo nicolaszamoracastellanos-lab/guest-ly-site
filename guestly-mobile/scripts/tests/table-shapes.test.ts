@@ -206,7 +206,13 @@ t("static: every read view draws from these rules", () => {
   const table = src("src/app/couple/(tools)/seating/table/[id].tsx");
   assert.match(table, /<TableMark [^>]*size=\{150\}/);
   assert.match(table, /accessibilityLabel=\{tableA11y\(/);
-  assert.match(table, /table\.shape !== "round" && table\.shape !== "rect"/, "a web shape stays a choice, so a save keeps it");
+  assert.match(table, /options=\{shapeChoices\(lang, table, saved, c\)\}/, "the choices come from the saved table, so a web shape stays a choice");
+  assert.match(table, /draftActions\.updateTable\(table\.id, shapePatch\(v, saved\)\)/, "picking the saved shape again restores its options");
+  assert.match(src("src/features/seating/hooks.ts"), /segments: undefined, \.\.\.patch \}/, "updateTable clears the old options first, then applies the patch (restored options win)");
+  assert.match(table, /const saved = data\?\.tables\.find\(\(t\) => t\.id === id\)/, "saved is the server's copy, not the draft");
+  // Over capacity (ES, XXXL): the count leads the sub line and the badge has its own line.
+  assert.match(couple, /sub=\{`\$\{fmt\(c\.seatedOf/, "the seat count comes first");
+  assert.match(couple, /below=\{\s*t\.over_capacity \?/, "the badge sits under the text, not beside it");
   const planner = src("src/app/planner/(tools)/seating.tsx");
   assert.match(planner, /<SeatingPlanMap /);
   assert.match(planner, /<TableMark /);
@@ -218,6 +224,54 @@ t("static: every read view draws from these rules", () => {
   // The save sends the word it was sent back unchanged (round or rect only when the person picks one).
   const hooks = src("src/features/seating/hooks.ts");
   assert.match(hooks, /shape: t\.shape,\n\s+\}\)\),\n\s+assignments: draft\.assignments/);
+});
+
+// Review round 1 (b3): the table screen's shape control.
+const WORDS = {
+  en: { round: "Round", rect: "Rectangular", asOnWeb: "As set on the web" },
+  es: { round: "Redonda", rect: "Rectangular", asOnWeb: "Como en la web" },
+} as const;
+const copyMod = await import("../../src/features/seating/copy.ts");
+
+t("shape choices: a web shape stays a choice after a tap on Round, and comes back whole", () => {
+  const saved = { shape: "imperial", shape_fallback: "rect", rotation: 90, ends: true, one_side: false, segments: undefined };
+  // The draft as the screen holds it: seeded from the saved table.
+  type Row = { shape: string; shape_fallback?: "round" | "rect"; rotation?: number; ends?: boolean; one_side?: boolean; segments?: number };
+  let row: Row = { shape: "imperial", shape_fallback: "rect", rotation: 90, ends: true, one_side: false };
+  // hooks.ts updateTable's rule: a new shape clears the options, then the patch applies.
+  const apply = (r: Row, p: Row): Row =>
+    p.shape !== r.shape ? { ...r, shape_fallback: undefined, rotation: undefined, ends: undefined, one_side: undefined, segments: undefined, ...p } : { ...r, ...p };
+  const values = (r: Row) => sv.shapeChoices("en", r, saved, WORDS.en).map((o) => o.value);
+  assert.deepEqual(values(row), ["round", "rect", "imperial"]);
+  row = apply(row, sv.shapePatch("round", saved));
+  assert.equal(row.shape, "round");
+  assert.equal(row.rotation, undefined, "round starts without the imperial's turn");
+  assert.deepEqual(values(row), ["round", "rect", "imperial"], "imperial is still a choice after Round");
+  row = apply(row, sv.shapePatch("imperial", saved));
+  assert.deepEqual(row, { shape: "imperial", shape_fallback: "rect", rotation: 90, ends: true, one_side: false, segments: undefined }, "imperial again: its turn and options back");
+  // The save body (shape only) equals the original, so the server keeps the stored options.
+  assert.equal(row.shape, saved.shape);
+  // A table saved round (or new on the phone) has no third choice.
+  assert.deepEqual(sv.shapeChoices("en", { shape: "round" }, { shape: "round" }, WORDS.en).map((o) => o.value), ["round", "rect"]);
+  assert.deepEqual(sv.shapeChoices("en", { shape: "rect" }, null, WORDS.en).map((o) => o.value), ["round", "rect"]);
+  assert.deepEqual(sv.shapePatch("rect", saved), { shape: "rect" });
+});
+
+t("shape choices: labels are unique for every shape and for an unknown one (EN, ES)", () => {
+  for (const lang of ["en", "es"] as const) {
+    const words = { round: copyMod.COPY[lang].round, rect: copyMod.COPY[lang].rect, asOnWeb: copyMod.COPY[lang].asOnWeb };
+    assert.deepEqual(words, WORDS[lang], `${lang} copy`);
+    assert.ok(!/[–—!]/.test(words.asOnWeb));
+    const cases = [...SHAPES.map((shape) => ({ shape })), { shape: "chevron", shape_fallback: "round" }, { shape: "chevron", shape_fallback: "rect" }, { shape: "chevron" }];
+    for (const tb of cases) {
+      const labels = sv.shapeChoices(lang, { shape: tb.shape }, tb, words).map((o) => o.label);
+      assert.equal(new Set(labels).size, labels.length, `${lang} ${tb.shape}/${(tb as { shape_fallback?: string }).shape_fallback ?? "-"}: ${labels.join(", ")}`);
+    }
+    const unknown = sv.shapeChoices(lang, { shape: "chevron" }, { shape: "chevron", shape_fallback: "round" }, words);
+    assert.deepEqual(unknown[2], { value: "chevron", label: WORDS[lang].asOnWeb }, "an unknown word keeps its value and gets its own name");
+    const imperial = sv.shapeChoices(lang, { shape: "round" }, { shape: "imperial" }, words);
+    assert.equal(imperial[2].label, sv.SHAPE_NAMES[lang].imperial);
+  }
 });
 
 console.log(`table-shapes: ${n} groups passed`);

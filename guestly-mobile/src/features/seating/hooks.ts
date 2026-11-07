@@ -193,22 +193,25 @@ export const draftActions = {
   },
   updateTable(
     id: string,
-    patch: Partial<{
-      label: string;
-      capacity: number;
-      shape: string;
-      source: "ai" | "manual";
-      confidence: number | undefined;
-    }>,
+    patch: Partial<
+      TableShapeFields & {
+        label: string;
+        capacity: number;
+        source: "ai" | "manual";
+        confidence: number | undefined;
+      }
+    >,
   ) {
     set({
       ...draft,
-      // A new shape starts without the old one's turn and options (the portal does the same).
+      // A new shape starts without the old one's turn and options (the portal
+      // does the same), unless the patch brings them (shapePatch: the table's
+      // saved shape picked again gets its saved options back).
       tables: draft.tables.map((t) =>
         t.id !== id
           ? t
           : patch.shape !== undefined && patch.shape !== t.shape
-            ? { ...t, ...patch, shape_fallback: undefined, rotation: undefined, ends: undefined, one_side: undefined, segments: undefined }
+            ? { ...t, shape_fallback: undefined, rotation: undefined, ends: undefined, one_side: undefined, segments: undefined, ...patch }
             : { ...t, ...patch },
       ),
       dirty: true,
