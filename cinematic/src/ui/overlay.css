@@ -2982,6 +2982,13 @@ body.js-ready .reveal.is-visible {
   gap: 0.8rem;
 }
 
+/* Spanish strings still loading (PlatformTabs sets hidden): the box keeps its
+   size and nothing is painted, so the page never flashes English. */
+.tour__mock[hidden] {
+  display: flex;
+  visibility: hidden;
+}
+
 .tour__title {
   font-family: var(--font-display);
   font-weight: 500;

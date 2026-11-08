@@ -12,16 +12,19 @@ import { useHashParam } from './useHashParam';
    #platform=seating preselect a pane. A pane with a real screenshot in
    src/live-screens.data.ts shows it instead (#24, LiveScreen); none yet. */
 
-/* The vignette text is English in MockScreens.tsx; the Spanish dictionary loads
-   as its own small chunk when the page is in Spanish (a few ms after load, long
-   before the tour is on screen). */
-function useMockTr(): Tr {
+/* The vignette text is English in MockScreens.tsx; the Spanish dictionary is its
+   own small chunk, fetched when the page is in Spanish. Until it is in, the
+   vignette box is held invisible (hidden, restyled in overlay.css to keep its
+   size) instead of painted in English; if the fetch fails the strings stay
+   English. The Reviews-on build has under 20 B of initial JS to spare
+   (scripts/test-reviews.mjs), so keep this small. */
+function useMockTr(): Tr | undefined {
   const { lang } = useLang();
   const [es, setEs] = useState<Record<string, string>>();
   useEffect(() => {
-    if (lang === 'es') void import('../platform-mock.es').then((m) => setEs(m.default), () => {});
+    if (lang === 'es') import('../platform-mock.es').then((m) => setEs(m.default), () => setEs({}));
   }, [lang]);
-  return lang === 'es' && es ? (s) => es[s] ?? s : identity;
+  return lang === 'es' ? es && ((s) => es[s] ?? s) : identity;
 }
 
 export function PlatformTabs() {
@@ -83,11 +86,11 @@ export function PlatformTabs() {
                 inert={active !== item.id}
                 className="tour__pane"
               >
-                <div className="tour__mock">
+                <div hidden={!tr} className="tour__mock">
                   {/* key remounts the micro state when re-entering a pane */}
                   {active === item.id && (
                     <LiveScreen key={item.id} id={item.id} alt={item.title}>
-                      <MockPane id={item.id} cta={item.microCta} done={item.microDone} tr={tr} />
+                      <MockPane id={item.id} cta={item.microCta} done={item.microDone} tr={tr || identity} />
                     </LiveScreen>
                   )}
                 </div>
