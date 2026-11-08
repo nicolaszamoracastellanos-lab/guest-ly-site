@@ -1,7 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Overlay } from './ui/Overlay';
-import { LegalPage } from './ui/LegalPage';
-import type { LegalKind } from './ui/LegalPage';
 import { webglAllowed } from './three/capabilities';
 
 /* The three.js world ships as its own chunk, loaded after first paint so
@@ -14,30 +12,18 @@ function StaticStage() {
   return <div className="static-stage" aria-hidden="true" />;
 }
 
-const LEGAL_ROUTES: Record<string, LegalKind> = {
-  '/privacy': 'privacy',
-  '/terms': 'terms',
-  '/refunds': 'refunds',
-};
-
-function legalRoute(): LegalKind | null {
-  const path = window.location.pathname.replace(/\/+$/, '') || '/';
-  return LEGAL_ROUTES[path] ?? null;
-}
-
 export default function App() {
-  const legal = legalRoute();
   const [gl, setGl] = useState(false);
 
   /* Gate + defer: decide after mount so the first paint is pure DOM. */
   useEffect(() => {
-    if (!legal && webglAllowed()) setGl(true);
-  }, [legal]);
+    if (webglAllowed()) setGl(true);
+  }, []);
 
   /* The scroll driver only exists to feed the WebGL world, so it loads
      with it and never runs when the gate keeps the canvas off. */
   useEffect(() => {
-    if (legal || !gl) return;
+    if (!gl) return;
     let cancelled = false;
     let cleanup: (() => void) | undefined;
     void import('./scroll/driver').then((m) => {
@@ -47,9 +33,7 @@ export default function App() {
       cancelled = true;
       cleanup?.();
     };
-  }, [legal, gl]);
-
-  if (legal) return <LegalPage kind={legal} />;
+  }, [gl]);
 
   return (
     <>

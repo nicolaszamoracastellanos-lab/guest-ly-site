@@ -3,7 +3,8 @@
    back, in EN or ES, in the copy or in the JSON-LD.
    Usage: node scripts/test-copy-claims.mjs */
 
-import { copy } from '../src/copy.ts';
+import { copy as homeCopy } from '../src/copy.ts';
+import { legalCopy } from '../src/legal-copy.ts';
 import { faqLd, productLd } from '../src/seo/jsonld.ts';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -15,6 +16,8 @@ const blockedTerms = ['sync with Zola', 'Zola sync', 'sincroniza con Zola', 'sin
 const errors = [];
 const ld = (c) => [productLd(c.en), faqLd(c.en)];
 
+/* The legal pages' text is its own module and is checked with the page copy. */
+const copy = Object.fromEntries(Object.keys(homeCopy).map((l) => [l, { ...homeCopy[l], legal: legalCopy[l] }]));
 const clean = copyClaimProblems({ copy, ld: ld(copy), blockedTerms });
 if (clean.length) errors.push(`today's copy is not clean:\n  ${clean.join('\n  ')}`);
 
@@ -42,6 +45,8 @@ mustFail('"Empezar" button', (c) => (c.es.pricing.plans[0].cta = 'Empezar'), 'ge
 mustFail('glyph arrow in a button', (c) => (c.en.wizard.step1.next = 'Choose plan →'), 'glyph arrow');
 mustFail('EN arrow on a link label', (c) => (c.en.hero.watchLink = 'Watch it happen →'), 'glyph arrow in a button or link label');
 mustFail('ES arrow on the compare link', (c) => (c.es.pricing.compareLink = 'Mira cómo se compara →'), 'glyph arrow in a button or link label');
+mustFail('EN coming soon on the terms page', (c) => (c.en.legal.pages.terms.sections[0].body[0] = 'Coming soon: more plans.'), 'roadmap promise');
+mustFail('ES Zola sync claim on the privacy page', (c) => (c.es.legal.pages.privacy.sections[0].body[0] = 'Importa tu lista o sincroniza desde Zola'), 'Zola sync claim');
 mustFail('exclamation in the JSON-LD', (c) => (c.en.faq.items.find((i) => i.ld).a = 'Yes!'), 'exclamation mark');
 
 /* Arrows appended in the TSX (round 2): today's src is clean, a planted
@@ -63,4 +68,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-copy-claims: ${e}`);
   process.exit(1);
 }
-console.log('test-copy-claims clean: copy and JSON-LD clean today; 18 planted claims each fail; TSX and built-page arrows caught (4 cases), mock data and plain controls pass');
+console.log('test-copy-claims clean: copy and JSON-LD clean today; 20 planted claims each fail; TSX and built-page arrows caught (4 cases), mock data and plain controls pass');
