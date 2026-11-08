@@ -1,0 +1,110 @@
+# Guest-ly
+
+> Guest-ly es una plataforma de bodas para parejas y wedding planners, en la web y en iPhone. Un solo pago por boda, en dólares estadounidenses.
+
+Este archivo enumera solo lo que está disponible hoy en Guest-ly y aprobado para describirse en público. Datos al 2026-11-08.
+Versión en inglés: https://guest-ly.com/llms.txt
+Versión completa en inglés, con más detalle de cada función: https://guest-ly.com/llms-full.txt
+
+## Para quién es
+
+- Parejas que organizan su boda.
+- Wedding planners.
+- Agencias de wedding planners que trabajan en equipo.
+- Los invitados de esas bodas.
+
+## Planes y precios
+
+Un solo pago por boda, en dólares estadounidenses (USD). Cada plan incluye 5 meses activos; después, una cuota de USD 20 al mes mantiene activos el sitio, la confirmación y el asistente, solo si la pareja lo quiere.
+
+- Essentials: USD 199. Hasta 160 invitados.
+- Signature: USD 399. Hasta 300 invitados.
+- Grande: USD 699. 500+ invitados. Incluye el Coordinador IA.
+- Complemento Coordinador IA para Essentials y Signature: USD 79 una vez, o USD 19 al mes.
+
+Planes y pedido: https://guest-ly.com/#pricing
+
+## Qué hace
+
+### Para parejas
+
+- Creador de sitio de boda: Un sitio de boda bilingüe con agenda, viaje, regalos, preguntas, confirmación, chat, galería y secciones propias, en tres temas.
+- Privacidad del sitio: Una contraseña opcional para el sitio y un interruptor para ocultarlo de los buscadores.
+- Panel y estadísticas: Preguntas respondidas, invitados alcanzados, horas de más actividad, temas principales y vacíos por resolver.
+- Información de la boda: La pareja edita los datos con los que responde el asistente de WhatsApp; al publicar se actualiza en un minuto, con historial de versiones.
+- Conversaciones: Cada chat de los invitados con el asistente de WhatsApp, literal, con búsqueda y temas; la pareja responde si el canal lo permite.
+- Lista de invitados: Grupos con integrantes, etiquetas, notas, acompañantes e idioma por invitado, editados desde un solo panel.
+- Importar invitados: Trae la lista desde Zola, The Knot, Joy, Minted, una hoja de cálculo, una foto, un PDF o texto pegado; lo dudoso queda en revisión.
+- Tablero de confirmaciones y pendientes: Estado en vivo, conteo por evento, lista de quién no ha respondido y forma de registrar una confirmación recibida por teléfono.
+- Tareas y lista de pendientes: Una lista de pendientes con responsables, prioridades y recordatorios por correo, que se comparte con personas sin cuenta.
+- Presupuesto con importación por IA: Categorías, partidas, pagos y saldo pendiente; importa desde Excel, texto pegado o una foto, sin guardar nada hasta confirmar.
+- Plano de mesas: Sube una foto del plano del salón, la IA sugiere las mesas y luego sientas a los grupos arrastrando, con deshacer, e imprimes.
+- Proveedores y cronograma del día: Una lista de proveedores vinculada al presupuesto y un cronograma minuto a minuto del día de la boda con exportación al calendario.
+- Registro en la entrada: Escanea el pase QR del invitado en cualquier teléfono o búscalo por nombre, con contadores en vivo y deshacer.
+- Exportaciones a Excel con marca: Hojas de cálculo con diseño y varios formatos predefinidos, por ejemplo uno para el catering.
+- Alertas por correo y resumen semanal: Alertas de confirmación por correo y un resumen semanal de lo que preguntaron los invitados.
+- Guía para parejas: Una guía ilustrada dentro del portal.
+- Solicitudes, aprobaciones y privacidad de contactos: La planner propone un cambio y la pareja lo aprueba, o la deja editar; la pareja decide quién ve teléfonos y correos.
+- Chat de demostración en guest-ly.com: Un asistente real sobre una boda ficticia (Emma y James) en la portada de guest-ly.com, limitado a pocos mensajes.
+- Inicio de sesión con Google, Apple, enlace o contraseña: Parejas y planners entran al portal y a la app con Google, Apple, un enlace por correo o una contraseña.
+- Búsqueda global: Un buscador (Cmd+K) para invitados, confirmaciones, tareas, mensajes y mesas.
+- Campana de avisos, resumen diario y alertas: Una campana con lo que requiere atención, un resumen diario en el inicio y alertas cuando algo está en riesgo.
+- Temas en cada conversación: Cada conversación recibe temas, para que la pareja vea de qué preguntan los invitados y qué falta responder.
+- Historial de confirmaciones por invitado: Cada cambio de confirmación hecho en el portal se confirma y queda registrado: el panel del invitado muestra quién cambió qué y cuándo.
+- Sugerencias de mesas y PDF del plano: Sugerir mesas agrupa por relación y etiquetas y explica quién queda sin mesa; exporta un PDF del plano con tu marca.
+- Actualizar el presupuesto desde un archivo nuevo: Sube una versión más nueva de la hoja del presupuesto, revisa exactamente qué cambia y luego aplícalo.
+
+### Para planners
+
+- Portal para planners: Un portal propio para wedding planners, con permisos por rol, inicio, invitados, solicitudes, presupuesto y tareas.
+- Permisos por boda y por herramienta: Para cada planner y cada boda, cada herramienta está apagada, en lectura o en edición; si está apagada, desaparece del menú.
+- Logística y manifiesto de transporte: Hospedaje, llegada, transporte, punto de recogida y dieta por invitado, con manifiesto exportable y respuestas rápidas.
+- Asistente de la planner: Un asistente que responde con los datos reales de la boda y puede hacer cambios tras una tarjeta de confirmación.
+- Solicitar una boda nueva: La planner llena un formulario, o le envía a la pareja un enlace para llenarlo, y Guest-ly arma la boda.
+- Formulario desde la transcripción de una reunión: La planner pega o sube la transcripción de una reunión y revisa el borrador sección por sección antes de guardar.
+
+### Para agencias
+
+- Espacio de agencia: Una empresa de planeación ve todas sus bodas en un solo lugar, con lo que requiere atención, su equipo y documentos.
+
+### Para invitados
+
+- Chat del asistente en la web: Los invitados preguntan lo que sea en la página o el enlace de chat y reciben respuestas con los datos de la pareja.
+- Responde solo con los datos de la pareja y marca vacíos: El asistente de WhatsApp no inventa datos. Si duda, dice que lo consulta y la pregunta aparece en el panel como un vacío por resolver.
+- Responde en el idioma del invitado: El asistente de WhatsApp responde en el idioma en que escribe el invitado: perfeccionado en inglés y español, mejor esfuerzo en los demás.
+- Confirmación dentro del chat web: El invitado dice que viene; el asistente de WhatsApp lo busca en la lista y pregunta persona por persona y evento por evento.
+- Guía para invitados internacionales: Visas, moneda, clima y transporte respondidos con los datos de la pareja, en el idioma del invitado.
+- Confirmación con enlaces personales: Una página de confirmación con enlace personal por invitado: respuestas por persona y por evento, más las preguntas de la pareja.
+- Agregar al calendario: Archivos de calendario por evento y enlaces de Google Calendar con la zona horaria correcta.
+- Pase QR del invitado: Un pase imprimible con código QR para cada invitado, que se escanea en la entrada.
+- Página de regalos: Una página de regalos con tarjetas de enlace, notas e imágenes QR, o un enlace a la mesa de regalos de la pareja.
+- App de Guest-ly para iPhone: Una app gratuita para iPhone en inglés y español para invitados, parejas y planners, que acompaña una boda creada en guest-ly.com.
+- Notificaciones push en la app: Notificaciones en el teléfono para invitados, parejas y planners.
+- Código de la boda en cada sitio: Cada sitio publicado muestra su código de boda y un enlace para abrir la invitación en la app.
+
+## Plataformas
+
+- Web: https://app.guest-ly.com, en el navegador de un teléfono o una computadora.
+- App para iPhone: https://apps.apple.com/app/id6809618039
+
+## Idiomas
+
+- Parejas y planners usan Guest-ly en español o en inglés.
+- https://guest-ly.com se lee en español y en inglés en la misma dirección; el idioma se elige en la página.
+
+## Empresa
+
+- Guest-ly es operado por ZC Ventures LLC.
+- Contacto: nicolas@guest-ly.com
+
+## Enlaces
+
+- [Inicio](https://guest-ly.com/)
+- [Planes y precios](https://guest-ly.com/#pricing)
+- [Privacidad](https://guest-ly.com/privacy/)
+- [Términos](https://guest-ly.com/terms/)
+- [Reembolsos](https://guest-ly.com/refunds/)
+- [Acceso para parejas y planners](https://app.guest-ly.com)
+- [App para iPhone en la App Store](https://apps.apple.com/app/id6809618039)
+
+Más boda, menos estrés.

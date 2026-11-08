@@ -1,0 +1,462 @@
+# Guest-ly
+
+> Guest-ly is a wedding platform for couples and wedding planners, on the web and on iPhone. One payment per wedding, in US dollars.
+
+This file lists only what is live in Guest-ly today and approved for public description. Facts as of 2026-11-08.
+Spanish version: https://guest-ly.com/es/llms.txt
+Short version: https://guest-ly.com/llms.txt
+
+## Who it is for
+
+- Couples planning their wedding.
+- Wedding planners.
+- Wedding planning agencies that work as a team.
+- The guests of those weddings.
+
+## Plans and prices
+
+One payment per wedding, in US dollars (USD). Each plan includes 5 months live; after that, a fee of USD 20 per month keeps the website, RSVP and concierge running, only if the couple wants it.
+
+- Essentials: USD 199. Up to 160 guests.
+- Signature: USD 399. Up to 300 guests.
+- Grande: USD 699. 500+ guests. The AI Coordinator is included.
+- AI Coordinator add-on for Essentials and Signature: USD 79 once, or USD 19 per month.
+
+Plans and ordering: https://guest-ly.com/#pricing
+
+## What it does for couples
+
+### Wedding website builder
+
+A bilingual wedding site with schedule, travel, registry, FAQ, RSVP, chat, gallery and custom sections, in three themes.
+
+- A wedding website with RSVP, in three themes.
+
+Where: the wedding website, the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Site privacy controls
+
+An optional site password and a switch to hide the site from search engines.
+
+Where: the wedding website, the couple portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Dashboard and analytics
+
+Questions answered, guests reached, busy hours, top questions by topic and the gaps to fix.
+
+- See what guests are asking.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Wedding info
+
+The couple edits the facts the WhatsApp assistant answers from; publishing updates it in about a minute, with version history.
+
+- Edit, preview and publish what the concierge knows.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Conversations
+
+Every guest chat with the WhatsApp assistant, word for word, with search and topic labels; the couple can answer when the channel allows.
+
+- Read every question your guests asked, word for word.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Guest list
+
+Parties with named members, tags, notes, plus-ones and a language per guest, edited from one guest drawer.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Guest import
+
+Bring a list in from Zola, The Knot, Joy, Minted, a spreadsheet, a photo, a PDF or pasted text; unsure rows wait for review.
+
+- Import your Zola guest list.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### RSVP board and chase list
+
+Live status, headcounts per event, a list of who has not answered, and a way to record an RSVP received by phone.
+
+- Headcounts count people, not replies.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Tasks and checklist
+
+A wedding checklist with owners, priorities and email reminders, shareable with people who have no login.
+
+- A wedding checklist with owners and reminders.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app, email.
+
+Plans: every plan.
+
+### Budget with AI import
+
+Categories, items, payments and what is still owed; import from Excel, pasted text or a photo, nothing saved until confirmed.
+
+- Import a budget from Excel, pasted text or a photo. You confirm before anything is saved.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Seating planner
+
+Upload a photo of the floor plan, let the AI suggest the tables, then seat parties by dragging, with undo, and print.
+
+- Start from a photo of the floor plan.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Vendors and day-of runsheet
+
+A vendor list linked to budget lines and a minute-by-minute schedule for the wedding day with calendar export.
+
+- A minute-by-minute runsheet for the wedding day.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Door check-in
+
+Scan a guest's QR pass on any phone or search by name, with live counters and undo.
+
+- In the iOS app it keeps working without signal.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Branded Excel exports
+
+Styled spreadsheets with several presets, for example one for the caterer.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Email alerts and weekly digest
+
+RSVP alerts by email and a weekly summary of what guests asked.
+
+Where: email.
+
+Plans: every plan.
+
+### Couple guide
+
+An illustrated how-to inside the portal.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+### Requests, approvals and contact privacy
+
+A planner proposes a change and the couple approves it, or lets the planner edit; the couple decides who sees phones and emails.
+
+- Privacy-controlled: the couple decides what the planner sees.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Live demo chat on guest-ly.com
+
+A real assistant on a fictional wedding (Emma and James) in the hero of guest-ly.com, limited to a few messages.
+
+- A real concierge on a fictional wedding. Try the demo.
+
+Where: the wedding website.
+
+Plans: every plan.
+
+### Sign in with Google, Apple, email link or password
+
+Couples and planners sign in to the portal and the app with Google, Apple, an emailed link or a password.
+
+- Sign in with Google or Apple.
+
+Where: the couple portal on the web, the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Global search
+
+One search box (Cmd+K) across guests, RSVPs, tasks, messages and seating tables.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+### Notification bell, daily briefing and risk alerts
+
+A bell with what needs attention, a daily briefing on the home screen and alerts when something is at risk.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+### Topic labels on every conversation
+
+Each guest conversation gets topic labels, so couples see what guests ask about and what is still unanswered.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+### RSVP change history per guest
+
+Every RSVP change made in the portal is confirmed first and recorded, so the guest drawer shows who changed what and when.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+### Seating suggestions and seating chart PDF
+
+Suggest seating groups parties by relationship and tags and explains who stays unseated; export a branded PDF of the chart.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+### Update a budget from a newer file
+
+Upload a newer version of the budget spreadsheet, see exactly what changes, then apply it.
+
+Where: the couple portal on the web, the planner portal on the web.
+
+Plans: every plan.
+
+## What it does for planners
+
+### Planner portal
+
+A separate, role-scoped portal for wedding planners with a home, guests, requests, budget and tasks.
+
+Where: the planner portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Per-wedding, per-tool permissions
+
+For each planner and each wedding, every tool is off, view or edit; a tool that is off disappears from the menu.
+
+Where: the planner portal on the web.
+
+Plans: every plan.
+
+### Logistics and transport manifest
+
+Lodging, arrival, transport, pickup point and diet per guest, with a manifest export and quick answers.
+
+Where: the planner portal on the web.
+
+Plans: every plan.
+
+### Planner assistant
+
+A chat helper that answers from the wedding's real data and can make changes behind confirm cards.
+
+- Changes always wait for confirmation.
+
+Where: the planner portal on the web.
+
+Plans: every plan.
+
+### Request a new wedding
+
+A planner fills in an intake form, or sends the couple a link to fill it in, and Guest-ly builds the wedding.
+
+Where: the planner portal on the web, the couple portal on the web.
+
+Plans: every plan.
+
+### Meeting intake from a transcript
+
+A planner pastes or uploads a meeting transcript and reviews a proposed draft section by section before anything is saved.
+
+- Upload a meeting transcript and review a draft, section by section.
+
+Where: the planner portal on the web.
+
+Plans: every plan.
+
+## What it does for agencies
+
+### Agency workspace
+
+A planning company sees all its weddings in one place, with what needs attention, team seats and documents.
+
+Where: the planner portal on the web.
+
+Plans: every plan.
+
+## What it does for guests
+
+### Web assistant chat
+
+Guests ask anything about the wedding on its page or chat link and get answers from the couple's own facts.
+
+- Guests ask the concierge anything, any hour, in their language.
+- It is an AI assistant and says so.
+
+Where: the wedding website, guest pages on the web, the iPhone app.
+
+Plans: every plan.
+
+### Answers only from the couple's facts, and flags gaps
+
+The WhatsApp assistant never invents facts. When unsure it says it is checking, and the question lands on the dashboard as a gap to fix.
+
+- Trained only on the couple's wedding.
+
+Where: the wedding website, guest pages on the web, the couple portal on the web, the iPhone app.
+
+Plans: every plan.
+
+### Replies in the guest's language
+
+The WhatsApp assistant answers in the language the guest writes in: perfected in English and Spanish, best effort in other languages.
+
+- Understands 30+ languages, perfected in English and Spanish.
+
+Where: the wedding website, guest pages on the web, WhatsApp, the iPhone app.
+
+Plans: every plan.
+
+### RSVP inside the web chat
+
+A guest says they are coming; the WhatsApp assistant matches the guest list and asks person by person and event by event.
+
+- RSVP person by person, event by event, right in the chat.
+
+Where: the wedding website, guest pages on the web.
+
+Plans: every plan.
+
+### International guest guide
+
+Visas, currency, weather and transport answered from the couple's own facts, in the guest's language.
+
+- Visas, currency, weather and transport.
+
+Where: the wedding website, guest pages on the web.
+
+Plans: every plan.
+
+### RSVP wizard with personal links
+
+A shareable RSVP page with a personal link per guest: answers per person and per event, plus the couple's own questions.
+
+- Per-person, per-event RSVP. Headcounts count people, not replies.
+
+Where: the wedding website, guest pages on the web, the iPhone app.
+
+Plans: every plan.
+
+### Add to calendar
+
+Per-event calendar files and Google Calendar links with the right time zone.
+
+Where: the wedding website, guest pages on the web, the iPhone app.
+
+Plans: every plan.
+
+### QR guest pass
+
+A printable pass with a QR code for each guest, scanned at the door.
+
+Where: the wedding website, guest pages on the web.
+
+Plans: every plan.
+
+### Hosted registry page
+
+A registry page with link cards, notes and QR images, or a link out to the couple's registry elsewhere.
+
+Where: the wedding website, guest pages on the web.
+
+Plans: every plan.
+
+### Guest-ly iOS app
+
+One free iPhone app in English and Spanish for guests, couples and planners, a companion to a wedding set up at guest-ly.com.
+
+- Free on the App Store for iPhone, in English and Spanish.
+- A companion to a wedding set up at guest-ly.com.
+
+Where: the iPhone app.
+
+Plans: every plan.
+
+### Push notifications in the app
+
+Device notifications for guests, couples and planners.
+
+Where: the iPhone app.
+
+Plans: every plan.
+
+### Wedding Code on every site
+
+Every published wedding site shows its Wedding Code and an open-in-app link, so guests open the invitation in the app.
+
+- Open the invitation in the Guest-ly app with the wedding's code.
+
+Where: the wedding website, the iPhone app.
+
+Plans: every plan.
+
+## Platforms
+
+- Web: https://app.guest-ly.com, in a browser on a phone or a computer.
+- iPhone app: https://apps.apple.com/app/id6809618039
+
+## Languages
+
+- Couples and planners use Guest-ly in English or Spanish.
+- https://guest-ly.com reads in English and Spanish at the same address; the language is chosen on the page.
+
+## Company
+
+- Guest-ly is operated by ZC Ventures LLC.
+- Contact: nicolas@guest-ly.com
+
+## Links
+
+- [Home](https://guest-ly.com/)
+- [Plans and prices](https://guest-ly.com/#pricing)
+- [Privacy](https://guest-ly.com/privacy/)
+- [Terms](https://guest-ly.com/terms/)
+- [Refunds](https://guest-ly.com/refunds/)
+- [Sign in for couples and planners](https://app.guest-ly.com)
+- [iPhone app on the App Store](https://apps.apple.com/app/id6809618039)
+
+More wedding, less stress.

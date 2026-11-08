@@ -1,0 +1,7 @@
+# guest-ly.com: every published page may be crawled, llms.txt included.
+# Private /reunion pages carry a noindex tag instead of a Disallow line,
+# so crawlers can read it.
+User-agent: *
+Allow: /
+
+Sitemap: https://guest-ly.com/sitemap.xml

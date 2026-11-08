@@ -1,0 +1,110 @@
+# Guest-ly
+
+> Guest-ly is a wedding platform for couples and wedding planners, on the web and on iPhone. One payment per wedding, in US dollars.
+
+This file lists only what is live in Guest-ly today and approved for public description. Facts as of 2026-11-08.
+Spanish version: https://guest-ly.com/es/llms.txt
+Full version, with more detail per feature: https://guest-ly.com/llms-full.txt
+
+## Who it is for
+
+- Couples planning their wedding.
+- Wedding planners.
+- Wedding planning agencies that work as a team.
+- The guests of those weddings.
+
+## Plans and prices
+
+One payment per wedding, in US dollars (USD). Each plan includes 5 months live; after that, a fee of USD 20 per month keeps the website, RSVP and concierge running, only if the couple wants it.
+
+- Essentials: USD 199. Up to 160 guests.
+- Signature: USD 399. Up to 300 guests.
+- Grande: USD 699. 500+ guests. The AI Coordinator is included.
+- AI Coordinator add-on for Essentials and Signature: USD 79 once, or USD 19 per month.
+
+Plans and ordering: https://guest-ly.com/#pricing
+
+## What it does
+
+### For couples
+
+- Wedding website builder: A bilingual wedding site with schedule, travel, registry, FAQ, RSVP, chat, gallery and custom sections, in three themes.
+- Site privacy controls: An optional site password and a switch to hide the site from search engines.
+- Dashboard and analytics: Questions answered, guests reached, busy hours, top questions by topic and the gaps to fix.
+- Wedding info: The couple edits the facts the WhatsApp assistant answers from; publishing updates it in about a minute, with version history.
+- Conversations: Every guest chat with the WhatsApp assistant, word for word, with search and topic labels; the couple can answer when the channel allows.
+- Guest list: Parties with named members, tags, notes, plus-ones and a language per guest, edited from one guest drawer.
+- Guest import: Bring a list in from Zola, The Knot, Joy, Minted, a spreadsheet, a photo, a PDF or pasted text; unsure rows wait for review.
+- RSVP board and chase list: Live status, headcounts per event, a list of who has not answered, and a way to record an RSVP received by phone.
+- Tasks and checklist: A wedding checklist with owners, priorities and email reminders, shareable with people who have no login.
+- Budget with AI import: Categories, items, payments and what is still owed; import from Excel, pasted text or a photo, nothing saved until confirmed.
+- Seating planner: Upload a photo of the floor plan, let the AI suggest the tables, then seat parties by dragging, with undo, and print.
+- Vendors and day-of runsheet: A vendor list linked to budget lines and a minute-by-minute schedule for the wedding day with calendar export.
+- Door check-in: Scan a guest's QR pass on any phone or search by name, with live counters and undo.
+- Branded Excel exports: Styled spreadsheets with several presets, for example one for the caterer.
+- Email alerts and weekly digest: RSVP alerts by email and a weekly summary of what guests asked.
+- Couple guide: An illustrated how-to inside the portal.
+- Requests, approvals and contact privacy: A planner proposes a change and the couple approves it, or lets the planner edit; the couple decides who sees phones and emails.
+- Live demo chat on guest-ly.com: A real assistant on a fictional wedding (Emma and James) in the hero of guest-ly.com, limited to a few messages.
+- Sign in with Google, Apple, email link or password: Couples and planners sign in to the portal and the app with Google, Apple, an emailed link or a password.
+- Global search: One search box (Cmd+K) across guests, RSVPs, tasks, messages and seating tables.
+- Notification bell, daily briefing and risk alerts: A bell with what needs attention, a daily briefing on the home screen and alerts when something is at risk.
+- Topic labels on every conversation: Each guest conversation gets topic labels, so couples see what guests ask about and what is still unanswered.
+- RSVP change history per guest: Every RSVP change made in the portal is confirmed first and recorded, so the guest drawer shows who changed what and when.
+- Seating suggestions and seating chart PDF: Suggest seating groups parties by relationship and tags and explains who stays unseated; export a branded PDF of the chart.
+- Update a budget from a newer file: Upload a newer version of the budget spreadsheet, see exactly what changes, then apply it.
+
+### For planners
+
+- Planner portal: A separate, role-scoped portal for wedding planners with a home, guests, requests, budget and tasks.
+- Per-wedding, per-tool permissions: For each planner and each wedding, every tool is off, view or edit; a tool that is off disappears from the menu.
+- Logistics and transport manifest: Lodging, arrival, transport, pickup point and diet per guest, with a manifest export and quick answers.
+- Planner assistant: A chat helper that answers from the wedding's real data and can make changes behind confirm cards.
+- Request a new wedding: A planner fills in an intake form, or sends the couple a link to fill it in, and Guest-ly builds the wedding.
+- Meeting intake from a transcript: A planner pastes or uploads a meeting transcript and reviews a proposed draft section by section before anything is saved.
+
+### For agencies
+
+- Agency workspace: A planning company sees all its weddings in one place, with what needs attention, team seats and documents.
+
+### For guests
+
+- Web assistant chat: Guests ask anything about the wedding on its page or chat link and get answers from the couple's own facts.
+- Answers only from the couple's facts, and flags gaps: The WhatsApp assistant never invents facts. When unsure it says it is checking, and the question lands on the dashboard as a gap to fix.
+- Replies in the guest's language: The WhatsApp assistant answers in the language the guest writes in: perfected in English and Spanish, best effort in other languages.
+- RSVP inside the web chat: A guest says they are coming; the WhatsApp assistant matches the guest list and asks person by person and event by event.
+- International guest guide: Visas, currency, weather and transport answered from the couple's own facts, in the guest's language.
+- RSVP wizard with personal links: A shareable RSVP page with a personal link per guest: answers per person and per event, plus the couple's own questions.
+- Add to calendar: Per-event calendar files and Google Calendar links with the right time zone.
+- QR guest pass: A printable pass with a QR code for each guest, scanned at the door.
+- Hosted registry page: A registry page with link cards, notes and QR images, or a link out to the couple's registry elsewhere.
+- Guest-ly iOS app: One free iPhone app in English and Spanish for guests, couples and planners, a companion to a wedding set up at guest-ly.com.
+- Push notifications in the app: Device notifications for guests, couples and planners.
+- Wedding Code on every site: Every published wedding site shows its Wedding Code and an open-in-app link, so guests open the invitation in the app.
+
+## Platforms
+
+- Web: https://app.guest-ly.com, in a browser on a phone or a computer.
+- iPhone app: https://apps.apple.com/app/id6809618039
+
+## Languages
+
+- Couples and planners use Guest-ly in English or Spanish.
+- https://guest-ly.com reads in English and Spanish at the same address; the language is chosen on the page.
+
+## Company
+
+- Guest-ly is operated by ZC Ventures LLC.
+- Contact: nicolas@guest-ly.com
+
+## Links
+
+- [Home](https://guest-ly.com/)
+- [Plans and prices](https://guest-ly.com/#pricing)
+- [Privacy](https://guest-ly.com/privacy/)
+- [Terms](https://guest-ly.com/terms/)
+- [Refunds](https://guest-ly.com/refunds/)
+- [Sign in for couples and planners](https://app.guest-ly.com)
+- [iPhone app on the App Store](https://apps.apple.com/app/id6809618039)
+
+More wedding, less stress.
