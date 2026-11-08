@@ -45,7 +45,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // team and settings). Apple closed the 1.2.0 train once 1.2.0 was approved
   // (ITMS-90186 / ITMS-90062 on build 35), so every new upload needs a version
   // above the last approved one.
-  version: "1.3.0",
+  // 1.4.0 (Nov 2026): Master Wave (wedding day live, locked timeline, places,
+  // final count, road card, table shapes, review card). A new version string is
+  // required: Apple refuses a repeated version with a new build (see above),
+  // and 1.3.0 builds already exist in App Store Connect. The iOS build number is not
+  // set here: eas.json has appVersionSource "remote" and the production profile
+  // has autoIncrement, so EAS assigns the next number at build time.
+  version: "1.4.0",
   // The iPhone Duo's inner display ignores declared orientations and Apple asks
   // every app to support them all (tent pose, inner landscape, Split View).
   orientation: "default",
