@@ -1,6 +1,9 @@
 /* #22 demo booking and #50 destination guides: what a build may say and
    carry for each switch (src/switches.ts). Used by scripts/check-seo.mjs
    (fails the build) and tested by scripts/test-booking-core.mjs.
+   - Run time only (guides, booking: the Reviews tab's rule): never in the
+     prerendered home page, switch on or off; on, the chunk and the read must
+     be in the build.
    - Switch off: no booking button or guides section in the prerendered home
      page, no disclosure for it on the privacy page, no asset that calls its
      API path or holds its lazy chunk.
@@ -24,8 +27,12 @@ export function featureClaimProblems({ switches, home = '', privacy = '', assets
       label: '#22 demo booking (BOOKING_ENABLED)',
       claim: BOOKING_CLAIM,
       api: '/api/public/booking/',
-      chunk: /^BookingModal-/,
-      inHome: /\bdata-book=/,
+      chunk: /^(BookingModal|BookingGate)-/,
+      inHome: /\bdata-book=|\bbook-line\b|\bfaq-human__book\b|\bnav__menu-book\b/,
+      /* Like the guides and the Reviews tab (Nov 8): the buttons exist at run
+         time only (added after an "open" read of the slots), never in the
+         prerendered page, switch on or off. */
+      runtime: true,
       inPrivacy: /<h2>(Demo calls|Llamadas de demo)<\/h2>/,
     },
     {
@@ -45,7 +52,7 @@ export function featureClaimProblems({ switches, home = '', privacy = '', assets
     const on = Boolean(switches[f.key]);
     if (on) {
       if (f.runtime) {
-        if (f.inHome.test(home) || /href="#guides"/.test(home)) out.push(`${f.label} is on, but the prerendered home page holds it (run time only)`);
+        if (f.inHome.test(home) || (f.key === 'guides' && /href="#guides"/.test(home))) out.push(`${f.label} is on, but the prerendered home page holds it (run time only)`);
         if (!assets.some((a) => f.chunk.test(a.name))) out.push(`${f.label} is on, but the build has no ${f.chunk.source.replace(/^\^/, "")} chunk`);
         if (!assets.some((a) => a.text.includes(f.api))) out.push(`${f.label} is on, but no asset reads ${f.api}`);
       } else if (!f.inHome.test(home)) out.push(`${f.label} is on, but the prerendered home page does not show it`);

@@ -1,8 +1,8 @@
 /* Privacy page paragraphs for #22 (demo calls) and #50 (destination guides).
    LegalPage renders each one only while its switch is on (src/switches.ts),
    so a disclosure goes live with its feature and never before. DRAFT
-   wording: Nicolas approves it, with a new "Last updated" date, before either
-   switch is turned on (open issue in L7-LOG). The guides lines follow
+   wording: Nicolas approved the booking text (his answer w-privacy, Nov 6)
+   and the page's "Last updated" is November 2026. The guides lines follow
    L7p's #50 (address forgotten a day after the 14-day link dies; tips only
    after the download confirms the ticked box). */
 

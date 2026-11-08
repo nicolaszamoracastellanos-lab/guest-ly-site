@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
-import { BookCta } from '../booking/BookingContext';
+import { BookCta, BookGate } from '../booking/BookingContext';
 import { useGuidesShown } from '../guides/state';
 
 export function Faq() {
@@ -23,9 +23,11 @@ export function Faq() {
               {f.human.email}
             </a>
             {import.meta.env.VITE_BOOKING_ENABLED && (
-              <div className="faq-human__book">
-                <BookCta id="faq" />
-              </div>
+              <BookGate>
+                <div className="faq-human__book">
+                  <BookCta id="faq" />
+                </div>
+              </BookGate>
             )}
           </div>
 

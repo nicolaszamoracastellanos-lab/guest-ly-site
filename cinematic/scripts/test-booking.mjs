@@ -5,11 +5,20 @@
    another port of localhost: same site, other origin, like guest-ly.com and
    app.guest-ly.com), and both off (today's build). Proves:
    ON
-   A. load: no booking request and exactly one guides catalogue read, after
-      hydration at idle (simple GET, no cookie, no referrer), no guide request;
-      scrolling adds none; the dialog and the guides section are not in the
-      prerendered page, the three booking buttons are; the section appears
-      once the catalogue answers open (the stub), where it sits today.
+   A. load: exactly one booking slot read and one guides catalogue read,
+      both after hydration at idle (simple GET, no cookie, no referrer), no
+      guide request; scrolling adds none; the dialog, the guides section and
+      the booking buttons are not in the prerendered page (run time only,
+      like the guides and Reviews); the three page buttons are added once the
+      slot read answers open (the stub), the guides section once the
+      catalogue does, where it sits today.
+   BG. the gate: slots closed, unavailable, 429, 500, no answer, an
+      unreadable answer, or a slow one: no booking button or line anywhere
+      (also not in the menu), and the page's markup is identical to the
+      booking-off build's; ?book=demo still opens the dialog. An open answer
+      held while the visitor reads: nothing goes in while a place is on
+      screen, and once the places are all below, all above or mixed, what the
+      visitor sees does not move and the layout shift stays under 0.02.
    B. pointer over a button prefetches the slot list once (visitor zone in
       the query); the press opens the dialog on that list with no second
       read; the title has focus; times show in the visitor's zone with the
@@ -116,7 +125,7 @@ const initial = { off: initialJs(offDir).bytes, on: initialJs(onDir).bytes };
 check(initial.off > 0 && initial.off <= INITIAL_JS_BUDGET, `off build initial JS ${initial.off} B gzip (budget ${INITIAL_JS_BUDGET})`);
 check(initial.on > initial.off && initial.on <= INITIAL_JS_BUDGET, `on build (booking and guides) initial JS ${initial.on} B gzip (budget ${INITIAL_JS_BUDGET})`);
 const onHtml = readFileSync(join(onDir, 'index.html'), 'utf8');
-check((onHtml.match(/data-book=""/g) ?? []).length === 3, `on: expected 3 booking buttons in the prerendered page (pricing, FAQ, final), found ${(onHtml.match(/data-book=""/g) ?? []).length}`);
+check(!/data-book=|book-line|faq-human__book|nav__menu-book|Book a demo call|Agendar una demo/.test(onHtml), 'on: the prerendered page holds booking markup (it is run time only)');
 check(!onHtml.includes('role="dialog"'), 'on: a dialog is in the prerendered page');
 check(!onHtml.includes('id="guides"') && !onHtml.includes('class="guides') && !onHtml.includes('guides-slot') && !onHtml.includes('href="#guides"'), 'on: the prerendered page holds guides markup (it is run time only)');
 check(!/Free guides|Guías gratis|Getting married\s*away from home|A free guide to your destination/.test(onHtml), 'on: the prerendered page holds the guides words');
@@ -167,6 +176,7 @@ async function context(opts = {}) {
   return { ctx, page, errs };
 }
 const done = async ({ ctx, errs }, label) => {
+  if (process.env.TB_TRACE) console.log(`  ${new Date().toISOString().slice(11, 19)} ${label} (${failures.length} failures so far)`);
   check(errs.length === 0, `${label}: console or page errors ${JSON.stringify(errs.slice(0, 3))}`);
   await ctx.close();
 };
@@ -203,7 +213,7 @@ async function pressBook(page) {
   const mark = S.hits.length;
   await page.goto(on.url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(300);
-  check(apiHits(mark).every((h) => h.path === '/api/public/guides' && h.method === 'GET'), `A: an API request on load other than the catalogue read: ${apiHits(mark).map((h) => h.path).join()}`);
+  check(apiHits(mark).every((h) => (h.path === '/api/public/guides' || h.path.endsWith('/slots')) && h.method === 'GET'), `A: an API request on load other than the catalogue and slot reads: ${apiHits(mark).map((h) => h.path).join()}`);
   await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += 700) {
       window.scrollTo(0, y);
@@ -215,7 +225,14 @@ async function pressBook(page) {
   await page.waitForTimeout(200);
   check((await page.locator('#guides').count()) === 1, 'A: the guides section did not appear after an open answer');
   check(await page.evaluate(() => document.getElementById('guides').nextElementSibling?.id === 'faq'), 'A: the guides section is not just before the FAQ');
-  check(apiHits(mark).filter((h) => h.path.includes('/booking/')).length === 0, 'A: a booking API request before any intent');
+  const gateReads = apiHits(mark).filter((h) => h.path.endsWith('/slots'));
+  check(gateReads.length === 1, `A: expected one booking slot read at idle, saw ${gateReads.length}`);
+  check(gateReads[0] && new URL(gateReads[0].url, stub.origin).searchParams.get('tz') === 'America/Chicago' && !gateReads[0].headers.cookie && !gateReads[0].headers.referer, 'A: the slot read at idle lacks the visitor zone or carried a cookie or referrer');
+  check(apiHits(mark).filter((h) => h.path.includes('/booking/') && !h.path.endsWith('/slots')).length === 0, 'A: a booking request other than the one slot read');
+  await page.locator(finalCta).waitFor();
+  check((await page.locator('[data-book]').count()) === 3, `A: expected 3 booking buttons after the open answer (pricing, FAQ, final), found ${await page.locator('[data-book]').count()}`);
+  check((await page.evaluate(() => document.querySelector('.book-line--pricing')?.previousElementSibling?.classList.contains('coord-strip'))), 'A: the pricing line is not right after the coordinator strip');
+  check((await page.locator('.nav__menu-book').count()) === 0 && (await page.getByRole('dialog').count()) === 0, 'A: a menu button or a dialog before any press');
   const cats = apiHits(mark).filter((h) => h.path === '/api/public/guides');
   check(cats.length === 1 && cats[0].method === 'GET', `A: expected one guides catalogue GET after scrolling, saw ${cats.map((h) => h.method).join()}`);
   check(cats[0] && !cats[0].headers.cookie && !cats[0].headers.referer, 'A: the catalogue read carried a cookie or referrer');
@@ -435,10 +452,13 @@ for (const [mode, expect] of [
   [{ slots: 'error' }, 'Could not load the times'],
   [{ slots: 'empty-next' }, 'No open times in these two weeks.'],
 ]) {
-  reset(mode);
+  /* The page loads on an open answer (the buttons exist); the answer at the press is the mode. */
+  reset();
   const t = await context();
   const { page } = t;
   await page.goto(on.url, { waitUntil: 'networkidle' });
+  await page.locator(finalCta).waitFor();
+  reset(mode);
   await openDialog(page);
   await page.locator('.book__empty').waitFor();
   const txt = await page.locator('.book__empty').innerText();
@@ -805,6 +825,8 @@ for (const lang of ['en', 'es']) {
   const heads = await page.locator('.legal-page__section h2').allInnerTexts();
   const want = lang === 'es' ? ['Llamadas de demo', 'Guías de destino'] : ['Demo calls', 'Destination guides'];
   check(want.every((h) => heads.includes(h)), `L ${lang}: privacy headings ${JSON.stringify(heads)}`);
+  const updated = await page.locator('.legal-page__updated').innerText();
+  check(updated === (lang === 'es' ? 'Última actualización: noviembre de 2026' : 'Last updated: November 2026'), `L ${lang}: privacy date "${updated}"`);
   await done(t, `L ${lang}`);
 }
 
@@ -814,6 +836,8 @@ for (const lang of ['en', 'es']) {
   const t = await context({ width: 390 });
   const { page } = t;
   await page.goto(on.url, { waitUntil: 'networkidle' });
+  /* The menu button is added with the page ones; a menu that is already open holds them back. */
+  await page.locator(finalCta).waitFor();
   await page.locator('.nav__burger').click();
   await page.locator('.nav__menu-book [data-book]').click();
   await page.locator('label.book-time').first().waitFor();
@@ -907,6 +931,128 @@ for (const lang of ['en', 'es']) {
   check(/^[A-Za-z0-9_-]{8,80}$/.test(JSON.parse(lastBook()?.body ?? '{}').idempotencyKey ?? ''), 'O: no valid key without crypto.randomUUID');
   check((await page.locator('.book__done').count()) === 1, 'O: no confirmation without crypto.randomUUID');
   await done(t, 'O');
+}
+
+/* ---------- BG: the gate (booking buttons only after an open read) ---------- */
+const bodyMarkup = (page) => page.evaluate(() => document.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '').replace(/\s+/g, ' '));
+const slotReads = (from) => S.hits.slice(from).filter((h) => h.path.endsWith('/slots'));
+async function readSlotsAt(from, n = 1) {
+  for (let i = 0; i < 100 && slotReads(from).length < n; i++) await slowly(50);
+}
+for (const [lang, width] of [['en', 1440], ['es', 390]]) {
+  reset({ catalogue: 'closed' });
+  const ref = await context({ lang, width });
+  await ref.page.goto(off.url, { waitUntil: 'networkidle' });
+  await ref.page.waitForTimeout(700);
+  const offMarkup = await bodyMarkup(ref.page);
+  await done(ref, `BG off reference ${lang}`);
+  for (const mode of ['closed', 'unavailable', 'limited', 'error', 'abort', 'garbage', 'slow']) {
+    reset({ slots: mode, catalogue: 'closed' });
+    let release = () => {};
+    if (mode === 'slow') S.holdSlots = new Promise((r) => (release = r));
+    const t = await context({ lang, width });
+    const { page } = t;
+    await clsFromStart(page);
+    const mark = S.hits.length;
+    await page.goto(on.url, { waitUntil: mode === 'slow' ? 'load' : 'networkidle' });
+    await readSlotsAt(mark);
+    await page.waitForTimeout(mode === 'slow' ? 1800 : 700);
+    const label = `BG ${mode} ${lang} ${width}`;
+    /* A reset connection (the no-answer mode) is re-sent once by the browser itself for a GET. */
+    check(slotReads(mark).length === 1 || (mode === 'abort' && slotReads(mark).length === 2), `${label}: expected one slot read, saw ${slotReads(mark).length}`);
+    check((await page.locator('[data-book], .book-line, .faq-human__book').count()) === 0, `${label}: a booking button shows`);
+    if (width === 390) {
+      await page.locator('.nav__burger').click();
+      await page.waitForTimeout(250);
+      check((await page.locator('.nav__menu-book').count()) === 0, `${label}: a booking button in the menu`);
+      await page.locator('.nav__burger').click();
+      await page.waitForTimeout(250);
+    }
+    check((await bodyMarkup(page)) === offMarkup, `${label}: the page differs from the booking-off build`);
+    check((await shifts(page)) < 0.02, `${label}: layout shift ${(await shifts(page)).toFixed(3)}`);
+    if (mode === 'slow') {
+      S.holdSlots = null;
+      release();
+      await page.waitForTimeout(500);
+      check((await page.locator('[data-book]').count()) === 3, `${label}: after the held answer came, ${await page.locator('[data-book]').count()} buttons`);
+    }
+    if (mode === 'closed' && lang === 'en') {
+      /* The "Book another time" link still opens the dialog, with its calm message. */
+      await page.goto(`${on.url}/?book=demo`, { waitUntil: 'networkidle' });
+      await page.getByRole('dialog').waitFor();
+      await page.locator('.book__empty').waitFor();
+      check((await page.locator('.book__empty').innerText()).includes('No times open right now'), `${label}: ?book=demo with bookings closed`);
+    }
+    await done(t, label);
+  }
+}
+
+/* An open answer held while the visitor reads: nothing goes in while a place is on screen;
+   once every place is below the screen, or above it (past-faq-card at 390: the pricing line and the
+   FAQ button go in above the visitor, the page scrolls by what they added), what the visitor sees
+   does not move. At 1440 the final button is on screen from the same spot, so it waits for the top. */
+for (const width of [390, 1440]) {
+  for (const where of ['top', 'pricing', 'past-faq-card', 'faq', 'faq-list', 'final', 'footer']) {
+    reset({ catalogue: 'closed' });
+    let release = () => {};
+    S.holdSlots = new Promise((r) => (release = r));
+    const t = await context({ width });
+    const { page } = t;
+    await clsFromStart(page);
+    const mark = S.hits.length;
+    await page.goto(on.url, { waitUntil: 'load' });
+    await readSlotsAt(mark);
+    const label = `BG held ${where} ${width}`;
+    /* Park the visitor, then take a probe: the first main element at mid-screen. */
+    await page.evaluate((w) => {
+      const q = (s) => document.querySelector(s);
+      const y = (el, off = 0) => el.getBoundingClientRect().top + scrollY + off;
+      const to =
+        w === 'top' ? 0
+        : w === 'pricing' ? y(q('#pricing .coord-strip'), -innerHeight / 2)
+        : w === 'past-faq-card' ? y(q('#faq .faq-human'), q('#faq .faq-human').offsetHeight + 20)
+        : w === 'faq' ? y(q('#faq .faq-human'), -120)
+        : w === 'faq-list' ? y(q('#faq .faq-list'), q('#faq .faq-list').offsetHeight - innerHeight / 2)
+        : w === 'final' ? y(q('.final-cta__actions'), -innerHeight / 2)
+        : document.body.scrollHeight;
+      window.scrollTo({ top: to, behavior: 'instant' });
+    }, where);
+    await page.waitForTimeout(400);
+    const probe = () =>
+      page.evaluate(() => {
+        const els = document.elementsFromPoint(innerWidth / 2, innerHeight / 2).filter((e) => e.closest('main, footer') && getComputedStyle(e).position !== 'fixed');
+        const el = els[0];
+        if (!el) return null;
+        window.__probe = window.__probe && document.contains(window.__probe) ? window.__probe : el;
+        return Math.round(window.__probe.getBoundingClientRect().top);
+      });
+    const before = await probe();
+    const onScreen = await page.evaluate(() => {
+      const hit = (s, side) => { const r = document.querySelector(s)?.getBoundingClientRect(); return !!r && !(side === 'top' ? r.top >= innerHeight : r.bottom >= innerHeight) && r.bottom > 0; };
+      return hit('#pricing .coord-strip', 'b') || hit('#faq .faq-human', 'b') || hit('.final-cta__actions', 'top');
+    });
+    await watchShifts(page);
+    S.holdSlots = null;
+    release();
+    await page.waitForTimeout(onScreen ? 1500 : 600);
+    const n1 = await page.locator('[data-book]').count();
+    if (onScreen) {
+      check(n1 === 0, `${label}: buttons went in while a place was on screen (${n1})`);
+      /* The visitor goes back to the top: every place is below the screen. */
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.waitForTimeout(1500);
+    }
+    const n2 = await page.locator('[data-book]').count();
+    if (!onScreen) {
+      const after = await probe();
+      check(before !== null && after !== null && Math.abs(after - before) <= 1, `${label}: what the visitor sees moved ${before} to ${after}`);
+      check(n2 === 3, `${label}: expected 3 buttons, found ${n2}`);
+    } else {
+      check(n2 === 3, `${label}: expected 3 buttons after scrolling on, found ${n2}`);
+    }
+    check((await shifts(page)) < 0.02, `${label}: layout shift ${(await shifts(page)).toFixed(3)}`);
+    await done(t, label);
+  }
 }
 
 /* ---------- N: off ---------- */

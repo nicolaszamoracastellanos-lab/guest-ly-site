@@ -28,12 +28,12 @@ const eq = (label, got, want) => {
 const ok = (label, cond) => eq(label, Boolean(cond), true);
 const ORIGIN = 'https://app.guest-ly.com';
 
-/* ---------- what the switches ship as (Nov 7: guides and Reviews on, booking off) ---------- */
-eq('BOOKING_ENABLED ships false', BOOKING_ENABLED, false);
+/* ---------- what the switches ship as (Nov 8: booking, guides and Reviews on) ---------- */
+eq('BOOKING_ENABLED ships true', BOOKING_ENABLED, true);
 eq('GUIDES_ENABLED ships true', GUIDES_ENABLED, true);
 eq('API origin', API_ORIGIN, ORIGIN);
-eq('no env: the shipped switches', resolveSwitches({}), { booking: false, guides: true, reviews: true, apiOrigin: ORIGIN });
-eq('env can turn the shipped ones off', resolveSwitches({ GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' }), { booking: false, guides: false, reviews: false, apiOrigin: ORIGIN });
+eq('no env: the shipped switches', resolveSwitches({}), { booking: true, guides: true, reviews: true, apiOrigin: ORIGIN });
+eq('env can turn the shipped ones off', resolveSwitches({ GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' }), { booking: false, guides: false, reviews: false, apiOrigin: ORIGIN });
 eq('test env turns them on', resolveSwitches({ GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: 'true' }).booking, true);
 eq('local stub origin allowed', resolveSwitches({ GL_API_ORIGIN: 'http://localhost:5310' }).apiOrigin, 'http://localhost:5310');
 let refused = false;
@@ -287,7 +287,13 @@ const planted = featureClaimProblems({
 });
 for (const want of ['home page shows it', 'privacy page discloses it', 'has its chunk BookingModal', 'calls /api/public/guides', 'JSON-LD says: Book a demo', 'JSON-LD says: Free destination', 'es/llms.txt line 2', 'es/llms.txt line 3'])
   ok(`planted off-feature caught: ${want}`, planted.some((p) => p.includes(want)));
-ok('on: booking must show in the home page', featureClaimProblems({ switches: { booking: true, guides: false }, home: '<main></main>' }).some((p) => p.includes('does not show it')));
+/* Booking is run time only too (Nov 8): never prerendered, switch on or off. */
+const bookingOn = { switches: { booking: true, guides: false }, assets: [{ name: 'BookingModal-x.js', text: '"/api/public/booking/"' }] };
+eq('booking on: the build as expected is clean', featureClaimProblems({ ...bookingOn, home: '<main><section id="faq"></section></main>' }), []);
+for (const [what, home] of [['a booking button', '<button data-book="">Book a demo call</button>'], ['the pricing line', '<p class="book-line book-line--pricing">'], ['the FAQ button', '<div class="faq-human__book">'], ['the menu button', '<div class="nav__menu-book">']])
+  ok(`booking on: ${what} in the prerendered page is caught`, featureClaimProblems({ ...bookingOn, home }).some((p) => p.includes('holds it (run time only)')));
+ok('booking on: a missing chunk is caught', featureClaimProblems({ switches: bookingOn.switches, home: '', assets: [{ name: 'index-a.js', text: '"/api/public/booking/"' }] }).some((p) => p.includes('chunk')));
+ok('booking on: no read is caught', featureClaimProblems({ switches: bookingOn.switches, home: '', assets: [{ name: 'BookingModal-x.js', text: '' }] }).some((p) => p.includes('no asset reads /api/public/booking/')));
 /* The guides section is run time only (like Reviews): never prerendered, switch on or off. */
 const guidesOn = { switches: { booking: false, guides: true }, assets: [{ name: 'GuidesTab-x.js', text: '"/api/public/guides"' }] };
 eq('guides on: the build as expected is clean', featureClaimProblems({ ...guidesOn, home: '<main><section id="faq"></section></main>' }), []);

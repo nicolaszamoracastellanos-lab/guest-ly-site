@@ -6,7 +6,8 @@
    The allowlist, by host and path:
    - the site itself: the server under test, guest-ly.com, www.guest-ly.com;
    - app.guest-ly.com (src/switches.ts API_ORIGIN), only on the paths the
-     landing calls: /api/public/booking/ (#22), /api/public/guides and what
+     landing calls: /api/public/booking/ (#22, one slot read per page view at
+     idle, then the dialog's own), /api/public/guides and what
      is under it (#50, the catalogue and the request), /api/public/reviews
      (the Reviews tab, one read per page view while REVIEWS_ENABLED) and
      /api/site/t (#23 beacon). Any other path there fails;
@@ -15,7 +16,7 @@
    Nothing else, so a new origin has to be added here, with its reason.
 
    --interact: on the home page, also opens the booking dialog (when the
-   build has booking buttons), books the first time, and requests a guide
+   build has booking buttons, which arrive after an open slot read), books the first time, and requests a guide
    (when it has the guides section). --fixtures answers the API inside the
    browser from scripts/lib/booking-stub.mjs and reviews-stub.mjs (so a
    Reviews build shows its section), so an interact run never
@@ -102,7 +103,9 @@ for (const vp of VIEWPORTS) {
     });
     await page.waitForTimeout(800);
     if (interact && path === '/') {
+      /* The booking buttons are added at run time too (after an open slot read, at idle). */
       const book = page.locator('.final-cta__actions [data-book]');
+      await book.waitFor({ state: 'attached', timeout: fixtures ? 8000 : 500 }).catch(() => {});
       if ((await book.count()) > 0) {
         await book.scrollIntoViewIfNeeded();
         await book.click();

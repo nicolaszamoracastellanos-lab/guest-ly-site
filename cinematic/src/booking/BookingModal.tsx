@@ -603,6 +603,13 @@ export default function BookingModal({ trigger, onClose }: { trigger: HTMLElemen
               </label>
             </div>
 
+            <p className="book__note">
+              {c.privacyNote}{' '}
+              <a href="/privacy" target="_blank" rel="noopener">
+                {c.privacyLink}
+              </a>
+            </p>
+
             {errors.network || errors.form || errors.emailLimit ? (
               <p className="book__error book__error--form" role="alert">
                 {errors.emailLimit ? c.errors.emailLimit : errors.network ? c.errors.network : c.errors.form}

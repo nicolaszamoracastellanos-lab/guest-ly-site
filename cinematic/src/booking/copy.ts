@@ -41,6 +41,8 @@ export type BookingCopy = {
   addToCalendar: string;
   manage: string;
   backToSite: string;
+  privacyNote: string;
+  privacyLink: string;
 };
 
 export const bookingCopy: Record<'en' | 'es', BookingCopy> = {
@@ -99,6 +101,8 @@ export const bookingCopy: Record<'en' | 'es', BookingCopy> = {
     addToCalendar: 'Add to calendar',
     manage: 'Change or cancel the call',
     backToSite: 'Back to the site',
+    privacyNote: 'We use your email only for this call.',
+    privacyLink: 'Privacy',
   },
   es: {
     close: 'Cerrar',
@@ -155,5 +159,7 @@ export const bookingCopy: Record<'en' | 'es', BookingCopy> = {
     addToCalendar: 'Agregar al calendario',
     manage: 'Cambiar o cancelar la llamada',
     backToSite: 'Volver al sitio',
+    privacyNote: 'Usamos tu correo solo para esta llamada.',
+    privacyLink: 'Privacidad',
   },
 };

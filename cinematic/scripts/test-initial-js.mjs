@@ -3,11 +3,11 @@
    never needs a code change to fit. Builds the site into a temp folder
    (never cinematic/dist; no prerender is needed, the scripts the home page
    links are the same) and checks:
-   - the shipped switches (src/switches.ts: guides and Reviews on, booking
-     off) fit, and so does the build with all three on, the proof that a
-     later booking switch fits;
-   - the headroom with all three on is at least MIN_HEADROOM, so the next
-     small change cannot silently use up the room;
+   - the shipped switches (src/switches.ts: booking, guides and Reviews all
+     on since Nov 8) fit, and so does the all-off build, so switching any of
+     them off never needs a code change either;
+   - the headroom with all three on (the shipped mix) is at least
+     MIN_HEADROOM, so the next small change cannot silently use up the room;
    - no legal text and no legal chunk in the first load (test-legal-chunk).
    Usage: node scripts/test-initial-js.mjs */
 

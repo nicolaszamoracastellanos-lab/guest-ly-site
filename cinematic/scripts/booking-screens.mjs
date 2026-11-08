@@ -2,6 +2,9 @@
    against a local stub of the API (never app.guest-ly.com): builds the page
    with both switches on into a temp folder, prerenders it, serves it, and
    shoots night and day, EN and ES, 390x844 and 1440x900.
+   Also "unreachable" shots (the booking API gives no answer, the guides are closed): the same
+   page parts in the booking build and in a booking-off build, which must match byte for byte in
+   markup, with a pixel diff of the three parts reported (--no-unreachable skips them).
    Usage: node scripts/booking-screens.mjs <outDir> [--states=times,done] [--widths=390,1440]
    The guides come from the stub's catalogue (the landing holds none). */
 
@@ -26,6 +29,10 @@ const work = mkdtempSync(join(tmpdir(), 'gl-book-shots-'));
 console.log('booking-screens: building with booking and guides on (stub API)');
 buildSite(work, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_REVIEWS_ENABLED: '0', GL_API_ORIGIN: stub.origin });
 const site = await serveDir(work);
+const offWork = mkdtempSync(join(tmpdir(), 'gl-book-shots-off-'));
+const withUnreachable = !args.includes('--no-unreachable');
+if (withUnreachable) buildSite(offWork, { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' });
+const offSite = withUnreachable ? await serveDir(offWork) : null;
 
 const reset = (m = {}) => {
   stub.state.mode = { slots: 'open', book: 'booked', catalogue: 'open', guide: 'sent', ...m };
@@ -334,11 +341,61 @@ for (const w of widths) {
     }
   }
 }
+
+/* Unreachable: the booking API gives no answer. The page must be the booking-off page. */
+const unreachable = [];
+if (withUnreachable) {
+  for (const w of widths) {
+    const h = w < 600 ? 844 : 900;
+    for (const theme of themes) {
+      for (const lang of langs) {
+        const shot = {};
+        for (const [which, base] of [['on', site.url], ['off', offSite.url]]) {
+          reset({ slots: 'abort', catalogue: 'closed' });
+          const ctx = await browser.newContext({
+            viewport: { width: w, height: h },
+            deviceScaleFactor: w < 600 ? 2 : 1,
+            isMobile: w < 600,
+            hasTouch: w < 600,
+            colorScheme: theme === 'day' ? 'light' : 'dark',
+            reducedMotion: 'reduce',
+            timezoneId: lang === 'es' ? 'America/Bogota' : 'America/Chicago',
+            locale: lang === 'es' ? 'es-MX' : 'en-US',
+          });
+          const page = await ctx.newPage();
+          const errors = [];
+          page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
+          page.on('pageerror', (e) => errors.push(String(e)));
+          await page.addInitScript(([t, l]) => { localStorage.setItem('gl-theme', t); localStorage.setItem('guestly-lang', l); }, [theme, lang]);
+          await page.goto(base, { waitUntil: 'networkidle' });
+          await page.waitForTimeout(1200);
+          shot[which] = { markup: await page.evaluate(() => document.body.innerHTML.replace(/<script[\s\S]*?<\/script>/g, '').replace(/\s+/g, ' ')), errors, buttons: await page.locator('[data-book], .book-line').count(), parts: {} };
+          for (const [part, sel] of [['pricing', '#pricing .coord-strip'], ['faq', '#faq'], ['final', '.final-cta']]) {
+            await page.locator(sel).scrollIntoViewIfNeeded();
+            await page.waitForTimeout(250);
+            const file = `22-unreachable-${which}-${part}-${theme}-${lang}-${w}.png`;
+            shot[which].parts[part] = await page.screenshot({ path: join(outDir, file) });
+          }
+          await ctx.close();
+        }
+        const tag = `${theme} ${lang} ${w}`;
+        const same = shot.on.markup === shot.off.markup;
+        const pixels = Object.keys(shot.on.parts).map((k) => `${k} ${Buffer.compare(shot.on.parts[k], shot.off.parts[k]) === 0 ? 'same' : 'differs'}`).join(', ');
+        unreachable.push({ tag, same, buttons: shot.on.buttons, errors: [...shot.on.errors, ...shot.off.errors], pixels });
+      }
+    }
+  }
+}
 await browser.close();
 site.server.close();
+offSite?.server.close();
 await stub.close();
 rmSync(work, { recursive: true, force: true });
+rmSync(offWork, { recursive: true, force: true });
 const bad = report.filter((r) => r.overflow > 0 || r.sheetOverflow > 0 || r.errors.length);
 for (const r of bad) console.error(`booking-screens: ${r.file}: overflow ${r.overflow}, sheet ${r.sheetOverflow}, errors ${JSON.stringify(r.errors)}`);
-console.log(`booking-screens: ${count} shots in ${outDir}; ${bad.length} with overflow or console errors`);
-if (bad.length) process.exit(1);
+const badU = unreachable.filter((u) => !u.same || u.buttons || u.errors.length);
+for (const u of unreachable) console.log(`booking-screens: unreachable ${u.tag}: markup ${u.same ? 'identical to the off build' : 'DIFFERS'}, ${u.buttons} booking buttons; pixels: ${u.pixels}`);
+for (const u of badU) console.error(`booking-screens: unreachable ${u.tag}: markup same ${u.same}, buttons ${u.buttons}, errors ${JSON.stringify(u.errors)}`);
+console.log(`booking-screens: ${count} shots in ${outDir}; ${bad.length} with overflow or console errors; ${unreachable.length} unreachable pairs, ${badU.length} not identical`);
+if (bad.length || badU.length) process.exit(1);

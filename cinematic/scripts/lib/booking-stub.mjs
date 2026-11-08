@@ -132,7 +132,7 @@ export function parseGuideBody(raw) {
 }
 
 /* The stub server. mode.slots: open | closed | unavailable | empty-next |
-   limited | error | slow. mode.book: booked | replay | taken | invalid-<field>
+   limited | error | abort (no answer) | garbage (200, unreadable) | slow. mode.book: booked | replay | taken | invalid-<field>
    | invalid-null | closed | unavailable | email_limit (429, L7p review
    round 1: this email booked 3 calls today) | error | abort. mode.catalogue:
    open | closed | unavailable | limited | error | abort (no answer) | garbage (200, unreadable). mode.guide: sent (after
@@ -172,6 +172,8 @@ export async function startStub({ port = 0 } = {}) {
         const m = state.mode.slots;
         const tz = url.searchParams.get('tz');
         if (m === 'closed' || m === 'unavailable') return send(200, { v: 1, status: m, host: null, type: null, window: null, slots: [], nextOpen: null });
+        if (m === 'abort') return req.socket.destroy();
+        if (m === 'garbage') return send(200, null, {});
         if (m === 'limited') return send(429, { v: 1, status: 'limited' }, { 'Retry-After': '60' });
         if (m === 'error') return send(500, { v: 1, status: 'error' });
         if (m === 'empty-next' && !url.searchParams.get('from')) {

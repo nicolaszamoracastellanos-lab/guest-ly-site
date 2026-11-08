@@ -322,3 +322,22 @@
     width: auto;
   }
 }
+
+.book__note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.4rem;
+  margin-top: 0.9rem;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.book__note a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent-text-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

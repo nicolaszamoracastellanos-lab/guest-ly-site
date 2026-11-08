@@ -30,7 +30,7 @@ const en: LegalCopy = {
   pages: {
     privacy: {
       title: 'Privacy',
-      updated: 'Last updated: August 2026',
+      updated: 'Last updated: November 2026',
       sections: [
         {
           h: 'What we collect',
@@ -56,7 +56,7 @@ const en: LegalCopy = {
     },
     terms: {
       title: 'Terms of Service',
-      updated: 'Last updated: August 2026',
+      updated: 'Last updated: November 2026',
       sections: [
         {
           h: 'The service',
@@ -87,7 +87,7 @@ const en: LegalCopy = {
     },
     refunds: {
       title: 'Refund Policy',
-      updated: 'Last updated: August 2026',
+      updated: 'Last updated: November 2026',
       sections: [
         {
           h: 'The guarantee',
@@ -113,7 +113,7 @@ const es: LegalCopy = {
   pages: {
     privacy: {
       title: 'Privacidad',
-      updated: 'Última actualización: agosto 2026',
+      updated: 'Última actualización: noviembre de 2026',
       sections: [
         {
           h: 'Qué recolectamos',
@@ -139,7 +139,7 @@ const es: LegalCopy = {
     },
     terms: {
       title: 'Términos del Servicio',
-      updated: 'Última actualización: agosto 2026',
+      updated: 'Última actualización: noviembre de 2026',
       sections: [
         {
           h: 'El servicio',
@@ -170,7 +170,7 @@ const es: LegalCopy = {
     },
     refunds: {
       title: 'Política de Reembolsos',
-      updated: 'Última actualización: agosto 2026',
+      updated: 'Última actualización: noviembre de 2026',
       sections: [
         {
           h: 'La garantía',

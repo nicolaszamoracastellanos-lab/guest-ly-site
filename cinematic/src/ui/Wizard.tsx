@@ -5,7 +5,7 @@ import type { PlanId } from './WizardContext';
 import { ADDON_MONTHLY, ADDON_PRICE, ORDER_INBOX, PAY_LINKS, WHATSAPP, sendNotification } from '../config';
 import type { PayLinkKey } from '../config';
 import { emit } from '../analytics/emit';
-import { BookLine } from '../booking/BookingContext';
+import { BookGate, BookLine } from '../booking/BookingContext';
 
 type AddonChoice = 'none' | 'once' | 'monthly';
 
@@ -433,7 +433,11 @@ export function Wizard({ initialPlan, onClose }: WizardProps) {
 
             {/* The booking dialog opens above the wizard, which stays open
                 underneath with this summary and the Pay button. */}
-            {import.meta.env.VITE_BOOKING_ENABLED && <BookLine id="wizard" line="wizardLine" />}
+            {import.meta.env.VITE_BOOKING_ENABLED && (
+              <BookGate>
+                <BookLine id="wizard" line="wizardLine" />
+              </BookGate>
+            )}
 
             <p className="wiz-mailfb">
               {w.step4.mailFallback} <a href={mailtoHref}>{w.step4.mailFallbackLink}</a>.

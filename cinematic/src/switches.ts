@@ -5,9 +5,21 @@
    BOOKING_ENABLED (#22 demo booking). false: the page keeps today's contact
    path (the FAQ email and the order wizard), no booking button renders, the
    booking code is not in the build and no booking request is ever made.
-   Going live: true here and rebuild, once the booking API is deployed, its
-   flag (MW_DEMO_BOOKING) released and Nicolas has turned on "Taking
-   bookings" in /ops/bookings, and once the privacy lines are approved.
+   true (shipped Nov 8): like the guides and Reviews, run time only. Nothing
+   of booking is prerendered: no button and no line (the privacy page's own
+   "Demo calls" section is text on the privacy page). After hydration, at idle, the page
+   reads GET /api/public/booking/guestly/demo/slots once (src/booking/state.ts,
+   src/booking/BookingGate.ts), and only an "open" answer adds the booking buttons
+   (FAQ, pricing line, final call to action; the order form and the menu show
+   theirs when they open), all together and only when that moves nothing on
+   screen. Closed, unavailable, 429, a network error, a slow answer or an
+   unreadable one: nothing is added and nothing is left behind, so the page is
+   exactly the booking-off page. The dialog itself is a lazy chunk, loaded on
+   intent or on the press (and by ?book=demo, the "Book another time" link in
+   the booking emails, which opens it whatever the read said). It needs the
+   booking API deployed, MW_DEMO_BOOKING released and "Taking bookings" on in
+   /ops/bookings; until then the read answers closed and the page shows no
+   booking button.
 
    GUIDES_ENABLED (#50 destination guides). false: the guides section is not
    rendered and its code is not in the build. true (shipped Nov 7): like the
@@ -23,14 +35,15 @@
    Any switch, or all three, on must still fit the 100 KB initial JS budget
    (scripts/check-seo.mjs fails the build otherwise). They do: the legal
    pages are their own lazy chunk (L7-LOG, Nov 7), so guides, Reviews and
-   booking together are about 98.0 KB gzip; scripts/test-initial-js.mjs
-   builds all three on and keeps it under the budget.
+   booking together fit; all three are shipped on, and
+   scripts/test-initial-js.mjs builds the shipped mix, all off and all on and
+   keeps each under the budget.
 
    vite.config.ts writes the switches into the build as literals
    (import.meta.env.VITE_BOOKING_ENABLED, VITE_GUIDES_ENABLED), so false
    drops every component, chunk and request behind them. JSON-LD and the llms
    files never mention either (scripts/check-seo.mjs). */
-export const BOOKING_ENABLED: boolean = false;
+export const BOOKING_ENABLED: boolean = true;
 export const GUIDES_ENABLED: boolean = true;
 
 /* REVIEWS_ENABLED (the Reviews tab: reviews kept in Guest-ly, ANSWERS-NOV6

@@ -3,13 +3,15 @@ import type { ComponentType, ReactNode } from 'react';
 import { useLang } from '../ui/LanguageContext';
 import { prefetchSlots, visitorZone } from './client';
 import { bookCtaCopy } from './cta-copy';
+import { startBooking, useBookingShown } from './state';
 import './page.css';
 
 /* #22: the booking dialog's opener, in the initial bundle only while
    BOOKING_ENABLED is on (src/switches.ts). The dialog itself is a lazy chunk:
    it is never in the prerendered page, and it loads, with the first slot
    list, on intent (pointer over, focus or touch on a booking button) or on
-   the press. Off, BookingProvider passes its children through, and every
+   the press. The buttons are not in the prerendered page either: BookGate
+   adds them after one read of the API at idle, only for an "open" answer. Off, BookingProvider passes its children through, and every
    BookCta / BookLine call site sits behind the same literal, so this module
    and the dialog chunk leave the build. */
 
@@ -24,6 +26,7 @@ const BookingModal = /* @__PURE__ */ lazy(loadDialog);
 function RealProvider({ children }: { children: ReactNode }) {
   const [opening, setOpening] = useState<{ id: number; trigger: HTMLElement | null } | null>(null);
   const warmed = useRef(false);
+  useEffect(startBooking, []);
 
   const prefetch = useCallback(() => {
     if (warmed.current) return;
@@ -66,6 +69,13 @@ function PassThrough({ children }: { children: ReactNode }) {
 }
 
 export const BookingProvider = import.meta.env.VITE_BOOKING_ENABLED ? RealProvider : PassThrough;
+
+/* Wraps every booking button and line: nothing renders until the one read at
+   idle has answered "open" (./state.ts). Closed, unreachable or slow: nothing,
+   so the page is the booking-off page. */
+export function BookGate({ children }: { children: ReactNode }) {
+  return useBookingShown() ? <>{children}</> : null;
+}
 
 type CtaProps = { id: string; variant?: 'ghost' | 'link'; large?: boolean; onBefore?: () => void };
 
