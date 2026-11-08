@@ -117,6 +117,8 @@ for (const vp of VIEWPORTS) {
         }
         await page.keyboard.press('Escape');
       }
+      /* The guides section is added at run time (after an open read, at idle). */
+      await page.locator('#guides').waitFor({ state: 'attached', timeout: fixtures ? 8000 : 500 }).catch(() => {});
       if ((await page.locator('#guides').count()) > 0) {
         await page.locator('#guides').scrollIntoViewIfNeeded();
         await page.locator('.guides').waitFor({ timeout: 8000 }).catch(() => {});

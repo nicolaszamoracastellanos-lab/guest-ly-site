@@ -19,7 +19,7 @@ import { Faq } from './Faq';
 import { Footer } from './Footer';
 import { Wizard } from './Wizard';
 import { BookingProvider } from '../booking/BookingContext';
-import { GuidesSection } from '../guides/GuidesSection';
+import { GuidesSlot } from '../guides/GuidesSlot';
 import { ReviewsSlot } from '../reviews/ReviewsSlot';
 import './overlay.css';
 
@@ -96,7 +96,7 @@ export function Overlay() {
             <Compare />
             <Pricing />
             <Founding />
-            {import.meta.env.VITE_GUIDES_ENABLED && <GuidesSection />}
+            {import.meta.env.VITE_GUIDES_ENABLED && <GuidesSlot />}
             <Faq />
             {import.meta.env.VITE_REVIEWS_ENABLED && <ReviewsSlot />}
             <FinalCta />

@@ -1,5 +1,5 @@
-/* #50: the guides section header, EN and ES. In the initial bundle only
-   while GUIDES_ENABLED is on (the form's words load with the form). */
+/* #50: the guides section header, EN and ES. In the guides lazy chunk (the
+   section is added at run time, only after an open catalogue read). */
 export const guidesHeadCopy = {
   en: {
     no: '№ 10',

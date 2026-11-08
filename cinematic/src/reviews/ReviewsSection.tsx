@@ -1,7 +1,7 @@
 import { useEffect, useId } from 'react';
 import { useLang } from '../ui/LanguageContext';
 import { BrandText } from '../ui/BrandText';
-import { useGuidesShown } from '../guides/shown';
+import { useGuidesShown } from '../guides/state';
 import { averageLabel, fill, ldText, monthLabel, starFills, withReviewsLd } from './core';
 import type { Reviews } from './core';
 import { reviewsCopy } from './copy';

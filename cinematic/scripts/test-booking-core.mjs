@@ -287,7 +287,15 @@ const planted = featureClaimProblems({
 });
 for (const want of ['home page shows it', 'privacy page discloses it', 'has its chunk BookingModal', 'calls /api/public/guides', 'JSON-LD says: Book a demo', 'JSON-LD says: Free destination', 'es/llms.txt line 2', 'es/llms.txt line 3'])
   ok(`planted off-feature caught: ${want}`, planted.some((p) => p.includes(want)));
-eq('on: the home page must show it', featureClaimProblems({ switches: { booking: true, guides: true }, home: '<main></main>' }).length, 2);
+ok('on: booking must show in the home page', featureClaimProblems({ switches: { booking: true, guides: false }, home: '<main></main>' }).some((p) => p.includes('does not show it')));
+/* The guides section is run time only (like Reviews): never prerendered, switch on or off. */
+const guidesOn = { switches: { booking: false, guides: true }, assets: [{ name: 'GuidesTab-x.js', text: '"/api/public/guides"' }] };
+eq('guides on: the build as expected is clean', featureClaimProblems({ ...guidesOn, home: '<main><section id="faq"></section></main>' }), []);
+ok('guides on: a prerendered section is caught', featureClaimProblems({ ...guidesOn, home: '<section id="guides" class="section">' }).some((p) => p.includes('holds it (run time only)')));
+ok('guides on: a prerendered guides form is caught', featureClaimProblems({ ...guidesOn, home: '<form class="guides">' }).some((p) => p.includes('holds it (run time only)')));
+ok('guides on: a nav item is caught', featureClaimProblems({ ...guidesOn, home: '<a href="#guides">Guides</a>' }).some((p) => p.includes('holds it (run time only)')));
+ok('guides on: a missing chunk is caught', featureClaimProblems({ switches: guidesOn.switches, home: '', assets: [{ name: 'index-a.js', text: '"/api/public/guides"' }] }).some((p) => p.includes('no GuidesTab- chunk')));
+ok('guides on: no read is caught', featureClaimProblems({ switches: guidesOn.switches, home: '', assets: [{ name: 'GuidesTab-x.js', text: '' }] }).some((p) => p.includes('no asset reads /api/public/guides')));
 
 if (errors.length) {
   for (const e of errors) console.error(`test-booking-core: ${e}`);

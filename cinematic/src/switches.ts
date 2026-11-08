@@ -10,18 +10,23 @@
    bookings" in /ops/bookings, and once the privacy lines are approved.
 
    GUIDES_ENABLED (#50 destination guides). false: the guides section is not
-   rendered and its code is not in the build. Shipped true (Nov 7); it was to
-   go live once the guides API (GET /api/public/guides and POST
-   /api/public/guides/request, L7P-LOG "Guides API for the landing") is
-   deployed and MW_GUIDES released. The guides and the tips sentence come
-   from that catalogue at run time; none of them is in the landing (D24).
+   rendered and its code is not in the build. true (shipped Nov 7): like the
+   Reviews tab, the section is run time only. Nothing of it is prerendered;
+   after hydration, at idle, the page reads GET /api/public/guides once, and
+   only an "open" answer with at least one guide adds the section, just
+   before the FAQ (src/guides/state.ts). Closed, unavailable, 429, a network
+   error or an unreadable answer: nothing is added and nothing is left
+   behind, so the page is exactly the switch-off page. The guides and the
+   tips sentence come from that catalogue at run time; none of them is in
+   the landing (D24). The request ("POST /api/public/guides/request", L7P-LOG
+   "Guides API for the landing") needs the API deployed and MW_GUIDES released.
    Any switch, or all three, on must still fit the 100 KB initial JS budget
    (scripts/check-seo.mjs fails the build otherwise). They do: the legal
    pages are their own lazy chunk (L7-LOG, Nov 7), so guides, Reviews and
    booking together are about 98.0 KB gzip; scripts/test-initial-js.mjs
    builds all three on and keeps it under the budget.
 
-   vite.config.ts writes both into the build as literals
+   vite.config.ts writes the switches into the build as literals
    (import.meta.env.VITE_BOOKING_ENABLED, VITE_GUIDES_ENABLED), so false
    drops every component, chunk and request behind them. JSON-LD and the llms
    files never mention either (scripts/check-seo.mjs). */
