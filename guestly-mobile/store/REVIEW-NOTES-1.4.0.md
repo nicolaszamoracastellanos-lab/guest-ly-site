@@ -52,6 +52,15 @@ EN: Your wedding day, live: see what is happening now and what comes next. Works
 
 ES: Tu boda en vivo: mira lo que está pasando ahora y lo que viene después. Funciona incluso sin señal en el lugar. Cronograma cerrado con solicitudes de cambio, lugares con cómo llegar, horario de peinado y maquillaje, conteo final de invitados, tu camino a la boda y mensajes más claros cuando algo sale mal.
 
+## Version and build number
+
+- Version: 1.4.0 (app.config.ts). Apple refuses a repeated version with a new build (ITMS-90186 /
+  ITMS-90062), so 1.3.0 is never uploaded again.
+- Build number: not a field in this repo. eas.json has `appVersionSource: "remote"` and the
+  `production` profile has `autoIncrement: true`, so EAS takes the last remote iOS build number and
+  adds one when the build is made. Nothing local sets it. Check the number EAS gave in the build page
+  and in App Store Connect after the upload.
+
 ## Open before submit
 
 - Confirm the App Review wedding's slug. The notes say "Camila & Andrés"; the app treats
