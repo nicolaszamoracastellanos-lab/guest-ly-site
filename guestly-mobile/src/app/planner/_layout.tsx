@@ -42,12 +42,13 @@ import { can, useSession, useUserSession, type Me } from "@/lib/session";
 import { resetTabs } from "@/ui/tabNav";
 import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRoleTabs";
 import { PlannerWidgetSync } from "@/features/widgets/WidgetSync";
+import { PlannerDayPackSync } from "@/features/dayof/PackSync";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "@/features/planner/copy";
-import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, CoordinatorMark, type IconName } from "@/ui";
+import { T, Icon, IconButton, Row, Sheet, ListRow, Badge, Card, Stack, toast, toastError, CoordinatorMark, type IconName } from "@/ui";
 import { colors, fonts, radius, space, COLUMN, HIT_TARGET } from "@/ui/tokens";
 import { TASK_INVALIDATE, type BoardStatus, type BoardTask } from "@/features/tasks/hooks";
-import { errorText } from "@/features/tasks/ui";
+import { failedText } from "@/features/shared/requests";
 
 /** A render error in a planner screen shows the recovery screen inside the
  *  app instead of closing it, and is reported. */
@@ -75,13 +76,14 @@ export default function PlannerTabs() {
     // Vendors stays a route (budget lines and pushes open it) but is no tool
     // of its own any more (F5). "more" (settings, guide, language, sign out) is
     // a screen of this stack now, opened from the header menu.
-    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more", "checkin", "messages", "insights"] },
+    { name: "(tools)", sf: { default: "square.grid.2x2", selected: "square.grid.2x2.fill" }, label: c.tools, owns: ["budget", "runsheet", "seating", "broadcasts", "vendors", "wedding", "more", "checkin", "dayof", "messages", "insights"] },
   ];
   const tenantReset = useTenantStackReset(PLANNER_STACKS, true);
   return (
     <>
       <RoleNativeTabs surface="planner" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
       <PlannerWidgetSync />
+      <PlannerDayPackSync />
     </>
   );
 }
@@ -336,6 +338,7 @@ const NEXT: Record<BoardStatus, BoardStatus> = { open: "in_progress", in_progres
  *  Done offers Undo; a failure puts the row back and says so in a toast. */
 export function useTaskToggle() {
   const c = useCopy().planner.b12;
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const qc = useQueryClient();
   const online = useOnline();
@@ -364,7 +367,7 @@ export function useTaskToggle() {
       forget();
     } catch (err) {
       forget();
-      toast(errorText(err, lang, c.couldNotSave), { icon: "warning" });
+      toastError(failedText(fail.updateTask, err, lang));
     }
   }
 

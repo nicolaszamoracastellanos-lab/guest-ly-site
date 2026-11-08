@@ -10,6 +10,8 @@ export default function WeddingsInnerStack() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="[slug]" />
+      {/* #26 one wedding's arrivals and departures (?slug=). */}
+      <Stack.Screen name="arrivals" />
     </Stack>
   );
 }

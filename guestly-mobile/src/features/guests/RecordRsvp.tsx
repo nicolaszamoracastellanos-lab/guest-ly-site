@@ -5,15 +5,15 @@
 //                                 is open at once, with their current answers.
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Alert, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, localized, useCopy, useLang } from "@/i18n";
 import { get, post } from "@/lib/api";
 import type { GuestDetail } from "@/lib/hooks";
 import { useGuestPages } from "@/features/guests/hooks";
-import { errorText } from "@/features/shared/requests";
-import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, Card, Row, Segmented, Button, T, Badge, Stack, Skeleton, toast } from "@/ui";
+import { failedText } from "@/features/shared/requests";
+import { Screen, TopBar, BigTitle, Input, ListRow, Avatar, Card, Row, Segmented, Button, T, Badge, Stack, Skeleton, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { flash } from "@/features/couple/flash";
@@ -76,7 +76,7 @@ export function RecordRsvpScreen() {
       setNotes(rsvpNoteText(r.detail.rsvp?.notes));
     } catch (err) {
       if (preset) setFailed(true);
-      else Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      else toastError(failedText(copy.fail.openGuest, err, lang, { read: true }));
     } finally {
       setOpening(null);
     }
@@ -121,7 +121,7 @@ export function RecordRsvpScreen() {
       else toast(c.card.rsvpSaved);
       back();
     } catch (err) {
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.saveRsvp, err, lang));
     } finally {
       setBusy(false);
     }
@@ -131,6 +131,7 @@ export function RecordRsvpScreen() {
 
   return (
     <Screen
+      modal
       header={<TopBar onBack={back} title={preset ? detail?.name : undefined} />}
       keyboard
       dock={

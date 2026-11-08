@@ -25,7 +25,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { post } from "@/lib/api";
+import { ApiFailure, post } from "@/lib/api";
 import { useGuestRsvp, type RsvpSummary } from "@/lib/hooks";
 import { useGuestSession } from "@/lib/session";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,7 +33,9 @@ import { Screen, TopBar, Card, T, Badge, Input, Button, Row, Stack, Skeleton, Se
 import { colors, fonts } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { guestErrorText, rsvpReason } from "@/features/guest/errors";
-import { MAX_ROSTER, answersToSend, bi, isSelect, missingRequired, relevantQuestions } from "@/features/guest/rsvp";
+import { MAX_ROSTER, answersToSend, attendsFor, bi, isSelect, missingPerPerson, missingRequired, perPersonOn, personAnswersToSend, relevantQuestions } from "@/features/guest/rsvp";
+import { ClosedCard } from "@/features/finalcount/ClosedCard";
+import { FINAL_COUNT_COPY } from "@/features/finalcount/copy";
 import { dayMonth } from "@/features/guest/format";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useRsvpDraft } from "@/features/guest/state";
@@ -62,6 +64,11 @@ export default function RsvpAnswers() {
   const { draft, saveDraft } = useRsvpDraft();
   const [seats, setSeats] = useState<Seat[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // #1: each person's own answers to per-person questions (a menu).
+  const [personAnswers, setPersonAnswers] = useState<Record<string, string>[]>([]);
+  // #1: a send refused with count_locked (the couple locked the count meanwhile).
+  const [lockedNow, setLockedNow] = useState(false);
+  const fcCopy = useFeatureCopy(FINAL_COUNT_COPY);
   const [note, setNote] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +103,7 @@ export default function RsvpAnswers() {
     });
     setSeededFor(seedKey);
     setSeats(initial);
+    setPersonAnswers(Array.from({ length: seatCount }, (_, i) => ({ ...(existing?.companions?.[i]?.answers ?? {}) })));
     setAnswers(fromDraft ? fromDraft.answers : existing?.questionAnswers ?? {});
     const n = fromDraft ? fromDraft.note : existing?.notes ?? "";
     setNote(n);
@@ -127,7 +135,11 @@ export default function RsvpAnswers() {
   const events = payload?.events ?? [];
   const personDone = (i: number) => events.every((e) => seats[i]?.[e.id]);
   const relevant = useMemo(() => relevantQuestions(payload?.questions ?? [], seats), [payload?.questions, seats]);
-  const missing = useMemo(() => new Set(missingRequired(relevant, answers).map((q) => q.id)), [relevant, answers]);
+  const perPersonMissing = useMemo(() => missingPerPerson(relevant, seats, personAnswers, seatCount), [relevant, seats, personAnswers, seatCount]);
+  const missing = useMemo(
+    () => new Set([...missingRequired(relevant.filter((q) => !perPersonOn(q, seatCount)), answers).map((q) => q.id), ...perPersonMissing.map((m) => m.qid)]),
+    [relevant, answers, perPersonMissing, seatCount],
+  );
   const missingPeople = showMissing ? people.map((_, i) => i).filter((i) => !personDone(i)) : [];
   const allState = seats.length && seats.every((s) => events.every((e) => s[e.id] === "attending")) ? "all" : seats.length && seats.every((s) => events.every((e) => s[e.id] === "declined")) ? "none" : null;
   const single = seatCount <= 1;
@@ -151,6 +163,10 @@ export default function RsvpAnswers() {
   }
   function setAnswer(id: string, v: string) {
     setAnswers((a) => ({ ...a, [id]: v }));
+    touch();
+  }
+  function setPersonAnswer(i: number, id: string, v: string) {
+    setPersonAnswers((prev) => Array.from({ length: Math.max(prev.length, seatCount) }, (_, j) => (j === i ? { ...(prev[j] ?? {}), [id]: v } : prev[j] ?? {})));
     touch();
   }
 
@@ -178,12 +194,20 @@ export default function RsvpAnswers() {
     try {
       const evs: Record<string, Answer> = {};
       for (const e of events) evs[e.id] = seats.some((s) => s[e.id] === "attending") ? "attending" : "declined";
-      const companions = seats.map((s, i) => ({ name: i === 0 ? payload.displayName : payload.members[i - 1] ?? null, main: i === 0 ? true : undefined, events: s, attending: Object.values(s).some((v) => v === "attending") }));
-      const r = await post<{ summary: RsvpSummary }>("/guest/rsvp", { events: evs, companions, answers: answersToSend(relevant, answers), notes: note.trim() || null });
+      const perPerson = personAnswersToSend(relevant, seats, personAnswers, seatCount);
+      const companions = seats.map((s, i) => ({ name: i === 0 ? payload.displayName : payload.members[i - 1] ?? null, main: i === 0 ? true : undefined, events: s, attending: Object.values(s).some((v) => v === "attending"), ...(perPerson[i] ? { answers: perPerson[i] } : {}) }));
+      const r = await post<{ summary: RsvpSummary }>("/guest/rsvp", { events: evs, companions, answers: answersToSend(relevant.filter((q) => !perPersonOn(q, seatCount)), answers), notes: note.trim() || null });
       saveDraft(null);
       await Promise.all([qc.invalidateQueries({ queryKey: ["guest-home"] }), qc.invalidateQueries({ queryKey: ["guest-rsvp"] }), qc.invalidateQueries({ queryKey: ["guest-schedule"] })]);
       router.push({ pathname: "/guest/rsvp/confirm", params: { status: r.summary.status } });
     } catch (err) {
+      if (err instanceof ApiFailure && err.code === "count_locked") {
+        // Locked while this guest answered: the closed card replaces the form.
+        setLockedNow(true);
+        void qc.invalidateQueries({ queryKey: ["guest-home"] });
+        void qc.invalidateQueries({ queryKey: ["guest-rsvp"] });
+        return;
+      }
       if (rsvpReason(err) === "missing_answers") {
         setShowMissing(true);
         scrollTo("questions");
@@ -196,6 +220,7 @@ export default function RsvpAnswers() {
   }
 
   const deadlinePassed = !!summary?.deadline_passed;
+  const locked = lockedNow || summary?.locked === true || payload?.locked === true;
   const deadline = summary?.deadline ?? null;
   const intro = changing ? fmt(g.rsvp.introChange, { couple }) : deadline ? fmt(g.rsvp.introPending, { date: dayMonth(deadline, lang) }) : g.rsvp.introPendingNoDate;
   // Content ends above the docked button at rest (it sits over the tab bar).
@@ -215,6 +240,16 @@ export default function RsvpAnswers() {
       <Button testID="rsvp-send" label={busy ? g.rsvp.sending : g.rsvp.send} onPress={submit} loading={busy} disabled={!payload || deadlinePassed} />
     </View>
   );
+
+  if (locked) {
+    return (
+      <Screen query={mainQuery} header={<TopBar onBack={back} />}>
+        <View style={{ marginTop: 8 }}>
+          <ClosedCard couple={couple} answered={changing || (summary?.status ?? "pending") !== "pending"} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen query={mainQuery} header={<TopBar onBack={back} />} scroll={false} padded={false} keyboard dock={dock}>
@@ -343,7 +378,28 @@ export default function RsvpAnswers() {
                         </T>
                         {q.required ? <Badge label={copy.rsvp.required} kind={flagged ? "red" : "mute"} /> : null}
                       </Row>
-                      {isSelect(q) ? (
+                      {perPersonOn(q, seatCount) ? (
+                        <Stack gap={12}>
+                          <T v="meta13" color={colors.ivory55}>
+                            {fcCopy.eachPerson}
+                          </T>
+                          {people.map((p, i) =>
+                            attendsFor(seats[i], q) ? (
+                              <View key={i} style={{ gap: 6 }} accessibilityRole="radiogroup" accessibilityLabel={`${label}, ${p.first}`}>
+                                <T v="body15" color={flagged && !(personAnswers[i]?.[q.id] ?? "") ? colors.red : colors.ivory70}>
+                                  {flagged && !(personAnswers[i]?.[q.id] ?? "") ? fmt(fcCopy.missingPerson, { name: p.first }) : p.name}
+                                </T>
+                                <Row gap={8} style={{ flexWrap: "wrap" }}>
+                                  {(q.options ?? []).map((o) => {
+                                    const on = personAnswers[i]?.[q.id] === o.id;
+                                    return <Chip key={o.id} label={bi(o.label, lang)} on={on} onPress={() => setPersonAnswer(i, q.id, on && !q.required ? "" : o.id)} />;
+                                  })}
+                                </Row>
+                              </View>
+                            ) : null,
+                          )}
+                        </Stack>
+                      ) : isSelect(q) ? (
                         <Row gap={8} style={{ flexWrap: "wrap" }}>
                           {(q.options ?? []).map((o) => {
                             const on = answers[q.id] === o.id;

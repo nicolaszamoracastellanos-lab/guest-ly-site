@@ -1,0 +1,146 @@
+{
+ "ok": true,
+ "data": {
+  "pending": false,
+  "wedding_date": "2027-05-22",
+  "days": [
+   {
+    "day": "2027-05-22",
+    "blocks": [
+     {
+      "id": "4e400000-0000-4000-8000-000000000001",
+      "day": "2027-05-22",
+      "starts_at": "12:00",
+      "ends_at": "15:30",
+      "title": "Getting ready",
+      "detail": "",
+      "location": "",
+      "owner": "",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 0
+     },
+     {
+      "id": "de5b26bb-9217-4adb-8aa6-5717d0a4eb9d",
+      "day": "2027-05-22",
+      "starts_at": "15:45",
+      "ends_at": "16:15",
+      "title": "Shuttles to Villa Arenisca",
+      "detail": "",
+      "location": "Hotel Mirador Lumen and Plaza Faro",
+      "owner": "Lumen Shuttle",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "confirmed",
+      "sort_order": 0
+     },
+     {
+      "id": "4f365b7a-b1af-4dc4-b081-cb025d242b9c",
+      "day": "2027-05-22",
+      "starts_at": "16:45",
+      "ends_at": "17:30",
+      "title": "Ceremony",
+      "detail": "",
+      "location": "Garden terrace",
+      "owner": "Officiant",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "confirmed",
+      "sort_order": 1
+     },
+     {
+      "id": "d2fa7fcb-4025-4df8-986d-1114ad9bd27e",
+      "day": "2027-05-22",
+      "starts_at": "17:00",
+      "ends_at": "18:30",
+      "title": "Cocktail hour and photos",
+      "detail": "",
+      "location": "Lower garden",
+      "owner": "Estudio Faro",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 2
+     },
+     {
+      "id": "41a5f3f4-86a7-4fe3-9623-40859cdabcbc",
+      "day": "2027-05-22",
+      "starts_at": "18:30",
+      "ends_at": "20:30",
+      "title": "Dinner and toasts",
+      "detail": "",
+      "location": "Courtyard",
+      "owner": "Mesa Lumen Catering",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 3
+     },
+     {
+      "id": "31b74a2f-79cc-48af-8c5d-fae3bb0d06e6",
+      "day": "2027-05-22",
+      "starts_at": "20:30",
+      "ends_at": "23:30",
+      "title": "Dancing",
+      "detail": "",
+      "location": "Courtyard",
+      "owner": "Trío Brisa",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 4
+     },
+     {
+      "id": "4069a1d6-2aa1-4a42-89f1-a1cb35d5b109",
+      "day": "2027-05-22",
+      "starts_at": "23:00",
+      "ends_at": null,
+      "title": "Return shuttles start",
+      "detail": "",
+      "location": "Main gate",
+      "owner": "Lumen Shuttle",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 5
+     }
+    ]
+   }
+  ],
+  "blocks_total": 7,
+  "vendors": [
+   {
+    "id": "22d04a58-6edd-4540-92e9-051e5e410e60",
+    "name": "Estudio Faro"
+   },
+   {
+    "id": "33e91b51-533a-4ea2-83c5-a3ecd4008d2b",
+    "name": "Flor de Sal"
+   },
+   {
+    "id": "c6b2c600-fa10-4e8d-97a0-05bfd473033a",
+    "name": "Mesa Lumen Catering"
+   },
+   {
+    "id": "4e400000-0000-4000-8000-000000000002",
+    "name": "Salón Aurora"
+   },
+   {
+    "id": "8b4a7d16-7d80-463f-8f30-2280a8a760d1",
+    "name": "Trío Brisa"
+   },
+   {
+    "id": "fd30fc4d-94f0-404e-a622-4416aa7d613b",
+    "name": "Villa Arenisca"
+   }
+  ],
+  "ics_url": "https://app.guest-ly.com/api/ics/runsheet/valentina-y-mateo",
+  "can_edit": false,
+  "statuses": [
+   "planned",
+   "confirmed",
+   "done"
+  ]
+ }
+}

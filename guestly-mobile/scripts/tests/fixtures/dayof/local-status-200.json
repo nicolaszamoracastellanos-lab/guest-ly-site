@@ -1,0 +1,29 @@
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+  },
+  "body": {
+    "ok": true,
+    "data": {
+      "block": {
+        "id": "de5b26bb-9217-4adb-8aa6-5717d0a4eb9d",
+        "day": "2027-05-22",
+        "starts_at": "15:45",
+        "ends_at": "16:15",
+        "title": "Shuttles to Villa Arenisca",
+        "detail": "",
+        "location": "Hotel Mirador Lumen and Plaza Faro",
+        "owner": "Lumen Shuttle",
+        "vendor_id": null,
+        "vendor_name": null,
+        "status": "confirmed",
+        "sort_order": 0,
+        "updated_at": "2026-11-07T06:44:16.03+00:00"
+      },
+      "replayed": false,
+      "applied": true
+    }
+  }
+}

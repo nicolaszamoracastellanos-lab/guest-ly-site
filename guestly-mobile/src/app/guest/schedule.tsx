@@ -219,7 +219,15 @@ function EventSheet({ event, onClose, onDress }: { event: ScheduleEvent | null; 
             </Card>
           ) : null}
           <Stack gap={10} style={{ marginTop: 20 }}>
-            {e.maps_url ? <Button label={g.directions.openMaps} icon="map" onPress={() => openMaps(e.maps_url, fail)} /> : null}
+            {/* #9: with places on, both apps by deep link; otherwise the one Maps button. */}
+            {e.apple_maps_url ? (
+              <>
+                <Button label={g.directions.appleMaps} icon="map" onPress={() => openUrlSafe(e.apple_maps_url, fail)} />
+                {e.maps_url && !/maps\.apple\.com/i.test(e.maps_url) ? <Button label={g.directions.googleMaps} icon="map" kind="glass" onPress={() => openUrlSafe(e.maps_url, fail)} /> : null}
+              </>
+            ) : e.maps_url ? (
+              <Button label={g.directions.openMaps} icon="map" onPress={() => openMaps(e.maps_url, fail)} />
+            ) : null}
             {/* A dateless event has no calendar entry to make. */}
             {e.date && e.ics_url ? <Button label={g.schedule.addOne} icon="calendar-plus" kind="ghost" onPress={() => openUrlSafe(e.ics_url, fail)} /> : null}
           </Stack>

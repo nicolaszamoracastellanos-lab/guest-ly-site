@@ -4,6 +4,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, del } from "@/lib/api";
 import { sanitizeLayout, type HomeAnswers, type HomeCard } from "./homeLayout";
+import { keepServed } from "./road";
 import type { CoupleHomeWithLayout, HomeCardsData, HomeLayoutPayload, RecapPref } from "./homeCardsCore";
 
 export * from "./homeCardsCore";
@@ -21,7 +22,10 @@ export function readLayout(raw: unknown): HomeLayoutPayload | null {
       ? { cadence: rc.cadence, weekday: clampInt(rc.weekday, 0, 6, 1), hour: clampInt(rc.hour, 0, 23, 8), set: rc.set !== false }
       : null;
   const quizState = r.quizState === "done" || r.quizState === "skipped" ? r.quizState : null;
-  return { configured: r.configured === true, quizState, answers: clean.answers, cards: clean.cards, phase, dismissed: clean.dismissed, canEdit: r.canEdit === true, recap };
+  // K8: a card the core introduces but the server did not list (flag off, an
+  // older portal) is neither drawn nor posted back.
+  const cards = keepServed(clean.cards, r.cards);
+  return { configured: r.configured === true, quizState, answers: clean.answers, cards, phase, dismissed: clean.dismissed, canEdit: r.canEdit === true, recap, served: cards.map((c) => c.id) };
 }
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {

@@ -3,11 +3,11 @@
 import React, { useState } from "react";
 import { Alert } from "react-native";
 import { useFeatureCopy } from "@/i18n/feature";
-import { relTime, useLang, useCopy } from "@/i18n";
+import { relTime, useLang } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, EmptyState, Skeleton, Stack } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, EmptyState, Skeleton, Stack, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/brain/copy";
 import { useBrain } from "@/features/brain/hooks";
@@ -15,7 +15,6 @@ import { useSafeBack } from "@/lib/nav";
 
 export default function BrainVersions() {
   const c = useFeatureCopy(COPY);
-  const app = useCopy();
   const { lang } = useLang();
   const back = useSafeBack();
   const user = useUserSession();
@@ -37,7 +36,7 @@ export default function BrainVersions() {
             setNotice(c.restored(version));
             await refetch();
           } catch (err) {
-            Alert.alert(c.publishFailed, errorText(err, lang, app.common.errorBody));
+            toastError(failedText(c.publishFailed, err, lang));
           } finally {
             setBusy(null);
           }

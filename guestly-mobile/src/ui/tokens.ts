@@ -2,6 +2,8 @@
 //
 // Values are the portal's globals.css verbatim so the app and the web share
 // one palette and type. Changing the look means changing this file only.
+// scripts/tests/token-parity.test.ts holds the shared colours to the portal's
+// file (PORTAL_TOKENS below names the portal variable of each).
 // The master prompt named Playfair Display + Inter and a navy/ivory/gold set
 // (#0D1B2A / #FAF6F0 / #B8965A); Nico confirmed the artifact look on
 // 5 Sep 2026, so the artifact and portal values ship. See BUILD-LOG.md.
@@ -17,9 +19,13 @@ export const colors = {
   cream: "#fffdf9",
   gold: "#c9a96e",
   goldLight: "#e2c892",
-  goldDim: "#8a6d3e",
+  /** Gold for text on a light surface: the portal's --color-gold-text (5.1:1 on
+   *  ivory). Was #8a6d3e, the portal's value before wave 13 (K17). */
+  goldDim: "#7f6337",
   ink: "#14110c",
-  muted: "#79705f",
+  /** Secondary text on light: the portal's --color-muted (5.4:1 on ivory).
+   *  Was #79705f (K17). */
+  muted: "#6a6253",
   border: "#ddd6c7",
   green: "#34d399",
   greenText: "#9ae6c4",
@@ -44,6 +50,24 @@ export const colors = {
   /** Toast surface: a lighter navy than the sheets so it reads over both. */
   toast: "#26324f",
 } as const;
+
+/** The colours this app shares with the portal, and the portal's variable for
+ *  each (src/app/globals.css). The rest are app-only: night-surface states
+ *  (green, amber, red, their text tints), ivory alphas and glass. */
+export const PORTAL_TOKENS = {
+  night: "--color-night",
+  nightDeep: "--color-night-deep",
+  navy: "--color-navy",
+  navySoft: "--color-navy-soft",
+  ivory: "--color-ivory",
+  cream: "--color-cream",
+  gold: "--color-gold",
+  goldLight: "--color-gold-lt",
+  goldDim: "--color-gold-text",
+  ink: "--color-ink",
+  muted: "--color-muted",
+  border: "--color-border-l",
+} as const satisfies Partial<Record<keyof typeof colors, `--color-${string}`>>;
 
 /** 4-point grid. */
 export const space = {
@@ -106,6 +130,11 @@ export const type = {
   name24: { fontFamily: fonts.display, fontSize: 27, lineHeight: 30 },
   /** Times in a timeline column (day-of, schedule). */
   time20: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24 },
+  /** Wedding-day times read at arm's length (#3, #30 live day-of): Jost, never
+   *  Cormorant for numbers, tabular so a ticking "18 min left" never shifts. */
+  live22: { fontFamily: fonts.bodyMedium, fontSize: 22, lineHeight: 28, fontVariant: ["tabular-nums"] as ("tabular-nums")[] },
+  /** The title of the block running now. */
+  liveTitle: { fontFamily: fonts.bodyMedium, fontSize: 20, lineHeight: 26 },
   button17: { fontFamily: fonts.bodyMedium, fontSize: 18, lineHeight: 24 },
   body16: { fontFamily: fonts.body, fontSize: 18, lineHeight: 25 },
   body15: { fontFamily: fonts.body, fontSize: 17, lineHeight: 24 },

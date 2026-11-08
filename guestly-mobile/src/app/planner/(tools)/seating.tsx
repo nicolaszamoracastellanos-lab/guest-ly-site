@@ -25,6 +25,8 @@ import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
 import { usePlannerSeating, initialsOf, seatLabel } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { SeatingPlanMap, TableMark } from "@/features/seating/TableShape";
+import { SHAPE_NAMES, readShape } from "@/features/seating/shapeView";
 import { useTenantKey } from "@/lib/session";
 
 // Keyed by the wedding, like the tab roots (F1).
@@ -80,22 +82,24 @@ function PlannerSeating() {
               color={colors.goldLight}
             />
           </Row>
+          <SectionLabel style={{ marginTop: 24, marginBottom: 8 }}>{c.planTitle}</SectionLabel>
+          <SeatingPlanMap tables={data.tables.map((t) => ({ ...t, over: t.over_capacity }))} lang={lang} testID="planner-seating-plan-map" />
           <Stack gap={12} style={{ marginTop: 24 }}>
             {data.tables.map((t) => (
               <Card key={t.id} kind="solid" padding={14}>
-                <Row style={{ justifyContent: "space-between" }}>
-                  <T v="name24">{t.label}</T>
-                  <Row gap={8}>
-                    {t.over_capacity ? (
-                      <Badge label={c.overCapacity} kind="amber" />
-                    ) : null}
+                <Row gap={12} style={{ justifyContent: "space-between" }}>
+                  <TableMark table={t} capacity={t.capacity} seated={t.seated} over={t.over_capacity} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <T v="name24">{t.label}</T>
                     <T v="meta13" color={colors.ivory55}>
-                      {fmt(c.seatedOf, {
-                        seated: t.seated,
-                        capacity: t.capacity,
-                      })}
+                      {`${SHAPE_NAMES[lang][readShape(t).shape]} · ${fmt(c.seatedOf, { seated: t.seated, capacity: t.capacity })}`}
                     </T>
-                  </Row>
+                    {t.over_capacity ? (
+                      <View style={{ marginTop: 6, alignSelf: "flex-start" }}>
+                        <Badge label={c.overCapacity} kind="amber" />
+                      </View>
+                    ) : null}
+                  </View>
                 </Row>
                 {t.people.length ? (
                   <View style={{ marginTop: 8 }}>

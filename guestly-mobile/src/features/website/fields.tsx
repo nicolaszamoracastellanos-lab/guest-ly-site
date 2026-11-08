@@ -3,10 +3,10 @@
 // up / down / remove controls for lists.
 
 import React, { createContext, useContext, useState } from "react";
-import { View, Image, Pressable, ActivityIndicator, Alert } from "react-native";
-import { useLang } from "@/i18n";
-import { errorText } from "@/features/shared/requests";
-import { Input, T, Row, Icon, Button } from "@/ui";
+import { View, Image, Pressable, ActivityIndicator } from "react-native";
+import { useCopy, useLang } from "@/i18n";
+import { failedText } from "@/features/shared/requests";
+import { Input, T, Row, Icon, Button, toastError } from "@/ui";
 import { colors, radius, FILL } from "@/ui/tokens";
 import { useFeatureCopy } from "@/i18n/feature";
 import { COPY } from "./copy";
@@ -87,6 +87,7 @@ export function BiField({ label, value, onChange, multiline, placeholder }: { la
 /** One photo: shows the current picture, picks and uploads a new one, or clears it. */
 export function PhotoField({ label, path, uri, onChange, height = 160 }: { label: string; path: string | null; uri: string | null; onChange: (path: string | null, signedUrl?: string) => void; height?: number }) {
   const c = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const readOnly = useContext(ReadOnlyContext);
   const [busy, setBusy] = useState(false);
@@ -96,7 +97,7 @@ export function PhotoField({ label, path, uri, onChange, height = 160 }: { label
       const picked = await pickAndUpload();
       if (picked && picked[0]) onChange(picked[0].path, picked[0].url);
     } catch (err) {
-      Alert.alert(c.fields.photo, errorText(err, lang, c.errors.pickFailed));
+      toastError(failedText(fail.addPhoto, err, lang));
     } finally {
       setBusy(false);
     }

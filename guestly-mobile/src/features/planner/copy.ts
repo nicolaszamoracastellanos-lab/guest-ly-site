@@ -41,9 +41,45 @@ export type PlannerCopy = {
   loadFailed: string;
   retry: string;
   kinds: { request_answered: string; task_overdue: string; task_due_today: string; wedding_soon: string };
+  /** #6 Road to the wedding: the portfolio's Stage line ("{label}", "{done}", "{total}"). */
+  stage: string;
+  stageA11y: string;
+  /** #3 Live wedding day, the weddings running today. */
+  liveToday: string;
+  liveNow: string; // "{title}", "{n}"
+  liveNowMore: string; // "{title}", "{n}", "{more}"
+  liveBetween: string; // "{n}", "{time}", "{title}"
+  liveBefore: string; // "{time}", "{title}"
+  liveWrap: string;
+  liveStale: string;
+  liveBehind: string; // "{d}"
+  liveAhead: string; // "{d}"
+  liveHours: string; // "{h}"
+  liveHoursMin: string; // "{h}", "{m}"
+  liveMin: string; // "{m}"
+  liveOpenHint: string;
+};
+
+const enLive = {
+  stage: "{label}, {done} of {total}",
+  stageA11y: "Stage: {label}, {done} of {total} done",
+  liveToday: "Live today",
+  liveNow: "Now: {title}, {n} min left",
+  liveNowMore: "Now: {title}, {n} min left, and {more} more",
+  liveBetween: "Between: {n} min. At {time}: {title}",
+  liveBefore: "Starts at {time}: {title}",
+  liveWrap: "That's a wrap for today.",
+  liveStale: "Waiting for the next update.",
+  liveBehind: "Venue time, {d} behind you",
+  liveAhead: "Venue time, {d} ahead of you",
+  liveHours: "{h} h",
+  liveHoursMin: "{h} h {m} min",
+  liveMin: "{m} min",
+  liveOpenHint: "Opens that wedding's day-of view",
 };
 
 const en: PlannerCopy = {
+  ...enLive,
   tabs: { weddings: "Weddings" },
   needsYou: "Needs you ({n})",
   needsEmpty: "Nothing needs you right now",
@@ -85,7 +121,26 @@ const en: PlannerCopy = {
   kinds: { request_answered: "Request", task_overdue: "Task", task_due_today: "Task", wedding_soon: "Wedding" },
 };
 
+const esLive = {
+  stage: "{label}, {done} de {total}",
+  stageA11y: "Etapa: {label}, {done} de {total} listos",
+  liveToday: "En curso hoy",
+  liveNow: "Ahora: {title}, quedan {n} min",
+  liveNowMore: "Ahora: {title}, quedan {n} min, y {more} más",
+  liveBetween: "Intervalo: {n} min. A las {time}: {title}",
+  liveBefore: "Empieza a las {time}: {title}",
+  liveWrap: "Terminó el día.",
+  liveStale: "Esperando la próxima actualización.",
+  liveBehind: "Hora del lugar, {d} menos que tú",
+  liveAhead: "Hora del lugar, {d} más que tú",
+  liveHours: "{h} h",
+  liveHoursMin: "{h} h {m} min",
+  liveMin: "{m} min",
+  liveOpenHint: "Abre la vista del día de esa boda",
+};
+
 const es: PlannerCopy = {
+  ...esLive,
   tabs: { weddings: "Bodas" },
   needsYou: "Necesitan de ti ({n})",
   needsEmpty: "Nada necesita de ti ahora",

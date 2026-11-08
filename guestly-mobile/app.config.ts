@@ -10,9 +10,12 @@ const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? "https://app.guest-ly.com";
 // Spanish twin in locales/es.json; keep the three in step. They describe what
 // the app really does (Part 9 audit, D-028): the camera scans passes at the door
 // and photographs a floor plan or a receipt; the photo library feeds the website
-// builder, the floor plan and budget receipts. The app never records audio, but
-// the camera library links the audio capture API, so a truthful microphone
-// string stays (an upload without it can be refused, ITMS-90683).
+// builder, the floor plan and budget receipts. The app never records audio
+// (the Coordinator mic, D5, is not in 1.4.0: Nicolas, Nov 6 2026), but the
+// camera library links the audio capture API, so a truthful microphone string
+// stays (an upload without it can be refused, ITMS-90683). It is the 1.3.0
+// text, unchanged. expo-audio was removed in batch 3 (Nov 7): unused once the
+// mic left 1.4.0.
 const CAMERA_PURPOSE = "Guest-ly uses the camera to scan guest passes at the door and to photograph a floor plan or a receipt.";
 const PHOTOS_PURPOSE = "Guest-ly lets you pick photos for the wedding album, the wedding website, the floor plan and budget receipts.";
 const BIOMETRIC_PURPOSE = "Guest-ly can use biometric unlock instead of asking you to sign in again.";
@@ -42,7 +45,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // team and settings). Apple closed the 1.2.0 train once 1.2.0 was approved
   // (ITMS-90186 / ITMS-90062 on build 35), so every new upload needs a version
   // above the last approved one.
-  version: "1.3.0",
+  // 1.4.0 (Nov 2026): Master Wave (wedding day live, locked timeline, places,
+  // final count, road card, table shapes, review card). A new version string is
+  // required: Apple refuses a repeated version with a new build (see above),
+  // and 1.3.0 builds already exist in App Store Connect. The iOS build number is not
+  // set here: eas.json has appVersionSource "remote" and the production profile
+  // has autoIncrement, so EAS assigns the next number at build time.
+  version: "1.4.0",
   // The iPhone Duo's inner display ignores declared orientations and Apple asks
   // every app to support them all (tent pose, inner landscape, Split View).
   orientation: "default",
@@ -118,6 +127,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           NSPrivacyCollectedDataTypePurposes: ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
         },
         {
+          // K21 and #37: a guest's app opens (launch and return to the
+          // foreground) are stored against the guest and shown to the couple
+          // as Seen. App launches tied to a person are Product Interaction.
+          NSPrivacyCollectedDataType: "NSPrivacyCollectedDataTypeProductInteraction",
+          NSPrivacyCollectedDataTypeLinked: true,
+          NSPrivacyCollectedDataTypeTracking: false,
+          NSPrivacyCollectedDataTypePurposes: ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+        },
+        {
           NSPrivacyCollectedDataType: "NSPrivacyCollectedDataTypeOtherUserContent",
           NSPrivacyCollectedDataTypeLinked: true,
           NSPrivacyCollectedDataTypeTracking: false,
@@ -156,9 +174,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#0d1117",
     },
     permissions: ["CAMERA", "USE_BIOMETRIC", "POST_NOTIFICATIONS", "VIBRATE"],
-    // The app never records sound. expo-camera is told so below; expo-image-picker
-    // (an automatic plugin) would still add RECORD_AUDIO, so it is blocked here,
-    // which writes tools:node="remove" into the manifest whoever asks for it.
+    // The app never records sound. expo-camera is told so below;
+    // expo-image-picker (an automatic plugin) would still add RECORD_AUDIO, so it
+    // is blocked here, which writes tools:node="remove" into the manifest whoever
+    // asks for it. Contacts stay blocked: the system picker needs no permission.
     blockedPermissions: ["android.permission.READ_CONTACTS", "android.permission.WRITE_CONTACTS", "android.permission.RECORD_AUDIO"],
     intentFilters: [
       {

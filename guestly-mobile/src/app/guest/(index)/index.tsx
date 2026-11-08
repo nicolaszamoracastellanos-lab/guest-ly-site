@@ -20,7 +20,7 @@ import { useGuestSession } from "@/lib/session";
 import { useGuestHome } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
 import { InviteEnvelope } from "@/features/guest/InviteEnvelope";
-import { T, Card, Button, Row, Icon, Banner, Skeleton, Stack, QueryError, OfflineState, StaleBanner, useQueryBlocked, retryConnection, useBottomClearance, COLUMN, useSideInsetsStyle, StatusScrim, useScrimScroll, PhotoHero, type PhotoFocal, type IconName } from "@/ui";
+import { T, Card, Button, Row, Icon, Banner, ListRow, Skeleton, Stack, QueryError, OfflineState, StaleBanner, useQueryBlocked, retryConnection, useBottomClearance, COLUMN, useSideInsetsStyle, StatusScrim, useScrimScroll, PhotoHero, type PhotoFocal, type IconName } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { splitNames, dayMonth } from "@/features/guest/format";
 import { GuestDayOfView } from "@/features/guest/DayOfView";
@@ -29,6 +29,12 @@ import { DirectionsSheet, SiteSectionSheet } from "@/features/guest/sheets";
 import { WalletButton } from "@/features/guest/WalletButton";
 import { GUEST_COPY } from "@/features/guest/copy";
 import { useRsvpDraft } from "@/features/guest/state";
+import { ClosedCard } from "@/features/finalcount/ClosedCard";
+import { TRAVEL_COPY } from "@/features/travel/copy";
+import { useGuestTravel } from "@/features/travel/hooks";
+import { COPY as SITE_COPY } from "@/features/site/copy";
+import { useGuestSite } from "@/features/site/hooks";
+import { hasKnowBefore, readKnowBefore } from "@/features/site/knowbeforeCore";
 
 
 type SheetName = "directions" | "dress" | "hotels" | "gifts" | null;
@@ -226,7 +232,10 @@ export default function GuestHome() {
             <Card kind="glass" blur padding={8}>
               <OfflineState compact onRetry={() => retryConnection(refetch)} />
             </Card>
-          ) : married && status === "pending" ? null : (
+          ) : married && status === "pending" ? null : status === "pending" && rsvp?.locked ? (
+            // #1: the couple locked the final count before this guest answered.
+            <ClosedCard couple={couple} answered={false} />
+          ) : (
             rsvpCard
           )}
 
@@ -239,6 +248,9 @@ export default function GuestHome() {
             <Tile icon="bed" label={g.home.hotels} onPress={() => setSheet("hotels")} wide={twoByTwo} />
             <Tile icon="gift" label={g.home.gifts} onPress={() => setSheet("gifts")} wide={twoByTwo} />
           </View>
+
+          {/* #26 and #45: only when the portal sends them (flags on, the couple asks). */}
+          {!failed && !blocked ? <TripRows /> : null}
 
           {!compact && days != null ? (
             <Row gap={16} style={{ paddingHorizontal: 4, paddingTop: 4 }}>
@@ -266,6 +278,29 @@ export default function GuestHome() {
       <SiteSectionSheet kind="hotels" visible={sheet === "hotels"} onClose={() => setSheet(null)} />
       <SiteSectionSheet kind="gifts" visible={sheet === "gifts"} onClose={() => setSheet(null)} />
     </View>
+  );
+}
+
+/** "Your travel" (#26) and "Before you go" (#45) under the shortcuts: each
+ *  row only while its feature answers (a 404 or an empty card hides it). */
+function TripRows() {
+  const router = useRouter();
+  const { lang } = useLang();
+  const t = useFeatureCopy(TRAVEL_COPY);
+  const site = useFeatureCopy(SITE_COPY);
+  const travel = useGuestTravel();
+  const siteQ = useGuestSite();
+  const kb = readKnowBefore(siteQ.data?.sections.find((x) => x.type === "knowbefore"));
+  const showKb = hasKnowBefore(kb);
+  const tr = travel.data;
+  if (!tr && !showKb) return null;
+  const arrival = tr?.travel.arrival;
+  const sub = tr ? (arrival?.date ? fmt(t.arrivingOn, { when: [dayMonth(arrival.date, lang), arrival.time].filter(Boolean).join(" ") }) : t.add) : null;
+  return (
+    <Card kind="solid" padding={2} style={{ paddingHorizontal: 16 }}>
+      {tr ? <ListRow testID="home-travel" leading={<Icon name="bus" size={22} color={colors.goldLight} />} title={t.title} sub={sub} onPress={() => router.push("/guest/travel" as never)} last={!showKb} /> : null}
+      {showKb ? <ListRow testID="home-knowbefore" leading={<Icon name="info" size={22} color={colors.goldLight} />} title={site.screens.before} onPress={() => router.push("/guest/site/before" as never)} last /> : null}
+    </Card>
   );
 }
 

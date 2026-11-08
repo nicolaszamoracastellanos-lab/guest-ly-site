@@ -1,0 +1,261 @@
+{
+ "ok": true,
+ "data": {
+  "places": [
+   {
+    "id": "e6949452-c57f-400a-adf8-7bd020437d53",
+    "name": "Hacienda San Pedro de los Montes Altos, suite principal de la novia",
+    "address": "Kilómetro 12 de la vía al Mar, sector La Boquilla, Cartagena de Indias, Bolívar, Colombia",
+    "lat": null,
+    "lng": null,
+    "time": "14:00",
+    "note": null,
+    "kind": "getting_ready",
+    "day": "2027-04-17",
+    "apple_maps_url": "https://maps.apple.com/?q=Hacienda%20San%20Pedro%20de%20los%20Montes%20Altos%2C%20suite%20principal%20de%20la%20novia&address=Kil%C3%B3metro%2012%20de%20la%20v%C3%ADa%20al%20Mar%2C%20sector%20La%20Boquilla%2C%20Cartagena%20de%20Indias%2C%20Bol%C3%ADvar%2C%20Colombia",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Hacienda%20San%20Pedro%20de%20los%20Montes%20Altos%2C%20suite%20principal%20de%20la%20novia%2C%20Kil%C3%B3metro%2012%20de%20la%20v%C3%ADa%20al%20Mar%2C%20sector%20La%20Boquilla%2C%20Cartagena%20de%20Indias%2C%20Bol%C3%ADvar%2C%20Colombia",
+    "same_place_as_before": false
+   },
+   {
+    "id": "5392d5e6-33b7-4be4-9439-f6171a9713b8",
+    "name": "Capilla de Nuestra Señora de la Candelaria",
+    "address": "Carrera 4 #36-112, Centro Histórico, Cartagena de Indias, Bolívar, Colombia",
+    "lat": null,
+    "lng": null,
+    "time": "16:30",
+    "note": null,
+    "kind": "ceremony",
+    "day": "2027-04-17",
+    "apple_maps_url": "https://maps.apple.com/?q=Capilla%20de%20Nuestra%20Se%C3%B1ora%20de%20la%20Candelaria&address=Carrera%204%20%2336-112%2C%20Centro%20Hist%C3%B3rico%2C%20Cartagena%20de%20Indias%2C%20Bol%C3%ADvar%2C%20Colombia",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Capilla%20de%20Nuestra%20Se%C3%B1ora%20de%20la%20Candelaria%2C%20Carrera%204%20%2336-112%2C%20Centro%20Hist%C3%B3rico%2C%20Cartagena%20de%20Indias%2C%20Bol%C3%ADvar%2C%20Colombia",
+    "same_place_as_before": false
+   },
+   {
+    "id": "6e51fc22-d366-491d-aea5-b276bf6420f6",
+    "name": "Jardines de la terraza norte con vista al mar Caribe",
+    "address": "Kilómetro 12 de la vía al Mar, sector La Boquilla, Cartagena de Indias, Bolívar, Colombia",
+    "lat": null,
+    "lng": null,
+    "time": "17:15",
+    "note": null,
+    "kind": "reception",
+    "day": "2027-04-17",
+    "apple_maps_url": "https://maps.apple.com/?q=Jardines%20de%20la%20terraza%20norte%20con%20vista%20al%20mar%20Caribe&address=Kil%C3%B3metro%2012%20de%20la%20v%C3%ADa%20al%20Mar%2C%20sector%20La%20Boquilla%2C%20Cartagena%20de%20Indias%2C%20Bol%C3%ADvar%2C%20Colombia",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Jardines%20de%20la%20terraza%20norte%20con%20vista%20al%20mar%20Caribe%2C%20Kil%C3%B3metro%2012%20de%20la%20v%C3%ADa%20al%20Mar%2C%20sector%20La%20Boquilla%2C%20Cartagena%20de%20Indias%2C%20Bol%C3%ADvar%2C%20Colombia",
+    "same_place_as_before": false
+   }
+  ],
+  "pending": false,
+  "wedding_date": "2027-04-17",
+  "days": [
+   {
+    "day": "2027-04-17",
+    "blocks": [
+     {
+      "id": "0c3924ec-b75c-49c1-8726-1e938f769c82",
+      "day": "2027-04-17",
+      "starts_at": "14:00",
+      "ends_at": "15:30",
+      "title": "Peinado y maquillaje de la novia, las damas de honor y las madres de los novios",
+      "detail": "",
+      "location": "Suite principal de la Hacienda San Pedro de los Montes Altos",
+      "owner": "Coordinación general",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "confirmed",
+      "sort_order": 0,
+      "place_id": "e6949452-c57f-400a-adf8-7bd020437d53",
+      "kind": "glam",
+      "glam": [
+       {
+        "id": "f99d0116-9413-445d-b603-56923fb4c236",
+        "person": "María de los Ángeles Fernández de Córdoba y Santisteban",
+        "service": "both",
+        "stylist_name": "Estudio de Belleza y Maquillaje Profesional Cartagena de Indias",
+        "stylist_vendor_id": null,
+        "starts_at": "14:00",
+        "ends_at": "15:15",
+        "offset_min": 0,
+        "duration_min": 75,
+        "notes": ""
+       },
+       {
+        "id": "a26d1d27-553f-441c-b57f-1242941f85b7",
+        "person": "Isabella Margarita Rodríguez-Echeverría Montenegro",
+        "service": "makeup",
+        "stylist_name": "Josefina Alejandra Benavides",
+        "stylist_vendor_id": null,
+        "starts_at": "14:00",
+        "ends_at": "14:45",
+        "offset_min": 0,
+        "duration_min": 45,
+        "notes": "Madre del novio, prefiere maquillaje natural y sin brillo"
+       },
+       {
+        "id": "85419c7f-b3f6-492f-86e5-f7d0cf7be0d5",
+        "person": "Ana Sofía Castellanos Villavicencio de la Torre",
+        "service": "hair",
+        "stylist_name": "Estudio de Belleza y Maquillaje Profesional Cartagena de Indias",
+        "stylist_vendor_id": null,
+        "starts_at": "15:15",
+        "ends_at": "16:00",
+        "offset_min": 75,
+        "duration_min": 45,
+        "notes": ""
+       }
+      ],
+      "glam_warnings": [
+       {
+        "kind": "after_end",
+        "at": "16:00",
+        "ids": [
+         "85419c7f-b3f6-492f-86e5-f7d0cf7be0d5"
+        ]
+       }
+      ]
+     },
+     {
+      "id": "6b407c3f-a142-4116-8692-57d7fc077a53",
+      "day": "2027-04-17",
+      "starts_at": "16:30",
+      "ends_at": "17:15",
+      "title": "Ceremonia religiosa en la capilla de Nuestra Señora de la Candelaria",
+      "detail": "",
+      "location": "Capilla de Nuestra Señora de la Candelaria",
+      "owner": "Coordinación general",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "confirmed",
+      "sort_order": 1,
+      "place_id": "5392d5e6-33b7-4be4-9439-f6171a9713b8",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "f655ef0a-e78e-46c7-8aad-7b40de5ca88d",
+      "day": "2027-04-17",
+      "starts_at": "17:15",
+      "ends_at": "18:45",
+      "title": "Cóctel de bienvenida y fotos familiares en los jardines con vista al mar",
+      "detail": "",
+      "location": "Jardines de la terraza norte",
+      "owner": "Coordinación general",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 2,
+      "place_id": "6e51fc22-d366-491d-aea5-b276bf6420f6",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "27827f2a-92e6-49c4-b895-d6b5d5f11906",
+      "day": "2027-04-17",
+      "starts_at": "19:00",
+      "ends_at": "21:00",
+      "title": "Cena de tres tiempos con brindis de los padrinos y de los padres de los novios",
+      "detail": "",
+      "location": "Terraza principal sobre el mar Caribe",
+      "owner": "Coordinación general",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 3,
+      "place_id": "6e51fc22-d366-491d-aea5-b276bf6420f6",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "e5955329-1070-48f7-8f36-9474de7e39d8",
+      "day": "2027-04-17",
+      "starts_at": "21:00",
+      "ends_at": "23:59",
+      "title": "Primer baile, apertura de pista y fiesta hasta la medianoche",
+      "detail": "",
+      "location": "Terraza principal sobre el mar Caribe",
+      "owner": "Coordinación general",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 4,
+      "place_id": "6e51fc22-d366-491d-aea5-b276bf6420f6",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     }
+    ]
+   }
+  ],
+  "blocks_total": 5,
+  "vendors": [],
+  "ics_url": "https://app.guest-ly.com/api/ics/runsheet/mw-long-name",
+  "can_edit": false,
+  "statuses": [
+   "planned",
+   "confirmed",
+   "done"
+  ],
+  "lock": {
+   "locked": true,
+   "at": "2026-11-05T15:20:00+00:00",
+   "by_name": null,
+   "note": null,
+   "can_mark": true,
+   "can_request": true,
+   "can_resolve": false
+  },
+  "requests": [
+   {
+    "id": "cc55cf72-2ed7-4e29-b24c-42d75f916fd3",
+    "kind": "edit",
+    "status": "open",
+    "target_id": "6b407c3f-a142-4116-8692-57d7fc077a53",
+    "title": "Ceremonia religiosa en la capilla de Nuestra Señora de la Candelaria",
+    "note": "La capilla nos confirmó el coro y el cuarteto de cuerdas para la entrada; necesitan quince minutos más para afinar antes de empezar.",
+    "created_at": "2026-11-05T16:00:00+00:00",
+    "created_by_name": "Ana Lucía",
+    "changes": [
+     {
+      "field": "starts_at",
+      "before": "16:30",
+      "after": "16:45"
+     },
+     {
+      "field": "title",
+      "before": "Ceremonia religiosa en la capilla de Nuestra Señora de la Candelaria",
+      "after": "Ceremonia religiosa en la capilla de Nuestra Señora de la Candelaria con coro y cuarteto de cuerdas"
+     }
+    ],
+    "proposed": {
+     "day": "2027-04-17",
+     "starts_at": "16:45",
+     "ends_at": "17:15",
+     "title": "Ceremonia religiosa en la capilla de Nuestra Señora de la Candelaria con coro y cuarteto de cuerdas",
+     "detail": "",
+     "location": "Capilla de Nuestra Señora de la Candelaria",
+     "owner": "Coordinación general",
+     "vendor_id": null,
+     "status": "confirmed"
+    },
+    "base": {
+     "day": "2027-04-17",
+     "starts_at": "16:30",
+     "ends_at": "17:15",
+     "title": "Ceremonia religiosa en la capilla de Nuestra Señora de la Candelaria",
+     "detail": "",
+     "location": "Capilla de Nuestra Señora de la Candelaria",
+     "owner": "Coordinación general",
+     "vendor_id": null,
+     "status": "confirmed",
+     "id": "6b407c3f-a142-4116-8692-57d7fc077a53",
+     "updated_at": "2026-11-05T13:57:52.235264+00:00",
+     "vendor_name": null
+    },
+    "decline_note": null
+   }
+  ]
+ }
+}

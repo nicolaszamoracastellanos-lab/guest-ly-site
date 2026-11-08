@@ -154,3 +154,43 @@ Known follow-ups: bubble badge for a waiting Coordinator card; planner
 insights screen (route exists); photo accents editor in the website builder;
 client-side image resize before upload; native Google sign-in so the consent
 page names Guest-ly instead of the Supabase host.
+
+## Nov 5 2026: Expo alignment for 1.4.0 (Master Wave L8 step 1)
+
+- Every Expo package moved to what SDK 58 expects today (`npx expo install --check` listed 26 behind: expo 58.0.17 to 58.0.23, ExpoModulesCore 58.0.24 to 58.0.30, react-native 0.88.0 to 0.88.1, safe-area-context 5.10 to 5.11, and 22 more patch bumps).
+- expo-contacts moved from the exact pin 58.0.8 to the exact pin 58.0.10, the version SDK 58 expects. Its prebuilt xcframework is what crashed build 36 against core 58.0.24; against core 58.0.30 `check-prebuilt-symbols.mjs` reports 9 frameworks, 0 missing symbols after a clean `npm ci`. Still an exact pin: move it only together with expo and the symbol check.
+- Added expo-store-review (#20 rating prompt) and expo-audio (D5 mic; expo-av is not in SDK 58). expo-asset installed directly because expo-audio needs it as a peer (expo-doctor 20/20). Neither new module ships a prebuild, so both compile against the installed core.
+- Microphone purpose string rewritten in app.config.ts and both locale files for the Coordinator mic button. The expo-audio plugin is configured with both background switches off: its defaults would add UIBackgroundModes "audio". Android RECORD_AUDIO is no longer blocked.
+- Guarded by `scripts/tests/native-config.test.ts`. No UI is wired yet.
+
+## Nov 5 2026: craft gate and token parity (Master Wave L8 step 2, K17)
+
+- `scripts/craft-gate.mjs` (also `npm run craft`) counts eight patterns in src/: glyph icons, raw hex outside `src/ui/tokens.ts` and `src/widgets/`, a spinner as a whole screen, a Pressable with no role or label, a hard-coded string in `<T>`, a native Alert that is not a choice, fontSize under 11, `colors.ivory25` as text. Ceilings per file in `scripts/craft-gate.config.json` (a file not listed is held at 0). The gate fails over a ceiling and also when a ceiling is above the count; `--ratchet` lowers them. It runs inside `npm test` through `scripts/tests/craft-gate.test.ts`.
+- `scripts/tests/token-parity.test.ts`: the colours in `PORTAL_TOKENS` (tokens.ts) equal the portal's `globals.css` (`GL_PORTAL_DIR`, default the integration worktree; skips with a warning when it is missing). goldDim is now #7f6337 (the portal's gold-text) and muted #6a6253.
+- Native alerts: 89 before, 21 after. The 68 that were errors or notices are toasts now (`toastError` for errors, `toast` for results and notices). The 21 left are choices with a Cancel button: destructive confirms, sign out, discard changes, permissions with Open Settings, the album and invite action lists.
+- A Screen presented as a native modal (guest card, add guest, Record RSVP, a request) covers the root toast host, so `<Screen modal>` mounts its own host there.
+- Glyphs replaced with the Icon set: vendor stars (detail, form, list text), the broadcast pick mark, the Home edit up and down tools. `Icon` takes an optional `fill`. ivory25 text gone (vendor stars, past days in the sign-up date picker now ivory40).
+- Left under ceilings: 5 glyphs (import mapping arrow, two minus signs, budget sync arrow, the weddings widget dot), 24 raw hex (paper greens and the RSVP error red, wallet badge white, shadows, tour scenes, push light colour), 1 spinner screen (find.tsx while the code resolves), 5 strings in `<T>` (RSVP sample, EN/ES field tags, dev probe, check-in spacing), 1 dev-only font size.
+
+## Nov 5 2026: Now engine copy and drift check (Master Wave L8 step 3)
+
+- `src/features/dayof/live.ts` is the portal's `src/lib/runsheet-live.ts` byte for byte (the #3 Now engine: service day to 05:00, open ends to the next start capped at 60 minutes, done, overlaps, wedding zone through Intl). It imports nothing. Never edit it here: change the portal file, then copy it.
+- `scripts/check-verbatim-copies.mjs` (also `npm run verbatim`, and the first step of `npm test`) compares the three shared files with the portal (`GL_PORTAL_DIR`, default /Users/nicolas_z/gl-mw/l0 until Lane 0 merges): the Now engine, the Home layout core, and milestones (skipped until it exists). One character of difference fails; a missing portal checkout or a missing side skips with a warning.
+- `scripts/tests/dayof-live.test.ts`: the portal's engine cases against the app copy, run twice, the second time with `Intl.DateTimeFormat.prototype.formatToParts` deleted (the fallback Hermes would use), plus a year-long wall-clock sweep in five zones that must match on both paths. Still needs a check on a device. `scripts/tests/verbatim-copies.test.ts` tests the checker on fixture folders.
+- No UI wired yet: the day-of screens use it with the #3 and #30 work.
+
+## Nov 5 2026: offline wedding day, app half (Master Wave L8 step 4, #30, K24)
+
+- Day pack store (`src/features/dayof/packStore.ts`): one AsyncStorage record per person and wedding under `gl.scoped.daypack.v1:` (removed on sign out by lib/scope), downloaded from `/couple/dayof/pack`, `/planner/dayof/pack?slug=` and `/guest/pack` with If-None-Match (304 keeps it), size and server clock offset stored, deleted after its last useful day instead of the query cache's 24 hours. A 404 (no route yet, or MW_DAY_PACK off) deletes the pack and every offline surface hides. JS only: no new native module, OTA-safe on 1.4.0.
+- Download rules (`packCore.ts`, D2): from 7 days before the wedding, at most every 15 minutes in the foreground, on reconnect (then one toast "Updated. N timeline changes." only if something changed), on pull to refresh and when the day-of opens. Planners keep every wedding of the next 7 days. A local reminder at 19:00 venue time the evening before, only if notifications are already allowed.
+- Couple day-of with the flag on: the live view from the approved mockup (no "Running late" row), Now and Next from the verbatim engine every 30 s on the phone, Mark done with Undo, door counts with "waiting to sync", "Ready offline. Saved 4:16 pm, 37 KB." The Duo table pose and the flag-off path keep the older screen. Planner: `/planner/dayof`, reached from the runsheet's clock button.
+- Outbox (`lib/queue.ts`, rules in `lib/queueMath.ts`): check-ins and block status taps in one serial queue, `client_event_id` on both, scanned_at and tapped_at kept from the tap. `runsheet_locked` (D28) drops the tap and says "Your planner marks the timeline on the day." once per drain; a deleted block is dropped and named.
+- Door (K24): local accent-free search on the saved guest list when offline or when the server is slower than 800 ms, a failed search says so, an offline scan shows name, party and table from the pack, queued parties read "In, waiting to sync".
+- Banner (D5): neutral offline "Showing what was saved at", amber "May be out of date" after 30 minutes on the day, red when today was never saved and the phone cannot fetch it.
+- Tests: `scripts/tests/day-pack.test.ts` and `outbox.test.ts` on recorded fixtures in `scripts/tests/fixtures/dayof/` (re-record them when Lane 1's routes land). The stress pack (500 parties, 40 blocks) opens in about 2 ms in node; budget 300 ms on the phone.
+
+## Nov 7 2026: table shapes, the review card and expo-audio out (Master Wave L8 batch 3)
+
+- #55 table shapes: `src/features/seating/tableShapes.ts` is the portal's `src/lib/table-shapes.ts` byte for byte (fourth pair in `scripts/check-verbatim-copies.mjs`). `shapeView.ts` (pure) reads a payload table (an unknown shape draws its `shape_fallback`), draws it in points (one chair per seat, long tables longer, rotation, the plan keeps every table inside) and words it for VoiceOver in EN and ES with the portal's shape names. `TableShape.tsx`: a fitted mark (seating list rows, the table screen's figure) and `SeatingPlanMap` (couple seating, planner seating, the day saved on the phone). The table screen's shape choice keeps a web shape as a third option so a save sends it back unchanged.
+- #20 review card on Home (`reviewCard.ts` pure, `ReviewCardBody.tsx`, `storeReview.ts`): drawn only with `cards.review`; a rating opens the no-login feedback page in expo-web-browser with ?r=N; Not now with Undo; when the browser closes, Apple's rating sheet once per install, strictly after the wedding day, never tied to the rating. `road.ts` NOT_DRAWN is empty.
+- Native: expo-audio removed (package.json, lockfile, app.config.ts plugin). `npm ci` then `check-prebuilt-symbols.mjs`: 9 prebuilt frameworks, 0 missing. expo-store-review stays and is now used. The 1.4.0 binary is a new build anyway; nothing ships over the air.

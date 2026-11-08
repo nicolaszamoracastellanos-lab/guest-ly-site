@@ -2,7 +2,7 @@
 // concierge reading that finds the tables.
 
 import React, { useState } from "react";
-import { View, Alert } from "react-native";
+import { View } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -11,7 +11,7 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { get } from "@/lib/api";
 import { useUserSession } from "@/lib/session";
 import { prepareImageForUpload } from "@/features/shared/images";
-import { postLong, outcomeUnknown, AI_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, errorText } from "@/features/shared/requests";
+import { postLong, outcomeUnknown, AI_TIMEOUT_MS, UPLOAD_TIMEOUT_MS, failedText } from "@/features/shared/requests";
 import {
   Screen,
   TopBar,
@@ -23,6 +23,8 @@ import {
   Stack,
   Loading,
   Banner,
+  toast,
+  toastError,
 } from "@/ui";
 import { colors, FILL } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
@@ -56,7 +58,7 @@ export default function SeatingPlan() {
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(fromCamera ? c.cameraDenied : c.photoDenied);
+      toastError(fromCamera ? c.cameraDenied : c.photoDenied);
       return;
     }
     // No base64 from the picker: a 12 to 48 MP photo went up as 5 to 12 MB
@@ -77,7 +79,7 @@ export default function SeatingPlan() {
     try {
       const img = await prepareImageForUpload(a);
       if (!img.base64 || img.base64.length > 4_000_000) {
-        Alert.alert(c.photoTooBig);
+        toastError(c.photoTooBig);
         return;
       }
       await postLong(
@@ -95,7 +97,7 @@ export default function SeatingPlan() {
         qc.invalidateQueries({ queryKey: SEATING_KEY }),
       ]);
     } catch (err) {
-      Alert.alert(c.error, errorText(err, lang, app.common.errorBody));
+      toastError(failedText(app.fail.uploadPlan, err, lang));
     } finally {
       setBusy(null);
     }
@@ -121,10 +123,10 @@ export default function SeatingPlan() {
       setLastRead(found);
     } catch (err) {
       if (outcomeUnknown(err)) {
-        Alert.alert(c.readMaybeDone);
+        toast(c.readMaybeDone, { icon: "info" });
         void qc.invalidateQueries({ queryKey: SEATING_KEY });
       } else {
-        Alert.alert(c.error, errorText(err, lang, app.common.errorBody));
+        toastError(failedText(app.fail.readPlan, err, lang));
       }
     } finally {
       setBusy(null);

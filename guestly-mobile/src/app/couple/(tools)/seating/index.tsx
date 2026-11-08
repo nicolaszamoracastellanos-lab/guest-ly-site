@@ -8,6 +8,7 @@ import { useSafeBack } from "@/lib/nav";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { ApiFailure } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
@@ -32,9 +33,12 @@ import {
   Avatar,
   Toggle,
   Icon,
+  toastError,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
+import { SeatingPlanMap, TableMark } from "@/features/seating/TableShape";
+import { SHAPE_NAMES, readShape } from "@/features/seating/shapeView";
 import {
   useCoupleSeating,
   useDraft,
@@ -115,6 +119,11 @@ export default function SeatingIndex() {
   const [limit, setLimit] = useState(PAGE);
   const [limitUnconfirmed, setLimitUnconfirmed] = useState(PAGE);
   const hasTables = !!view?.tables.length;
+  // #55: the plan draws the draft (unsaved tables take the server's next grid spot).
+  const planTables = useMemo(
+    () => (view?.tables ?? []).map((t) => ({ ...t, over: t.over_capacity })),
+    [view],
+  );
   const onParty = useCallback(
     (p: SeatingParty) => (hasTables ? setPick(p) : setAddOpen(true)),
     [hasTables],
@@ -143,7 +152,7 @@ export default function SeatingIndex() {
       await save();
       void qc.invalidateQueries({ queryKey: SEATING_KEY });
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError(failedText(app.fail.saveSeating, err, lang));
     } finally {
       setSaving(false);
     }
@@ -287,28 +296,13 @@ export default function SeatingIndex() {
               {view.tables.map((t, i) => (
                 <ListRow
                   key={t.id}
-                  leading={
-                    <View
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: t.shape === "round" ? 20 : 10,
-                        borderWidth: 1,
-                        borderColor: t.over_capacity
-                          ? "rgba(245,158,11,0.6)"
-                          : colors.goldBorder,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <T v="meta13" color={colors.goldLight}>
-                        {t.seated}
-                      </T>
-                    </View>
-                  }
+                  leading={<TableMark table={t} capacity={t.capacity} seated={t.seated} over={t.over_capacity} />}
                   title={t.label}
-                  sub={`${fmt(c.seatedOf, { seated: t.seated, capacity: t.capacity })}${t.source === "ai" && t.confidence !== undefined && t.confidence < 1 ? ` · ${c.draft}` : ""}`}
-                  trailing={
+                  // The count first, so a long line cuts the shape name, never
+                  // the number; the Over capacity badge sits on its own line
+                  // (the planner card's pattern), not beside the text.
+                  sub={`${fmt(c.seatedOf, { seated: t.seated, capacity: t.capacity })} · ${SHAPE_NAMES[lang][readShape(t).shape]}${t.source === "ai" && t.confidence !== undefined && t.confidence < 1 ? ` · ${c.draft}` : ""}`}
+                  below={
                     t.over_capacity ? (
                       <Badge label={c.overCapacity} kind="amber" />
                     ) : undefined
@@ -324,6 +318,13 @@ export default function SeatingIndex() {
               ))}
             </Card>
           )}
+
+          {view.tables.length ? (
+            <>
+              <SectionLabel style={{ marginTop: 26, marginBottom: 8 }}>{c.planTitle}</SectionLabel>
+              <SeatingPlanMap tables={planTables} lang={lang} testID="seating-plan-map" />
+            </>
+          ) : null}
 
           <SectionLabel style={{ marginTop: 26 }}>
             {c.unseated} · {unseated.length}

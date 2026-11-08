@@ -3,17 +3,22 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiFailure, get, post } from "@/lib/api";
+import { fetchGuestHome } from "@/lib/appOpen";
 
 // ---- guest
 export type ScheduleEvent = {
   id: string; title: string; date: string | null; time: string | null; start_minutes: number | null;
   location: string | null; address_note: string | null; maps_url: string | null; dress_code: string | null;
+  /** #9 (MW_PLACES on): the Apple Maps link beside maps_url (Google's); absent otherwise. */
+  apple_maps_url?: string | null;
   notes: string | null; ics_url: string; invited: boolean;
 };
 export type RsvpSummary = {
   status: "attending" | "declined" | "pending"; answers: Record<string, "attending" | "declined">;
   party_size: number | null; max_party: number; responded_at: string | null; deadline: string | null;
   deadline_passed: boolean; can_edit: boolean;
+  /** #1, 1.4.0 with MW_FINAL_COUNT on: the couple locked the final count. */
+  locked?: boolean;
 };
 export type GuestHome = {
   guest: { id: string; name: string; language: string | null };
@@ -32,12 +37,16 @@ export type GuestPayload = {
   guestToken: string; displayName: string; maxParty: number; members: string[]; language: string | null;
   hasContact: boolean; events: { id: string; title: { en: string; es: string }; date: string | null; time: string | null; location: string | null; cost: string | null }[];
   // The portal field is `kind`; `type` is kept only for older payloads.
-  questions: { id: string; label: { en: string | null; es: string | null }; kind?: "select" | "text"; type?: string; required?: boolean; options?: { id: string; label: { en: string | null; es: string | null } }[]; event_id: string | null }[];
-  existing: { answers: Record<string, string>; questionAnswers: Record<string, string>; partySize: number | null; companions: { name: string | null; attending: boolean; main?: boolean; events?: Record<string, string> }[]; notes: string | null; respondedAt: string | null } | null;
+  questions: { id: string; label: { en: string | null; es: string | null }; kind?: "select" | "text"; type?: string; required?: boolean; options?: { id: string; label: { en: string | null; es: string | null } }[]; event_id: string | null; per_person?: boolean }[];
+  existing: { answers: Record<string, string>; questionAnswers: Record<string, string>; partySize: number | null; companions: { name: string | null; attending: boolean; main?: boolean; events?: Record<string, string>; answers?: Record<string, string> }[]; notes: string | null; respondedAt: string | null } | null;
+  /** #1, 1.4.0 with MW_FINAL_COUNT on: replies are closed. */
+  locked?: boolean;
 };
 export type ThreadMessage = { id: string; role: "guest" | "bot" | "couple"; text: string; created_at: string; needs_couple: boolean; replied_at: string | null; kind?: "broadcast" };
 
-export const useGuestHome = () => useQuery({ queryKey: ["guest-home"], queryFn: () => get<GuestHome>("/guest/home") });
+// K21: only the first fetch after a launch or a return to the foreground
+// counts as the guest's open; refetches send ?seen=0 (lib/appOpen).
+export const useGuestHome = () => useQuery({ queryKey: ["guest-home"], queryFn: () => fetchGuestHome<GuestHome>() });
 export const useGuestSchedule = () => useQuery({ queryKey: ["guest-schedule"], queryFn: () => get<{ wedding_date: string | null; timezone: string; events: ScheduleEvent[]; arrival_advice: string | null }>("/guest/schedule") });
 // `poll` false stops the interval while the screen is not visible (tabs stay mounted).
 export const useGuestDayOf = (opts?: { poll?: boolean }) => useQuery({ queryKey: ["guest-dayof"], queryFn: () => get<DayOf>("/guest/dayof"), refetchInterval: opts?.poll === false ? false : 60_000 });
@@ -71,13 +80,17 @@ export type CoupleHome = {
 };
 export type HomeSetupStep = { key: string; done: boolean; label: string; path: string; progress?: { have: number; need: number } };
 export type HomeActivity = { kind: string; text: string; at: string; target: { kind: "guest"; id: string } | null; count: number };
-export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null };
+export type GuestListItem = { id: string; name: string; initials: string; party_size: number; tags: string[]; status: "attending" | "declined" | "pending"; checked_in_at: string | null; language: string | null; /** #37, 1.4.0 with MW_SEEN on: the last open, or null. Absent otherwise. */ seen_at?: string | null };
 export type RsvpListItem = { id: string; guest_id: string | null; name: string; initials: string; status: "attending" | "declined" | "pending"; party_size: number | null; seats_answered: string; channel: string | null; source: string | null; updated_at: string | null };
 export type InboxItem = { id: string; channel: string; name: string; initials: string; preview: string; last_at: string; needs_you: boolean; upset: boolean; guest_id: string | null };
 export type CoupleDayOf = {
   day_of: boolean; parties_in: number; parties_total: number; seats_in: number; seats_total: number;
   runsheet: { id: string; title: string; starts_at: string; ends_at: string | null; location: string | null; owner: string | null; state: "done" | "now" | "next" | "later" }[];
   runsheet_available: boolean; escalations: { id: string; text: string; source: string; at: string | null }[];
+  /** The service day the runsheet list is (K2, additive). */
+  runsheet_day?: string | null;
+  /** #3 (MW_LIVE_DAY, 1.4.0+): the server's Now and Next; read with readLive (features/dayof/liveDayCore). */
+  live?: unknown;
 };
 export type MoreEntry = { key: string; available: boolean; count: number | null; note: string | null };
 export type GuestDetail = {
@@ -149,13 +162,29 @@ export type PlannerPortfolioWedding = {
   open_requests: number | null;
   asks_planner: number | null;
   tasks: { open: number; overdue: number; due_soon: number } | null;
+  /** #6 (MW_ROAD on for this wedding): { now_id, label, done, total }; read with readStage. */
+  stage?: unknown;
 };
 export type PlannerNeedItem = { id: string; kind: "request_answered" | "task_overdue" | "task_due_today" | "wedding_soon"; wedding_slug: string; couple_names: string; title: string; why: string; ref: { type: "request" | "task" | "wedding"; id: string | null }; urgent: boolean };
 export type PlannerAgendaItem = { id: string; wedding_slug: string; couple_names: string; time: string | null; title: string; location: string | null; kind: "runsheet" | "wedding_day" };
 export type PlannerWeekItem = { id: string; wedding_slug: string; couple_names: string; date: string; title: string; kind: "task_due" | "wedding" };
 export const usePlannerPortfolio = () => useQuery({ queryKey: ["planner-portfolio"], queryFn: () => get<{ weddings: PlannerPortfolioWedding[]; generated_at: string }>("/planner/portfolio") });
-export type PlannerAgenda = { today: string; needs_you: PlannerNeedItem[]; agenda: PlannerAgendaItem[]; week: PlannerWeekItem[] };
-export const usePlannerAgenda = () => useQuery({ queryKey: ["planner-agenda"], queryFn: () => get<PlannerAgenda>("/planner/agenda") });
+export type PlannerAgenda = {
+  today: string;
+  needs_you: PlannerNeedItem[];
+  agenda: PlannerAgendaItem[];
+  week: PlannerWeekItem[];
+  /** #3 (MW_LIVE_DAY per wedding, app 1.4.0+): each wedding live today; read with readLiveList. */
+  live?: unknown;
+};
+// #3: while a wedding is live today (a non-empty `live`) and the screen is in
+// view, the agenda refreshes every 60 s; minutes tick on the phone between.
+export const usePlannerAgenda = (opts?: { poll?: boolean }) =>
+  useQuery({
+    queryKey: ["planner-agenda"],
+    queryFn: () => get<PlannerAgenda>("/planner/agenda"),
+    refetchInterval: (q) => (opts?.poll && Array.isArray(q.state.data?.live) && q.state.data.live.length ? 60_000 : false),
+  });
 
 export const usePlannerHome = () => useQuery({ queryKey: ["planner-home"], queryFn: () => get<PlannerHome>("/planner/home") });
 export const usePlannerGuests = (slug: string) => useQuery({ queryKey: ["planner-guests", slug], queryFn: () => get<{ guests: PlannerGuest[]; count: number }>(`/planner/weddings/${slug}/guests`), enabled: !!slug });

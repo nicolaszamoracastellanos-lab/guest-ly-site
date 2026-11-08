@@ -133,7 +133,7 @@ function Calendar({ value, onDone }: { value: string | null; onDone: (v: string 
                   style={styles.day}
                 >
                   <View style={[styles.dayInner, selected && styles.daySelected, day === today && !selected && styles.dayToday]}>
-                    <T v="body15" color={selected ? colors.night : disabled ? colors.ivory25 : colors.ivory} center>
+                    <T v="body15" color={selected ? colors.night : disabled ? colors.ivory40 : colors.ivory} center>
                       {d}
                     </T>
                   </View>

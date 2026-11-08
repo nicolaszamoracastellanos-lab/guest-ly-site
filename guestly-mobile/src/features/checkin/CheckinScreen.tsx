@@ -1,26 +1,60 @@
 // Door check-in: camera scan of GL1:{guestId} passes, name search fallback,
 // the ivory guest card, works offline with a replayable queue.
+//
+// With the Day pack saved (#30, K24 app half): the name search runs on the
+// saved guest list when the phone is offline or the server takes longer than
+// 800 ms, a failed search says it failed (never a silent "nobody found"), an
+// offline scan shows the guest's name, party and table from the pack, a
+// party queued on this phone reads "In, waiting to sync", and scanned_at is
+// the scan's own time (corrected by the server clock offset) so a late sync
+// keeps the true arrival time.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Pressable, Alert, Linking, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Linking, ScrollView, type LayoutChangeEvent } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsFocused } from "expo-router";
 import { fmt, useCopy, useLang, relTime } from "@/i18n";
 import { get } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
-import { checkIn, drainQueue, isForOpenWedding, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
+import { failedText } from "@/features/shared/requests";
+import { checkIn, drainQueue, isCheckin, isForOpenWedding, newEventId, readQueue, type CheckinResult } from "@/lib/queue";
+import { useFeatureCopy } from "@/i18n/feature";
+import { DAYOF_COPY } from "@/features/dayof/copy";
+import { useDayPack, useDayPackFlag, useQueuedGuestIds } from "@/features/dayof/hooks";
+import { MIN_SEARCH, searchRoster, type DayPack, type PackGuest } from "@/features/dayof/packCore";
+import { clockLabel } from "@/features/guest/format";
+import { usableTimeZone, wallClockAt } from "@/features/dayof/live";
 import { QueueChip } from "./QueueChip";
 import { useCoupleDayOf, usePlannerCheckin, type GuestListItem } from "@/lib/hooks";
 import { useOnline } from "@/lib/query";
-import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast } from "@/ui";
+import { TopBar, T, Badge, Card, Button, Chip, Input, ListRow, Avatar, Row, Icon, KeyboardLiftView, useBottomClearance, useKeyboardOpen, useTopInset, useSideInsetsStyle, useLayout, toast, toastError, useDockLift } from "@/ui";
 import { reservedRegionsAvailable, useReservedRegions } from "@/lib/duo";
 import { WelcomeAccessory } from "../../../modules/guestly-duo/src/WelcomeAccessoryView";
 import { can, useUserSession } from "@/lib/session";
 import { endCheckinActivity, syncCheckinActivity } from "@/features/widgets/liveActivities";
 import { colors, FILL } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
+
+/** How long the door waits for the server's search before showing the saved list (D3). */
+const SERVER_SEARCH_WAIT_MS = 800;
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+/** A saved guest as a search row. */
+function rowOf(g: PackGuest): GuestListItem {
+  const status = g.rsvp_status === "attending" || g.rsvp_status === "declined" ? g.rsvp_status : "pending";
+  return { id: g.id, name: g.name, initials: initialsOf(g.name), party_size: g.party_size, tags: g.tags, status, checked_in_at: g.checked_in_at, language: null };
+}
+
+type SearchState = { items: GuestListItem[]; source: "server" | "saved"; failed: boolean; term: string } | null;
 
 const PASS_RE = /^GL1:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
@@ -47,8 +81,17 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const [queued, setQueued] = useState(0);
   const [typing, setTyping] = useState(false);
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<GuestListItem[]>([]);
-  const [card, setCard] = useState<{ result: CheckinResult | null; pending?: { name: string; seats: number } } | null>(null);
+  const [search, setSearch] = useState<SearchState>(null);
+  const results = search?.items ?? [];
+  const [card, setCard] = useState<{ result: CheckinResult | null; pending?: { name: string; seats: number; table?: string | null; members?: string[] } } | null>(null);
+  // The saved Day pack of the open wedding (#30), when the flag is on.
+  const dc = useFeatureCopy(DAYOF_COPY);
+  const packFlag = useDayPackFlag();
+  const openSlug = useUserSession()?.me.tenant.slug ?? null;
+  const { entry: packEntry } = useDayPack<DayPack>(role, openSlug, packFlag);
+  const savedIndex = packEntry?.index ?? null;
+  const queuedIds = useQueuedGuestIds(openSlug);
+  const savedAtLabel = packEntry ? clockLabel(wallClockAt(packEntry.checkedAt + packEntry.offsetMs, usableTimeZone(packEntry.pack.meta.tz)).minutes, null, lang) : "";
   const [busy, setBusy] = useState(false);
   const lastScan = useRef<{ id: string; at: number } | null>(null);
   // The check-in count rides the Dynamic Island while this screen is open.
@@ -91,7 +134,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   }, [focused, arrivedIn, partiesTotal, lastIn, lang]);
   useEffect(() => () => void endCheckinActivity(), []);
 
-  const refreshQueue = useCallback(() => readQueue().then((items) => setQueued(items.filter(isForOpenWedding).length)), []);
+  const refreshQueue = useCallback(() => readQueue().then((items) => setQueued(items.filter((i) => isCheckin(i) && isForOpenWedding(i)).length)), []);
   useEffect(() => {
     void refreshQueue();
     if (!permission?.granted) void requestPermission();
@@ -103,8 +146,10 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const drainNow = useCallback(async () => {
     try {
       const r = await drainQueue();
-      if (r.refused.length) toast(fmt(copy.checkin.refusedToast, { names: r.refused.join(", ") }));
-      else if (r.already.length) toast(fmt(copy.checkin.conflictToast, { names: r.already.join(", ") }));
+      // A refusal is a failure (warning mark); a party already in at another
+      // door is news, not success (info mark). Never the success check.
+      if (r.refused.length) toastError(fmt(copy.checkin.refusedToast, { names: r.refused.join(", ") }));
+      else if (r.already.length) toast(fmt(copy.checkin.conflictToast, { names: r.already.join(", ") }), { icon: "info" });
     } catch {
       // The queue keeps everything it could not send.
     }
@@ -116,34 +161,64 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   }, [online, drainNow]);
   useEffect(() => {
     const term = q.trim();
+    let alive = true;
+    let slow: ReturnType<typeof setTimeout> | null = null;
+    const saved = () => (savedIndex ? searchRoster(savedIndex, term).map(rowOf) : null);
     const t = setTimeout(async () => {
-      if (!typing || term.length < 2) {
-        setResults([]);
+      if (!typing || term.length < MIN_SEARCH) {
+        setSearch(null);
         return;
+      }
+      // Offline with the guest list saved: search it at once, no request.
+      if (!online && savedIndex) {
+        setSearch({ items: saved() ?? [], source: "saved", failed: false, term });
+        return;
+      }
+      // The server gets 800 ms; after that the saved list answers meanwhile.
+      if (savedIndex) {
+        slow = setTimeout(() => {
+          if (alive) setSearch({ items: saved() ?? [], source: "saved", failed: false, term });
+        }, SERVER_SEARCH_WAIT_MS);
       }
       try {
         const r = await get<{ items: GuestListItem[] }>(`${role === "planner" ? "/planner/checkin/search" : "/couple/guests"}?q=${encodeURIComponent(term)}`);
-        setResults(r.items.slice(0, 20));
+        if (alive) setSearch({ items: r.items.slice(0, 20), source: "server", failed: false, term });
       } catch {
-        setResults([]);
+        // Never a silent "nobody found": the saved list, or a sentence that says the search failed.
+        if (!alive) return;
+        const local = saved();
+        setSearch(local ? { items: local, source: "saved", failed: false, term } : { items: [], source: "server", failed: true, term });
+      } finally {
+        if (slow) clearTimeout(slow);
       }
     }, 250);
-    return () => clearTimeout(t);
-  }, [q, typing, role]);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+      if (slow) clearTimeout(slow);
+    };
+  }, [q, typing, role, online, savedIndex]);
 
   async function doCheckIn(guestId: string, name: string, seats: number) {
     if (busy || !canEdit) return;
     setBusy(true);
+    // The saved guest list fills in what a scan does not carry (K24: an
+    // offline scan showed an empty name and one seat).
+    const known = savedIndex?.byId.get(guestId) ?? null;
+    const shownName = name || known?.name || "";
+    const partySeats = name ? seats : (known?.party_size ?? seats);
     try {
-      const item = { client_event_id: newEventId(), guest_id: guestId, seats, scanned_at: new Date().toISOString(), name, path: postPath };
+      // The scan's own time, on the server's clock when the pack knows the offset.
+      const scannedAt = new Date(Date.now() + (packEntry?.offsetMs ?? 0)).toISOString();
+      const item = { kind: "checkin" as const, client_event_id: newEventId(), guest_id: guestId, seats: partySeats, scanned_at: scannedAt, name: shownName, path: postPath, tenant: openSlug ?? undefined };
       const result = await checkIn(item);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCard({ result, pending: result ? undefined : { name, seats } });
+      setCard({ result, pending: result ? undefined : { name: shownName || dc.unknownPass, seats: partySeats, table: known?.table ?? null, members: known?.members ?? [] } });
       await refreshQueue();
       void qc.invalidateQueries({ queryKey: [countsKey] });
     } catch (err) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(fmt(copy.fail.checkIn, { name: shownName || dc.unknownPass }), err, lang));
     } finally {
       setBusy(false);
     }
@@ -163,6 +238,31 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
 
   const guest = card?.result?.guest ?? null;
   const seats = guest?.party_size ?? card?.pending?.seats ?? 1;
+  const cardTable = guest?.table ?? card?.pending?.table ?? null;
+  const cardMembers = guest?.members?.length ? guest.members : (card?.pending?.members ?? []);
+  // Parties queued on this phone are in, waiting to sync (never counted twice).
+  const waitingIn = new Set(queuedIds);
+  const waitingCount = savedIndex ? queuedIds.filter((id) => !savedIndex.byId.get(id)?.checked_in_at).length : queued;
+  const resultTrailing = (g: GuestListItem) =>
+    g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : waitingIn.has(g.id) ? <Badge label={dc.waitingIn} kind="amber" /> : undefined;
+  const searchNote = search
+    ? search.failed
+      ? dc.searchFailed
+      : search.source === "saved"
+        ? search.items.length
+          ? fmt(dc.searchSaved, { time: savedAtLabel })
+          : `${fmt(dc.searchNone, { q: search.term })} ${fmt(dc.searchSaved, { time: savedAtLabel })}.`
+        : search.items.length
+          ? null
+          : fmt(dc.searchNone, { q: search.term })
+    : typing && !online && !savedIndex && q.trim().length >= MIN_SEARCH
+      ? dc.searchOfflineNoList
+      : null;
+  const searchNoteNode = typing && searchNote ? (
+    <T v="meta13" color={search?.failed || (!online && !savedIndex) ? colors.amber : colors.ivory70} accessibilityLiveRegion="polite" testID="checkin-search-note">
+      {searchNote}
+    </T>
+  ) : null;
   const top = useTopInset();
   // The counter and the name search sat BEHIND the floating tab bar, so a person
   // who denied the camera could never reach the name field the denied copy points
@@ -173,6 +273,14 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const layout = useLayout();
   const regions = useReservedRegions();
   const keyboardOpen = useKeyboardOpen();
+  // The counter and "Type a name" row is the door's own fixed bottom bar: a
+  // toast (a refused scan, a failed check-in, 6 s) rides above it instead of
+  // covering the name search it points to. The row ends `clearance` above the
+  // window bottom (this screen's own insets, which include the native tab
+  // bar, so it is given from the window), or 12 above the keyboard.
+  const [doorRowH, setDoorRowH] = useState(0);
+  useDockLift(doorRowH ? { rest: 0, restFromWindow: clearance + doorRowH, open: 12 + doorRowH } : null);
+  const onDoorRow = (e: LayoutChangeEvent) => setDoorRowH(Math.round(e.nativeEvent.layout.height));
   // Denied is only what the person answered; while iOS is still asking, the
   // status is "undetermined" and the scanner frame stays. With the camera
   // denied there is nothing to point at, so the frame and the pointing hint
@@ -206,7 +314,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
                   {guest?.name ?? card.pending?.name ?? ""}
                 </T>
                 <T v="title30" color={colors.goldLight} center>
-                  {[guest?.table ? fmt(copy.checkin.table, { t: guest.table }) : null, fmt(copy.guests.partyOf, { n: seats })].filter(Boolean).join(" · ")}
+                  {[cardTable ? fmt(copy.checkin.table, { t: cardTable }) : null, fmt(copy.guests.partyOf, { n: seats })].filter(Boolean).join(" · ")}
                 </T>
                 <View style={styles.okPill}>
                   <T v="label11" color="#047857" style={{ letterSpacing: 1 }}>
@@ -243,15 +351,18 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             {viewOnlyNote}
             {welcomeToggle}
             {typing ? <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} /> : null}
+            {searchNoteNode}
             {typing && results.length ? (
               <Card kind="glass" padding={0} style={{ flexShrink: 1, paddingHorizontal: 10 }}>
                 <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
                   {results.map((g, i) => (
-                    <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : undefined} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
+                    <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={resultTrailing(g)} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
                   ))}
                 </ScrollView>
               </Card>
             ) : null}
+            {/* Anchored at the bottom of the lower half, like the normal screen, so toasts know where it is. */}
+            <View onLayout={onDoorRow} style={{ marginTop: "auto" }}>
             <Row style={{ justifyContent: "space-between" }}>
               <T v="body15" color={colors.ivory70}>
                 {dayof ? `${dayof.parties_in} ${fmt(copy.checkin.partiesIn, { n: "", total: dayof.parties_total }).replace(/^\s*of\s*/i, "/ ").replace(/^\s*de\s*/i, "/ ")}` : "·"}
@@ -265,6 +376,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
                 </Row>
               </Pressable>
             </Row>
+            </View>
           </View>
         </KeyboardLiftView>
       </View>
@@ -321,11 +433,12 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             <Input accessibilityLabel={copy.guests.search} icon="search" value={q} onChangeText={setQ} placeholder={copy.guests.search} autoFocus autoCorrect={false} />
           </Card>
         ) : null}
+        {searchNoteNode ? <Card kind="glass" blur padding={10}>{searchNoteNode}</Card> : null}
         {typing && results.length ? (
           <Card kind="glass" padding={0} style={{ flexShrink: 1, paddingHorizontal: 10 }}>
             <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
               {results.map((g, i) => (
-                <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={g.checked_in_at ? <Badge label={copy.guests.detail.checkedIn} kind="green" /> : undefined} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
+                <ListRow key={g.id} leading={<Avatar initials={g.initials} />} title={g.name} sub={fmt(copy.guests.partyOf, { n: g.party_size })} trailing={resultTrailing(g)} onPress={() => doCheckIn(g.id, g.name, g.party_size)} last={i === results.length - 1} />
               ))}
             </ScrollView>
           </Card>
@@ -343,7 +456,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
               </View>
             </Row>
             <T v="body15" color={colors.muted} style={{ marginTop: 4 }}>
-              {[fmt(copy.guests.partyOf, { n: seats }), guest?.members?.length ? fmt(copy.checkin.withMembers, { members: guest.members.join(", ") }) : null, guest?.table ? fmt(copy.checkin.table, { t: guest.table }) : null].filter(Boolean).join(" · ")}
+              {[fmt(copy.guests.partyOf, { n: seats }), cardMembers.length ? fmt(copy.checkin.withMembers, { members: cardMembers.join(", ") }) : null, cardTable ? fmt(copy.checkin.table, { t: cardTable }) : null].filter(Boolean).join(" · ")}
             </T>
             {card.result?.already && card.result.checked_in_at ? (
               <T v="meta13" color={colors.muted} style={{ marginTop: 4 }}>
@@ -352,7 +465,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             ) : null}
             {!card.result ? (
               <T v="meta13" color={colors.goldDim} style={{ marginTop: 4 }}>
-                {fmt(copy.checkin.offlineQueued, { n: queued })}
+                {`${dc.waitingIn}. ${fmt(copy.checkin.offlineQueued, { n: queued })}`}
               </T>
             ) : null}
             <Button label={copy.common.done} kind="paper" onPress={() => setCard(null)} style={{ marginTop: 14, backgroundColor: colors.gold, borderColor: colors.gold }} />
@@ -360,6 +473,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
         ) : null}
         {viewOnlyNote}
         {welcomeToggle ? <View style={{ alignItems: "flex-start" }}>{welcomeToggle}</View> : null}
+        <View onLayout={onDoorRow}>
         <Row style={{ justifyContent: "space-between" }}>
           <Row gap={6} align="baseline">
             <T v="name24" style={{ fontVariant: ["lining-nums"] }}>
@@ -368,6 +482,11 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             <T v="meta13" color={colors.ivory70}>
               {fmt(copy.checkin.partiesIn, { n: "", total: dayof?.parties_total ?? "·" }).replace(/^\s*of\s*/i, "of ").replace(/^\s*de\s*/i, "de ")}
             </T>
+            {waitingCount > 0 ? (
+              <T v="meta13" color={colors.amber} style={{ fontVariant: ["tabular-nums"] }}>
+                {fmt(dc.doorWaiting, { n: waitingCount })}
+              </T>
+            ) : null}
           </Row>
           <Pressable onPress={() => setTyping((v) => !v)} accessibilityRole="button" style={{ minHeight: 44, justifyContent: "center" }}>
             <Row gap={6}>
@@ -378,6 +497,7 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
             </Row>
           </Pressable>
         </Row>
+        </View>
       </View>
       </KeyboardLiftView>
     </View>

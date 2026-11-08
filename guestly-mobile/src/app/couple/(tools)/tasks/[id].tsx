@@ -1,24 +1,25 @@
 // One task on the couple's list: edit everything, change status, delete.
 
 import React, { useState } from "react";
-import { Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { fmt, useLang } from "@/i18n";
+import { useCopy, fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, Button, Stack, Skeleton, Row, Badge, T, EmptyState } from "@/ui";
+import { Screen, TopBar, Button, Stack, Skeleton, Row, Badge, T, EmptyState, toast, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type TaskView } from "@/features/tasks/hooks";
-import { TaskForm, formFromTask, errorText, dueLabel, dueColor, ConfirmSheet, type TaskFormValue } from "@/features/tasks/ui";
+import { TaskForm, formFromTask, dueLabel, dueColor, ConfirmSheet, type TaskFormValue } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
 
 export default function TaskDetail() {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -51,7 +52,7 @@ export default function TaskDetail() {
   async function save() {
     if (!form || !task || busy || !valid) return;
     if (!form.title.trim()) {
-      Alert.alert(copy.errorTitle);
+      toastError(copy.errorTitle);
       return;
     }
     setBusy(true);
@@ -61,7 +62,7 @@ export default function TaskDetail() {
       leave.release();
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.saveTask, err, lang));
     } finally {
       setBusy(false);
     }
@@ -73,9 +74,9 @@ export default function TaskDetail() {
     try {
       const r = await post<{ task: TaskView; clone: TaskView | null }>(`/couple/tasks/${task.id}/status`, { status });
       await invalidate();
-      if (r.clone?.due_date) Alert.alert(fmt(copy.repeatCloned, { date: r.clone.due_date }));
+      if (r.clone?.due_date) toast(fmt(copy.repeatCloned, { date: r.clone.due_date }), { icon: "info" });
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.updateTask, err, lang));
     } finally {
       setBusy(false);
     }
@@ -91,7 +92,7 @@ export default function TaskDetail() {
       leave.release();
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.deleteTask, err, lang));
     } finally {
       setBusy(false);
     }

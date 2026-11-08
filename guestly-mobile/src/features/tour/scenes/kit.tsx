@@ -208,7 +208,7 @@ export function Initials({ text, size = 34, gold }: { text: string; size?: numbe
  *  so these are hidden from it and only serve touch. */
 export function Tap({ onPress, children, style, hitSlop = 6 }: { onPress: () => void; children: ReactNode; style?: StyleProp<ViewStyle>; hitSlop?: number }) {
   return (
-    <Pressable onPress={onPress} hitSlop={hitSlop} style={({ pressed }) => [style, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}>
+    <Pressable accessible={false} onPress={onPress} hitSlop={hitSlop} style={({ pressed }) => [style, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}>
       {children}
     </Pressable>
   );

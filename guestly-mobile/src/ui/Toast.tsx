@@ -12,8 +12,10 @@
 // while VoiceOver or TalkBack is on so there is time to reach Undo.
 //
 // The root layout mounts one ToastHost. A Sheet is a native modal that covers
-// the root, so every open Sheet mounts its own host; the newest host shows the
-// toast and the others stay quiet.
+// the root, so every open Sheet mounts its own host; so does a Screen presented
+// as a native modal (`<Screen modal>`: the guest card, add guest, Record RSVP,
+// a request, Home setup; scripts/tests/modal-toasts.test.ts keeps the list).
+// The newest such host shows the toast and the others stay quiet.
 
 import React, { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Pressable, StyleSheet } from "react-native";
@@ -36,6 +38,10 @@ export type ToastOptions = {
   icon?: IconName;
   /** How long it stays, in ms. Default 4000, 5000 with Undo (clamped 3000 to 8000). */
   ms?: number;
+  /** Runs once when the toast leaves without its Undo: its time ran out, a
+   *  newer toast replaced it, or it was closed. A deferred commit (the write
+   *  that has no restore, quality bar 5.3) is sent from here. */
+  onLeave?: () => void;
 };
 
 type ToastItem = { id: number; message: string } & ToastOptions;
@@ -57,18 +63,31 @@ const getCurrent = () => current;
 /** Show a toast. Returns a function that closes it early. */
 export function toast(message: string, options: ToastOptions = {}): () => void {
   const id = ++seq;
+  const replaced = current;
   current = { id, message, ...options };
   emit();
+  replaced?.onLeave?.();
   // VoiceOver and TalkBack read it without moving focus away from the work.
   AccessibilityInfo.announceForAccessibilityWithOptions?.(message, { queue: true });
   return () => dismissToast(id);
 }
 
-/** Close the toast on screen (or only toast `id`, if it is still showing). */
-export function dismissToast(id?: number) {
+/** An error: what failed and what to do, with the warning mark, a little longer
+ *  on screen. Replaces the native "Error" alert (K17): an error is news about the
+ *  work, not a choice, so it never blocks the screen. Validation stays inline
+ *  where the form has a place for it. */
+export function toastError(message: string): () => void {
+  return toast(message, { icon: "warning", ms: 6000 });
+}
+
+/** Close the toast on screen (or only toast `id`, if it is still showing).
+ *  `undone`: closed by its Undo, so its onLeave does not run. */
+export function dismissToast(id?: number, undone = false) {
   if (!current || (id !== undefined && current.id !== id)) return;
+  const leaving = current;
   current = null;
   emit();
+  if (!undone) leaving.onLeave?.();
 }
 
 // ------------------------------------------------------------------ lifts
@@ -77,20 +96,30 @@ export function dismissToast(id?: number) {
  *  above the tab bar (or the home indicator) while the keyboard is closed,
  *  `open` above the keyboard while it is open (a docked action plus the form
  *  toolbar, or a chat composer). */
-export type DockLift = { rest: number; open: number };
+export type DockLift = {
+  rest: number;
+  open: number;
+  /** Instead of `rest`: where the bar's top edge is, counted from the bottom
+   *  of the window. For a screen whose bar sits a gap above the tab bar and
+   *  whose safe area differs from the root's (a screen inside the native tabs
+   *  has the tab bar in its bottom inset, the root host does not). */
+  restFromWindow?: number;
+};
 
 const lifts = new Map<string, DockLift>();
 const liftListeners = new Set<() => void>();
-let liftSnapshot: DockLift = { rest: 0, open: 0 };
+let liftSnapshot: DockLift = { rest: 0, open: 0, restFromWindow: 0 };
 function recomputeLift() {
   let rest = 0;
   let open = 0;
+  let restFromWindow = 0;
   lifts.forEach((l) => {
     rest = Math.max(rest, l.rest);
     open = Math.max(open, l.open);
+    restFromWindow = Math.max(restFromWindow, l.restFromWindow ?? 0);
   });
-  if (rest !== liftSnapshot.rest || open !== liftSnapshot.open) {
-    liftSnapshot = { rest, open };
+  if (rest !== liftSnapshot.rest || open !== liftSnapshot.open || restFromWindow !== liftSnapshot.restFromWindow) {
+    liftSnapshot = { rest, open, restFromWindow };
     liftListeners.forEach((l) => l());
   }
 }
@@ -110,16 +139,17 @@ export function useDockLift(lift: DockLift | null) {
   const focused = useIsFocused();
   const rest = lift?.rest ?? 0;
   const open = lift?.open ?? 0;
+  const fromWindow = lift?.restFromWindow ?? 0;
   const active = !!lift && focused;
   useEffect(() => {
     if (!active) return;
-    lifts.set(id, { rest, open });
+    lifts.set(id, { rest, open, restFromWindow: fromWindow });
     recomputeLift();
     return () => {
       lifts.delete(id);
       recomputeLift();
     };
-  }, [id, active, rest, open]);
+  }, [id, active, rest, open, fromWindow]);
 }
 
 // ------------------------------------------------------------------ hosts
@@ -142,10 +172,10 @@ const topHost = () => {
 /** Where toasts appear. The root layout mounts one; Sheet mounts its own.
  *  `base` and `lift` override the defaults (the tab bar or home indicator,
  *  and whatever the focused screen docked at its bottom). */
-export function ToastHost({ base, lift }: { base?: number; lift?: DockLift }) {
+export function ToastHost({ base, lift, modal }: { base?: number; lift?: DockLift; /** Inside a native modal screen: wins over the root host like a Sheet's. */ modal?: boolean }) {
   const id = useId();
-  // A host given its own lift is a Sheet's.
-  const sheet = !!lift;
+  // A host given its own lift is a Sheet's; a modal screen's host ranks with them.
+  const sheet = !!lift || !!modal;
   useEffect(() => {
     hosts.push({ id, sheet });
     hostListeners.forEach((l) => l());
@@ -191,7 +221,7 @@ export function ToastHost({ base, lift }: { base?: number; lift?: DockLift }) {
 
   const restBase = base ?? (tabBar ? tabTop : insets.bottom);
   const l = lift ?? registered;
-  const closed = -(restBase + l.rest + 12);
+  const closed = -(Math.max(restBase + l.rest, l.restFromWindow ?? 0) + 12);
   const opened = -(l.open + 12);
 
   return (
@@ -208,7 +238,7 @@ export function ToastHost({ base, lift }: { base?: number; lift?: DockLift }) {
               accessibilityLabel={showing.undoLabel ?? c.undo}
               onPress={() => {
                 const run = latest.current?.undo;
-                dismissToast(showing.id);
+                dismissToast(showing.id, true);
                 run?.();
               }}
               style={({ pressed }) => [styles.undo, pressed && { opacity: 0.6 }]}

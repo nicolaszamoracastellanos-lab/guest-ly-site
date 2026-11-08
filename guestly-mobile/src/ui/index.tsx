@@ -45,7 +45,7 @@ export { ChatArea, ChatList, ChatComposer, Composer, DockedAction, FormToolbar, 
  *  K9 to K12): `<KeyboardLiftView behavior="padding" style={{ flex: 1 }}>`. */
 export { KeyboardAvoidingView as KeyboardLiftView } from "react-native-keyboard-controller";
 export type { ChatListHandle, ComposerProps } from "./keyboard";
-export { toast, dismissToast, ToastHost, useDockLift } from "./Toast";
+export { toast, toastError, dismissToast, ToastHost, useDockLift } from "./Toast";
 export type { ToastOptions, DockLift } from "./Toast";
 export { RoleNativeTabs } from "./NativeRoleTabs";
 export type { RoleTab } from "./NativeRoleTabs";
@@ -103,8 +103,12 @@ export function Screen({
   scrollY,
   keyboard,
   dock,
+  modal = false,
 }: {
   children: ReactNode;
+  /** The route is presented as a native modal (presentation "modal"): the modal
+   *  covers the root layout's toast host, so the screen mounts its own. */
+  modal?: boolean;
   scroll?: boolean;
   padded?: boolean;
   bottomInset?: number;
@@ -274,6 +278,12 @@ export function Screen({
         </DockedAction>
       ) : null}
       {form ? <FormToolbar /> : null}
+      {/* No `base`: the host takes the same rest line as DockedAction (above the
+          tab bar's place when the tab layout reports one, else the home
+          indicator), so a toast never lands on the screen's docked action.
+          base={insets.bottom} put it 12 pt into the guest card's dock and over
+          Record RSVP's Cancel and Save (simulator, largest Dynamic Type). */}
+      {modal ? <ToastHost modal /> : null}
       <LockCover />
     </View>
     </MultilineRoomValue.Provider>
@@ -878,15 +888,17 @@ export function Badge({ label, kind = "mute", dot }: { label: string; kind?: Bad
   );
 }
 
-export function Chip({ label, on, onPress, testID }: { label: string; on?: boolean; onPress?: () => void; testID?: string }) {
+export function Chip({ label, on, onPress, testID, hint, disabled }: { label: string; on?: boolean; onPress?: () => void; testID?: string; /** What the tap does, read after the label. */ hint?: string; disabled?: boolean }) {
   // 44 pt pressable, 36 pt visual pill centered inside it.
   return (
     <Pressable
       testID={testID}
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected: !!on }}
+      accessibilityHint={hint}
+      accessibilityState={{ selected: !!on, disabled: !!disabled }}
       style={({ pressed }) => [styles.chipHit, pressed && { opacity: 0.8 }]}
     >
       <View style={[styles.chip, on && styles.chipOn]}>
@@ -1385,9 +1397,10 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
   );
 }
 
-export function Banner({ icon, title, body, kind = "amber", action }: { icon: IconName; title: string; body?: string; kind?: "amber" | "gold" | "red"; action?: ReactNode }) {
-  const border = kind === "amber" ? "rgba(245,158,11,0.35)" : kind === "red" ? "rgba(240,162,162,0.4)" : colors.goldBorder;
-  const fg = kind === "amber" ? colors.amber : kind === "red" ? colors.red : colors.goldLight;
+export function Banner({ icon, title, body, kind = "amber", action }: { icon: IconName; title: string; body?: string; kind?: "amber" | "gold" | "red" | "neutral"; action?: ReactNode }) {
+  // neutral: news that is not a problem (offline with a saved Day pack, #30 D5).
+  const border = kind === "amber" ? "rgba(245,158,11,0.35)" : kind === "red" ? "rgba(240,162,162,0.4)" : kind === "neutral" ? colors.ivory14 : colors.goldBorder;
+  const fg = kind === "amber" ? colors.amber : kind === "red" ? colors.red : kind === "neutral" ? colors.ivory70 : colors.goldLight;
   return (
     <Card kind="solid" radiusKey="tile" padding={12} border={border}>
       <Row gap={12} align="flex-start">

@@ -11,12 +11,26 @@ export type SeatAssignment = {
   person: string;
   kind: "main" | "companion";
 };
-export type SeatingTable = {
+/**
+ * #55: builds from the portal's SHAPES_APP_VERSION get every table shape
+ * (square, oval, half_moon, serpentine, imperial, cocktail, u_shape besides
+ * round and rect) plus `shape_fallback` and the drawing options; older portal
+ * answers carry round or rect only. The app keeps the word it was sent and
+ * sends it back unchanged (shapeView.readShape decides what to draw).
+ */
+export type TableShapeFields = {
+  shape: string;
+  shape_fallback?: "round" | "rect";
+  rotation?: number;
+  ends?: boolean;
+  one_side?: boolean;
+  segments?: number;
+};
+export type SeatingTable = TableShapeFields & {
   id: string;
   label: string;
   x: number;
   y: number;
-  shape: "round" | "rect";
   capacity: number;
   confidence?: number;
   source: "ai" | "manual";
@@ -85,14 +99,16 @@ export const usePlannerSeating = () =>
 
 type Draft = {
   basedOn: string | null;
-  tables: {
+  tables: (TableShapeFields & {
     id: string;
     label: string;
     capacity: number;
-    shape: "round" | "rect";
     source: "ai" | "manual";
     confidence?: number;
-  }[];
+    /** Where the table stands on the plan (absent for a table made on this phone until it is saved). */
+    x?: number;
+    y?: number;
+  })[];
   assignments: Record<string, SeatAssignment[]>;
   dirty: boolean;
 };
@@ -122,8 +138,15 @@ export function seedDraft(surface: SeatingSurface, force = false) {
       label: t.label,
       capacity: t.capacity,
       shape: t.shape,
+      shape_fallback: t.shape_fallback,
+      rotation: t.rotation,
+      ends: t.ends,
+      one_side: t.one_side,
+      segments: t.segments,
       source: t.source,
       confidence: t.confidence,
+      x: t.x,
+      y: t.y,
     })),
     assignments: Object.fromEntries(
       surface.tables.map((t) => [
@@ -170,17 +193,27 @@ export const draftActions = {
   },
   updateTable(
     id: string,
-    patch: Partial<{
-      label: string;
-      capacity: number;
-      shape: "round" | "rect";
-      source: "ai" | "manual";
-      confidence: number | undefined;
-    }>,
+    patch: Partial<
+      TableShapeFields & {
+        label: string;
+        capacity: number;
+        source: "ai" | "manual";
+        confidence: number | undefined;
+      }
+    >,
   ) {
     set({
       ...draft,
-      tables: draft.tables.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      // A new shape starts without the old one's turn and options (the portal
+      // does the same), unless the patch brings them (shapePatch: the table's
+      // saved shape picked again gets its saved options back).
+      tables: draft.tables.map((t) =>
+        t.id !== id
+          ? t
+          : patch.shape !== undefined && patch.shape !== t.shape
+            ? { ...t, shape_fallback: undefined, rotation: undefined, ends: undefined, one_side: undefined, segments: undefined, ...patch }
+            : { ...t, ...patch },
+      ),
       dirty: true,
     });
   },

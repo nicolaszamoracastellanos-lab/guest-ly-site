@@ -13,6 +13,7 @@ import type { PlannerPortfolioWedding } from "@/lib/hooks";
 import { T, Row, Icon, toast } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { COPY } from "./copy";
+import { readStage } from "@/features/couple/road";
 
 const HEALTH_COLOR = { ok: colors.green, watch: colors.amber, urgent: colors.red } as const;
 
@@ -48,11 +49,13 @@ export function WeddingCard({ w, onPress, selected }: { w: PlannerPortfolioWeddi
   if (w.asks_planner) facts.push(plural(w.asks_planner, l.asksYou));
   if (w.tasks?.overdue) facts.push(plural(w.tasks.overdue, l.tasksOverdue));
   const date = w.wedding_date ? shortDate(w.wedding_date, lang) : "";
+  // #6: the Now milestone as a to-do and the count (MW_ROAD on for that wedding).
+  const stage = readStage(w.stage);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected }}
-      accessibilityLabel={`${w.couple_names}, ${daysLabel(w, l)}, ${l.health[w.health]}`}
+      accessibilityLabel={[w.couple_names, daysLabel(w, l), l.health[w.health], stage ? fmt(l.stageA11y, { label: stage.label, done: stage.done, total: stage.total }) : null].filter(Boolean).join(", ")}
       onPress={onPress}
       style={({ pressed }) => [styles.card, selected && styles.cardSelected, pressed && { opacity: 0.85 }]}
       testID={`planner-wedding-card-${w.slug}`}
@@ -88,6 +91,14 @@ export function WeddingCard({ w, onPress, selected }: { w: PlannerPortfolioWeddi
           </T>
         </Row>
       )}
+      {stage ? (
+        <Row gap={6}>
+          <Icon name="rings" size={14} color={colors.ivory55} />
+          <T v="meta13" color={colors.ivory70} style={{ flex: 1, fontVariant: ["tabular-nums"] }}>
+            {fmt(l.stage, { label: stage.label, done: stage.done, total: stage.total })}
+          </T>
+        </Row>
+      ) : null}
       {facts.length ? (
         <T v="meta13" color={w.health === "urgent" ? colors.red : colors.amber}>
           {facts.join(" · ")}

@@ -15,7 +15,7 @@ import { useGuestSite, type SectionType } from "./hooks";
 import { SiteBody } from "./sections";
 import { useSafeBack } from "@/lib/nav";
 
-type Entry = "hotels" | "gifts" | "faq" | "gallery" | "story";
+type Entry = "hotels" | "gifts" | "faq" | "gallery" | "story" | "before";
 
 const ENTRY_SECTIONS: Record<Entry, SectionType[]> = {
   hotels: ["travel"],
@@ -23,6 +23,8 @@ const ENTRY_SECTIONS: Record<Entry, SectionType[]> = {
   faq: ["faq"],
   gallery: ["gallery", "video"],
   story: ["story", "party"],
+  // #45: the know-before card on its own (Home's "Before you go").
+  before: ["knowbefore"],
 };
 
 export function SiteScreen({ entry }: { entry?: Entry }) {

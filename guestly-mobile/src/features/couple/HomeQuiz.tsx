@@ -12,11 +12,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useSafeBack } from "@/lib/nav";
-import { Screen, TopBar, T, Row, Stack, Button, Chip, Gem, toast } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Button, Chip, Gem, toast, toastError } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { FOCUS_IDS, STANDARD_ANSWERS, suggestedCards, type Focus, type HomeAnswers } from "./homeLayout";
 import { readLayout, useSaveHomeLayout, type CoupleHomeWithLayout, type RecapPref } from "./homeCards";
 import { HOME_COPY, hourLabel } from "./homeCopy";
+import { onlyServed } from "./road";
 
 const STEPS = 5;
 const HOURS = [6, 7, 8, 9, 10, 12, 13, 17, 18, 19, 20, 21];
@@ -33,7 +34,7 @@ export function HomeQuiz() {
     const l = readLayout(qc.getQueryData<CoupleHomeWithLayout>(["couple-home"])?.layout);
     const answers: HomeAnswers = l?.configured ? l.answers : { ...STANDARD_ANSWERS, focus: [] };
     const recap: RecapPref = l?.recap ?? { cadence: answers.when, weekday: 1, hour: 8 };
-    return { answers, recap };
+    return { answers, recap, served: l?.served ?? null };
   }, [qc]);
   const [a, setA] = useState<HomeAnswers>(start.answers);
   const [weekday, setWeekday] = useState(start.recap.weekday);
@@ -46,7 +47,8 @@ export function HomeQuiz() {
     try {
       await save.mutateAsync({
         answers,
-        cards: suggestedCards(answers),
+        // K8: a card the server did not show this phone is left to the server.
+        cards: onlyServed(suggestedCards(answers), start.served),
         dismissed: [],
         quiz_state: skip ? "skipped" : "done",
         ...(skip ? {} : { recap: { cadence: a.when, weekday, hour } }),
@@ -54,7 +56,8 @@ export function HomeQuiz() {
       toast(c.saved);
       close();
     } catch {
-      toast(c.saveFailed);
+      // The quiz stays open: the toast shows on its own host, over the modal.
+      toastError(c.saveFailed);
     }
   };
 
@@ -68,7 +71,7 @@ export function HomeQuiz() {
   const canNext = step !== 0 || a.focus.length > 0;
 
   return (
-    <Screen header={<TopBar title="" left={null} right={<Pressable onPress={close} accessibilityRole="button" accessibilityLabel={c.close} hitSlop={10}><T v="meta13" color={colors.ivory70}>{c.close}</T></Pressable>} />} bottomInset={40}>
+    <Screen modal header={<TopBar title="" left={null} right={<Pressable onPress={close} accessibilityRole="button" accessibilityLabel={c.close} hitSlop={10}><T v="meta13" color={colors.ivory70}>{c.close}</T></Pressable>} />} bottomInset={40}>
       <Stack gap={18} style={{ marginTop: 8 }}>
         <View style={styles.steps} accessibilityRole="progressbar" accessibilityLabel={c.question(step + 1, STEPS)}>
           {Array.from({ length: STEPS }, (_, i) => (

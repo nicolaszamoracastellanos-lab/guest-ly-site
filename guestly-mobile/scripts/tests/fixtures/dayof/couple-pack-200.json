@@ -1,0 +1,52 @@
+{
+  "status": 200,
+  "headers": { "etag": "\"v-3f9a1c\"", "date": "Sat, 22 May 2027 20:12:00 GMT" },
+  "body": {
+    "ok": true,
+    "data": {
+      "meta": {
+        "version": "v-3f9a1c",
+        "generated_at": "2027-05-22T20:11:58.000Z",
+        "tz": "America/La_Paz",
+        "wedding_date": "2027-05-22",
+        "valid_until": "2027-05-23",
+        "server_now": "2027-05-22T20:12:00.000Z",
+        "slug": "valentina-y-mateo",
+        "couple_names": "Valentina & Mateo",
+        "can_mark_status": true
+      },
+      "runsheet": [
+        { "id": "b-arrive", "day": "2027-05-22", "starts_at": "16:00", "ends_at": "16:30", "title": "Guests arrive, welcome drinks", "detail": "", "location": "Garden terrace", "place_id": "p-garden", "owner": "Mesa Lumen Catering", "vendor_id": "v-mesa", "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 2 },
+        { "id": "b-shuttle", "day": "2027-05-22", "starts_at": "15:45", "ends_at": "16:15", "title": "Shuttles to Villa Arenisca", "detail": "From Hotel Mirador Lumen and Plaza Faro", "location": "", "place_id": null, "owner": "Lumen Shuttle", "vendor_id": "v-shuttle", "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 1 },
+        { "id": "b-hair", "day": "2027-05-22", "starts_at": "12:00", "ends_at": "14:00", "title": "Hair and makeup", "detail": "", "location": "Suite 4", "place_id": null, "owner": "Estudio Faro", "vendor_id": null, "status": "done", "updated_at": "2027-05-22T18:05:00.000Z", "sort_order": 0 },
+        { "id": "b-ceremony", "day": "2027-05-22", "starts_at": "16:30", "ends_at": "17:00", "title": "Ceremony", "detail": "", "location": "Garden terrace", "place_id": "p-garden", "owner": "Officiant", "vendor_id": null, "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 3 },
+        { "id": "b-cocktail", "day": "2027-05-22", "starts_at": "17:00", "ends_at": "18:30", "title": "Cocktail hour", "detail": "", "location": "Lower garden", "place_id": null, "owner": "Mesa Lumen Catering", "vendor_id": "v-mesa", "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 4 },
+        { "id": "b-dinner", "day": "2027-05-22", "starts_at": "18:30", "ends_at": "20:15", "title": "Dinner and toasts", "detail": "", "location": "Courtyard", "place_id": null, "owner": "Mesa Lumen Catering", "vendor_id": "v-mesa", "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 5 },
+        { "id": "b-dance", "day": "2027-05-22", "starts_at": "20:30", "ends_at": "20:40", "title": "First dance", "detail": "", "location": "Courtyard", "place_id": null, "owner": "Trío Brisa", "vendor_id": null, "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 6 },
+        { "id": "b-last", "day": "2027-05-22", "starts_at": "00:30", "ends_at": null, "title": "Last song", "detail": "", "location": "Courtyard", "place_id": null, "owner": "Trío Brisa", "vendor_id": null, "status": "planned", "updated_at": "2027-05-20T14:00:00.000Z", "sort_order": 7 }
+      ],
+      "places": [
+        { "id": "p-garden", "name": "Villa Arenisca", "address": "Camino a Porongo km 4, Santa Cruz de la Sierra", "lat": -17.8, "lng": -63.2, "time": "16:00", "note": null }
+      ],
+      "vendors": [
+        { "id": "v-mesa", "name": "Mesa Lumen Catering", "category": "catering", "contact": "Lucía Paz", "phone": "+59170000001", "whatsapp": "59170000001", "arrival": "13:00" },
+        { "id": "v-shuttle", "name": "Lumen Shuttle", "category": "transport", "contact": null, "phone": "+59170000002", "whatsapp": null, "arrival": "15:15" }
+      ],
+      "seating": {
+        "tables": [ { "id": "t1", "name": "Table 1", "number": 1, "seats": 10 }, { "id": "t2", "name": "Table 2", "number": 2, "seats": 10 } ],
+        "assignments": [ { "guest_id": "11111111-1111-4111-8111-111111111111", "table_id": "t1", "seat": 3 } ],
+        "floor_plan_url": null
+      },
+      "roster": [
+        { "id": "11111111-1111-4111-8111-111111111111", "name": "Sofía Ríos", "members": ["Sofía Ríos", "Andrés Ríos"], "party_size": 2, "table": "Table 1", "tags": ["family"], "checked_in_at": null, "rsvp_status": "attending", "meal": "fish" },
+        { "id": "22222222-2222-4222-8222-222222222222", "name": "Mateo Núñez", "members": [], "party_size": 1, "table": "Table 2", "tags": [], "checked_in_at": "2027-05-22T19:58:00.000Z", "rsvp_status": "attending", "meal": null },
+        { "id": "33333333-3333-4333-8333-333333333333", "name": "José María Peña y Lillo", "members": ["José María Peña y Lillo", "Inés Peña"], "party_size": 2, "table": null, "tags": [], "checked_in_at": null, "rsvp_status": "attending", "meal": null }
+      ],
+      "counts": null,
+      "contacts": [ { "name": "Raquel Vargas", "role": "planner", "phone": "+59170000009" } ],
+      "slots": [],
+      "ceremony": null,
+      "know_before_you_go": null
+    }
+  }
+}

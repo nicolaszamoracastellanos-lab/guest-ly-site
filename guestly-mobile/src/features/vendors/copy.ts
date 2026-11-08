@@ -46,6 +46,9 @@ const en = {
   notQuoted: "Not quoted yet",
   currency: "Currency (3 letters, blank = budget currency)",
   rating: "Your rating",
+  /** The rating read out and in the list line: "4 of 5". */
+  ratingOf: "Rated {n} of 5",
+  ratingStar: "{n} of 5",
   notes: "Notes",
   call: "Call",
   whatsapp: "WhatsApp",
@@ -114,6 +117,8 @@ const es: typeof en = {
   notQuoted: "Sin cotizar",
   currency: "Moneda (3 letras, vacío = moneda del presupuesto)",
   rating: "Tu calificación",
+  ratingOf: "Calificación {n} de 5",
+  ratingStar: "{n} de 5",
   notes: "Notas",
   call: "Llamar",
   whatsapp: "WhatsApp",

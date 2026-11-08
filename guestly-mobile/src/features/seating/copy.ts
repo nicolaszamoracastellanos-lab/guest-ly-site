@@ -12,6 +12,7 @@ export const COPY = {
       tables: "tables",
     },
     tables: "Tables",
+    planTitle: "Table plan",
     noTables:
       "No tables yet. Add them one by one, or let the concierge suggest a layout from your numbers.",
     addTable: "Add a table",
@@ -21,6 +22,7 @@ export const COPY = {
     shape: "Shape",
     round: "Round",
     rect: "Rectangular",
+    asOnWeb: "As set on the web",
     seatedOf: "{seated} of {capacity} seated",
     overCapacity: "Over capacity",
     unseated: "Still unseated",
@@ -103,6 +105,7 @@ export const COPY = {
       tables: "mesas",
     },
     tables: "Mesas",
+    planTitle: "Plano de mesas",
     noTables:
       "Aún no hay mesas. Agrégalas una por una, o deja que el concierge sugiera una distribución según tus números.",
     addTable: "Agregar una mesa",
@@ -112,6 +115,7 @@ export const COPY = {
     shape: "Forma",
     round: "Redonda",
     rect: "Rectangular",
+    asOnWeb: "Como en la web",
     seatedOf: "{seated} de {capacity} sentados",
     overCapacity: "Sobre capacidad",
     unseated: "Sin asiento",

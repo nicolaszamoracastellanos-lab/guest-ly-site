@@ -2,18 +2,19 @@
 // without a login (add, edit, remove).
 
 import React, { useState } from "react";
-import { Alert, View, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
+import { failedText } from "@/features/shared/requests";
 import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, ListRow, Avatar, SectionLabel, Sheet, SheetActions, Input, Toggle, Row, Segmented, Icon } from "@/ui";
+import { Screen, TopBar, BigTitle, Button, Stack, Skeleton, Card, T, ListRow, Avatar, SectionLabel, Sheet, SheetActions, Input, Toggle, Row, Segmented, Icon, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/tasks/copy";
 import { useTasksBoard, TASK_INVALIDATE, type Collaborator } from "@/features/tasks/hooks";
-import { errorText, initials, Field, ConfirmSheet } from "@/features/tasks/ui";
+import { initials, Field, ConfirmSheet } from "@/features/tasks/ui";
 import { useSafeBack } from "@/lib/nav";
 
 type Form = { name: string; role_label: string; email: string; phone: string; language: "en" | "es"; notifications_enabled: boolean };
@@ -50,7 +51,7 @@ export default function Collaborators() {
       await invalidate();
       setEditing(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(app.fail.saveHelper, err, lang));
     } finally {
       setBusy(false);
     }
@@ -64,7 +65,7 @@ export default function Collaborators() {
       await invalidate();
       setRemoving(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(app.fail.removeHelper, err, lang));
     } finally {
       setBusy(false);
     }

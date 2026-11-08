@@ -4,17 +4,19 @@
 // The question waiting for the couple can be answered right here.
 
 import React, { useState } from "react";
-import { View, Linking, Alert, Pressable, StyleSheet } from "react-native";
+import { View, Linking, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { usePane } from "@/ui/MasterDetail";
 import { useQueryClient } from "@tanstack/react-query";
 import { fmt, localized, useCopy, useLang, relTime, mediumDate } from "@/i18n";
 import { get, post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useGuestDetail, useCoupleRsvps, type InboxItem } from "@/lib/hooks";
+import { GuestSeenLine } from "@/features/seen/Seen";
+import { readGuestSeen } from "@/features/seen/core";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, toast, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Field, ButtonRow, type IconName } from "@/ui";
+import { Screen, TopBar, toast, T, Avatar, Row, Badge, Icon, Card, Button, Input, Stack, Skeleton, SectionLabel, Field, ButtonRow, type IconName, toastError } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useSafeBack } from "@/lib/nav";
 import { useUnsavedGuard } from "@/lib/unsaved";
@@ -136,7 +138,7 @@ export function GuestDetail({ id }: { id: string }) {
       setEditing(false);
       showNotice(c.card.saved);
     } catch (err) {
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.saveGuest, err, lang));
     } finally {
       setBusy(false);
     }
@@ -152,7 +154,7 @@ export function GuestDetail({ id }: { id: string }) {
       await qc.invalidateQueries({ queryKey: ["couple-inbox"] });
       showNotice(fmt(copy.inbox.sent, { name: d?.name ?? "" }));
     } catch (err) {
-      Alert.alert(copy.common.error, errorText(err, lang, copy.common.errorBody));
+      toastError(failedText(copy.fail.sendMessage, err, lang));
     } finally {
       setBusy(false);
     }
@@ -200,7 +202,7 @@ export function GuestDetail({ id }: { id: string }) {
     ) : undefined;
 
   return (
-    <Screen query={mainQuery} refresh header={<TopBar onBack={pane.embedded ? undefined : () => leave(back)} title={editing ? c.card.editGuest : c.card.title} />} keyboard dock={dock}>
+    <Screen modal={!pane.embedded} query={mainQuery} refresh header={<TopBar onBack={pane.embedded ? undefined : () => leave(back)} title={editing ? c.card.editGuest : c.card.title} />} keyboard dock={dock}>
       <>
         {isLoading && !d ? (
           <Stack gap={12} style={{ marginTop: 20 }}>
@@ -218,6 +220,8 @@ export function GuestDetail({ id }: { id: string }) {
                 <T v="meta13" color={colors.ivory70}>
                   {answered && d.rsvp?.updatedAt ? c.card.repliedOn(relTime(d.rsvp.updatedAt, lang), channel) : deadline ? c.card.noReplyDeadline(deadline) : c.card.noReply}
                 </T>
+                {/* #37: when the party last opened their invitation, the app or the site (1.4.0, MW_SEEN). */}
+                <GuestSeenLine seen={readGuestSeen(mainQuery.data)} />
               </View>
             </Row>
             <Row gap={8} style={{ marginTop: 12, flexWrap: "wrap" }}>

@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/api";
 import { useFeatureCopy } from "@/i18n/feature";
 import {
-  T,
+  Badge,
   Input,
   Segmented,
   SectionLabel,
@@ -17,8 +17,8 @@ import {
   ChipRow,
 } from "@/ui";
 import { DateInput, TimeInput } from "@/ui/Pickers";
-import { colors } from "@/ui/tokens";
 import { COPY } from "./copy";
+import type { ChangeRequest, GlamSlot, GlamWarning, RunsheetLock, RunsheetPlace } from "./core";
 
 export type RunsheetStatus = "planned" | "confirmed" | "done";
 export type RunsheetBlock = {
@@ -34,6 +34,12 @@ export type RunsheetBlock = {
   vendor_name: string | null;
   status: RunsheetStatus;
   sort_order: number;
+  /** #9, 1.4.0 with MW_PLACES on: the linked place (null: none). */
+  place_id?: string | null;
+  /** #40, 1.4.0 with MW_HMU on: "glam" for a hair and makeup block. */
+  kind?: "block" | "glam";
+  glam?: GlamSlot[];
+  glam_warnings?: GlamWarning[];
 };
 export type RunsheetSurface = {
   pending: boolean;
@@ -44,6 +50,14 @@ export type RunsheetSurface = {
   ics_url: string;
   can_edit: boolean;
   statuses: RunsheetStatus[];
+  /** #9: the stops of the day (absent while MW_PLACES is off or below 1.4.0). */
+  places?: RunsheetPlace[];
+  /** #2: the lock and what this person may do (absent while MW_RUNSHEET_LOCK is off). */
+  lock?: RunsheetLock;
+  /** #2: the open change requests. */
+  requests?: ChangeRequest[];
+  /** Prep mode: the planner's draft is not shown to the couple yet. */
+  prep_hidden?: boolean;
 };
 
 export const RUNSHEET_KEY = ["couple-runsheet"];
@@ -77,6 +91,8 @@ export type BlockForm = {
   owner: string;
   vendor_id: string;
   status: RunsheetStatus;
+  /** #9: "" for none. Sent only while places are on (absent keeps the stored one). */
+  place_id: string;
 };
 
 export function emptyForm(day: string | null): BlockForm {
@@ -90,6 +106,7 @@ export function emptyForm(day: string | null): BlockForm {
     owner: "",
     vendor_id: "",
     status: "planned",
+    place_id: "",
   };
 }
 
@@ -104,6 +121,7 @@ export function formFromBlock(b: RunsheetBlock): BlockForm {
     owner: b.owner,
     vendor_id: b.vendor_id ?? "",
     status: b.status,
+    place_id: b.place_id ?? "",
   };
 }
 
@@ -132,8 +150,11 @@ export function validate(f: BlockForm, c: (typeof COPY)["en"]): string | null {
   return null;
 }
 
-export function toBody(f: BlockForm) {
+/** The block body for create, update and change requests. `withPlace`: the
+ *  wedding has places on (1.4.0); only then is place_id sent, null clearing it. */
+export function toBody(f: BlockForm, withPlace = false) {
   return {
+    ...(withPlace ? { place_id: f.place_id || null } : {}),
     day: f.day,
     starts_at: f.starts_at,
     ends_at: isTime(f.ends_at) ? f.ends_at : null,
@@ -150,16 +171,26 @@ export function BlockFormFields({
   form,
   onChange,
   vendors,
+  places,
   disabled = false,
+  statusEditable = true,
 }: {
   form: BlockForm;
   onChange: (f: BlockForm) => void;
   vendors: { id: string; name: string }[];
+  /** #9: the wedding's places (undefined while places are off: no picker). */
+  places?: RunsheetPlace[];
   /** Read-only role: the fields show the block but do not change. */
   disabled?: boolean;
+  /** The status control shows only when this person may change it here (an
+   *  open timeline). A request on a locked timeline, or a read-only role,
+   *  sees the status as a plain badge (D28: the planner marks it). */
+  statusEditable?: boolean;
 }) {
   const c = useFeatureCopy(COPY);
   const [vendorOpen, setVendorOpen] = useState(false);
+  const [placeOpen, setPlaceOpen] = useState(false);
+  const placeName = places?.find((p) => p.id === form.place_id)?.name ?? c.noPlace;
   const set = (patch: Partial<BlockForm>) => {
     if (!disabled) onChange({ ...form, ...patch });
   };
@@ -201,19 +232,58 @@ export function BlockFormFields({
       <View>
         <SectionLabel>{c.status}</SectionLabel>
         <View style={{ marginTop: 6 }}>
-          <Segmented<RunsheetStatus>
-            value={form.status}
-            options={STATUS_ORDER.map((s) => ({
-              value: s,
-              label: c.statuses[s],
-            }))}
-            onChange={(v) => set({ status: v })}
-          />
+          {statusEditable && !disabled ? (
+            <Segmented<RunsheetStatus>
+              value={form.status}
+              options={STATUS_ORDER.map((s) => ({
+                value: s,
+                label: c.statuses[s],
+              }))}
+              onChange={(v) => set({ status: v })}
+            />
+          ) : (
+            <View style={{ alignSelf: "flex-start" }} testID="runsheet-status-badge">
+              <Badge label={c.statuses[form.status]} kind={statusKind(form.status)} />
+            </View>
+          )}
         </View>
       </View>
+      {places && places.length ? (
+        <View>
+          <SectionLabel>{c.place}</SectionLabel>
+          <View style={{ marginTop: 6 }}>
+            {placeOpen ? (
+              <ChipRow>
+                <Chip
+                  label={c.noPlace}
+                  on={!form.place_id}
+                  onPress={() => {
+                    set({ place_id: "" });
+                    setPlaceOpen(false);
+                  }}
+                />
+                {places.map((p) => (
+                  <Chip
+                    key={p.id}
+                    label={p.name}
+                    on={form.place_id === p.id}
+                    onPress={() => {
+                      // An empty area line takes the place's name, as on the web.
+                      set({ place_id: p.id, ...(form.location.trim() ? {} : { location: p.name }) });
+                      setPlaceOpen(false);
+                    }}
+                  />
+                ))}
+              </ChipRow>
+            ) : (
+              <Chip label={placeName} on={!!form.place_id} onPress={disabled ? undefined : () => setPlaceOpen(true)} />
+            )}
+          </View>
+        </View>
+      ) : null}
       <View>
-        <SectionLabel>{c.location}</SectionLabel>
-        <Input accessibilityLabel={c.location}
+        <SectionLabel>{places ? c.areaOrRoom : c.location}</SectionLabel>
+        <Input accessibilityLabel={places ? c.areaOrRoom : c.location}
           editable={!disabled}
           value={form.location}
           onChangeText={(t) => set({ location: t.slice(0, 200) })}
@@ -281,9 +351,6 @@ export function BlockFormFields({
           }}
         />
       </View>
-      <T v="meta13" color={colors.ivory40}>
-        {c.endHint}: {c.end}
-      </T>
     </Stack>
   );
 }

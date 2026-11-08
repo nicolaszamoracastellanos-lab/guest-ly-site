@@ -1,15 +1,15 @@
 // Concierge insights: gaps to fix, who waits on you, top questions, sentiment.
 
 import React, { useState } from "react";
-import { View, Alert } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeatureCopy } from "@/i18n/feature";
 import { relTime, shortDate, useLang, useCopy } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Button, Input, Row, Stack, StatTile, SectionLabel, EmptyState, Skeleton, Gem } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Button, Input, Row, Stack, StatTile, SectionLabel, EmptyState, Skeleton, Gem, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/insights/copy";
 import { useInsights, usePlannerInsights, INSIGHTS_KEY } from "@/features/insights/hooks";
@@ -36,8 +36,8 @@ export function InsightsScreen({ role = "couple" }: { role?: "couple" | "planner
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  function fail(err: unknown) {
-    Alert.alert(app.common.error, errorText(err, lang, app.common.errorBody));
+  function fail(err: unknown, what: string) {
+    toastError(failedText(what, err, lang));
   }
   /** "whatsapp" reads as "WhatsApp", never the raw enum. */
   const channelLabel = (ch: string | null | undefined) => (ch ? c.channels[ch] ?? c.channels.other : "");
@@ -54,7 +54,7 @@ export function InsightsScreen({ role = "couple" }: { role?: "couple" | "planner
       setNotice(c.answered);
       await refresh();
     } catch (err) {
-      fail(err);
+      fail(err, app.fail.publishAnswer);
     } finally {
       setBusy(null);
     }
@@ -65,7 +65,7 @@ export function InsightsScreen({ role = "couple" }: { role?: "couple" | "planner
       await post("/couple/insights/gaps/dismiss", { question });
       await refresh();
     } catch (err) {
-      fail(err);
+      fail(err, app.fail.dismissQuestion);
     } finally {
       setBusy(null);
     }
@@ -77,7 +77,7 @@ export function InsightsScreen({ role = "couple" }: { role?: "couple" | "planner
       setNotice(c.resolved);
       await refresh();
     } catch (err) {
-      fail(err);
+      fail(err, app.fail.markHandled);
     } finally {
       setBusy(null);
     }

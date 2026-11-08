@@ -12,7 +12,13 @@ import { postLong, UPLOAD_TIMEOUT_MS } from "@/features/shared/requests";
 
 export type Bilingual = { en: string | null; es: string | null };
 export type WebsiteTheme = "night" | "ivory" | "gold";
-export type SectionType = "hero" | "countdown" | "story" | "gallery" | "video" | "schedule" | "travel" | "registry" | "party" | "faq" | "rsvp" | "chat";
+export type SectionType = "hero" | "countdown" | "story" | "gallery" | "video" | "schedule" | "travel" | "registry" | "party" | "faq" | "rsvp" | "chat" | "knowbefore" | "album" | "music";
+
+/** The types this build has an editor row for. GET /couple/website sends 1.4.0
+ *  the newer ones (album; knowbefore and music with their flags on); anything
+ *  else is kept in the config untouched and not listed (K9: a save never
+ *  drops a section it did not send). */
+export const KNOWN_SECTION_TYPES: SectionType[] = ["hero", "countdown", "story", "gallery", "video", "schedule", "travel", "registry", "party", "faq", "rsvp", "chat", "knowbefore", "album", "music"];
 
 export type TravelItem = {
   id: string;
@@ -46,7 +52,11 @@ export type Section =
   | { type: "party"; enabled: boolean; heading: Bilingual; members: PartyMember[] }
   | { type: "faq"; enabled: boolean; heading: Bilingual; hide_facts_items: boolean; extra_items: FaqItem[] }
   | { type: "rsvp"; enabled: boolean; heading: Bilingual; body: Bilingual; questions: RsvpQuestion[] }
-  | { type: "chat"; enabled: boolean; heading: Bilingual; body: Bilingual };
+  | { type: "chat"; enabled: boolean; heading: Bilingual; body: Bilingual }
+  // #45 (1.4.0, MW_KNOW_BEFORE). Empty fields read from the wedding info.
+  | { type: "knowbefore"; enabled: boolean; heading: Bilingual; packing: Bilingual[]; dress_code_note: Bilingual; entry_note: Bilingual; entry_link: string | null; show_weather: boolean; show_money: boolean }
+  // Edited on the web; the app shows the row and its switch (fields kept as sent).
+  | { type: "album" | "music"; enabled: boolean; heading?: Bilingual; [key: string]: unknown };
 
 export type WaLink = { enabled: boolean; number: string | null; prefill_en: string | null; prefill_es: string | null };
 

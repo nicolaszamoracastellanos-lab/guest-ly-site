@@ -14,6 +14,7 @@ import { enterTenantScope } from "@/features/shared/tenantScope";
 import { useCoupleCopy } from "@/features/couple/ui";
 import { RoleNativeTabs, useTenantStackReset, type RoleTab } from "@/ui/NativeRoleTabs";
 import { CoupleWidgetSync } from "@/features/widgets/WidgetSync";
+import { CoupleDayPackSync } from "@/features/dayof/PackSync";
 
 const COUPLE_STACKS: ReadonlySet<string> = new Set(["(guests)", "(messages)", "(tools)"]);
 
@@ -45,6 +46,7 @@ export default function CoupleTabs() {
     <>
       <RoleNativeTabs surface="couple" tabs={tabs} fallback="(tools)" screenListeners={tenantReset} />
       <CoupleWidgetSync />
+      <CoupleDayPackSync />
     </>
   );
 }

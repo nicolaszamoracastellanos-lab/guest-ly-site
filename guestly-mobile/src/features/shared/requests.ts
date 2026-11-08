@@ -14,7 +14,9 @@
 //   fallback, so an alert is never blank.
 
 import * as Crypto from "expo-crypto";
+import { onlineManager } from "@tanstack/react-query";
 import { api, ApiFailure, get } from "@/lib/api";
+import { failText, TOO_LARGE } from "./failText";
 
 /** Model and vision calls: the portal routes allow up to 60 s. */
 export const AI_TIMEOUT_MS = 90_000;
@@ -48,11 +50,6 @@ export function outcomeUnknown(err: unknown): boolean {
   return err instanceof ApiFailure && (err.status === 0 || err.code === "offline" || err.code === "timeout" || err.code === "send_in_progress");
 }
 
-const TOO_LARGE = {
-  en: "That file is too large to send. Choose a smaller one.",
-  es: "Ese archivo es demasiado grande para enviarlo. Elige uno más pequeño.",
-};
-
 export function errorText(err: unknown, lang: "en" | "es", fallback: string): string {
   if (err instanceof ApiFailure) {
     // A 413 from the host arrives without the portal's JSON body.
@@ -60,6 +57,16 @@ export function errorText(err: unknown, lang: "en" | "es", fallback: string): st
     return err.messages[lang] || fallback;
   }
   return fallback;
+}
+
+/** An error toast that says what failed (`what`, the screen's own sentence),
+ *  then what to do: the server's reason, or "Check your connection and try
+ *  again." when the phone was offline. When no answer came back (a timeout,
+ *  or a lost connection while online) a write may have landed, so the toast
+ *  says so instead of "Could not": check before trying again. Pass
+ *  `{ read: true }` for a call that only reads. See failText.ts. */
+export function failedText(what: string, err: unknown, lang: "en" | "es", opts: { read?: boolean } = {}): string {
+  return failText(what, err instanceof ApiFailure ? err : null, lang, { read: opts.read, online: onlineManager.isOnline() });
 }
 
 /** For raw fetch/XHR calls outside lib/api (file export, the Coordinator

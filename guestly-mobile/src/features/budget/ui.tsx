@@ -1,10 +1,10 @@
 // Small budget-only pieces built from the shared kit.
 
 import React, { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
+import { View, Pressable } from "react-native";
 import { useCopy, useLang } from "@/i18n";
-import { errorText } from "@/features/shared/requests";
-import { T, Row, Badge, Button, Sheet, Input, Field as KitField } from "@/ui";
+import { failedText } from "@/features/shared/requests";
+import { T, Row, Badge, Button, Sheet, Input, Field as KitField, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import type { ItemStatus } from "./hooks";
 
@@ -97,9 +97,9 @@ export function Options<TValue extends string>({ value, options, onChange, disab
 /** Runs a write, surfaces the bilingual server error, reports busy state. */
 export function useAction() {
   const { lang } = useLang();
-  const common = useCopy().common;
+  const fail = useCopy().fail;
   const [busy, setBusy] = useState(false);
-  async function act(fn: () => Promise<unknown>, onDone?: () => void, fallback = "") {
+  async function act(fn: () => Promise<unknown>, onDone?: () => void, what = "") {
     if (busy) return false;
     setBusy(true);
     try {
@@ -107,8 +107,8 @@ export function useAction() {
       onDone?.();
       return true;
     } catch (err) {
-      // Never a blank alert: the API's own message, else a plain retry line.
-      Alert.alert(errorText(err, lang, fallback || common.error));
+      // What failed, then the server's reason or what to do.
+      toastError(failedText(what || fail.saveBudget, err, lang));
       return false;
     } finally {
       setBusy(false);

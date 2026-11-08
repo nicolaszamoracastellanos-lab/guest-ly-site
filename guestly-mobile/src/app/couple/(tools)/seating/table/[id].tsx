@@ -6,7 +6,7 @@ import { View, Alert, Pressable, ScrollView } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { fmt, useCopy, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { ApiFailure } from "@/lib/api";
+import { failedText } from "@/features/shared/requests";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
 import {
@@ -27,6 +27,7 @@ import {
   Icon,
   EmptyState,
   Skeleton,
+  toastError,
 } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/seating/copy";
@@ -41,6 +42,8 @@ import {
   seatLabel,
 } from "@/features/seating/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { TableMark } from "@/features/seating/TableShape";
+import { readShape, shapeChoices, shapePatch, tableA11y } from "@/features/seating/shapeView";
 
 // Keyed by table id: the typed name, seat count and search of one table are
 // never shown on, or committed to, another table.
@@ -73,6 +76,8 @@ function SeatingTableScreen({ id }: { id: string }) {
     [data, draft],
   );
   const table = view?.tables.find((t) => t.id === id) ?? null;
+  // The server's copy of this table (the shape the web set, with its options).
+  const saved = data?.tables.find((t) => t.id === id) ?? null;
   const [label, setLabel] = useState<string | null>(null);
   const [seats, setSeats] = useState<string | null>(null);
   const labelValue = label ?? table?.label ?? "";
@@ -135,7 +140,7 @@ function SeatingTableScreen({ id }: { id: string }) {
     try {
       await save();
     } catch (err) {
-      Alert.alert(c.error, err instanceof ApiFailure ? err.messages[lang] : app.common.errorBody);
+      toastError(failedText(app.fail.saveSeating, err, lang));
     } finally {
       setSaving(false);
     }
@@ -220,14 +225,23 @@ function SeatingTableScreen({ id }: { id: string }) {
               />
             </View>
           </Row>
+          {/* #55: the table as drawn on the plan, its chairs filled as people sit. */}
+          <View
+            style={{ alignItems: "center", marginTop: 16 }}
+            accessible
+            accessibilityLabel={tableA11y(lang, { label: table.label, shape: readShape(table).shape, capacity: table.capacity, seated: table.seated, over: table.over_capacity })}
+            testID="seating-table-figure"
+          >
+            <TableMark table={table} capacity={table.capacity} seated={table.seated} over={table.over_capacity} size={150} />
+          </View>
           <View style={{ marginTop: 12 }}>
-            <Segmented<"round" | "rect">
+            <Segmented<string>
               value={table.shape}
-              options={[
-                { value: "round", label: c.round },
-                { value: "rect", label: c.rect },
-              ]}
-              onChange={(v) => canEdit && draftActions.updateTable(table.id, { shape: v })}
+              // A shape set on the web (or a later one) stays a choice here,
+              // read from the saved table, so a tap on Round never removes it
+              // and picking it again restores its options (the save keeps it).
+              options={shapeChoices(lang, table, saved, c)}
+              onChange={(v) => canEdit && draftActions.updateTable(table.id, shapePatch(v, saved))}
             />
           </View>
           {table.source === "ai" &&

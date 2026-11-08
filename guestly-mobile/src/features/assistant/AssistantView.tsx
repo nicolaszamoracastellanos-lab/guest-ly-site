@@ -12,14 +12,18 @@ import { useFeatureCopy } from "@/i18n/feature";
 import { ApiFailure, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, ChatList, ChatComposer, useKeyboardOpen, renderInlineBold, TwoPane, useLayout, useSideInsetsStyle } from "@/ui";
+import { Screen, TopBar, T, Row, Stack, Avatar, Badge, Button, Card, Chip, ChipRow, IconButton, Icon, Input, ListRow, Sheet, Skeleton, EmptyState, SectionLabel, Hairline, ChatList, ChatComposer, toast, useKeyboardOpen, renderInlineBold, TwoPane, useLayout, useSideInsetsStyle } from "@/ui";
 import { PaneEmbed } from "@/ui/MasterDetail";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/assistant/copy";
 import { streamPost, type ActionCard, type StreamEvent, type StreamOutcome } from "@/features/assistant/stream";
 import { coordinatorBase, useAssistantSession, useAssistantSessions, type AssistantSurface, type TimelineItem } from "@/features/assistant/hooks";
 import { useSafeBack } from "@/lib/nav";
+import { useAiConsentGate } from "@/features/aiconsent/ConsentGate";
 import { CoordinatorShowcase } from "./Showcase";
+import { PlanCard } from "./PlanCard";
+import { lineUndone, readPlan, type PlanStep } from "./plan";
+import { PLAN_COPY } from "./planCopy";
 
 /** `tab`: the couple's Coordinator tab (no back control, the tab bar is on
  *  screen). Without it this is the pushed /assistant screen the planner uses. */
@@ -53,6 +57,10 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
   const [cardError, setCardError] = useState<Record<string, string>>({});
   const [drawer, setDrawer] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  // #5 plan card: the line whose Undo is in flight.
+  const [undoBusy, setUndoBusy] = useState<string | null>(null);
+  // Apple 5.1.2(i): nothing reaches the AI provider before this person allows it.
+  const consent = useAiConsentGate();
 
   // Card expiry is judged against the clock at the last change, not per render.
   const [now, setNow] = useState(() => Date.now());
@@ -120,6 +128,7 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
           setItems((prev) => prev.map((it) => (it.kind === "card" && it.card.id === event.card.id ? { kind: "card", card: event.card } : it)));
           break;
         case "card_status":
+        case "plan_step":
           setNow(Date.now());
           setItems((prev) => prev.map((it) => (it.kind === "card" && it.card.id === event.card.id ? { kind: "card", card: event.card } : it)));
           break;
@@ -149,12 +158,18 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
       setError(copy.offline);
       return;
     }
+    if (!(await consent.ask("coordinator"))) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setError(null);
     setDraft("");
     setBusy(true);
     setItems((prev) => [
-      ...prev.map((it) => (it.kind === "card" && it.card.status === "proposed" ? { kind: "card" as const, card: { ...it.card, status: "cancelled" } } : it)),
+      // A new message closes the open cards; the server marks a plan "replaced", never "discarded".
+      ...prev.map((it) =>
+        it.kind === "card" && it.card.status === "proposed"
+          ? { kind: "card" as const, card: { ...it.card, status: "cancelled", ...(readPlan(it.card) ? { plan: { ...(it.card.plan as object), replaced: true } } : {}) } }
+          : it
+      ),
       { kind: "user", text: message },
     ]);
     let outcome = await run({ sessionId: sessionIdRef.current, message }, applyEvent);
@@ -168,6 +183,7 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
 
   async function confirm(card: ActionCard) {
     if (busy || cardBusy) return;
+    if (!(await consent.ask("coordinator"))) return;
     setCardBusy(card.id);
     setCardError((p) => ({ ...p, [card.id]: "" }));
     let executed = false;
@@ -182,6 +198,36 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
     }
     if (!outcome.ok && outcome.error && !executed) setCardError((p) => ({ ...p, [card.id]: outcome.error![lang] }));
     if (executed) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
+  /** #5: run the ticked lines of a plan, or (no list) try again what failed or was not reached. */
+  async function runPlan(card: ActionCard, keepStepIds?: string[]) {
+    if (busy || cardBusy || undoBusy) return;
+    if (!(await consent.ask("coordinator"))) return;
+    setCardBusy(card.id);
+    setCardError((p) => ({ ...p, [card.id]: "" }));
+    const outcome = await run({ sessionId: sessionIdRef.current, confirmActionId: card.id, ...(keepStepIds ? { keepStepIds } : {}) }, applyEvent);
+    setCardBusy(null);
+    void qc.invalidateQueries({ predicate: (q) => !String(q.queryKey[0] ?? "").startsWith("assistant") });
+    if (!outcome.ok) setCardError((p) => ({ ...p, [card.id]: outcome.error?.[lang] ?? PLAN_COPY[lang].runFailed }));
+    else void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
+  /** #5: Undo one line a plan created; the toast names what was removed. */
+  async function undoPlanStep(card: ActionCard, step: PlanStep) {
+    if (busy || cardBusy || undoBusy) return;
+    setUndoBusy(step.id);
+    setCardError((p) => ({ ...p, [card.id]: "" }));
+    let undone = false;
+    const outcome = await run({ sessionId: sessionIdRef.current, undoActionId: card.id, undoStepId: step.id }, (e) => {
+      if ((e.t === "card_status" || e.t === "plan_step") && e.card.id === card.id && lineUndone(e.card, step.id)) undone = true;
+      applyEvent(e);
+    });
+    setUndoBusy(null);
+    if (undone) {
+      void qc.invalidateQueries({ predicate: (q) => !String(q.queryKey[0] ?? "").startsWith("assistant") });
+      toast(PLAN_COPY[lang].undone[step.area]);
+    } else setCardError((p) => ({ ...p, [card.id]: outcome.error?.[lang] ?? PLAN_COPY[lang].undoFailed }));
   }
 
   async function cancel(card: ActionCard) {
@@ -267,6 +313,9 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
 
   const chat = (
     <Screen
+      // The pushed /assistant (planner) is a native modal: its toasts (an Undo
+      // result, the consent notice) need the modal's own host.
+      modal={!tab}
       scroll={false}
       padded={false}
       keyboard="chat"
@@ -345,6 +394,10 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
                 canSend={canSend}
                 onConfirm={confirm}
                 onCancel={cancel}
+                undoBusy={undoBusy}
+                onRunPlan={runPlan}
+                onUndoPlan={undoPlanStep}
+                onAskAgain={(text) => void send(text)}
               />
             ))}
             {busy ? (
@@ -394,6 +447,7 @@ export function AssistantView({ tab = false }: { tab?: boolean }) {
         </>
       )}
 
+      {consent.sheet}
       <Sheet visible={drawer} onClose={() => setDrawer(false)} top={140} scroll={false}>
         <Row style={{ justifyContent: "space-between", marginBottom: 8 }}>
           <T v="title26">{copy.chats}</T>
@@ -442,6 +496,10 @@ function Item({
   canSend,
   onConfirm,
   onCancel,
+  undoBusy,
+  onRunPlan,
+  onUndoPlan,
+  onAskAgain,
 }: {
   item: TimelineItem;
   lang: "en" | "es";
@@ -454,6 +512,10 @@ function Item({
   canSend: boolean;
   onConfirm: (card: ActionCard) => void;
   onCancel: (card: ActionCard) => void;
+  undoBusy: string | null;
+  onRunPlan: (card: ActionCard, keepStepIds?: string[]) => void;
+  onUndoPlan: (card: ActionCard, step: PlanStep) => void;
+  onAskAgain: (text: string) => void;
 }) {
   if (item.kind === "user") {
     return (
@@ -490,6 +552,29 @@ function Item({
     );
   }
   const card = item.card;
+  // #5: a plan card the app can read (1.4.0, MW_PLAN_CARD); anything else is drawn as before.
+  const plan = readPlan(card);
+  if (plan) {
+    return (
+      <PlanCard
+        // A new key when the server's card moves on (ran, closed), so the ticks start from its lines again.
+        key={`${card.id}:${card.status}:${plan.ran}`}
+        card={card}
+        plan={plan}
+        lang={lang}
+        canEdit={canSend}
+        busy={cardBusy === card.id}
+        locked={!!cardBusy && cardBusy !== card.id}
+        undoBusy={undoBusy}
+        error={cardError[card.id] || undefined}
+        onRun={(keep) => onRunPlan(card, keep)}
+        onRetry={() => onRunPlan(card)}
+        onDiscard={() => onCancel(card)}
+        onUndo={(step) => onUndoPlan(card, step)}
+        onAskAgain={onAskAgain}
+      />
+    );
+  }
   const proposed = card.status === "proposed";
   const expired = proposed && card.expiresAtMs > 0 && now > card.expiresAtMs;
   const statusLabel =

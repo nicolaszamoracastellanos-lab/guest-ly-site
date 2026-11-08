@@ -21,6 +21,9 @@ export type ActionCard = {
   requiresTypedConfirm: boolean;
   proposedAt: string;
   expiresAtMs: number;
+  /** #5 (app 1.4.0, MW_PLAN_CARD): a plan card's lines. Only on cards whose
+   *  toolName is "propose_plan"; read through readPlan (plan.ts), never raw. */
+  plan?: unknown;
 };
 
 export type StreamEvent =
@@ -31,6 +34,8 @@ export type StreamEvent =
   | { t: "card"; card: ActionCard }
   | { t: "executed"; card: ActionCard }
   | { t: "card_status"; card: ActionCard }
+  // #5: one line of a plan card changed while it runs (1.4.0 and up only).
+  | { t: "plan_step"; cardId: string; stepId: string; status: string; card: ActionCard }
   | { t: "error"; message: string; code?: string }
   | { t: "done"; continuable?: boolean; turn?: number };
 
@@ -44,6 +49,11 @@ export type ChatBody = {
   cancelActionId?: string;
   continueTurn?: boolean;
   turn?: number;
+  /** #5: the ticked lines of a plan card on Run. Absent on a retry. */
+  keepStepIds?: string[];
+  /** #5: Undo of one line a plan created. */
+  undoActionId?: string;
+  undoStepId?: string;
 };
 
 

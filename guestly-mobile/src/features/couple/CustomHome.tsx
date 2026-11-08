@@ -13,14 +13,18 @@ import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { T, Row, Stack, Card, Icon, Badge, Button, Chip, SectionLabel, toast } from "@/ui";
+import { T, Row, Stack, Card, Icon, Badge, Button, Chip, Gem, SectionLabel, toastError } from "@/ui";
+import type { IconName } from "@/ui/Icon";
 import { colors, radius } from "@/ui/tokens";
 import type { CoupleHome } from "@/lib/hooks";
 import { fullDate, dayMonth } from "@/features/couple/ui";
 import { CARD_IDS, rowSpans, markPhaseHandled, type CardId, type CardSize, type HomeCard } from "./homeLayout";
-import { moveCard, setCard, showCard } from "./homeEdit";
+import { absentCards, moveCard, setCard, shownCards, showCard } from "./homeEdit";
+import { onlyServedKeys, readRoad, roadCardRoute, roadRows, type RoadCard, type RoadItem } from "./road";
 import { CARD_ROUTES, rowsOf, useSaveHomeLayout, useResetHomeLayout, type HomeCardsData, type HomeLayoutPayload } from "./homeCards";
 import { HOME_COPY, type HomeCopy } from "./homeCopy";
+import { readReviewCard, REVIEW_COPY } from "./reviewCard";
+import { ReviewCardBody } from "./ReviewCardBody";
 
 export type CardBody = (o: { size: CardSize; half: boolean }) => ReactNode;
 
@@ -44,7 +48,21 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
   const [draft, setDraft] = useState<{ cards: HomeCard[]; dismissed: string[] } | null>(null);
   const editable = canEdit && layout.canEdit;
   const list = editing && draft ? draft.cards : layout.cards;
-  const visible = useMemo(() => list.filter((x) => !x.hidden), [list]);
+  // #6: the road card draws only with its data (MW_ROAD on, the read worked);
+  // without it the card stays in the layout (and in edit mode) but not on Home.
+  const road = useMemo(() => readRoad(cards?.road), [cards?.road]);
+  // #20: the review card draws only with cards.review (MW_REVIEW_ASK on, after
+  // the wedding, not sent, not "Not now"); "Not now" hides it here at once and
+  // Undo brings it back.
+  const review = useMemo(() => readReviewCard(cards?.review), [cards?.review]);
+  const [reviewOff, setReviewOff] = useState(false);
+  // Absent cards (the web's rule): review without its data in both modes, road
+  // without its data outside edit mode. Their entries stay in the draft. A
+  // review card hidden in the saved layout comes with no data because it is
+  // hidden, so in edit mode it can be added back and drawn at once.
+  const reviewSavedHidden = layout.cards.some((x) => x.id === "review" && x.hidden);
+  const absent = useMemo(() => absentCards({ editing, road: !!road, review: !!review && !reviewOff, reviewSavedHidden }), [editing, road, review, reviewOff, reviewSavedHidden]);
+  const visible = useMemo(() => shownCards(list, absent), [list, absent]);
   const hidden = useMemo(() => list.filter((x) => x.hidden), [list]);
   const rows = rowsOf(visible, rowSpans(visible, 2));
 
@@ -57,11 +75,13 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
     try {
       // The cards as shown (today's phase included) become the saved order,
       // and this phase stops reordering them (the portal's markPhaseHandled).
-      await save.mutateAsync({ cards: draft.cards, dismissed: markPhaseHandled(draft.dismissed, layout.answers, layout.phase) });
+      // Keys of cards this build was not served (flag off, an older portal)
+      // stay out, so the web keeps lifting them (onlyServedKeys).
+      await save.mutateAsync({ cards: draft.cards, dismissed: onlyServedKeys(markPhaseHandled(draft.dismissed, layout.answers, layout.phase), layout.served) });
       setEditing(false);
       setDraft(null);
     } catch {
-      toast(c.saveFailed);
+      toastError(c.saveFailed);
     }
   };
   const backToSuggested = async () => {
@@ -70,7 +90,7 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
       setEditing(false);
       setDraft(null);
     } catch {
-      toast(c.saveFailed);
+      toastError(c.saveFailed);
     }
   };
   const edit = (fn: (d: { cards: HomeCard[]; dismissed: string[] }) => { cards: HomeCard[]; dismissed: string[] }) => setDraft((d) => (d ? fn(d) : d));
@@ -111,11 +131,13 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
                   first={vi === 0}
                   last={vi === visible.length - 1}
                   copy={c}
-                  onOpen={() => router.push(CARD_ROUTES[item.id] as never)}
-                  onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir) }))}
+                  onOpen={() => router.push((item.id === "road" ? roadCardRoute(road) : CARD_ROUTES[item.id]) as never)}
+                  hint={item.id === "road" ? road?.nextStep?.linkLabel || undefined : undefined}
+                  onMove={(dir) => edit((d) => ({ ...d, cards: moveCard(d.cards, item.id, dir, absent) }))}
                   onSize={(size) => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { size }) }))}
                   onHide={() => edit((d) => ({ ...d, cards: setCard(d.cards, item.id, { hidden: true }) }))}
                   testID={`home-card-${item.id}`}
+                  link={item.id !== "review"}
                 >
                   {(bodies[item.id] ?? defaultBody(item.id))({ size: item.size, half: span === 1 })}
                 </CardShell>
@@ -288,6 +310,15 @@ export function CustomHome({ data, layout, cards, bodies, canEdit, onOpenQuiz }:
             </View>
           );
         }
+        case "road": {
+          if (!road) return <Quiet text={c.open} />;
+          return <RoadBody road={road} size={size} half={half} copy={c} />;
+        }
+        case "review": {
+          // In edit mode the card's own tools take the taps: the line only.
+          if (editing || !review) return <Sub text={REVIEW_COPY[lang].body} />;
+          return <ReviewCardBody card={review} weddingDate={data.wedding_date} onHide={() => setReviewOff(true)} onShow={() => setReviewOff(false)} />;
+        }
         case "planner": {
           const p = d.planner;
           const n = p?.open ?? data.needs_you_breakdown?.requests ?? 0;
@@ -319,6 +350,8 @@ function CardShell({
   onHide,
   children,
   testID,
+  hint,
+  link = true,
 }: {
   card: HomeCard;
   title: string;
@@ -332,13 +365,17 @@ function CardShell({
   onHide: () => void;
   children: ReactNode;
   testID?: string;
+  /** Where the card goes when it is not the card's own screen (the road's Now step). */
+  hint?: string;
+  /** False for a card whose body holds its own actions (#20 review): no card-wide tap, no chevron. */
+  link?: boolean;
 }) {
   const body = (
     <Card kind="solid" padding={14} radiusKey="tile" style={[{ flex: 1 }, editing && styles.editingCard]}>
       {editing ? (
         <View style={styles.tools}>
-          <Tool label="↑" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
-          <Tool label="↓" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
+          <Tool icon="up" a11y={copy.up} disabled={first} onPress={() => onMove(-1)} />
+          <Tool icon="down" a11y={copy.down} disabled={last} onPress={() => onMove(1)} />
           {(["s", "m", "l"] as CardSize[]).map((s) => (
             <Tool key={s} label={s.toUpperCase()} a11y={copy.size(s.toUpperCase())} on={card.size === s} onPress={() => onSize(s)} />
           ))}
@@ -350,29 +387,107 @@ function CardShell({
         <T v="body16" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
           {title}
         </T>
-        {editing ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
+        {editing || !link ? null : <Icon name="chev" size={16} color={colors.ivory40} />}
       </Row>
       {children}
     </Card>
   );
   // While editing the card is not a link: its own tools take the taps.
-  return editing ? (
+  return editing || !link ? (
     <View style={{ flex: 1 }} testID={testID}>
       {body}
     </View>
   ) : (
-    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={title} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}>
+    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={title} accessibilityHint={hint} testID={testID} style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}>
       {body}
     </Pressable>
   );
 }
 
-function Tool({ label, a11y, onPress, disabled, on }: { label: string; a11y: string; onPress: () => void; disabled?: boolean; on?: boolean }) {
+/**
+ * #6: the milestone line inside its card. Done rows lead with a check, the Now
+ * row with the gold diamond (the line's one mark), the rest with a ring. Every
+ * state is an icon plus words, never colour alone. The whole card opens the Now
+ * step's screen, so nothing inside is a second button.
+ */
+export function RoadBody({ road, size, half, copy }: { road: RoadCard; size: CardSize; half: boolean; copy: HomeCopy }) {
+  const rows = roadRows(road, half ? "s" : size);
+  const now = road.items.find((i) => i.id === road.nowId) ?? null;
+  return (
+    <View style={{ gap: 8 }}>
+      <T v="meta13" color={colors.ivory55} style={{ fontVariant: ["tabular-nums"] }}>
+        {road.doneText}
+      </T>
+      {!road.nowId && size !== "l" ? <Sub text={copy.roadAllDone} /> : null}
+      {rows.map((it) => (
+        <RoadRow key={it.id} item={it} isNow={it.id === road.nowId} isNext={!half && size === "m" && it.id === road.nextId} copy={copy} />
+      ))}
+      {now && road.nextStep && !half ? (
+        <View style={{ gap: 2 }}>
+          <T v="body15" color={colors.ivory90}>
+            {road.nextStep.text}
+          </T>
+          {road.nextStep.linkLabel ? (
+            // The card is the link; the diamond stays the line's one gold mark.
+            <Row gap={4}>
+              <T v="meta13" color={colors.ivory70}>
+                {road.nextStep.linkLabel}
+              </T>
+              <Icon name="chev" size={14} color={colors.ivory55} />
+            </Row>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function RoadRow({ item, isNow, isNext, copy }: { item: RoadItem; isNow: boolean; isNext: boolean; copy: HomeCopy }) {
+  const done = item.state === "done";
+  const lead = isNow ? copy.roadNow : isNext ? copy.roadNext : null;
+  const a11y = [lead, item.label, done ? copy.roadDoneA11y : isNow ? null : copy.roadNotYetA11y, item.sub, item.overdue ? copy.roadOverdue : null].filter(Boolean).join(", ");
+  return (
+    <View style={styles.roadRow} accessible accessibilityLabel={a11y}>
+      <View style={styles.roadMark}>
+        {done ? <Icon name="check" size={16} color={colors.ivory55} /> : isNow ? <Gem size={9} /> : <View style={styles.roadRing} />}
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        {lead ? (
+          <T v="meta13" color={isNow ? colors.goldLight : colors.ivory55}>
+            {lead}
+          </T>
+        ) : null}
+        <T v="body15" color={done ? colors.ivory70 : isNow ? colors.ivory : colors.ivory70}>
+          {item.label}
+        </T>
+        {item.sub ? (
+          <T v="meta13" color={colors.ivory55} style={{ fontVariant: ["tabular-nums"] }}>
+            {item.sub}
+          </T>
+        ) : null}
+        {item.overdue ? (
+          <Row gap={4} style={{ marginTop: 2 }}>
+            <Icon name="warning" size={14} color={colors.amber} />
+            <T v="meta13" color={colors.amber}>
+              {copy.roadOverdue}
+            </T>
+          </Row>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function Tool({ label, icon, a11y, onPress, disabled, on }: { label?: string; icon?: IconName; a11y: string; onPress: () => void; disabled?: boolean; on?: boolean }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ disabled: !!disabled, selected: !!on }} hitSlop={4} style={({ pressed }) => [styles.tool, on && styles.toolOn, disabled && { opacity: 0.35 }, pressed && { opacity: 0.6 }]}>
-      <T v="meta13" color={on ? colors.night : colors.ivory}>
-        {label}
-      </T>
+      {icon ? (
+        <Icon name={icon} size={18} color={on ? colors.night : colors.ivory} />
+      ) : (
+        <T v="meta13" color={on ? colors.night : colors.ivory}>
+          {label}
+        </T>
+      )}
     </Pressable>
   );
 }
@@ -459,4 +574,7 @@ const styles = StyleSheet.create({
   addBox: { borderStyle: "dashed", borderWidth: 1, borderColor: colors.ivory25, marginTop: 4 },
   track: { height: 4, borderRadius: 2, backgroundColor: colors.ivory09, overflow: "hidden" },
   fill: { height: 4, borderRadius: 2 },
+  roadRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  roadMark: { width: 18, minHeight: 20, alignItems: "center", justifyContent: "center", paddingTop: 2 },
+  roadRing: { width: 9, height: 9, borderRadius: 5, borderWidth: 1, borderColor: colors.ivory40 },
 });

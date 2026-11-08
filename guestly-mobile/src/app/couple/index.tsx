@@ -27,16 +27,17 @@ import { useRouter } from "expo-router";
 import { useLang, relTime } from "@/i18n";
 import { useUserSession, useSession } from "@/lib/session";
 import { useCoupleHome, useCoupleRsvps, type HomeActivity, type RsvpListItem } from "@/lib/hooks";
-import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, Button, toast, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
+import { Screen, T, Row, Icon, IconButton, Card, Banner, Skeleton, SectionLabel, BriefingRow, PhotoHero, ScreenBannerSlot, Stack, Avatar, CoordinatorMark, Button, toastError, useTopInset, useSideInsetsStyle, type IconName } from "@/ui";
 import { colors, radius } from "@/ui/tokens";
 import { useCoupleCopy, useShareInvite, fullDate, dayMonth, statusIcon, statusColor } from "@/features/couple/ui";
 
 import { recentReplies, funnelFrom, share, todayBriefing, setupRoute, activityIcon, isIsoDay } from "@/features/couple/home";
 import { ReferralCard } from "@/features/referral/ReferralCard";
-import { CustomHome, type CardBody } from "@/features/couple/CustomHome";
+import { CustomHome, RoadBody, type CardBody } from "@/features/couple/CustomHome";
 import { readLayout, useSaveHomeLayout, type CoupleHomeWithLayout } from "@/features/couple/homeCards";
 import { HOME_COPY } from "@/features/couple/homeCopy";
 import { STANDARD_ANSWERS, suggestedCards, type CardId } from "@/features/couple/homeLayout";
+import { onlyServed, readRoad, roadCardRoute } from "@/features/couple/road";
 import { useFeatureCopy } from "@/i18n/feature";
 
 type BriefingLike = { text: string; href: string; tone: "risk" | "warn" | "info"; kind?: unknown; target_id?: unknown; filter?: unknown };
@@ -65,6 +66,9 @@ export default function CoupleHome() {
   const hc = useFeatureCopy(HOME_COPY);
   const layout = readLayout((data as CoupleHomeWithLayout | undefined)?.layout);
   const custom = layout?.configured ? layout : null;
+  // #6: the road on the Home that is not set up yet, where the layout lists it shown.
+  const road = readRoad((data as CoupleHomeWithLayout | undefined)?.cards?.road);
+  const roadOnPlainHome = !!road && !custom && !!layout?.cards.some((x) => x.id === "road" && !x.hidden);
   const shown = (id: CardId) => !!custom?.cards.some((x) => x.id === id && !x.hidden);
   const saveLayout = useSaveHomeLayout();
   const rsvps = useCoupleRsvps("all", { enabled: legacy || shown("replies") });
@@ -78,9 +82,10 @@ export default function CoupleHome() {
   const openQuiz = () => router.push("/home-setup" as never);
   const skipQuiz = async () => {
     try {
-      await saveLayout.mutateAsync({ answers: STANDARD_ANSWERS, cards: suggestedCards(STANDARD_ANSWERS), dismissed: [], quiz_state: "skipped" });
+      // K8: only the cards the server listed; it keeps its own entry for the rest.
+      await saveLayout.mutateAsync({ answers: STANDARD_ANSWERS, cards: onlyServed(suggestedCards(STANDARD_ANSWERS), layout?.served ?? null), dismissed: [], quiz_state: "skipped" });
     } catch {
-      toast(hc.saveFailed);
+      toastError(hc.saveFailed);
     }
   };
 
@@ -281,6 +286,17 @@ export default function CoupleHome() {
               {/* 1. Today */}
               <SectionLabel style={styles.label}>{h.today}</SectionLabel>
               {todayInner}
+
+              {roadOnPlainHome && road ? (
+                <>
+                  <SectionLabel style={styles.label}>{hc.cards.road}</SectionLabel>
+                  <Pressable onPress={() => router.push(roadCardRoute(road) as never)} accessibilityRole="button" accessibilityLabel={hc.cards.road} accessibilityHint={road.nextStep?.linkLabel || undefined} testID="home-road" style={({ pressed }) => pressed && { opacity: 0.85 }}>
+                    <Card kind="solid" padding={16} radiusKey="tile">
+                      <RoadBody road={road} size="m" half={false} copy={hc} />
+                    </Card>
+                  </Pressable>
+                </>
+              ) : null}
 
               {/* 2. Replies: the funnel */}
               <SectionLabel style={styles.label}>{h.replies}</SectionLabel>

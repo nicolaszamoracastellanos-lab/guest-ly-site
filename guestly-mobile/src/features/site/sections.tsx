@@ -19,6 +19,8 @@ import { COPY } from "./copy";
 import type { GuestSite, SiteSection, SectionType } from "./hooks";
 import { useSafeBack } from "@/lib/nav";
 import { openUrlSafe } from "@/features/guest/links";
+import { KnowBeforeCard, KNOW_BEFORE_COPY } from "./knowbefore";
+import { hasKnowBefore, readKnowBefore } from "./knowbeforeCore";
 
 type Viewer = { images: { url: string; caption: string | null }[]; index: number } | null;
 
@@ -44,7 +46,7 @@ export function SiteBody({ site, only, hero = true, bare = false }: { site: Gues
   let accentIdx = 0;
   let contentCount = 0;
   for (const s of sections) {
-    body.push(<SectionView key={sectionKey(s)} section={s} onOpen={open} />);
+    body.push(<SectionView key={sectionKey(s)} section={s} onOpen={open} siteSlug={site.site_slug} />);
     if (s.type === "hero" || only) continue;
     contentCount += 1;
     if (contentCount % 2 === 0 && accentIdx < site.accents.length) {
@@ -72,7 +74,7 @@ function sectionKey(s: SiteSection): string {
   return s.type === "custom" ? `custom-${s.id}` : s.type;
 }
 
-function SectionView({ section, onOpen }: { section: SiteSection; onOpen: (images: { url: string; caption: string | null }[], index: number) => void }) {
+function SectionView({ section, onOpen, siteSlug }: { section: SiteSection; onOpen: (images: { url: string; caption: string | null }[], index: number) => void; siteSlug: string }) {
   switch (section.type) {
     case "hero":
       return <Hero s={section} />;
@@ -98,6 +100,8 @@ function SectionView({ section, onOpen }: { section: SiteSection; onOpen: (image
       return <Chat s={section} />;
     case "custom":
       return <Custom s={section} onOpen={onOpen} />;
+    case "knowbefore":
+      return <KnowBefore s={section} siteSlug={siteSlug} />;
     default:
       return null;
   }
@@ -553,6 +557,17 @@ function Custom({ s, onOpen }: { s: Extract<SiteSection, { type: "custom" }>; on
         </T>
       ) : null}
       {s.image_url ? <Photo url={s.image_url} height={240} style={{ marginTop: 16 }} onPress={() => onOpen([{ url: s.image_url!, caption: s.heading }], 0)} label={s.heading} /> : null}
+    </Section>
+  );
+}
+
+function KnowBefore({ s, siteSlug }: { s: Extract<SiteSection, { type: "knowbefore" }>; siteSlug: string }) {
+  const kb = readKnowBefore(s);
+  const c = useFeatureCopy(KNOW_BEFORE_COPY);
+  if (!hasKnowBefore(kb)) return null;
+  return (
+    <Section heading={kb.heading} fallback={c.heading}>
+      <KnowBeforeCard s={kb} siteSlug={siteSlug} />
     </Section>
   );
 }

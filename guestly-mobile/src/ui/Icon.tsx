@@ -11,12 +11,12 @@ export type IconName =
   | "plus" | "x" | "x-circle" | "filter" | "map" | "camera" | "share" | "phone" | "contacts" | "lock" | "warning" | "info"
   | "edit" | "coins" | "grid" | "store" | "list" | "megaphone" | "globe" | "book" | "gear" | "signout"
   | "apple" | "google" | "undo" | "wifi-off" | "star" | "photo" | "up" | "arrow-up" | "rings" | "bed" | "gift" | "copy"
-  | "replay" | "eye" | "concierge";
+  | "replay" | "eye" | "eye-off" | "concierge" | "unlock";
 
-type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
+type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number; /** Fills the outline (a rated star). Default none. */ fill?: string };
 
-export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 }: Props) {
-  const p = { stroke: color, strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6, fill = "none" }: Props) {
+  const p = { stroke: color, strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill };
   const dot = (cx: number, cy: number, r = 1.2) => <Circle key={`${cx}${cy}`} cx={cx} cy={cy} r={r} fill={color} />;
   const body = (() => {
     switch (name) {
@@ -46,6 +46,8 @@ export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 
       case "sparkle": return <><Path {...p} d="M12 4v4M12 16v4M4 12h4M16 12h4M7 7l1.5 1.5M15.5 15.5 17 17M17 7l-1.5 1.5M8.5 15.5 7 17" /><Circle {...p} cx="12" cy="12" r="2.5" /></>;
       case "replay": return <><Path {...p} d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><Path {...p} d="M4.5 4.5v3h3" /><Path {...p} d="M10.5 9.5v5l4-2.5z" /></>;
       case "eye": return <><Path {...p} d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><Circle {...p} cx="12" cy="12" r="2.8" /></>;
+      // Not seen (#37): the eye crossed out, so the state never rests on color.
+      case "eye-off": return <><Path {...p} d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><Circle {...p} cx="12" cy="12" r="2.8" /><Path {...p} d="M4 4l16 16" /></>;
       // The guest concierge (the wedding's own chat): a bubble with dots.
       case "concierge": return <><Path {...p} d="M5 18.5V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H8.5z" />{dot(9, 10.5, 1)}{dot(12, 10.5, 1)}{dot(15, 10.5, 1)}</>;
       case "hanger": return <><Path {...p} d="M12 8.5a2 2 0 1 0-2-2" /><Path {...p} d="M12 8.5v2L4.5 16a1 1 0 0 0 .6 1.8h13.8a1 1 0 0 0 .6-1.8L12 10.5" /></>;
@@ -65,6 +67,8 @@ export function Icon({ name, size = 24, color = colors.ivory, strokeWidth = 1.6 
       case "phone": return <Path {...p} d="M6 4h3l1.5 4-2 1.5a10 10 0 0 0 6 6L16 13.5l4 1.5v3a2 2 0 0 1-2 2A14 14 0 0 1 4 6a2 2 0 0 1 2-2z" />;
       case "contacts": return <><Rect {...p} x="5" y="3.5" width="14" height="17" rx="2" /><Circle {...p} cx="12" cy="10" r="2.5" /><Path {...p} d="M8 17c.6-2 2.2-3 4-3s3.4 1 4 3M3.5 8h1.5M3.5 12h1.5M3.5 16h1.5" /></>;
       case "lock": return <><Rect {...p} x="5" y="10.5" width="14" height="10" rx="2" /><Path {...p} d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></>;
+      // The lock with its shackle open (Unlock / Reabrir): never the closed one.
+      case "unlock": return <><Rect {...p} x="5" y="10.5" width="14" height="10" rx="2" /><Path {...p} d="M8 10.5V8a4 4 0 0 1 7.7-1.5" /></>;
       case "warning": return <><Path {...p} d="M12 4 21 19H3z" /><Path {...p} d="M12 10v4M12 16.5v.5" /></>;
       case "info": return <><Circle {...p} cx="12" cy="12" r="8" /><Path {...p} d="M12 11v5M12 8v.5" /></>;
       case "edit": return <><Path {...p} d="M4 20h4l10-10-4-4L4 16z" /><Path {...p} d="m12.5 7.5 4 4" /></>;

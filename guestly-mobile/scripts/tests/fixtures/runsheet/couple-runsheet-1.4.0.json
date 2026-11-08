@@ -1,0 +1,421 @@
+{
+ "ok": true,
+ "data": {
+  "places": [
+   {
+    "id": "b0988395-fb48-4cf3-863a-dfd4c8084d78",
+    "name": "Hotel Mirador Lumen",
+    "address": "Av. San Martín #155, Equipetrol, Santa Cruz de la Sierra",
+    "lat": null,
+    "lng": null,
+    "time": "15:45",
+    "note": null,
+    "kind": "hotel",
+    "day": "2027-05-22",
+    "apple_maps_url": "https://maps.apple.com/?q=Hotel%20Mirador%20Lumen&address=Av.%20San%20Mart%C3%ADn%20%23155%2C%20Equipetrol%2C%20Santa%20Cruz%20de%20la%20Sierra",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Hotel%20Mirador%20Lumen%2C%20Av.%20San%20Mart%C3%ADn%20%23155%2C%20Equipetrol%2C%20Santa%20Cruz%20de%20la%20Sierra",
+    "same_place_as_before": false
+   },
+   {
+    "id": "7ae1c91e-4485-45a5-bbf6-9afb8c84e9c9",
+    "name": "Villa Arenisca",
+    "address": "Camino a Porongo km 4, Santa Cruz de la Sierra",
+    "lat": null,
+    "lng": null,
+    "time": "16:45",
+    "note": null,
+    "kind": "reception",
+    "day": "2027-05-22",
+    "apple_maps_url": "https://maps.apple.com/?q=Villa%20Arenisca&address=Camino%20a%20Porongo%20km%204%2C%20Santa%20Cruz%20de%20la%20Sierra",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Villa%20Arenisca%2C%20Camino%20a%20Porongo%20km%204%2C%20Santa%20Cruz%20de%20la%20Sierra",
+    "same_place_as_before": false
+   },
+   {
+    "id": "d164ee29-649b-438f-8862-2f92dc7d8de9",
+    "name": "Suite de la novia",
+    "address": "Av. San Martín #155, Equipetrol, Santa Cruz de la Sierra",
+    "lat": null,
+    "lng": null,
+    "time": null,
+    "note": "Habitación 412",
+    "kind": "getting_ready",
+    "day": null,
+    "apple_maps_url": "https://maps.apple.com/?q=Suite%20de%20la%20novia&address=Av.%20San%20Mart%C3%ADn%20%23155%2C%20Equipetrol%2C%20Santa%20Cruz%20de%20la%20Sierra",
+    "google_maps_url": "https://www.google.com/maps/search/?api=1&query=Suite%20de%20la%20novia%2C%20Av.%20San%20Mart%C3%ADn%20%23155%2C%20Equipetrol%2C%20Santa%20Cruz%20de%20la%20Sierra",
+    "same_place_as_before": false
+   }
+  ],
+  "pending": false,
+  "wedding_date": "2027-05-22",
+  "days": [
+   {
+    "day": "2027-05-22",
+    "blocks": [
+     {
+      "id": "4e400000-0000-4000-8000-000000000001",
+      "day": "2027-05-22",
+      "starts_at": "12:00",
+      "ends_at": "15:30",
+      "title": "Getting ready",
+      "detail": "",
+      "location": "",
+      "owner": "",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 0,
+      "place_id": null,
+      "kind": "glam",
+      "glam": [
+       {
+        "id": "713b7196-8b0b-487e-8eca-dc9f873a13a1",
+        "person": "Valentina",
+        "service": "both",
+        "stylist_name": "Salón Aurora",
+        "stylist_vendor_id": "4e400000-0000-4000-8000-000000000002",
+        "starts_at": "12:00",
+        "ends_at": "13:30",
+        "offset_min": 0,
+        "duration_min": 90,
+        "notes": "Bride"
+       },
+       {
+        "id": "60dc86a6-86b3-4ecc-981f-9b5e9ad39c5a",
+        "person": "Lucía Herrera",
+        "service": "hair",
+        "stylist_name": "Camila Rojas",
+        "stylist_vendor_id": null,
+        "starts_at": "12:00",
+        "ends_at": "12:45",
+        "offset_min": 0,
+        "duration_min": 45,
+        "notes": ""
+       },
+       {
+        "id": "83e3a645-4d36-4377-a36a-2f0cfd073868",
+        "person": "Martina Vaca",
+        "service": "makeup",
+        "stylist_name": "Camila Rojas",
+        "stylist_vendor_id": null,
+        "starts_at": "12:45",
+        "ends_at": "13:30",
+        "offset_min": 45,
+        "duration_min": 45,
+        "notes": ""
+       },
+       {
+        "id": "5cea301d-b7bc-4b28-bedd-e60c2f98aefa",
+        "person": "Elena (mother of the bride)",
+        "service": "both",
+        "stylist_name": "Salón Aurora",
+        "stylist_vendor_id": "4e400000-0000-4000-8000-000000000002",
+        "starts_at": "13:30",
+        "ends_at": "14:30",
+        "offset_min": 90,
+        "duration_min": 60,
+        "notes": ""
+       },
+       {
+        "id": "bfce8bcc-c054-4754-80ea-a7e1d50d4786",
+        "person": "Sofía Paz",
+        "service": "hair",
+        "stylist_name": "Camila Rojas",
+        "stylist_vendor_id": null,
+        "starts_at": "13:30",
+        "ends_at": "14:15",
+        "offset_min": 90,
+        "duration_min": 45,
+        "notes": ""
+       },
+       {
+        "id": "005715e1-761a-4b1b-bca0-8499cf202344",
+        "person": "Isabel Suárez",
+        "service": "makeup",
+        "stylist_name": "Camila Rojas",
+        "stylist_vendor_id": null,
+        "starts_at": "14:15",
+        "ends_at": "14:45",
+        "offset_min": 135,
+        "duration_min": 30,
+        "notes": ""
+       }
+      ],
+      "glam_warnings": []
+     },
+     {
+      "id": "de5b26bb-9217-4adb-8aa6-5717d0a4eb9d",
+      "day": "2027-05-22",
+      "starts_at": "15:45",
+      "ends_at": "16:15",
+      "title": "Shuttles to Villa Arenisca",
+      "detail": "",
+      "location": "Hotel Mirador Lumen and Plaza Faro",
+      "owner": "Lumen Shuttle",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "confirmed",
+      "sort_order": 0,
+      "place_id": "b0988395-fb48-4cf3-863a-dfd4c8084d78",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "4f365b7a-b1af-4dc4-b081-cb025d242b9c",
+      "day": "2027-05-22",
+      "starts_at": "16:45",
+      "ends_at": "17:30",
+      "title": "Ceremony",
+      "detail": "",
+      "location": "Garden terrace",
+      "owner": "Officiant",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "confirmed",
+      "sort_order": 1,
+      "place_id": "7ae1c91e-4485-45a5-bbf6-9afb8c84e9c9",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "d2fa7fcb-4025-4df8-986d-1114ad9bd27e",
+      "day": "2027-05-22",
+      "starts_at": "17:00",
+      "ends_at": "18:30",
+      "title": "Cocktail hour and photos",
+      "detail": "",
+      "location": "Lower garden",
+      "owner": "Estudio Faro",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 2,
+      "place_id": "7ae1c91e-4485-45a5-bbf6-9afb8c84e9c9",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "41a5f3f4-86a7-4fe3-9623-40859cdabcbc",
+      "day": "2027-05-22",
+      "starts_at": "18:30",
+      "ends_at": "20:30",
+      "title": "Dinner and toasts",
+      "detail": "",
+      "location": "Courtyard",
+      "owner": "Mesa Lumen Catering",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 3,
+      "place_id": "7ae1c91e-4485-45a5-bbf6-9afb8c84e9c9",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "31b74a2f-79cc-48af-8c5d-fae3bb0d06e6",
+      "day": "2027-05-22",
+      "starts_at": "20:30",
+      "ends_at": "23:30",
+      "title": "Dancing",
+      "detail": "",
+      "location": "Courtyard",
+      "owner": "Trío Brisa",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 4,
+      "place_id": "7ae1c91e-4485-45a5-bbf6-9afb8c84e9c9",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     },
+     {
+      "id": "4069a1d6-2aa1-4a42-89f1-a1cb35d5b109",
+      "day": "2027-05-22",
+      "starts_at": "23:00",
+      "ends_at": null,
+      "title": "Return shuttles start",
+      "detail": "",
+      "location": "Main gate",
+      "owner": "Lumen Shuttle",
+      "vendor_id": null,
+      "vendor_name": null,
+      "status": "planned",
+      "sort_order": 5,
+      "place_id": "b0988395-fb48-4cf3-863a-dfd4c8084d78",
+      "kind": "block",
+      "glam": [],
+      "glam_warnings": []
+     }
+    ]
+   }
+  ],
+  "blocks_total": 7,
+  "vendors": [
+   {
+    "id": "22d04a58-6edd-4540-92e9-051e5e410e60",
+    "name": "Estudio Faro"
+   },
+   {
+    "id": "33e91b51-533a-4ea2-83c5-a3ecd4008d2b",
+    "name": "Flor de Sal"
+   },
+   {
+    "id": "c6b2c600-fa10-4e8d-97a0-05bfd473033a",
+    "name": "Mesa Lumen Catering"
+   },
+   {
+    "id": "4e400000-0000-4000-8000-000000000002",
+    "name": "Salón Aurora"
+   },
+   {
+    "id": "8b4a7d16-7d80-463f-8f30-2280a8a760d1",
+    "name": "Trío Brisa"
+   },
+   {
+    "id": "fd30fc4d-94f0-404e-a622-4416aa7d613b",
+    "name": "Villa Arenisca"
+   }
+  ],
+  "ics_url": "https://app.guest-ly.com/api/ics/runsheet/valentina-y-mateo",
+  "can_edit": false,
+  "statuses": [
+   "planned",
+   "confirmed",
+   "done"
+  ],
+  "lock": {
+   "locked": true,
+   "at": "2026-11-05T15:20:00+00:00",
+   "by_name": null,
+   "note": null,
+   "can_mark": false,
+   "can_request": true,
+   "can_resolve": false
+  },
+  "requests": [
+   {
+    "id": "4592ae65-1611-43ce-b0e8-16a07b6a6bbe",
+    "kind": "edit",
+    "status": "open",
+    "target_id": "4f365b7a-b1af-4dc4-b081-cb025d242b9c",
+    "title": "Ceremony",
+    "note": "El padre Ignacio llega a las 16:30, empezamos un poco después.",
+    "created_at": "2026-11-05T16:00:00+00:00",
+    "created_by_name": null,
+    "changes": [],
+    "proposed": {
+     "day": "2027-05-22",
+     "starts_at": "16:45",
+     "ends_at": "17:30",
+     "title": "Ceremony",
+     "detail": "",
+     "location": "Garden terrace",
+     "owner": "Officiant",
+     "vendor_id": null,
+     "status": "confirmed"
+    },
+    "base": {
+     "day": "2027-05-22",
+     "starts_at": "16:45",
+     "ends_at": "17:30",
+     "title": "Ceremony",
+     "detail": "",
+     "location": "Garden terrace",
+     "owner": "Officiant",
+     "vendor_id": null,
+     "status": "confirmed",
+     "id": "4f365b7a-b1af-4dc4-b081-cb025d242b9c",
+     "updated_at": "2026-11-05T14:54:24.247+00:00",
+     "vendor_name": null
+    },
+    "decline_note": null
+   },
+   {
+    "id": "c1fed2e5-55ed-4b17-9015-14ee3a488a56",
+    "kind": "add",
+    "status": "open",
+    "target_id": null,
+    "title": "Mariachi sorpresa",
+    "note": "",
+    "created_at": "2026-11-05T16:10:00+00:00",
+    "created_by_name": null,
+    "changes": [
+     {
+      "field": "day",
+      "before": "",
+      "after": "2027-05-22"
+     },
+     {
+      "field": "starts_at",
+      "before": "",
+      "after": "22:00"
+     },
+     {
+      "field": "ends_at",
+      "before": "",
+      "after": "22:30"
+     },
+     {
+      "field": "title",
+      "before": "",
+      "after": "Mariachi sorpresa"
+     },
+     {
+      "field": "location",
+      "before": "",
+      "after": "Terraza"
+     },
+     {
+      "field": "owner",
+      "before": "",
+      "after": "Mateo"
+     }
+    ],
+    "proposed": {
+     "day": "2027-05-22",
+     "starts_at": "22:00",
+     "ends_at": "22:30",
+     "title": "Mariachi sorpresa",
+     "detail": "",
+     "location": "Terraza",
+     "owner": "Mateo",
+     "vendor_id": null,
+     "status": "planned"
+    },
+    "base": null,
+    "decline_note": null
+   },
+   {
+    "id": "2c6258f4-f89f-444c-930a-819f95155269",
+    "kind": "remove",
+    "status": "open",
+    "target_id": "31b74a2f-79cc-48af-8c5d-fae3bb0d06e6",
+    "title": "Dancing",
+    "note": "Mejor seguimos con la fiesta sin cortar.",
+    "created_at": "2026-11-05T16:20:00+00:00",
+    "created_by_name": null,
+    "changes": [],
+    "proposed": null,
+    "base": {
+     "day": "2027-05-22",
+     "starts_at": "20:30",
+     "ends_at": "23:30",
+     "title": "Dancing",
+     "detail": "",
+     "location": "Courtyard",
+     "owner": "Trío Brisa",
+     "vendor_id": null,
+     "status": "planned",
+     "id": "31b74a2f-79cc-48af-8c5d-fae3bb0d06e6",
+     "updated_at": "2026-11-05T15:13:02.212+00:00",
+     "vendor_name": null
+    },
+    "decline_note": null
+   }
+  ]
+ }
+}

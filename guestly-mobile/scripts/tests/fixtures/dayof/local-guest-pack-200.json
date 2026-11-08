@@ -1,0 +1,74 @@
+{
+  "status": 200,
+  "headers": {
+    "cache-control": "private, no-cache",
+    "content-type": "application/json",
+    "etag": "\"426ada7f89948114b30d71e1\"",
+    "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Authorization, x-gl-tenant"
+  },
+  "body": {
+    "ok": true,
+    "data": {
+      "meta": {
+        "version": "426ada7f89948114b30d71e1",
+        "generated_at": "2026-11-07T06:44:15.744Z",
+        "tz": "America/La_Paz",
+        "wedding_date": "2027-05-22",
+        "valid_until": "2027-05-23",
+        "server_now": "2026-11-07T06:44:15.744Z",
+        "slug": "valentina-y-mateo",
+        "couple_names": "Valentina & Mateo"
+      },
+      "schedule": [
+        {
+          "id": "welcome_drinks",
+          "title": "Welcome drinks",
+          "date": "2027-05-21",
+          "time": "7:00 PM",
+          "start_minutes": 1140,
+          "location": "Terraza Faro, Puerto Lumen harbor",
+          "address_note": "Drinks and small plates by the water the night before the wedding.",
+          "maps_url": "https://www.google.com/maps/search/?api=1&query=Terraza%20Faro%2C%20Puerto%20Lumen%20harbor",
+          "dress_code": "Smart casual",
+          "notes": null,
+          "ics_url": "https://app.guest-ly.com/api/mobile/v1/guest/ics/welcome_drinks?t=eyJ0IjoiZGUzMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMGExIiwiZyI6ImIzNDJlNzNmLTRkMzQtNGU2NS1hZGM0LTg5Y2Y3MDhlNmZkNCIsImV4cCI6MTgwOTU4NTg1NX0.kUH_cD4YK7PA4OykUAAZAtSvnnWfC7PVsTZP9ak87p8&lang=en",
+          "invited": true
+        },
+        {
+          "id": "ceremony",
+          "title": "Ceremony",
+          "date": "2027-05-22",
+          "time": "4:30 PM",
+          "start_minutes": 990,
+          "location": "Villa Arenisca, garden terrace",
+          "address_note": "An outdoor ceremony in the lower garden. Please be seated by 4:15 PM.",
+          "maps_url": "https://www.google.com/maps/search/?api=1&query=Villa%20Arenisca%2C%20garden%20terrace",
+          "dress_code": "Garden formal",
+          "notes": null,
+          "ics_url": "https://app.guest-ly.com/api/mobile/v1/guest/ics/ceremony?t=eyJ0IjoiZGUzMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMGExIiwiZyI6ImIzNDJlNzNmLTRkMzQtNGU2NS1hZGM0LTg5Y2Y3MDhlNmZkNCIsImV4cCI6MTgwOTU4NTg1NX0.kUH_cD4YK7PA4OykUAAZAtSvnnWfC7PVsTZP9ak87p8&lang=en",
+          "invited": true
+        },
+        {
+          "id": "reception",
+          "title": "Reception",
+          "date": "2027-05-22",
+          "time": "6:30 PM",
+          "start_minutes": 1110,
+          "location": "Villa Arenisca, courtyard",
+          "address_note": "Dinner, toasts and dancing until late.",
+          "maps_url": "https://www.google.com/maps/search/?api=1&query=Villa%20Arenisca%2C%20courtyard",
+          "dress_code": "Garden formal",
+          "notes": null,
+          "ics_url": "https://app.guest-ly.com/api/mobile/v1/guest/ics/reception?t=eyJ0IjoiZGUzMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMGExIiwiZyI6ImIzNDJlNzNmLTRkMzQtNGU2NS1hZGM0LTg5Y2Y3MDhlNmZkNCIsImV4cCI6MTgwOTU4NTg1NX0.kUH_cD4YK7PA4OykUAAZAtSvnnWfC7PVsTZP9ak87p8&lang=en",
+          "invited": true
+        }
+      ],
+      "places": [],
+      "dress_code": "Smart casual",
+      "table": null,
+      "pass_qr": "GL1:b342e73f-4d34-4e65-adc4-89cf708e6fd4",
+      "couple_names": "Valentina & Mateo",
+      "know_before_you_go": null
+    }
+  }
+}

@@ -8,7 +8,7 @@ import { View, ScrollView } from "react-native";
 import { useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useCoupleHome } from "@/lib/hooks";
-import { T, Card, Chip, Segmented, SectionLabel, toast } from "@/ui";
+import { T, Card, Chip, Segmented, SectionLabel, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { readLayout, useSaveHomeLayout, type CoupleHomeWithLayout, type RecapPref } from "./homeCards";
 import { HOME_COPY, hourLabel, recapLine } from "./homeCopy";
@@ -24,7 +24,7 @@ export function RecapSection() {
   if (!layout) return null;
   const r: RecapPref = layout.recap ?? { cadence: layout.answers.when, weekday: 1, hour: 8 };
   const set = (next: Partial<RecapPref>) =>
-    save.mutate({ recap: { ...r, ...next } }, { onError: () => toast(c.saveFailed) });
+    save.mutate({ recap: { ...r, ...next } }, { onError: () => toastError(c.saveFailed) });
 
   return (
     <>

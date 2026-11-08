@@ -1,0 +1,19 @@
+{
+  "status": 200,
+  "headers": { "etag": "\"g-77aa01\"" },
+  "body": {
+    "ok": true,
+    "data": {
+      "meta": { "version": "g-77aa01", "generated_at": "2027-05-19T15:00:00.000Z", "tz": "America/La_Paz", "wedding_date": "2027-05-22", "valid_until": "2027-05-23", "server_now": "2027-05-19T15:00:00.000Z", "slug": "valentina-y-mateo", "couple_names": "Valentina & Mateo" },
+      "schedule": [
+        { "id": "e-ceremony", "title": "Ceremony", "date": "2027-05-22", "time": "16:30", "start_minutes": 990, "location": "Villa Arenisca", "address_note": null, "maps_url": "https://maps.apple.com/?q=Villa%20Arenisca", "dress_code": "Garden formal", "notes": null, "ics_url": "https://app.guest-ly.com/api/ics/x", "invited": true }
+      ],
+      "places": [ { "id": "p-garden", "name": "Villa Arenisca", "address": "Camino a Porongo km 4", "lat": null, "lng": null, "time": "16:30", "note": null } ],
+      "dress_code": "Garden formal",
+      "table": "Table 1",
+      "pass_qr": "GL1:11111111-1111-4111-8111-111111111111",
+      "couple_names": "Valentina & Mateo",
+      "know_before_you_go": null
+    }
+  }
+}

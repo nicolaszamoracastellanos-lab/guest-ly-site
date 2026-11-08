@@ -2,17 +2,18 @@
 // screens (used by couple and planner alike), pickers and small labels.
 
 import React, { useMemo, useState } from "react";
-import { View, Pressable, StyleSheet, Alert, ScrollView } from "react-native";
+import { View, Pressable, StyleSheet, ScrollView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { fmt, relTime, shortDate, useLang, useCopy } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
-import { post, del, ApiFailure } from "@/lib/api";
+import { failedText } from "@/features/shared/requests";
+import { post, del } from "@/lib/api";
 import { useOnline } from "@/lib/query";
 import { usePlannerGuests } from "@/lib/hooks";
 import { useGuestPages } from "@/features/guests/hooks";
 import { useUserSession } from "@/lib/session";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Input, Button, Avatar, ListRow, Sheet, EmptyState, Skeleton, SectionLabel, Row, Stack, Hairline, Icon, Banner } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Chip, ChipRow, Segmented, Input, Button, Avatar, ListRow, Sheet, EmptyState, Skeleton, SectionLabel, Row, Stack, Hairline, Icon, Banner, toastError } from "@/ui";
 import { colors, HIT_TARGET } from "@/ui/tokens";
 import { COPY } from "./copy";
 import { addDays, addMonths, TASK_INVALIDATE, useSharedTask, type Board, type BoardStatus, type BoardTask, type TaskCategory, type TaskPriority, type TaskRecurrence, type TaskStatus, type TaskView } from "./hooks";
@@ -44,10 +45,6 @@ export function dueColor(t: Pick<TaskView, "days_left" | "status">): string {
 
 export function priorityKind(p: TaskPriority): "red" | "gold" | "mute" {
   return p === "high" ? "red" : p === "normal" ? "gold" : "mute";
-}
-
-export function errorText(err: unknown, lang: Lang, fallback: string): string {
-  return (err instanceof ApiFailure ? err.messages[lang] : "") || fallback;
 }
 
 // ---------------------------------------------------------------- task row
@@ -382,6 +379,7 @@ export function SharedTaskScreen({ surface, id }: { surface: "couple" | "planner
 
 function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: string }) {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -410,7 +408,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       setTitle(null);
       setDetail(null);
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.saveTask, err, lang));
     } finally {
       setBusy(false);
     }
@@ -425,7 +423,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       setComment("");
       await invalidate();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.sendComment, err, lang));
     } finally {
       setBusy(false);
     }
@@ -440,7 +438,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
       leave.release();
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.deleteTask, err, lang));
     } finally {
       setBusy(false);
     }
@@ -548,6 +546,7 @@ function SharedTaskDetail({ surface, id }: { surface: "couple" | "planner"; id: 
 /** New shared task, for either side. */
 export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner" }) {
   const copy = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const back = useSafeBack();
   const qc = useQueryClient();
@@ -587,7 +586,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
   async function submit() {
     if (busy) return;
     if (!title.trim()) {
-      Alert.alert(copy.errorTitle);
+      toastError(copy.errorTitle);
       return;
     }
     setBusy(true);
@@ -597,7 +596,7 @@ export function NewSharedTaskScreen({ surface }: { surface: "couple" | "planner"
       leave.release();
       back();
     } catch (err) {
-      Alert.alert(copy.error, errorText(err, lang, copy.error));
+      toastError(failedText(fail.addTask, err, lang));
     } finally {
       setBusy(false);
     }

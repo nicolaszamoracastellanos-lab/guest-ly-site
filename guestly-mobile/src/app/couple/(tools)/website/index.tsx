@@ -6,18 +6,18 @@ import { View, Alert, Pressable, Share } from "react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLang } from "@/i18n";
+import { useCopy, useLang } from "@/i18n";
 import { post } from "@/lib/api";
-import { errorText } from "@/features/shared/requests";
+import { failedText } from "@/features/shared/requests";
 import { useFeatureCopy } from "@/i18n/feature";
-import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, SheetActions, Banner, EmptyState } from "@/ui";
+import { Screen, TopBar, BigTitle, Card, T, Badge, Button, ListRow, Row, Stack, Skeleton, SectionLabel, Icon, Input, Sheet, SheetActions, Banner, EmptyState, toastError } from "@/ui";
 import { colors } from "@/ui/tokens";
 import { COPY } from "@/features/website/copy";
-import { useConfigDraft, WEBSITE_KEY, type SectionType, type WebsiteSurface } from "@/features/website/hooks";
+import { useConfigDraft, WEBSITE_KEY, KNOWN_SECTION_TYPES, type SectionType, type WebsiteSurface } from "@/features/website/hooks";
 import { RowControls, SwitchRow, move, ReadOnlyContext } from "@/features/website/fields";
 import { useSafeBack } from "@/lib/nav";
 
-const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar" | "bus" | "coins" | "guests" | "info" | "mail" | "chat" | "globe"> = {
+const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar" | "bus" | "coins" | "guests" | "info" | "mail" | "chat" | "globe" | "hanger" | "camera" | "megaphone"> = {
   hero: "photo",
   countdown: "clock",
   story: "book",
@@ -30,10 +30,14 @@ const ICONS: Record<SectionType, "photo" | "clock" | "book" | "star" | "calendar
   faq: "info",
   rsvp: "mail",
   chat: "chat",
+  knowbefore: "hanger",
+  album: "camera",
+  music: "megaphone",
 };
 
 export default function WebsiteHome() {
   const c = useFeatureCopy(COPY);
+  const fail = useCopy().fail;
   const { lang } = useLang();
   const router = useRouter();
   const back = useSafeBack();
@@ -53,7 +57,7 @@ export default function WebsiteHome() {
     try {
       await fn();
     } catch (err) {
-      Alert.alert(c.title, errorText(err, lang, c.errors.saveFailed));
+      toastError(failedText(fail.updateWebsite, err, lang));
     } finally {
       setBusy(null);
     }
@@ -122,8 +126,10 @@ export default function WebsiteHome() {
     router.push({ pathname: "/web", params: { url: surface.published ? surface.public_url : surface.preview_url, title: c.preview } });
   }
 
-  const sections = draft?.sections ?? [];
-  const movable = sections.filter((s) => s.type !== "hero");
+  // Only types this build has a row for; others stay in the config untouched.
+  const sections = (draft?.sections ?? []).filter((s) => KNOWN_SECTION_TYPES.includes(s.type));
+  // Order moves index the whole stored list (hidden types keep their place).
+  const movable = (draft?.sections ?? []).filter((s) => s.type !== "hero");
 
   return (
     <Screen header={<TopBar onBack={back} />} bottomInset={40}>

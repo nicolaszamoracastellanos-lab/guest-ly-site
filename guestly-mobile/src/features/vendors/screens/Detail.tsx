@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { View, Pressable, Linking } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useLang } from "@/i18n";
+import { fmt, useLang } from "@/i18n";
 import { useFeatureCopy } from "@/i18n/feature";
 import { useOnline } from "@/lib/query";
 import { Screen, TopBar, BigTitle, Card, T, Row, Stack, Button, IconButton, Badge, Sheet, ListRow, Skeleton, SectionLabel, Icon, Hairline, ActionTile, EmptyState } from "@/ui";
@@ -57,14 +57,7 @@ export function VendorDetailScreen() {
           <BigTitle title={vendor.name} sub={copy.categories[vendor.category] ?? vendor.category} size={34} />
           <Row gap={8} style={{ marginTop: 8 }}>
             <Badge label={copy.statuses[vendor.status] ?? vendor.status} kind={statusKind(vendor.status)} />
-            {vendor.rating ? (
-              <T v="body15" color={colors.goldLight}>
-                {"★".repeat(vendor.rating)}
-                <T v="body15" color={colors.ivory25}>
-                  {"★".repeat(5 - vendor.rating)}
-                </T>
-              </T>
-            ) : null}
+            {vendor.rating ? <RatingStars rating={vendor.rating} label={fmt(copy.ratingOf, { n: vendor.rating })} /> : null}
           </Row>
 
           <Row gap={8} style={{ marginTop: 16 }}>
@@ -168,5 +161,17 @@ export function VendorDetailScreen() {
         </>
       ) : null}
     </Screen>
+  );
+}
+
+/** The private rating as five stars, filled up to the rating; read out as
+ *  "Rated 4 of 5". Icons, not the star glyph (K17). */
+function RatingStars({ rating, label }: { rating: number; label: string }) {
+  return (
+    <View accessible accessibilityRole="text" accessibilityLabel={label} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Icon key={n} name="star" size={18} color={n <= rating ? colors.goldLight : colors.ivory40} fill={n <= rating ? colors.goldLight : "none"} />
+      ))}
+    </View>
   );
 }
