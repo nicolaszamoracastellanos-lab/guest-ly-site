@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-n5LQ9ujS.js";var t=e();function n({text:e}){return(0,t.jsx)(t.Fragment,{children:e.split(`Guest-ly`).map((e,n)=>(0,t.jsxs)(`span`,{children:[n>0?(0,t.jsx)(`span`,{style:{whiteSpace:`nowrap`},children:`Guest-ly`}):null,e]},n))})}export{n as t};
