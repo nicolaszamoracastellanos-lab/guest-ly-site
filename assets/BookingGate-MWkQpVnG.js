@@ -1,0 +1,1 @@
+import{l as e,s as t}from"./index-ROAtNBPi.js";import{u as n}from"./core-DgnCqsVN.js";async function r(){let r=await t(e());return!!r&&n(r.status,r.body).kind===`open`}export{r as bookingIsOpen};
