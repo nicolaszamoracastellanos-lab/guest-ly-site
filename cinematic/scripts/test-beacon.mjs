@@ -68,12 +68,16 @@ const BEACON_URL = `http://localhost:${stubPort}/api/site/t`;
 const work = mkdtempSync(join(tmpdir(), 'gl-beacon-'));
 const onDir = join(work, 'on');
 const offDir = join(work, 'off');
+/* The beacon test is about the beacon: the feature switches stay off so the
+   shipped guides and Reviews reads (and the guides section's funnel block)
+   are not part of what it counts or refuses. */
+const SWITCHES_OFF = { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' };
 const run = (args, env) =>
   execFileSync(args[0], args.slice(1), { cwd: CINEMATIC, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
 console.log('test-beacon: building with the beacon on (stub) and off');
-run(['npx', 'vite', 'build', '--outDir', onDir, '--emptyOutDir', '--logLevel', 'error'], { VITE_SITE_BEACON_URL: BEACON_URL });
-run(['node', 'scripts/prerender.mjs'], { GL_DIST: onDir });
-run(['npx', 'vite', 'build', '--outDir', offDir, '--emptyOutDir', '--logLevel', 'error'], { VITE_SITE_BEACON_URL: '' });
+run(['npx', 'vite', 'build', '--outDir', onDir, '--emptyOutDir', '--logLevel', 'error'], { ...SWITCHES_OFF, VITE_SITE_BEACON_URL: BEACON_URL });
+run(['node', 'scripts/prerender.mjs'], { ...SWITCHES_OFF, GL_DIST: onDir });
+run(['npx', 'vite', 'build', '--outDir', offDir, '--emptyOutDir', '--logLevel', 'error'], { ...SWITCHES_OFF, VITE_SITE_BEACON_URL: '' });
 
 const beaconFiles = (dir) => readdirSync(join(dir, 'assets')).filter((f) => /^beacon-.*\.js$/.test(f));
 const onChunks = beaconFiles(onDir);

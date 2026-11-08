@@ -24,7 +24,7 @@ mkdirSync(outDir, { recursive: true });
 const stub = await startStub();
 const work = mkdtempSync(join(tmpdir(), 'gl-book-shots-'));
 console.log('booking-screens: building with booking and guides on (stub API)');
-buildSite(work, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_API_ORIGIN: stub.origin });
+buildSite(work, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_REVIEWS_ENABLED: '0', GL_API_ORIGIN: stub.origin });
 const site = await serveDir(work);
 
 const reset = (m = {}) => {

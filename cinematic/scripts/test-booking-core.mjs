@@ -28,11 +28,12 @@ const eq = (label, got, want) => {
 const ok = (label, cond) => eq(label, Boolean(cond), true);
 const ORIGIN = 'https://app.guest-ly.com';
 
-/* ---------- switches ship off ---------- */
+/* ---------- what the switches ship as (Nov 7: guides and Reviews on, booking off) ---------- */
 eq('BOOKING_ENABLED ships false', BOOKING_ENABLED, false);
-eq('GUIDES_ENABLED ships false', GUIDES_ENABLED, false);
+eq('GUIDES_ENABLED ships true', GUIDES_ENABLED, true);
 eq('API origin', API_ORIGIN, ORIGIN);
-eq('no env: all off', resolveSwitches({}), { booking: false, guides: false, reviews: false, apiOrigin: ORIGIN });
+eq('no env: the shipped switches', resolveSwitches({}), { booking: false, guides: true, reviews: true, apiOrigin: ORIGIN });
+eq('env can turn the shipped ones off', resolveSwitches({ GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' }), { booking: false, guides: false, reviews: false, apiOrigin: ORIGIN });
 eq('test env turns them on', resolveSwitches({ GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: 'true' }).booking, true);
 eq('local stub origin allowed', resolveSwitches({ GL_API_ORIGIN: 'http://localhost:5310' }).apiOrigin, 'http://localhost:5310');
 let refused = false;
@@ -292,4 +293,4 @@ if (errors.length) {
   for (const e of errors) console.error(`test-booking-core: ${e}`);
   process.exit(1);
 }
-console.log(`test-booking-core clean: ${checks} checks (API answers, DST and zones, visitor checks, keys without randomUUID, guides catalogue and answers, stub parser, ?guide=, the guides box fit, switches ship off, off-feature guard)`);
+console.log(`test-booking-core clean: ${checks} checks (API answers, DST and zones, visitor checks, keys without randomUUID, guides catalogue and answers, stub parser, ?guide=, the guides box fit, shipped switches, off-feature guard)`);

@@ -28,7 +28,7 @@ const outDir = resolve(process.argv[2] || 'reviews-shots');
 mkdirSync(outDir, { recursive: true });
 const stub = await startReviewsStub();
 const work = mkdtempSync(join(tmpdir(), 'gl-reviews-shots-'));
-buildSite(join(work, 'on'), { GL_REVIEWS_ENABLED: '1', GL_API_ORIGIN: stub.origin });
+buildSite(join(work, 'on'), { GL_REVIEWS_ENABLED: '1', GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_API_ORIGIN: stub.origin });
 const site = await serveDir(join(work, 'on'));
 const browser = await chromium.launch();
 const report = [];

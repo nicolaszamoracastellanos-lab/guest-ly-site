@@ -10,20 +10,23 @@
    bookings" in /ops/bookings, and once the privacy lines are approved.
 
    GUIDES_ENABLED (#50 destination guides). false: the guides section is not
-   rendered and its code is not in the build. Going live: true here and
-   rebuild, once the guides API (GET /api/public/guides and POST
+   rendered and its code is not in the build. Shipped true (Nov 7); it was to
+   go live once the guides API (GET /api/public/guides and POST
    /api/public/guides/request, L7P-LOG "Guides API for the landing") is
    deployed and MW_GUIDES released. The guides and the tips sentence come
    from that catalogue at run time; none of them is in the landing (D24).
-   Either switch on must still fit the 100 KB initial JS budget
-   (scripts/check-seo.mjs fails the build otherwise).
+   Any switch, or all three, on must still fit the 100 KB initial JS budget
+   (scripts/check-seo.mjs fails the build otherwise). They do: the legal
+   pages are their own lazy chunk (L7-LOG, Nov 7), so guides, Reviews and
+   booking together are about 98.0 KB gzip; scripts/test-initial-js.mjs
+   builds all three on and keeps it under the budget.
 
    vite.config.ts writes both into the build as literals
    (import.meta.env.VITE_BOOKING_ENABLED, VITE_GUIDES_ENABLED), so false
    drops every component, chunk and request behind them. JSON-LD and the llms
    files never mention either (scripts/check-seo.mjs). */
 export const BOOKING_ENABLED: boolean = false;
-export const GUIDES_ENABLED: boolean = false;
+export const GUIDES_ENABLED: boolean = true;
 
 /* REVIEWS_ENABLED (the Reviews tab: reviews kept in Guest-ly, ANSWERS-NOV6
    c-google; server half L6-LOG "Reviews API for the landing"). false: no
@@ -34,9 +37,9 @@ export const GUIDES_ENABLED: boolean = false;
    JSON-LD built from that answer. Zero reviews, "closed", "unavailable",
    429, a network error or anything unreadable: nothing shows, nothing is
    left behind. Nothing about reviews is ever prerendered (scripts/check-seo.mjs).
-   Going live: true here and rebuild, once the API is deployed with its
-   PUBLIC_PATHS proxy line and MW_PUBLIC_REVIEWS is released. */
-export const REVIEWS_ENABLED: boolean = false;
+   Shipped on (Nov 7, with the guides): while the API is unreachable, answers
+   401 or has nothing published, the page shows no reviews section at all. */
+export const REVIEWS_ENABLED: boolean = true;
 
 /* The one origin these features call. check-origins.mjs allows it, and only
    these paths: a path ending in "/" covers what is under it, one without

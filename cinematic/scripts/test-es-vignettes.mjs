@@ -16,7 +16,10 @@ import { join } from 'node:path';
 import { buildSite, serveDir } from './lib/temp-site.mjs';
 
 const work = mkdtempSync(join(tmpdir(), 'gl-esvig-'));
-buildSite(work, {});
+/* Feature switches off: this test is about the tour, not the API reads that the
+   shipped guides and Reviews switches would make (those are refused below as a
+   foreign request). */
+buildSite(work, { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' });
 const { server, url } = await serveDir(work);
 const origin = new URL(url).origin;
 const browser = await chromium.launch();

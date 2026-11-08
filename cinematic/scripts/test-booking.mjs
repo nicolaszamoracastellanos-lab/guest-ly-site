@@ -93,8 +93,8 @@ const work = mkdtempSync(join(tmpdir(), 'gl-booking-'));
 const onDir = join(work, 'on');
 const offDir = join(work, 'off');
 console.log('test-booking: building with booking and guides on (stub API) and off');
-buildSite(onDir, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_API_ORIGIN: stub.origin, VITE_SITE_BEACON_URL: `${stub.origin}/api/site/t` });
-buildSite(offDir, { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0' });
+buildSite(onDir, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_REVIEWS_ENABLED: '0', GL_API_ORIGIN: stub.origin, VITE_SITE_BEACON_URL: `${stub.origin}/api/site/t` });
+buildSite(offDir, { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' });
 const on = await serveDir(onDir);
 const off = await serveDir(offDir);
 
@@ -107,11 +107,13 @@ const sizes = { modal: gz(onDir, /^BookingModal-.*\.js$/), guidesForm: gz(onDir,
 check(sizes.modal > 0 && sizes.modal <= 12000, `booking dialog chunk ${sizes.modal} B gzip (budget 12 KB)`);
 check(sizes.guidesForm > 0 && sizes.guidesForm <= 6000, `guides form chunk ${sizes.guidesForm} B gzip (budget 6 KB)`);
 check(readdirSync(join(offDir, 'assets')).every((f) => !/^(BookingModal|GuidesForm)-/.test(f)), 'off build still has a booking or guides chunk');
-/* Initial JS (STUDY-quality-bar 7.4). The off build must fit; the on build
-   is reported, and check-seo.mjs fails any real build over the budget, so a
-   switch cannot be turned on while it does not fit (L7-LOG, going live). */
+/* Initial JS (STUDY-quality-bar 7.4). Both builds must fit (the legal pages'
+   lazy chunk made room, L7-LOG Nov 7); check-seo.mjs also fails any real
+   build over the budget, and scripts/test-initial-js.mjs covers all three
+   switches on. */
 const initial = { off: initialJs(offDir).bytes, on: initialJs(onDir).bytes };
 check(initial.off > 0 && initial.off <= INITIAL_JS_BUDGET, `off build initial JS ${initial.off} B gzip (budget ${INITIAL_JS_BUDGET})`);
+check(initial.on > initial.off && initial.on <= INITIAL_JS_BUDGET, `on build (booking and guides) initial JS ${initial.on} B gzip (budget ${INITIAL_JS_BUDGET})`);
 const onHtml = readFileSync(join(onDir, 'index.html'), 'utf8');
 check((onHtml.match(/data-book=""/g) ?? []).length === 3, `on: expected 3 booking buttons in the prerendered page (pricing, FAQ, final), found ${(onHtml.match(/data-book=""/g) ?? []).length}`);
 check(!onHtml.includes('role="dialog"'), 'on: a dialog is in the prerendered page');
