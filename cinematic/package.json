@@ -9,6 +9,7 @@
     "test": "node scripts/test-paths.mjs && node scripts/test-jsonld.mjs && node scripts/test-copy-claims.mjs && node --no-warnings scripts/test-platform-mock-i18n.mjs && node --no-warnings scripts/test-es-vignettes.mjs && node scripts/test-llms.mjs && node scripts/test-booking-core.mjs && node scripts/test-reviews-core.mjs && node --no-warnings scripts/test-beacon.mjs && node --no-warnings scripts/test-live-screens.mjs && node --no-warnings scripts/test-booking.mjs && node --no-warnings scripts/test-reviews.mjs",
     "check:origins": "node scripts/check-origins.mjs",
     "check:nav": "node scripts/check-nav-fit.mjs",
+    "check:tour": "node scripts/check-tour-fit.mjs",
     "screens:booking": "node scripts/booking-screens.mjs",
     "lint": "oxlint",
     "preview": "vite preview",

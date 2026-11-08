@@ -2989,6 +2989,16 @@ body.js-ready .reveal.is-visible {
   visibility: hidden;
 }
 
+/* A grid or flex item never grows past its track because of its content: a
+   nowrap row in a vignette made the whole pane 551px wide in a 316px card at
+   390px and clipped the chips on the right. Rows now wrap, so a long line
+   breaks inside its row and the chip stays in view. */
+.tour__pane > *,
+.tour__mock,
+.mock {
+  min-width: 0;
+}
+
 .tour__title {
   font-family: var(--font-display);
   font-weight: 500;
@@ -3076,7 +3086,8 @@ body.js-ready .reveal.is-visible {
 
 .mock__statrow {
   display: flex;
-  gap: 1.2rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
 }
 
 .mock__stat {
@@ -3134,9 +3145,7 @@ body.js-ready .reveal.is-visible {
 
 .mock__row-main {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .mock__chip {
