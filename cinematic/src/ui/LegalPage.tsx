@@ -1,13 +1,14 @@
 import { LanguageProvider, useLang } from './LanguageContext';
-import type { SiteCopy } from '../copy';
-import { visitCountsCopy } from '../copy';
+import type { Locale } from '../copy';
+import { legalCopy, visitCountsCopy } from '../legal-copy';
 import { ThemeEffects, useTheme } from '../theme/ThemeContext';
 import { Logo } from './Logo';
 import { SITE_BEACON_URL } from '../config';
 import { bookingPrivacyCopy, guidesPrivacyCopy } from '../privacy-extra';
 import './overlay.css';
+import type { LegalKind } from '../legal-route';
 
-export type LegalKind = 'privacy' | 'terms' | 'refunds';
+export type { LegalKind };
 
 /* Static legal routes (/privacy, /terms, /refunds): one bilingual page per
    topic with the EN/ES toggle, prerendered to real files so they are
@@ -16,7 +17,8 @@ export type LegalKind = 'privacy' | 'terms' | 'refunds';
 function LegalBody({ kind }: { kind: LegalKind }) {
   const { t, lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
-  const page = t.legal.pages[kind];
+  const legal = legalCopy[lang];
+  const page = legal.pages[kind];
   /* Each disclosure goes live with its feature, never before: visit counts
      with the beacon (#23), demo calls with BOOKING_ENABLED (#22), guides
      with GUIDES_ENABLED (#50). */
@@ -69,9 +71,9 @@ function LegalBody({ kind }: { kind: LegalKind }) {
             ))}
           </section>
         ))}
-        <p className="legal-page__contact">{t.legal.contactLine}</p>
+        <p className="legal-page__contact">{legal.contactLine}</p>
         <a className="legal-page__back" href="/">
-          {t.legal.backHome}
+          {legal.backHome}
         </a>
       </main>
     </div>
@@ -80,11 +82,11 @@ function LegalBody({ kind }: { kind: LegalKind }) {
 
 /* "Privacy: Guest-ly" / "Privacidad: Guest-ly": each legal page carries its
    own title, in the page language, instead of the home page's. */
-const legalTitle = (t: SiteCopy, kind: LegalKind) => `${t.legal.pages[kind].title}: Guest-ly`;
+const legalTitle = (lang: Locale, kind: LegalKind) => `${legalCopy[lang].pages[kind].title}: Guest-ly`;
 
 export function LegalPage({ kind }: { kind: LegalKind }) {
   return (
-    <LanguageProvider title={(t) => legalTitle(t, kind)}>
+    <LanguageProvider title={(_t, lang) => legalTitle(lang, kind)}>
       <ThemeEffects />
       <div className="static-stage" aria-hidden="true" />
       <div className="overlay-root">

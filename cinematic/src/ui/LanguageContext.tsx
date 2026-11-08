@@ -25,7 +25,7 @@ function readStoredLang(): Locale {
 
 /* title: the document title for this page in the active language; the home
    page's meta title when absent. */
-export function LanguageProvider({ children, title }: { children: ReactNode; title?: (t: SiteCopy) => string }) {
+export function LanguageProvider({ children, title }: { children: ReactNode; title?: (t: SiteCopy, lang: Locale) => string }) {
   /* When hydrating over prerendered EN markup, start in EN to match the
      server DOM; the stored choice applies right after mount. */
   const [lang, setLang] = useState<Locale>(() =>
@@ -43,7 +43,7 @@ export function LanguageProvider({ children, title }: { children: ReactNode; tit
 
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.title = title ? title(copy[lang]) : copy[lang].meta.title;
+    document.title = title ? title(copy[lang], lang) : copy[lang].meta.title;
   }, [lang, title]);
 
   /* Stored only when the visitor picks a language, like the theme: a visit

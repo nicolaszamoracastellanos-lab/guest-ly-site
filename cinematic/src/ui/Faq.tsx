@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLang } from './LanguageContext';
 import { SectionHeader } from './Sections';
 import { BookCta } from '../booking/BookingContext';
-import { useGuidesShown } from '../guides/shown';
+import { useGuidesShown } from '../guides/state';
 
 export function Faq() {
   const { t } = useLang();

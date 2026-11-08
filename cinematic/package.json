@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/llms.mjs && node scripts/prerender.mjs && node scripts/lint-copy.mjs --dist dist && node scripts/check-copy-claims.mjs && node scripts/check-seo.mjs && node scripts/check-fonts.mjs && node scripts/check-live-screens.mjs",
-    "test": "node scripts/test-paths.mjs && node scripts/test-jsonld.mjs && node scripts/test-copy-claims.mjs && node --no-warnings scripts/test-platform-mock-i18n.mjs && node scripts/test-llms.mjs && node scripts/test-booking-core.mjs && node scripts/test-reviews-core.mjs && node --no-warnings scripts/test-beacon.mjs && node --no-warnings scripts/test-live-screens.mjs && node --no-warnings scripts/test-booking.mjs && node --no-warnings scripts/test-reviews.mjs",
+    "test": "node scripts/test-paths.mjs && node scripts/test-jsonld.mjs && node scripts/test-copy-claims.mjs && node --no-warnings scripts/test-platform-mock-i18n.mjs && node --no-warnings scripts/test-es-vignettes.mjs && node scripts/test-llms.mjs && node --no-warnings scripts/test-legal-chunk.mjs && node scripts/test-initial-js.mjs && node --no-warnings scripts/test-guides.mjs && node scripts/test-booking-core.mjs && node scripts/test-reviews-core.mjs && node --no-warnings scripts/test-beacon.mjs && node --no-warnings scripts/test-live-screens.mjs && node --no-warnings scripts/test-booking.mjs && node --no-warnings scripts/test-reviews.mjs",
     "check:origins": "node scripts/check-origins.mjs",
     "check:nav": "node scripts/check-nav-fit.mjs",
+    "check:tour": "node scripts/check-tour-fit.mjs",
     "screens:booking": "node scripts/booking-screens.mjs",
     "lint": "oxlint",
     "preview": "vite preview",

@@ -137,7 +137,11 @@ export function ldBlocks(html) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] || join(CINEMATIC, 'dist'));
-  const { copy } = await import('../src/copy.ts');
+  const { copy: homeCopy } = await import('../src/copy.ts');
+  const { legalCopy } = await import('../src/legal-copy.ts');
+  /* The legal pages' text ships in its own chunk (src/legal-copy.ts) and is
+     checked with the rest of the page copy, under the same rules. */
+  const copy = Object.fromEntries(Object.keys(homeCopy).map((l) => [l, { ...homeCopy[l], legal: legalCopy[l] }]));
   const { findFeaturesJson } = await import('./llms.mjs');
   let facts;
   try {

@@ -308,7 +308,9 @@ app.close();
 const site = join(tmp, 'site');
 execFileSync('npx', ['vite', 'build', '--outDir', site, '--emptyOutDir', '--logLevel', 'error'], {
   cwd: CINEMATIC,
-  env: { ...process.env, GL_LIVE_SCREENS_MODULE: result.moduleFile },
+  /* The feature switches stay off: this page is loaded in a real browser and
+     the shipped guides and Reviews reads would go to app.guest-ly.com. */
+  env: { ...process.env, GL_LIVE_SCREENS_MODULE: result.moduleFile, GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 cpSync(join(trial, 'screens'), join(site, 'screens'), { recursive: true });

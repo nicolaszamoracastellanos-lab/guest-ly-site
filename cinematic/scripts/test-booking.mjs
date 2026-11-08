@@ -5,10 +5,11 @@
    another port of localhost: same site, other origin, like guest-ly.com and
    app.guest-ly.com), and both off (today's build). Proves:
    ON
-   A. load: no API request; scroll: no booking request and exactly one guides
-      catalogue read (simple GET, no cookie, no referrer), no guide request;
-      the dialog is not in the prerendered page; three booking buttons and
-      the guides section are.
+   A. load: no booking request and exactly one guides catalogue read, after
+      hydration at idle (simple GET, no cookie, no referrer), no guide request;
+      scrolling adds none; the dialog and the guides section are not in the
+      prerendered page, the three booking buttons are; the section appears
+      once the catalogue answers open (the stub), where it sits today.
    B. pointer over a button prefetches the slot list once (visitor zone in
       the query); the press opens the dialog on that list with no second
       read; the title has focus; times show in the visitor's zone with the
@@ -32,8 +33,8 @@
    G. replay: "check your email", no links.
    H. ?book=demo opens the dialog in the stored language and leaves the URL.
    I. guides, on L7p's v1 contract (the stub parses like L7p and refuses
-      the old {destination} body): the form loads only near the section and
-      takes its cards and tips sentence from the catalogue; empty input
+      the old {destination} body): the section is added only after an open
+      catalogue read and takes its cards and tips sentence from the catalogue; empty input
       messages; the body is exactly {email, code, lang, visitorTz, tips,
       consentVersion, fax_number}, tips false; ticked: tips true and the
       server reads it as ticked; 503: "try again in a minute", the input
@@ -93,8 +94,8 @@ const work = mkdtempSync(join(tmpdir(), 'gl-booking-'));
 const onDir = join(work, 'on');
 const offDir = join(work, 'off');
 console.log('test-booking: building with booking and guides on (stub API) and off');
-buildSite(onDir, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_API_ORIGIN: stub.origin, VITE_SITE_BEACON_URL: `${stub.origin}/api/site/t` });
-buildSite(offDir, { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0' });
+buildSite(onDir, { GL_BOOKING_ENABLED: '1', GL_GUIDES_ENABLED: '1', GL_REVIEWS_ENABLED: '0', GL_API_ORIGIN: stub.origin, VITE_SITE_BEACON_URL: `${stub.origin}/api/site/t` });
+buildSite(offDir, { GL_BOOKING_ENABLED: '0', GL_GUIDES_ENABLED: '0', GL_REVIEWS_ENABLED: '0' });
 const on = await serveDir(onDir);
 const off = await serveDir(offDir);
 
@@ -103,19 +104,22 @@ const gz = (dir, re) =>
   readdirSync(join(dir, 'assets'))
     .filter((f) => re.test(f))
     .reduce((n, f) => n + gzipSync(readFileSync(join(dir, 'assets', f)), { level: 9 }).length, 0);
-const sizes = { modal: gz(onDir, /^BookingModal-.*\.js$/), guidesForm: gz(onDir, /^GuidesForm-.*\.js$/) };
+const sizes = { modal: gz(onDir, /^BookingModal-.*\.js$/), guidesForm: gz(onDir, /^GuidesTab-.*\.js$/) };
 check(sizes.modal > 0 && sizes.modal <= 12000, `booking dialog chunk ${sizes.modal} B gzip (budget 12 KB)`);
-check(sizes.guidesForm > 0 && sizes.guidesForm <= 6000, `guides form chunk ${sizes.guidesForm} B gzip (budget 6 KB)`);
-check(readdirSync(join(offDir, 'assets')).every((f) => !/^(BookingModal|GuidesForm)-/.test(f)), 'off build still has a booking or guides chunk');
-/* Initial JS (STUDY-quality-bar 7.4). The off build must fit; the on build
-   is reported, and check-seo.mjs fails any real build over the budget, so a
-   switch cannot be turned on while it does not fit (L7-LOG, going live). */
+check(sizes.guidesForm > 0 && sizes.guidesForm <= 6000, `guides chunk ${sizes.guidesForm} B gzip (budget 6 KB)`);
+check(readdirSync(join(offDir, 'assets')).every((f) => !/^(BookingModal|GuidesTab)-/.test(f)), 'off build still has a booking or guides chunk');
+/* Initial JS (STUDY-quality-bar 7.4). Both builds must fit (the legal pages'
+   lazy chunk made room, L7-LOG Nov 7); check-seo.mjs also fails any real
+   build over the budget, and scripts/test-initial-js.mjs covers all three
+   switches on. */
 const initial = { off: initialJs(offDir).bytes, on: initialJs(onDir).bytes };
 check(initial.off > 0 && initial.off <= INITIAL_JS_BUDGET, `off build initial JS ${initial.off} B gzip (budget ${INITIAL_JS_BUDGET})`);
+check(initial.on > initial.off && initial.on <= INITIAL_JS_BUDGET, `on build (booking and guides) initial JS ${initial.on} B gzip (budget ${INITIAL_JS_BUDGET})`);
 const onHtml = readFileSync(join(onDir, 'index.html'), 'utf8');
 check((onHtml.match(/data-book=""/g) ?? []).length === 3, `on: expected 3 booking buttons in the prerendered page (pricing, FAQ, final), found ${(onHtml.match(/data-book=""/g) ?? []).length}`);
 check(!onHtml.includes('role="dialog"'), 'on: a dialog is in the prerendered page');
-check(onHtml.includes('id="guides"') && !onHtml.includes('class="guides"'), 'on: the guides header is prerendered and the form is not');
+check(!onHtml.includes('id="guides"') && !onHtml.includes('class="guides') && !onHtml.includes('guides-slot') && !onHtml.includes('href="#guides"'), 'on: the prerendered page holds guides markup (it is run time only)');
+check(!/Free guides|Guías gratis|Getting married\s*away from home|A free guide to your destination/.test(onHtml), 'on: the prerendered page holds the guides words');
 
 /* The portal's own beacon parser (L7p), when GL_PORTAL_DIR has it: every
    batch with booking and guide events must pass with nothing dropped. */
@@ -180,7 +184,7 @@ async function toDetails(page) {
 }
 async function fillDetails(page) {
   await page.getByLabel('Your name').fill('Ana Pérez');
-  await page.getByLabel('Email').fill('ana@example.com');
+  await page.locator('.book').getByLabel('Email').fill('ana@example.com');
 }
 const dialogSubmit = (page) => page.locator('.book button[type="submit"]').click();
 const lastBook = () => [...S.hits].reverse().find((h) => h.path.endsWith('/book'));
@@ -199,7 +203,7 @@ async function pressBook(page) {
   const mark = S.hits.length;
   await page.goto(on.url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(300);
-  check(apiHits(mark).length === 0, `A: an API request on load: ${apiHits(mark).map((h) => h.path).join()}`);
+  check(apiHits(mark).every((h) => h.path === '/api/public/guides' && h.method === 'GET'), `A: an API request on load other than the catalogue read: ${apiHits(mark).map((h) => h.path).join()}`);
   await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += 700) {
       window.scrollTo(0, y);
@@ -209,6 +213,8 @@ async function pressBook(page) {
   });
   await page.locator('#guides .guides').waitFor();
   await page.waitForTimeout(200);
+  check((await page.locator('#guides').count()) === 1, 'A: the guides section did not appear after an open answer');
+  check(await page.evaluate(() => document.getElementById('guides').nextElementSibling?.id === 'faq'), 'A: the guides section is not just before the FAQ');
   check(apiHits(mark).filter((h) => h.path.includes('/booking/')).length === 0, 'A: a booking API request before any intent');
   const cats = apiHits(mark).filter((h) => h.path === '/api/public/guides');
   check(cats.length === 1 && cats[0].method === 'GET', `A: expected one guides catalogue GET after scrolling, saw ${cats.map((h) => h.method).join()}`);
@@ -382,7 +388,7 @@ async function pressBook(page) {
   const k1 = JSON.parse(lastBook().body).idempotencyKey;
   await pressBook(page);
   check(JSON.parse(lastBook().body).idempotencyKey === k1, 'E: the same time and email after no answer got a new key');
-  await page.getByLabel('Email').fill('ana@example.org');
+  await page.locator('.book').getByLabel('Email').fill('ana@example.org');
   await pressBook(page);
   const k2 = JSON.parse(lastBook().body).idempotencyKey;
   check(k2 !== k1, 'E: another email after no answer reused the key');
@@ -398,7 +404,7 @@ async function pressBook(page) {
   await dialogSubmit(page);
   await page.getByText('You already booked today. Check your email for the details.').waitFor();
   check((await page.getByText('Could not reach Guest-ly').count()) === 0, 'E: email_limit shown as a connection failure');
-  check((await page.getByLabel('Email').inputValue()) === 'ana@example.org' && (await page.getByLabel('Your name').inputValue()) === 'Ana Pérez', 'E: input lost after email_limit');
+  check((await page.locator('.book').getByLabel('Email').inputValue()) === 'ana@example.org' && (await page.getByLabel('Your name').inputValue()) === 'Ana Pérez', 'E: input lost after email_limit');
   check(await page.evaluate(() => Boolean(document.activeElement?.closest('.book'))), 'E: focus left the dialog after email_limit');
   const kLimit = JSON.parse(lastBook().body).idempotencyKey;
   S.mode.book = 'booked';
@@ -503,9 +509,8 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   const { page } = t;
   const mark = S.hits.length;
   await page.goto(on.url, { waitUntil: 'networkidle' });
-  check((await page.locator('.guides').count()) === 0, 'I: the guides form loaded before the section came near');
-  await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('.guides').waitFor();
+  await page.locator('#guides').scrollIntoViewIfNeeded();
   const names = await page.locator('.guides-place__name').allInnerTexts();
   check(names.length === 7 && names[3] === 'Cancún y Riviera Maya', `I: cards not from the catalogue ${JSON.stringify(names)}`);
   check((await page.locator('.guides__consent').innerText()).trim() === 'Quiero recibir consejos de boda de Guest-ly', 'I: the tips label is not the catalogue sentence word for word');
@@ -578,7 +583,7 @@ const pressGuide = (page) => page.locator('.guides__submit').click();
   await done(t, 'I');
 }
 
-/* ---------- I: catalogue not open ---------- */
+/* ---------- I: catalogue not open: nothing is added ---------- */
 const faqNo = (page) => page.evaluate(() => document.querySelector('#faq')?.innerText.match(/№ \d+/)?.[0]);
 /* Layout shifts not caused by input, summed from the moment this runs. */
 const watchShifts = (page) =>
@@ -589,139 +594,119 @@ const watchShifts = (page) =>
     }).observe({ type: 'layout-shift' });
   });
 const shifts = (page) => page.evaluate(() => window.__cls);
-/* Blank height the guides box holds under what it shows (px). */
-const band = (page) =>
-  page.evaluate(() => {
-    const slot = document.querySelector('#guides .guides-slot');
-    const shown = slot?.firstElementChild?.firstElementChild;
-    return slot && shown ? Math.round(slot.getBoundingClientRect().height - shown.getBoundingClientRect().height) : -1;
-  });
-const faqTop = (page) => page.evaluate(() => Math.round(document.getElementById('faq').getBoundingClientRect().top));
-const slowly = (ms) => new Promise((r) => setTimeout(r, ms));
-for (const catalogue of ['closed', 'unavailable', 'limited', 'error']) {
-  /* Below the viewport (the form loads 800 px early): the section goes away. */
-  reset({ catalogue });
-  const t = await context();
-  const { page } = t;
-  await page.goto(on.url, { waitUntil: 'networkidle' });
-  check((await faqNo(page)) === '№ 11', `I: catalogue ${catalogue}: FAQ number before ${await faqNo(page)}`);
-  const mark = S.hits.length;
-  await page.evaluate(() => {
-    const top = document.getElementById('guides').getBoundingClientRect().top + scrollY;
-    window.scrollTo({ top: top - innerHeight - 300, behavior: 'instant' });
-  });
-  await page.waitForFunction(() => !document.getElementById('guides'), null, { timeout: 8000 }).catch(() => {});
-  check((await page.locator('#guides').count()) === 0, `I: catalogue ${catalogue} below the viewport: the section is still shown`);
-  check((await faqNo(page)) === '№ 10', `I: catalogue ${catalogue}: the FAQ kept ${await faqNo(page)} after the section went away`);
-  check(apiHits(mark).filter((h) => h.path === '/api/public/guides').length === 1 && guideBodies(mark).length === 0, `I: catalogue ${catalogue}: requests`);
-  await done(t, `I catalogue ${catalogue}`);
-}
-for (const width of [390, 1440]) {
-  /* ?guide=all (the expired guide page's "Request a new link") with guides closed. */
-  reset({ catalogue: 'closed' });
-  const t = await context({ width });
-  const { page } = t;
-  await page.addInitScript(() => {
+const clsFromStart = (page) =>
+  page.addInitScript(() => {
     window.__cls = 0;
     new PerformanceObserver((l) => {
       for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
     }).observe({ type: 'layout-shift', buffered: true });
   });
-  await page.goto(`${on.url}/?guide=all`, { waitUntil: 'networkidle' });
-  await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
-  await page.waitForTimeout(300);
-  check((await page.locator('#guides').count()) === 1, `I: ?guide=all closed ${width}: the section went away under the visitor`);
-  const msg = (await page.locator('#guides .guides-done').innerText().catch(() => '')).trim();
-  check(msg.startsWith('Guides are not available right now.') && msg.includes('@guest-ly.com'), `I: ?guide=all closed ${width}: message ${JSON.stringify(msg)}`);
-  const cls = await shifts(page);
-  check(cls < 0.02, `I: ?guide=all closed ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
-  check((await faqNo(page)) === '№ 11', `I: ?guide=all closed ${width}: FAQ number ${await faqNo(page)}`);
-  /* The page scrolls there after the line is in place: no blank under it. */
-  const b = await band(page);
-  check(b >= 0 && b <= 1, `I: ?guide=all closed ${width}: ${b} px of blank under the line`);
-  await done(t, `I ?guide=all closed ${width}`);
-}
-{
-  /* A slow "unavailable" after a normal scroll into the skeleton. */
-  reset({ catalogue: 'unavailable' });
-  let release = () => {};
-  S.holdCatalogue = new Promise((r) => (release = r));
-  const t = await context({ width: 390 });
-  const { page } = t;
-  await page.goto(on.url, { waitUntil: 'networkidle' });
-  await page.evaluate(() => document.getElementById('guides').scrollIntoView({ block: 'start', behavior: 'instant' }));
-  await page.locator('#guides .guides-skeleton').waitFor();
-  await watchShifts(page);
-  release();
-  S.holdCatalogue = null;
-  await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
-  await page.waitForTimeout(300);
-  check((await page.locator('#guides .guides-done').count()) === 1, 'I: slow unavailable in view: no message in place');
-  /* The visitor scrolls on past the section and back: the held part went
-     as it left the screen, with nothing moving on screen. */
-  await page.mouse.move(100, 400);
-  for (let i = 0; i < 12; i++) {
-    await page.mouse.wheel(0, 150);
-    await page.waitForTimeout(40);
+const faqTop = (page) => page.evaluate(() => Math.round(document.getElementById('faq').getBoundingClientRect().top));
+const slowly = (ms) => new Promise((r) => setTimeout(r, ms));
+const scrollThrough = (page) =>
+  page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 500) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    window.scrollTo(0, 0);
+  });
+for (const catalogue of ['closed', 'unavailable', 'limited', 'error']) {
+  for (const width of [390, 1440]) {
+    reset({ catalogue });
+    const t = await context({ width, lang: width === 390 ? 'es' : 'en' });
+    const { page } = t;
+    await clsFromStart(page);
+    const mark = S.hits.length;
+    await page.goto(on.url, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(600);
+    await scrollThrough(page);
+    await page.waitForTimeout(500);
+    const tag = `catalogue ${catalogue} ${width}`;
+    check((await page.locator('#guides, form.guides, .guides-slot, .guides-done').count()) === 0, `I: ${tag}: guides markup in the page`);
+    check((await page.getByText(/not available right now|no están disponibles/).count()) === 0, `I: ${tag}: a "not available" line in the page`);
+    check((await faqNo(page)) === '№ 10', `I: ${tag}: the FAQ number is ${await faqNo(page)}`);
+    check(apiHits(mark).filter((h) => h.path === '/api/public/guides').length === 1 && guideBodies(mark).length === 0, `I: ${tag}: requests`);
+    check((await shifts(page)) < 0.02, `I: ${tag}: layout shift ${(await shifts(page)).toFixed(3)}`);
+    await done(t, `I ${tag}`);
   }
-  await page.waitForTimeout(400);
-  for (let i = 0; i < 12; i++) {
-    await page.mouse.wheel(0, -150);
-    await page.waitForTimeout(40);
-  }
-  await page.waitForTimeout(400);
-  const b = await band(page);
-  check(b >= 0 && b <= 1, `I: slow unavailable in view: ${b} px of blank under the line after the visitor scrolled`);
-  const cls = await shifts(page);
-  check(cls < 0.02, `I: slow unavailable in view: layout shift ${cls.toFixed(3)} (budget 0.02)`);
-  await done(t, 'I slow unavailable');
 }
 for (const width of [390, 1440]) {
-  /* A slow "unavailable" while the visitor already reads the FAQ. */
-  reset({ catalogue: 'unavailable' });
+  /* ?guide=all (the expired guide page's "Request a new link") with guides closed: nothing, no line, no scroll. */
+  reset({ catalogue: 'closed' });
+  const t = await context({ width });
+  const { page } = t;
+  await clsFromStart(page);
+  await page.goto(`${on.url}/?guide=all`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1500);
+  check((await page.locator('#guides').count()) === 0, `I: ?guide=all closed ${width}: a section in the page`);
+  check((await page.getByText(/not available right now/).count()) === 0, `I: ?guide=all closed ${width}: a "not available" line`);
+  check((await page.evaluate(() => scrollY)) === 0, `I: ?guide=all closed ${width}: the page scrolled`);
+  check(!page.url().includes('guide='), `I: ?guide=all closed ${width}: left in the URL`);
+  check((await shifts(page)) < 0.02, `I: ?guide=all closed ${width}: layout shift ${(await shifts(page)).toFixed(3)}`);
+  check((await faqNo(page)) === '№ 10', `I: ?guide=all closed ${width}: FAQ number ${await faqNo(page)}`);
+  await done(t, `I ?guide=all closed ${width}`);
+}
+for (const width of [390, 1440]) {
+  /* A slow open answer while the visitor reads the FAQ: nothing goes in while the
+     FAQ is on screen; once the visitor has scrolled on, it goes in above them
+     and the page scrolls by its height, so what they read does not move. */
+  reset();
   let release = () => {};
   S.holdCatalogue = new Promise((r) => (release = r));
   const t = await context({ width });
   const { page } = t;
-  await page.goto(on.url, { waitUntil: 'networkidle' });
+  /* Not networkidle: the held read keeps the network busy. */
+  await page.goto(on.url, { waitUntil: 'load' });
+  await page.waitForRequest(/\/api\/public\/guides$/, { timeout: 8000 });
   await page.evaluate(() => document.getElementById('faq').scrollIntoView({ block: 'start', behavior: 'instant' }));
-  await page.locator('#guides .guides-skeleton').waitFor();
-  const before = await faqTop(page);
+  await page.waitForTimeout(300);
   await watchShifts(page);
   release();
   S.holdCatalogue = null;
-  await page.locator('#guides .guides-done').waitFor({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(900);
+  check((await page.locator('#guides').count()) === 0, `I: slow open ${width}: the section went in while the FAQ was on screen`);
+  check(Math.abs((await faqTop(page)) - 80) <= 2 || (await faqTop(page)) <= 82, `I: slow open ${width}: the FAQ moved to ${await faqTop(page)}`);
+  await page.evaluate(() => window.scrollBy({ top: 900, behavior: 'instant' }));
+  const item = async () => page.evaluate(() => Math.round(document.querySelector('.faq-human').getBoundingClientRect().top));
+  const before = await item();
+  await page.waitForFunction(() => document.getElementById('guides'), null, { timeout: 4000 }).catch(() => {});
   await page.waitForTimeout(400);
-  const cls = await shifts(page);
-  check(cls < 0.02, `I: slow unavailable past the section ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
-  check(Math.abs((await faqTop(page)) - before) <= 1, `I: slow unavailable past the section ${width}: the FAQ moved ${before} to ${await faqTop(page)}`);
-  const b = await band(page);
-  check(b >= 0 && b <= 1, `I: slow unavailable past the section ${width}: ${b} px of blank left above`);
-  await done(t, `I slow unavailable past ${width}`);
+  check((await page.locator('#guides').count()) === 1, `I: slow open ${width}: the section did not go in after the visitor scrolled on`);
+  check(Math.abs((await item()) - before) <= 1, `I: slow open ${width}: what the visitor reads moved ${before} to ${await item()}`);
+  check((await shifts(page)) < 0.02, `I: slow open ${width}: layout shift ${(await shifts(page)).toFixed(3)} (budget 0.02)`);
+  check((await faqNo(page)) === '№ 11', `I: slow open ${width}: FAQ number ${await faqNo(page)}`);
+  await done(t, `I slow open ${width}`);
+}
+for (const width of [390, 1440]) {
+  /* The visitor is above the section when the answer comes: it goes in below the screen, nothing moves. */
+  reset();
+  S.holdCatalogue = slowly(1500);
+  const t = await context({ width });
+  const { page } = t;
+  await clsFromStart(page);
+  await page.goto(on.url, { waitUntil: 'load' });
+  S.holdCatalogue = null;
+  await page.waitForFunction(() => document.getElementById('guides'), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(400);
+  check((await page.locator('#guides').count()) === 1, `I: slow open at the top ${width}: the section did not go in`);
+  check((await page.evaluate(() => scrollY)) === 0, `I: slow open at the top ${width}: the page scrolled`);
+  check((await shifts(page)) < 0.02, `I: slow open at the top ${width}: layout shift ${(await shifts(page)).toFixed(3)}`);
+  await done(t, `I slow open top ${width}`);
 }
 for (const width of [360, 390, 640]) {
-  /* Landing on /#faq (or the FAQ link) with a slow catalogue: the form
-     arrives above the viewport and the FAQ stays where it is. */
+  /* Landing on /#faq with a slow answer: the FAQ stays where it is and nothing goes in while it is on screen. */
   reset();
   S.holdCatalogue = slowly(400);
   const t = await context({ width });
   const { page } = t;
-  await page.addInitScript(() => {
-    window.__cls = 0;
-    new PerformanceObserver((l) => {
-      for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
-    }).observe({ type: 'layout-shift', buffered: true });
-  });
+  await clsFromStart(page);
   await page.goto(`${on.url}/#faq`, { waitUntil: 'networkidle' });
-  await page.locator('form.guides').waitFor({ state: 'attached', timeout: 8000 }).catch(() => {});
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(900);
   S.holdCatalogue = null;
-  check((await page.locator('form.guides').count()) === 1, `I: /#faq ${width}: the form did not load above the viewport`);
   const cls = await shifts(page);
   check(cls < 0.02, `I: /#faq ${width}: layout shift ${cls.toFixed(3)} (budget 0.02)`);
   check(Math.abs((await faqTop(page)) - 80) <= 2, `I: /#faq ${width}: the FAQ is at ${await faqTop(page)}, not 80`);
-  const b = await band(page);
-  check(b >= 0 && b <= 1, `I: /#faq ${width}: the box is ${b} px off the form`);
   await done(t, `I /#faq ${width}`);
 }
 for (const guide of ['sent', 'closed']) {
@@ -732,8 +717,8 @@ for (const guide of ['sent', 'closed']) {
   const t = await context({ width: 390 });
   const { page } = t;
   await page.goto(on.url, { waitUntil: 'networkidle' });
-  await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('form.guides').waitFor();
+  await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('.guides-place').nth(2).click();
   await page.getByLabel('Your email').fill('ana@example.com');
   await page.evaluate(() => {
@@ -793,8 +778,8 @@ for (const guide of ['sent', 'closed']) {
   const t = await context({ beacon: true });
   const { page } = t;
   await page.goto(on.url, { waitUntil: 'networkidle' });
-  await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('.guides').waitFor();
+  await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('.guides-place').nth(1).click();
   await page.getByLabel('Your email').fill('ana@example.com');
   const mark = S.hits.length;
@@ -846,8 +831,8 @@ for (const lang of ['en', 'es']) {
   });
   check(strip, 'M: the day strip does not scroll sideways on a phone');
   await page.keyboard.press('Escape');
-  await page.locator('#guides').scrollIntoViewIfNeeded();
   await page.locator('.guides').waitFor();
+  await page.locator('#guides').scrollIntoViewIfNeeded();
   const smallG = await page.evaluate(() =>
     [...document.querySelectorAll('.guides-place, .guides button, .guides__consent, .guides input[type="email"]')]
       .map((el) => [el.className, Math.round(el.getBoundingClientRect().height)])

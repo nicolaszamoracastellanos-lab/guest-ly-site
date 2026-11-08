@@ -1,47 +1,22 @@
 /* #50 destination guides section (only in the build while GUIDES_ENABLED). */
 
-/* The form arrives as a lazy chunk 800px before the section is in view; the
-   box starts at the form's height with today's catalogue (7 guides, measured
-   EN and ES from 360 to 1440; within 4 px at 390 and 1440). Once something
-   is in it, GuidesSection sets the box to that thing's height without
-   moving anything on screen (./fit.ts), so a longer or shorter catalogue is
-   fine too. */
+/* The section arrives with its catalogue already read (./state.ts), so the
+   box starts at the form's own height; nothing is reserved. When the form
+   changes (the confirmation, a 409 line) ./fit.ts sets the box to the new
+   thing's height without moving anything on screen. */
 .guides-slot {
-  min-height: 750px;
   /* Its height is set from script and read back in the same frame. The
      reduced-motion rule in index.css gives every element a 0.01ms
      transition of "all", which would hand that read the old height. */
   transition-property: none;
   /* The browser never anchors the scroll on what the box holds (it is
-     replaced as a whole); GuidesSection keeps what is below in place. */
+     replaced as a whole); ./fit.ts keeps what is below in place. */
   overflow-anchor: none;
 }
 
-:lang(es) .guides-slot {
-  min-height: 770px;
-}
-
-.guides,
-.guides-skeleton {
+.guides {
   display: grid;
   gap: 1.5rem;
-}
-
-/* While the catalogue loads: the cards and the side panel as still ghosts. */
-.guides-skeleton .guides__grid {
-  margin-top: 2rem;
-}
-
-.guides-ghost {
-  display: block;
-  min-height: 64px;
-  border: 1px solid var(--glass-border);
-  border-radius: calc(var(--radius-card) - 8px);
-  background: var(--glass-bg);
-}
-
-.guides-ghost--side {
-  min-height: 260px;
 }
 
 .guides__places {
@@ -205,27 +180,13 @@
 }
 
 @media (min-width: 640px) {
-  .guides-slot,
-  :lang(es) .guides-slot {
-    min-height: 630px;
-  }
-
   .guides__grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (min-width: 960px) {
-  .guides-slot {
-    min-height: 320px;
-  }
-
-  :lang(es) .guides-slot {
-    min-height: 360px;
-  }
-
-  .guides,
-  .guides-skeleton {
+  .guides {
     grid-template-columns: 1.5fr 1fr;
     align-items: start;
     gap: 2rem;
@@ -233,13 +194,6 @@
 
   .guides__grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 1200px) {
-  .guides-slot,
-  :lang(es) .guides-slot {
-    min-height: 305px;
   }
 }
 

@@ -1,38 +1,35 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { FormEvent, RefObject } from 'react';
 import { useLang } from '../ui/LanguageContext';
 import { BrandText } from '../ui/BrandText';
 import { emit } from '../analytics/emit';
 import { isEmail } from '../booking/core';
-import { getCatalogue, requestGuide } from './client';
+import { requestGuide } from './client';
 import { useFitBox } from './fit';
 import type { Catalogue, GuideField } from './core';
 import { guidesCopy } from './copy';
 
-/* #50 the guides form (lazy chunk, mounted by GuidesSection when the section
-   comes near). It reads the catalogue from app.guest-ly.com first: the cards,
-   the tips sentence and its version all come from there (no guide data in
-   the landing, D24), and anything but "open" hides the section, or, when
-   the section is already in view (or a ?guide= link brought the person
-   here), says so in place with the contact address. Then: pick a
-   place, leave an email, tick tips only if wanted, and the guide arrives by
-   email. No request before the press; the answer is the same for every
-   accepted address (a repeat within the day included). The confirmation and
-   a 409's "not available" line take the place of the side panel, in a box of
-   the panel's height, so a slow answer moves nothing on the page; the cards
-   stay (picking another one goes back to the form). Contract: L7P-LOG
-   "Guides API for the landing (v1, fixed Nov 5)". */
+/* #50 the guides form (in the guides lazy chunk, mounted by ./state.ts once
+   the catalogue on app.guest-ly.com has answered "open"): the cards, the tips
+   sentence and its version all come from that catalogue (no guide data in the
+   landing, D24). Pick a place, leave an email, tick tips only if wanted, and
+   the guide arrives by email. No request before the press; the answer is the
+   same for every accepted address (a repeat within the day included). The
+   confirmation and a 409's "not available" line take the place of the side
+   panel, in a box of the panel's height, so a slow answer moves nothing on
+   the page; the cards stay (picking another one goes back to the form).
+   Contract: L7P-LOG "Guides API for the landing (v1, fixed Nov 5)". */
 
-type Open = Extract<Catalogue, { kind: 'open' }>;
+export type Open = Extract<Catalogue, { kind: 'open' }>;
 export type GuidesFormProps = {
+  /* The catalogue the page already read (./state.ts adds the section only for
+     an open answer, so the form never reads it again and never shows a
+     skeleton or a "not available" line for the read). */
+  catalogue: Open;
   /* From ?guide=<code> or ?guide=all: preselect that guide. */
   initial: string | null;
-  /* The catalogue is not open. true: the section went away (it was still
-     below the viewport). false: it stays, and the form shows the calm
-     "not available, write to us" line in its place. */
-  onHidden: () => boolean;
-  /* The catalogue answered and its result is in the page: the section fits
-     its box, a ?guide= link scrolls to it, then after() runs. */
+  /* The form is in the page: the box fits it, then after() runs (a ?guide=
+     link: focus the email once the page has scrolled here). */
   onSettled: (after?: () => void) => void;
   /* The section's box and what is in it (the form fits one to the other). */
   slot: RefObject<HTMLDivElement | null>;
@@ -47,12 +44,12 @@ function zone(): string {
   }
 }
 
-export default function GuidesForm({ initial, onHidden, onSettled, slot, box }: GuidesFormProps) {
+export default function GuidesForm({ catalogue: cat, initial, onSettled, slot, box }: GuidesFormProps) {
   const { t, lang } = useLang();
   const c = guidesCopy[lang];
   const uid = useId();
-  const [cat, setCat] = useState<Open | null>(null);
-  const [place, setPlace] = useState('');
+  const wanted = initial && cat.guides.some((g) => g.code === initial) ? initial : '';
+  const [place, setPlace] = useState(wanted);
   const [email, setEmail] = useState('');
   const [tips, setTips] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<GuideField | 'form' | 'network' | 'retry', boolean>>>({});
@@ -68,64 +65,19 @@ export default function GuidesForm({ initial, onHidden, onSettled, slot, box }: 
   const doneRef = useRef<HTMLHeadingElement>(null);
   const closedRef = useRef<HTMLDivElement>(null);
   const sideRef = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
-  const props = useRef({ initial, onHidden, onSettled });
+  const props = useRef({ onSettled });
   const fitNow = useFitBox(slot, box);
-  const focusEmail = useRef(false);
-
-  /* One catalogue read per mount. */
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    void getCatalogue().then((r) => {
-      if (r.kind !== 'open') {
-        if (!props.current.onHidden()) setClosed(true);
-        return;
-      }
-      setCat(r);
-      const want = props.current.initial;
-      if (want && r.guides.some((g) => g.code === want)) {
-        setPlace(want);
-        focusEmail.current = true;
-      }
-    });
-  }, []);
+  const focusEmail = useRef(wanted !== '');
 
   /* The answer is in the page: the box fits it and a ?guide= link scrolls
      here; then, for ?guide=<code>, the guide is picked, so the email is
      next. */
-  const answered = cat !== null || closed;
   useLayoutEffect(() => {
-    if (!answered) return;
     const focus = focusEmail.current;
     focusEmail.current = false;
     fitNow();
     props.current.onSettled(focus ? () => emailRef.current?.focus() : undefined);
-  }, [answered, fitNow]);
-
-  if (closed && !cat) {
-    return (
-      /* Its own node (key): React would otherwise reuse the skeleton's div and
-         the box would start without its padding for a frame. */
-      <div key="closed" className="glass guides-done" role="status" ref={closedRef} tabIndex={-1}>
-        <p className="card-body">{c.closed.replace('{email}', t.faq.human.email)}</p>
-      </div>
-    );
-  }
-
-  if (!cat) {
-    /* Skeleton in the form's shape while the catalogue loads. */
-    return (
-      <div className="guides-skeleton" aria-hidden="true" data-placeholder="">
-        <div className="guides__grid">
-          {Array.from({ length: 6 }, (_, i) => (
-            <span key={i} className="guides-ghost" />
-          ))}
-        </div>
-        <div className="glass guides__side guides-ghost--side" />
-      </div>
-    );
-  }
+  }, [fitNow]);
 
   const placeName = (code: string) => cat.guides.find((g) => g.code === code)?.name[lang] ?? code;
 

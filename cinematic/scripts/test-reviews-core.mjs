@@ -125,8 +125,9 @@ eq('nav labels', [reviewsNavCopy.en.label, reviewsNavCopy.es.label], ['Reviews',
 eq('section follows the FAQ', [reviewsCopy.en.no, reviewsCopy.en.noAfterGuides], ['№ 11', '№ 12']);
 
 /* 5. Switch. */
-eq('REVIEWS_ENABLED ships false', REVIEWS_ENABLED, false);
-eq('no env: off', resolveSwitches({}).reviews, false);
+eq('REVIEWS_ENABLED ships true', REVIEWS_ENABLED, true);
+eq('no env: the shipped value', resolveSwitches({}).reviews, true);
+eq('env can turn it off', resolveSwitches({ GL_REVIEWS_ENABLED: '0' }).reviews, false);
 eq('test env turns it on', resolveSwitches({ GL_REVIEWS_ENABLED: '1' }).reviews, true);
 ok('the API path is allowlisted', API_PATHS.includes('/api/public/reviews'));
 
@@ -173,4 +174,4 @@ if (errors.length) {
   console.error(`\ntest-reviews-core FAILED: ${errors.length} of ${checks}`);
   process.exit(1);
 }
-console.log(`test-reviews-core clean: ${checks} checks (every contract answer, labels EN and ES, JSON-LD from the answer, copy rules, switch ships off, build guard on planted leaks)`);
+console.log(`test-reviews-core clean: ${checks} checks (every contract answer, labels EN and ES, JSON-LD from the answer, copy rules, switch ships on, build guard on planted leaks)`);

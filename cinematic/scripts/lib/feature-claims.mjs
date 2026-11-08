@@ -33,15 +33,22 @@ export function featureClaimProblems({ switches, home = '', privacy = '', assets
       label: '#50 destination guides (GUIDES_ENABLED)',
       claim: GUIDE_CLAIM,
       api: '/api/public/guides',
-      chunk: /^GuidesForm-/,
-      inHome: /\bid="guides"/,
+      chunk: /^GuidesTab-/,
+      inHome: /\bid="guides"|\bclass="guides/,
+      /* Like the Reviews tab: the section exists at run time only (added after
+         an "open" read), never in the prerendered page, switch on or off. */
+      runtime: true,
       inPrivacy: /<h2>(Destination guides|Guías de destino)<\/h2>/,
     },
   ];
   for (const f of features) {
     const on = Boolean(switches[f.key]);
     if (on) {
-      if (!f.inHome.test(home)) out.push(`${f.label} is on, but the prerendered home page does not show it`);
+      if (f.runtime) {
+        if (f.inHome.test(home) || /href="#guides"/.test(home)) out.push(`${f.label} is on, but the prerendered home page holds it (run time only)`);
+        if (!assets.some((a) => f.chunk.test(a.name))) out.push(`${f.label} is on, but the build has no ${f.chunk.source.replace(/^\^/, "")} chunk`);
+        if (!assets.some((a) => a.text.includes(f.api))) out.push(`${f.label} is on, but no asset reads ${f.api}`);
+      } else if (!f.inHome.test(home)) out.push(`${f.label} is on, but the prerendered home page does not show it`);
       continue;
     }
     if (f.inHome.test(home)) out.push(`${f.label} is off, but the prerendered home page shows it`);

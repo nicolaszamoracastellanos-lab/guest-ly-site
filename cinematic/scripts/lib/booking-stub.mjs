@@ -135,7 +135,7 @@ export function parseGuideBody(raw) {
    limited | error | slow. mode.book: booked | replay | taken | invalid-<field>
    | invalid-null | closed | unavailable | email_limit (429, L7p review
    round 1: this email booked 3 calls today) | error | abort. mode.catalogue:
-   open | closed | unavailable | limited | error. mode.guide: sent (after
+   open | closed | unavailable | limited | error | abort (no answer) | garbage (200, unreadable). mode.guide: sent (after
    L7p's parser: a body it refuses answers its 400) | invalid-email |
    invalid-code | closed (409) | unavailable (503) | error | abort.
    hits: every request (method, url, headers, body); guideInputs: what the
@@ -209,6 +209,8 @@ export async function startStub({ port = 0 } = {}) {
         const m = state.mode.catalogue ?? 'open';
         if (m === 'limited') return send(429, { v: 1, status: 'limited' }, { 'Retry-After': '60' });
         if (m === 'error') return send(500, { v: 1, status: 'error' });
+        if (m === 'abort') return req.socket.destroy();
+        if (m === 'garbage') return send(200, '<html>not json</html>');
         return send(200, catalogueBody(m));
       }
 

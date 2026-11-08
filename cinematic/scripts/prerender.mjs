@@ -76,6 +76,10 @@ for (const [route, outFile] of routes) {
   const page = await ctx.newPage();
   await page.goto(`http://localhost:${port}${route}`, { waitUntil: 'networkidle' });
   await page.waitForSelector('#root > *');
+  /* A legal address loads its own lazy chunk (src/ui/LegalPage.tsx) before it
+     hydrates; wait for the page itself, not for the home markup that the
+     SPA fallback served first. */
+  if (route !== '/') await page.waitForSelector('#root .legal-page');
   await page.waitForTimeout(400);
 
   const html = await page.evaluate((canonical) => {
@@ -83,6 +87,19 @@ for (const [route, outFile] of routes) {
        js-ready gates the reveal animations (without it, content is visible
        even if JS never runs) and is-visible is added back by the observer. */
     document.body.classList.remove('js-ready');
+    /* Vite's loader adds a preload link for a chunk it imports at run time,
+       with the snapshot server's absolute address. Keep the hint, as a path
+       (a legal page preloads its own chunk), and never the local address. */
+    document.querySelectorAll('link[rel="modulepreload"]').forEach((el) => {
+      const href = el.getAttribute('href') ?? '';
+      if (!/^https?:\/\//.test(href)) return;
+      const path = new URL(href).pathname;
+      if (document.querySelector(`link[rel="modulepreload"][href="${path}"]`)) el.remove();
+      else {
+        el.setAttribute('href', path);
+        el.removeAttribute('as');
+      }
+    });
     document.querySelectorAll('.reveal.is-visible').forEach((el) => el.classList.remove('is-visible'));
     /* The hero chat transcript is runtime ambience painted by effects; the
        client hydrates with an empty stage and replays it, so an embedded
