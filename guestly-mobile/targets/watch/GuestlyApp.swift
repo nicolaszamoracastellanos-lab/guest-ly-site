@@ -1,8 +1,14 @@
 import SwiftUI
+import UserNotifications
+import WatchKit
 
 @main
 struct GuestlyApp: App {
   @StateObject private var store = WatchStore.shared
+
+  init() {
+    UNUserNotificationCenter.current().delegate = NotificationRouter.shared
+  }
 
   var body: some Scene {
     WindowGroup {
@@ -15,5 +21,7 @@ struct GuestlyApp: App {
           }
         }
     }
+    WKNotificationScene(controller: RsvpNotificationController.self, category: "gl.rsvp_new")
+    WKNotificationScene(controller: EscalationNotificationController.self, category: "gl.escalation")
   }
 }

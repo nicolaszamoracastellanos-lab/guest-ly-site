@@ -64,6 +64,7 @@ enum L10n {
     "askSuggestPlannerA": "What needs me today?",
     "askSuggestPlannerB": "Who hasn't replied?",
     "failed": "That did not work",
+    "newReply": "New reply",
   ]
 
   static let es: [String: String] = [
@@ -117,5 +118,6 @@ enum L10n {
     "askSuggestPlannerA": "¿Qué me necesita hoy?",
     "askSuggestPlannerB": "¿Quién no ha respondido?",
     "failed": "No funcionó",
+    "newReply": "Nueva respuesta",
   ]
 }

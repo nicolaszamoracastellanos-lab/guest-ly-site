@@ -42,6 +42,17 @@ final class WatchStore: NSObject, ObservableObject, WCSessionDelegate {
     session.delegate = self
     session.activate()
     if let raw = session.receivedApplicationContext["snapshot"] as? String { apply(raw) }
+    #if DEBUG
+    // Link check for development: launch with `-glPing 1` and the toast says whether the phone answered.
+    if UserDefaults.standard.bool(forKey: "glPing") {
+      Task { [weak self] in
+        try? await Task.sleep(nanoseconds: 4_000_000_000)
+        guard let self else { return }
+        let r = await self.send("ping")
+        if case .success = r { self.toast = "Ping ok" } else { self.toast = "Ping failed" }
+      }
+    }
+    #endif
   }
 
   nonisolated static func decode(_ raw: String) -> Snapshot? {

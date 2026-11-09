@@ -15,7 +15,9 @@ struct TodayView: View {
               CheckCircle(done: item.done)
               VStack(alignment: .leading, spacing: sc(1)) {
                 Text(item.title).font(Theme.body(14)).foregroundStyle(item.done ? Color.glMuted : Color.glIvory)
-                  .strikethrough(item.done).lineLimit(2).minimumScaleFactor(0.8)
+                  .strikethrough(item.done)
+                  // Short titles shrink to one line (the design); long ones take two lines instead of cutting.
+                  .lineLimit(item.title.count <= 24 ? 1 : 2).minimumScaleFactor(0.75)
                 Text(item.note).font(Theme.body(11)).foregroundStyle(item.urgent && !item.done ? Color.glGoldLight : Color.glMuted).lineLimit(1)
               }
               Spacer(minLength: 0)

@@ -51,7 +51,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // and 1.3.0 builds already exist in App Store Connect. The iOS build number is not
   // set here: eas.json has appVersionSource "remote" and the production profile
   // has autoIncrement, so EAS assigns the next number at build time.
-  version: "1.4.0",
+  version: "1.5.0",
   // The iPhone Duo's inner display ignores declared orientations and Apple asks
   // every app to support them all (tent pose, inner landscape, Split View).
   orientation: "default",
