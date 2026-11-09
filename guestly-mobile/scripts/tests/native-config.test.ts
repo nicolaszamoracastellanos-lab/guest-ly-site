@@ -89,4 +89,24 @@ const blocked = config.android?.blockedPermissions ?? [];
 assert.ok(blocked.includes("android.permission.RECORD_AUDIO"), "RECORD_AUDIO blocked");
 assert.ok(blocked.includes("android.permission.READ_CONTACTS"));
 
+// Apple Watch (1.5.0): the two targets come from the apple-targets config plugin (never a
+// hand-edited ios/), the iPhone bridge is a local module, and nothing else joins the native set.
+assert.ok((config.plugins ?? []).some((p) => (Array.isArray(p) ? p[0] : p) === "@bacons/apple-targets"), "the watch targets come from the apple-targets plugin");
+assert.equal(config.ios?.appleTeamId, "3F998LXJ33", "team id for the watch targets");
+for (const [dir, type, bundle] of [["watch", "watch", ".watchkitapp"], ["watch-widgets", "watch-widget", ".watchkitapp.widgets"]] as const) {
+  const cfg = read(`targets/${dir}/expo-target.config.js`);
+  assert.match(cfg, new RegExp(`type: "${type}"`), `${dir}: type`);
+  assert.ok(cfg.includes(`bundleIdentifier: "${bundle}"`), `${dir}: bundle id is the iPhone app's plus ${bundle}`);
+  assert.ok(cfg.includes('deploymentTarget: "10.0"'), `${dir}: watchOS 10`);
+  assert.ok(cfg.includes("group.com.zcventures.guestly"), `${dir}: shared app group`);
+}
+assert.notEqual(read("targets/watch/expo-target.config.js").match(/name: "([^"]+)"/)?.[1], "GuestlyWatch", "the watch target must not share a name with the GuestlyWatch iPhone module pod");
+assert.deepEqual(JSON.parse(read("modules/guestly-watch/expo-module.config.json")).apple, { modules: ["GuestlyWatchModule"], appDelegateSubscribers: ["GuestlyWatchSubscriber"] });
+assert.ok(deps["qrcode-generator"], "the guest pass QR is built with a pure-JS library (no native code)");
+assert.equal(deps["@bacons/apple-targets"], "5.0.0", "apple-targets stays pinned exactly");
+for (const f of ["CormorantGaramond_400Regular_Italic", "CormorantGaramond_500Medium", "CormorantGaramond_600SemiBold", "Jost_400Regular", "Jost_500Medium", "Jost_600SemiBold"]) {
+  for (const dir of ["watch", "watch-widgets"]) assert.ok(statSync(path.join(root, `targets/${dir}/Fonts/${f}.ttf`)).size > 1000, `${dir}: font ${f}`);
+}
+assert.equal(plist.UIBackgroundModes, undefined, "the watch needs no background mode on the phone");
+
 console.log("native-config: ok");

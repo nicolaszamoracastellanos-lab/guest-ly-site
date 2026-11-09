@@ -25,6 +25,7 @@ import { useAppFonts } from "@/lib/useAppFonts";
 import { LangProvider, useCopy } from "@/i18n";
 import { QueryProvider } from "@/lib/query";
 import { SessionProvider, can, useSession } from "@/lib/session";
+import { WatchHost } from "@/features/watch/WatchSync";
 import { biometricPrompt } from "@/lib/biometric";
 import { routeFor, tenantOf } from "@/lib/push";
 import { drainQueue, timedDrainNeeded } from "@/lib/queue";
@@ -318,6 +319,7 @@ function Gate() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.night }}>
+      <WatchHost />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.night }, animation: "fade" }}>
         <Stack.Screen name="assistant" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
         <Stack.Screen name="web" options={{ presentation: "modal", animation: "slide_from_bottom" }} />

@@ -114,6 +114,8 @@ const FLAGGED: readonly [RegExp, string][] = [
   [/know-before-you-go/i, "MW_KNOW_BEFORE"],
   [/"Seen"/, "MW_SEEN"],
   [/road[- ]to[- ]the[- ]wedding|road to the wedding/i, "MW_ROAD"],
+  // 1.5.0 (not in the 1.4.0 notes): the Apple Watch app. Off for everyone until released per wedding.
+  [/Apple Watch/i, "MW_WATCH"],
 ];
 
 // Flags the portal registry refuses to release (releaseBlocker). Read from the

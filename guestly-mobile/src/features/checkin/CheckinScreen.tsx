@@ -9,6 +9,7 @@
 // the scan's own time (corrected by the server clock offset) so a late sync
 // keeps the true arrival time.
 
+import { setLastArrival } from "@/features/watch/lastArrival";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Linking, ScrollView, type LayoutChangeEvent } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
@@ -101,6 +102,11 @@ export function CheckinScreen({ role = "couple" }: { role?: Role }) {
   const cardName = card?.result?.guest?.name ?? "";
   const [lastIn, setLastIn] = useState("");
   if (cardName && cardName !== lastIn) setLastIn(cardName);
+  // The Apple Watch door page reads the same "last in" (features/watch/lastArrival).
+  const arrivalTable = card?.result?.guest?.table ? String(card.result.guest.table) : null;
+  useEffect(() => {
+    if (cardName) setLastArrival({ name: cardName, table: arrivalTable });
+  }, [cardName, arrivalTable]);
   // Outer-display welcome (Duo, iOS 27.1): "Welcome, {name}. Table {n}" faces the guest
   // while the planner scans on the inner display. An extra: the system decides
   // when it can show, and the check-in is the same without it.
