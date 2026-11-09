@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import WatchConnectivity
+import WatchKit
 import WidgetKit
 
 let glGroup = "group.com.zcventures.guestly"
@@ -15,6 +16,8 @@ final class WatchStore: NSObject, ObservableObject, WCSessionDelegate {
   @Published var snapshot: Snapshot = Snapshot(enabled: false)
   @Published var hasSnapshot = false
   @Published var requestedPage: String?
+  @Published var showPhoneNeeded = false
+  @Published var toast: String?
 
   private var demo = false
 
@@ -25,12 +28,14 @@ final class WatchStore: NSObject, ObservableObject, WCSessionDelegate {
       demo = true
       snapshot = DemoLoader.load(kind)
       hasSnapshot = true
+      requestedPage = UserDefaults.standard.string(forKey: "glDemoPage")
       return
     }
     #endif
     if let raw = UserDefaults(suiteName: glGroup)?.string(forKey: glSnapshotKey), let s = Self.decode(raw) {
       snapshot = s
       hasSnapshot = true
+      L10n.lang = s.lang
     }
     guard WCSession.isSupported() else { return }
     let session = WCSession.default
@@ -48,6 +53,7 @@ final class WatchStore: NSObject, ObservableObject, WCSessionDelegate {
     guard let s = Self.decode(raw) else { return }
     snapshot = s
     hasSnapshot = true
+    L10n.lang = s.lang
     UserDefaults(suiteName: glGroup)?.set(raw, forKey: glSnapshotKey)
     WidgetCenter.shared.reloadAllTimelines()
   }
@@ -79,6 +85,27 @@ final class WatchStore: NSObject, ObservableObject, WCSessionDelegate {
         finish(r.ok ? .success(r) : .failure(r.error ?? ""))
       }, errorHandler: { _ in finish(.phoneNeeded) })
       DispatchQueue.main.asyncAfter(deadline: .now() + 25) { finish(.phoneNeeded) }
+    }
+  }
+
+  /// Runs an action with the feedback every action shares: success haptic,
+  /// failure haptic and a short toast, or the "open your iPhone" sheet. Returns
+  /// the reply on success, nil otherwise.
+  @discardableResult
+  func run(_ type: String, _ payload: [String: Any] = [:]) async -> ActionReply? {
+    switch await send(type, payload) {
+    case .success(let r):
+      WKInterfaceDevice.current().play(.success)
+      return r
+    case .failure(let msg):
+      WKInterfaceDevice.current().play(.failure)
+      toast = msg.isEmpty ? L10n.t("failed") : msg
+      Task { try? await Task.sleep(nanoseconds: 2_500_000_000); self.toast = nil }
+      return nil
+    case .phoneNeeded:
+      WKInterfaceDevice.current().play(.failure)
+      showPhoneNeeded = true
+      return nil
     }
   }
 

@@ -125,8 +125,8 @@ struct Snapshot: Codable, Equatable {
 /// What the phone answers to an action.
 struct ActionReply: Decodable {
   var ok: Bool
-  var error: String?
-  var data: [String: AnyCodable]?
+  var error: String? = nil
+  var data: [String: AnyCodable]? = nil
 }
 
 enum ActionResult {
