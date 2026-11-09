@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Door check-in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 416px; height: 496px; box-sizing: border-box; background: #000000; color: #f7f3ec; font-family: 'Jost', system-ui, sans-serif; padding: 30px 24px 26px; display: flex; flex-direction: column; gap: 10px">
+<div style="padding-left: 12px; height: 40px; font-size: 30px; font-weight: 500; line-height: 40px; color: #c9a96e">Door</div>
+<div style="position: relative; width: 208px; height: 208px; align-self: center">
+<svg role="img" aria-label="96 of 158 guests arrived" width="208" height="208" viewBox="0 0 208 208" fill="none" style="display: block">
+<circle cx="104" cy="104" r="92" stroke="#1f2636" stroke-width="16"></circle>
+<circle cx="104" cy="104" r="92" stroke="#c9a96e" stroke-width="16" stroke-linecap="round" stroke-dasharray="351 578" transform="rotate(-90 104 104)"></circle>
+</svg>
+<div style="position: absolute; left: 0; top: 0; width: 208px; height: 208px; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<div style="font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 92px; line-height: 76px">96</div>
+<div style="font-size: 24px; color: #a8a08f; line-height: 32px">of 158 here</div>
+</div>
+</div>
+<div style="font-size: 24px; line-height: 30px; color: #d9d3c6; text-align: center">Last in: Mateo Rojas · Table 4</div>
+<div style="flex-grow: 1"></div>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 88px; border: 0; border-radius: 44px; background: #c9a96e; color: #14110c; font-family: inherit; font-size: 30px; font-weight: 600">
+<svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#14110c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11a6.5 6.5 0 0 0 13 0"></path><path d="M12 17.5V21"></path></svg>
+<span>Find a guest</span>
+</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":416,"height":496}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

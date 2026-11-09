@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My day</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 416px; height: 496px; box-sizing: border-box; background: #000000; color: #f7f3ec; font-family: 'Jost', system-ui, sans-serif; padding: 30px 24px 28px; display: flex; flex-direction: column; gap: 12px">
+<div style="padding-left: 12px; height: 40px; font-size: 30px; font-weight: 500; line-height: 40px; color: #c9a96e">Your day</div>
+<div style="padding: 0 12px; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 500; font-size: 40px; line-height: 44px">Camila &amp; Andrés</div>
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
+<div style="display: flex; align-items: center; gap: 16px; height: 100px; padding: 0 24px; background: #16213a; border-radius: 28px">
+<span style="width: 74px; font-size: 28px; font-weight: 600; color: #e2c892">16:15</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 28px; line-height: 32px">Shuttle leaves</span>
+<span style="font-size: 22px; line-height: 28px; color: #d9d3c6">Hotel lobby · in 25 min</span>
+</span>
+</div>
+<div style="display: flex; align-items: center; gap: 16px; height: 100px; padding: 0 24px; background: #0d1117; border-radius: 28px">
+<span style="width: 74px; font-size: 28px; font-weight: 600; color: #c9a96e">17:00</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 28px; line-height: 32px">Ceremony</span>
+<span style="font-size: 22px; line-height: 28px; color: #a8a08f">Courtyard</span>
+</span>
+</div>
+<div style="display: flex; align-items: center; gap: 16px; height: 100px; padding: 0 24px; background: #0d1117; border-radius: 28px">
+<span style="width: 74px; font-size: 28px; font-weight: 600; color: #c9a96e">19:30</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 28px; line-height: 32px">Dinner</span>
+<span style="font-size: 22px; line-height: 28px; color: #a8a08f">Table 7</span>
+</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":416,"height":496}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

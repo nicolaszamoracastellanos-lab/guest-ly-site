@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Replies</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 416px; height: 496px; box-sizing: border-box; background: #000000; color: #f7f3ec; font-family: 'Jost', system-ui, sans-serif; padding: 30px 24px 28px; display: flex; flex-direction: column; gap: 14px">
+<div style="padding-left: 12px; height: 40px; font-size: 30px; font-weight: 500; line-height: 40px; color: #c9a96e">Replies</div>
+<div style="display: flex; align-items: baseline; gap: 12px; padding: 0 12px">
+<div style="font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 104px; line-height: 88px; letter-spacing: -2px">118</div>
+<div style="font-size: 26px; color: #a8a08f">of 158 coming</div>
+</div>
+<div role="img" aria-label="118 confirmed, 31 pending, 9 declined" style="display: flex; gap: 4px; height: 12px; margin: 6px 12px 0">
+<div style="flex-grow: 118; background: #c9a96e; border-radius: 6px"></div>
+<div style="flex-grow: 31; background: #f7f3ec; border-radius: 6px"></div>
+<div style="flex-grow: 9; background: #5a5446; border-radius: 6px"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px">
+<div style="display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 20px; background: #0d1117; border-radius: 22px">
+<span aria-hidden="true" style="display: block; width: 14px; height: 14px; border-radius: 7px; background: #c9a96e"></span>
+<span style="flex-grow: 1; font-size: 28px">Confirmed</span>
+<span style="font-size: 28px; font-weight: 600">118</span>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 20px; background: #0d1117; border-radius: 22px">
+<span aria-hidden="true" style="display: block; width: 14px; height: 14px; border-radius: 7px; background: #f7f3ec"></span>
+<span style="flex-grow: 1; font-size: 28px">Pending</span>
+<span style="font-size: 28px; font-weight: 600">31</span>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 20px; background: #0d1117; border-radius: 22px">
+<span aria-hidden="true" style="display: block; width: 14px; height: 14px; border-radius: 7px; background: #5a5446"></span>
+<span style="flex-grow: 1; font-size: 28px">Declined</span>
+<span style="font-size: 28px; font-weight: 600">9</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":416,"height":496}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

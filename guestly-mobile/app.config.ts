@@ -71,6 +71,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   ios: {
     bundleIdentifier: "com.zcventures.guestly",
+    // Team for the watch targets (BUILD-LOG decision: individual team). EAS signs with its own credentials.
+    appleTeamId: "3F998LXJ33",
     supportsTablet: false,
     associatedDomains: ["applinks:app.guest-ly.com", "webcredentials:app.guest-ly.com"],
     usesAppleSignIn: true,
@@ -286,6 +288,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         ],
       },
     ],
+    // Apple Watch app and its watch face widgets. Sources live in targets/ (the
+    // plugin links them into the generated Xcode project, so prebuild --clean
+    // always reproduces them). The watch never signs in: the iPhone sends it a
+    // snapshot (modules/guestly-watch) and runs every action.
+    "@bacons/apple-targets",
   ],
   // Info.plist purpose strings in both languages (es.lproj and en.lproj InfoPlist.strings).
   locales: { en: "./locales/en.json", es: "./locales/es.json" },

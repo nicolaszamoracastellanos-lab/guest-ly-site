@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Coordinator answer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 416px; height: 496px; box-sizing: border-box; background: #000000; color: #f7f3ec; font-family: 'Jost', system-ui, sans-serif; padding: 30px 24px 26px; display: flex; flex-direction: column; gap: 12px">
+<div style="padding-left: 12px; height: 40px; font-size: 30px; font-weight: 500; line-height: 40px; color: #c9a96e">Coordinator</div>
+<div style="padding: 0 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 24px; line-height: 30px; color: #a8a08f">Who hasn't replied?</div>
+<div style="font-size: 28px; line-height: 36px">31 guests are still pending. 12 are on Andrés's side.</div>
+</div>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="height: 88px; border: 0; border-radius: 44px; background: #c9a96e; color: #14110c; font-family: inherit; font-size: 30px; font-weight: 600">Remind all 31</button>
+<button type="button" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 88px; border: 0; border-radius: 44px; background: #1a2030; color: #f7f3ec; font-family: inherit; font-size: 30px; font-weight: 500">
+<svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#e2c892" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11a6.5 6.5 0 0 0 13 0"></path><path d="M12 17.5V21"></path></svg>
+<span>Ask more</span>
+</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":416,"height":496}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

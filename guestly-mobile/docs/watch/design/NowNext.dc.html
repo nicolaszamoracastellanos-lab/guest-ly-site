@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Now and next</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 416px; height: 496px; box-sizing: border-box; background: #000000; color: #f7f3ec; font-family: 'Jost', system-ui, sans-serif; padding: 30px 24px 28px; display: flex; flex-direction: column; gap: 14px">
+<div style="padding-left: 12px; height: 40px; font-size: 30px; font-weight: 500; line-height: 40px; color: #c9a96e">Wedding day</div>
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 22px 24px 24px; background: #16213a; border-radius: 34px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<span style="font-size: 22px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: #e2c892">Now</span>
+<span style="font-size: 24px; color: #d9d3c6">18 min left</span>
+</div>
+<div style="font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 64px; line-height: 64px">Ceremony</div>
+<div style="font-size: 26px; line-height: 32px; color: #d9d3c6">17:00 · Courtyard</div>
+<div role="img" aria-label="Ceremony 40 percent complete" style="height: 8px; border-radius: 4px; background: #2b3856; margin-top: 10px">
+<div style="width: 40%; height: 8px; border-radius: 4px; background: #c9a96e"></div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 24px; background: #0d1117; border-radius: 24px">
+<span style="width: 72px; font-size: 26px; font-weight: 600; color: #c9a96e">18:00</span>
+<span style="font-size: 28px">Cocktail hour</span>
+</div>
+<div style="display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 24px; background: #0d1117; border-radius: 24px">
+<span style="width: 72px; font-size: 26px; font-weight: 600; color: #c9a96e">19:30</span>
+<span style="font-size: 28px">Dinner</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":416,"height":496}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
